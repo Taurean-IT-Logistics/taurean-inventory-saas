@@ -8,7 +8,8 @@ import {
   ErrorMiddleware,
   APIRateLimiter,
 } from "./middlewares";
-import { Logger } from "./utils";
+import { Logger, swaggerSpec } from "./utils";
+import swaggerUi from "swagger-ui-express";
 
 const app: express.Application = express();
 const server = createServer(app);
@@ -22,6 +23,7 @@ app.disable("x-powered-by");
 app.use(LoggerMiddleware);
 app.use(ErrorMiddleware);
 app.use(APIRateLimiter);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");
