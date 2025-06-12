@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
 import { STATUS_CODES } from "../config";
-import { sendError } from "../utils/response.utils";
+import { sendError } from "../utils";
 import { logger } from "./logger.middleware";
 
 function errorHandler(
