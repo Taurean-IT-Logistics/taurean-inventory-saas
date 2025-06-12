@@ -5,5 +5,6 @@
   "exec": "ts-node ./src/index.ts",
   "delay": "1500",
   "legacy-watch": true,
+  "legacyWatch": true,
   "restartable": true
 }
