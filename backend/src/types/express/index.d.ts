@@ -1,9 +1,11 @@
 import { TokenPayload } from "..";
 
 declare global {
-  declare module "express-serve-static-core" {
+  namespace Express {
     interface Request {
       user?: TokenPayload;
     }
   }
 }
+
+export {};
