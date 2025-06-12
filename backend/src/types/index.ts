@@ -18,3 +18,21 @@ export interface User {
   updatedAt: string;
   isDeleted: boolean;
 }
+
+export interface APIResponse<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
+  errors?: any;
+  pagination?: PaginationData;
+  statusCode?: number;
+}
+
+export interface PaginationData {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
+}
