@@ -1,0 +1,12 @@
+{
+  "watch": ["src"],
+  "ext": "ts,js",
+  "ignore": ["node_modules", "dist", ".git"],
+  "exec": "ts-node ./src/server.ts",
+  "delay": "1500",
+  "legacy-watch": true,
+  "restartable": true,
+  "events": {
+    "start": "clear"
+  }
+}
