@@ -4,6 +4,11 @@
   "ignore": ["node_modules", "dist", ".git"],
   "exec": "ts-node ./src/index.ts",
   "delay": "1500",
+  "verbose": true,
+  "colours": true,
+  "env": {
+    "NODE_ENV": "development"
+  },
   "legacy-watch": true,
   "legacyWatch": true,
   "restartable": true
