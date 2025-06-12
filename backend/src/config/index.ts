@@ -4,11 +4,12 @@ const CONFIG = {
   MONGO_URI: process.env.MONGO_URI,
   ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET,
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
-  SALT_ROUNDS: process.env.SALT_ROUNDS,
+  SALT_ROUNDS: process.env.SALT_ROUNDS || 10,
   CONFIG_LEVEL: process.env.CONFIG_LEVEL,
   PORT: process.env.PORT || 3000,
   ENV: process.env.NODE_ENV || "development",
   JWT_EXPIRATION: process.env.JWT_EXPIRATION || "1h",
+  JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION || "7d",
   IS_PRODUCTION: process.env.NODE_ENV === "production",
 };
 
