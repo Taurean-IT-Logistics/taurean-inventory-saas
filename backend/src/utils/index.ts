@@ -8,7 +8,6 @@ import {
   sendConflict,
 } from "./response.util";
 import Logger from "./logger.util";
-import swaggerSpec from "./swagger.util";
 
 export {
   sendSuccess,
@@ -19,5 +18,4 @@ export {
   sendForbidden,
   sendConflict,
   Logger,
-  swaggerSpec,
 };

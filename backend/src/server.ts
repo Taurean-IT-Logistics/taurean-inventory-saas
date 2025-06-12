@@ -3,13 +3,15 @@ import { createServer } from "http";
 import cors from "cors";
 import compression from "compression";
 import helmet from "helmet";
+import YAML from "yamljs";
 import {
   LoggerMiddleware,
   ErrorMiddleware,
   APIRateLimiter,
 } from "./middlewares";
-import { Logger, swaggerSpec } from "./utils";
+import { Logger } from "./utils";
 import swaggerUi from "swagger-ui-express";
+import { userRoutes } from "./routes";
 
 const app: express.Application = express();
 const server = createServer(app);
@@ -23,7 +25,11 @@ app.disable("x-powered-by");
 app.use(LoggerMiddleware);
 app.use(ErrorMiddleware);
 app.use(APIRateLimiter);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+const swaggerDocument = YAML.load("./src/utils/swagger/swagger.yaml");
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use("/api/v1/users", userRoutes);
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");
