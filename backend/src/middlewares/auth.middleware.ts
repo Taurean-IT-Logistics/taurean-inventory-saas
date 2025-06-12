@@ -50,7 +50,6 @@ async function authenticateUser(
 
     req.user = {
       id: userDoc.id,
-      name: userDoc.name,
       username: userDoc.username,
       email: userDoc.email,
       role: userDoc.role,
