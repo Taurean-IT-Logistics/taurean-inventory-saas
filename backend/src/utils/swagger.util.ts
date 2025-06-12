@@ -6,7 +6,7 @@ const swaggerOptions = {
     openapi: "3.0.0",
     info: {
       title: "TAUREAN API BACKEND",
-      version: "1.0.0",
+      version: require("../../package.json").version,
       description: "API FOR TAUREAN INVENTORY MANAGEMENT SYSTEM",
     },
     servers: [
