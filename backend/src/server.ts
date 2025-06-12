@@ -3,6 +3,12 @@ import { createServer } from "http";
 import cors from "cors";
 import compression from "compression";
 import helmet from "helmet";
+import {
+  LoggerMiddleware,
+  ErrorMiddleware,
+  APIRateLimiter,
+} from "./middlewares";
+import { Logger } from "./utils";
 
 const app: express.Application = express();
 const server = createServer(app);
@@ -13,8 +19,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.disable("x-powered-by");
+app.use(LoggerMiddleware);
+app.use(ErrorMiddleware);
+app.use(APIRateLimiter);
 
 function startServer() {
+  Logger("Initializing Server...", null, "server-core", "info");
   const PORT = process.env.PORT || 3000;
 
   server.listen(PORT, () => {
@@ -27,6 +37,7 @@ function startServer() {
 }
 
 function stopServer() {
+  Logger("Stopping Server...", null, "server-core", "info");
   server.close((error: Error | undefined) => {
     if (error) {
       console.error(`Error stopping server: ${error.message}`);
