@@ -1,4 +1,5 @@
 import { Schema, model, Document } from "mongoose";
+import { hashPassword } from "../helpers";
 
 interface UserDocument extends Document {
   name: string;
@@ -29,6 +30,24 @@ const UserSchema = new Schema<UserDocument>(
   },
   baseOptions
 );
+
+UserSchema.pre<UserDocument>("save", async function (next) {
+  try {
+    if (this.isModified("password")) {
+      this.password = await hashPassword(this.password);
+    }
+    const fieldsToLower = ["name", "username", "email"];
+    fieldsToLower.forEach((field: string) => {
+      if ((this as any)[field]) {
+        (this as any)[field] = ((this as any)[field] as string).toLowerCase();
+      }
+    });
+
+    next();
+  } catch (error: any) {
+    next(error);
+  }
+});
 
 const UserModel = model<UserDocument>("User", UserSchema);
 
