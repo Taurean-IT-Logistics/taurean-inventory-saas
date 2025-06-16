@@ -11,7 +11,7 @@ import {
 } from "./middlewares";
 import { Logger } from "./utils";
 import swaggerUi from "swagger-ui-express";
-import { userRoutes } from "./routes";
+import { userRoutes, authRoutes } from "./routes";
 
 const app: express.Application = express();
 const server = createServer(app);
@@ -30,6 +30,7 @@ const swaggerDocument = YAML.load("./src/utils/swagger/swagger.yaml");
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/auth", authRoutes);
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");
