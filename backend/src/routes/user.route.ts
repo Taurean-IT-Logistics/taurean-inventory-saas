@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { UserController } from "../controllers";
+import { AuthMiddleware, AuthorizeRoles } from "../middlewares";
 const router = Router();
 
 // router.post("/", UserController.createUser);
@@ -9,28 +10,41 @@ const router = Router();
 // router.put("/:id", UserController.updateUser);
 // router.delete("/:id", UserController.deleteUser);
 
-router.post("/", async (req, res) => {
-  await UserController.createUser(req, res);
-});
+router.post(
+  "/",
+  AuthMiddleware,
+  AuthorizeRoles("admin", "superadmin"),
+  UserController.createUser
+);
 
-router.get("/", async (req, res) => {
-  await UserController.getAllUsers(req, res);
-});
+router.get(
+  "/",
+  AuthMiddleware,
+  AuthorizeRoles("admin", "superadmin"),
+  UserController.getAllUsers
+);
 
-router.get("/identifier/:identifier", async (req, res) => {
-  await UserController.getUserByIdentifier(req, res);
-});
+router.get(
+  "/identifier/:identifier",
+  AuthMiddleware,
+  AuthorizeRoles("admin", "superadmin"),
+  UserController.getUserByIdentifier
+);
 
-router.get("/:id", async (req, res) => {
-  await UserController.getUserById(req, res);
-});
+router.get(
+  "/:id",
+  AuthMiddleware,
+  AuthorizeRoles("admin", "superadmin"),
+  UserController.getUserById
+);
 
-router.put("/:id", async (req, res) => {
-  await UserController.updateUser(req, res);
-});
+router.put("/:id", AuthMiddleware, UserController.updateUser);
 
-router.delete("/:id", async (req, res) => {
-  await UserController.deleteUser(req, res);
-});
+router.delete(
+  "/:id",
+  AuthMiddleware,
+  AuthorizeRoles("superadmin"),
+  UserController.deleteUser
+);
 
 export default router;

@@ -1,3 +1,4 @@
 import userRoutes from "./user.route";
+import authRoutes from "./auth.route";
 
-export { userRoutes };
+export { userRoutes, authRoutes };
