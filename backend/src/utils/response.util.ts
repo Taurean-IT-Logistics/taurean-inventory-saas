@@ -1,47 +1,49 @@
 import { Response } from "express";
 import { STATUS_CODES } from "../config";
-import { APIResponse, PaginationData } from "../types";
 
-function sendSuccess<T>(
+interface APIResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+  statusCode: number;
+  timestamp: string;
+}
+
+/**
+ * Send success response
+ */
+export function sendSuccess(
   res: Response,
   message: string,
-  data?: T,
-  statusCode: number = STATUS_CODES.OK,
-  pagination?: PaginationData
+  data?: any,
+  statusCode: number = STATUS_CODES.OK
 ): Response {
-  const response: APIResponse<T> = {
+  const response: APIResponse = {
     success: true,
     message,
     data,
-    pagination,
     statusCode,
+    timestamp: new Date().toISOString(),
   };
-
-  if (pagination) {
-    response.pagination = {
-      ...pagination,
-      hasNextPage: pagination.page < pagination.totalPages,
-      hasPrevPage: pagination.page > 1,
-    };
-  }
 
   return res.status(statusCode).json(response);
 }
 
 /**
- * Send Error response
+ * Send error response
  */
-
-function sendError(
+export function sendError(
   res: Response,
   message: string,
-  errors?: any,
+  data?: any,
   statusCode: number = STATUS_CODES.INTERNAL_SERVER_ERROR
 ): Response {
   const response: APIResponse = {
     success: false,
     message,
-    errors,
+    data,
+    statusCode,
+    timestamp: new Date().toISOString(),
   };
 
   return res.status(statusCode).json(response);
@@ -50,18 +52,18 @@ function sendError(
 /**
  * Send validation error response
  */
-function sendValidationError(
+export function sendValidationError(
   res: Response,
-  errors: any,
-  message: string = "Validation failed"
+  message: string = "Validation failed",
+  data?: any
 ): Response {
-  return sendError(res, message, errors, STATUS_CODES.BAD_REQUEST);
+  return sendError(res, message, data, STATUS_CODES.BAD_REQUEST);
 }
 
 /**
  * Send not found response
  */
-function sendNotFound(
+export function sendNotFound(
   res: Response,
   message: string = "Resource not found"
 ): Response {
@@ -71,7 +73,7 @@ function sendNotFound(
 /**
  * Send unauthorized response
  */
-function sendUnauthorized(
+export function sendUnauthorized(
   res: Response,
   message: string = "Unauthorized access"
 ): Response {
@@ -81,7 +83,7 @@ function sendUnauthorized(
 /**
  * Send forbidden response
  */
-function sendForbidden(
+export function sendForbidden(
   res: Response,
   message: string = "Access forbidden"
 ): Response {
@@ -91,19 +93,9 @@ function sendForbidden(
 /**
  * Send conflict response
  */
-function sendConflict(
+export function sendConflict(
   res: Response,
   message: string = "Resource conflict"
 ): Response {
   return sendError(res, message, null, STATUS_CODES.CONFLICT);
 }
-
-export {
-  sendSuccess,
-  sendError,
-  sendValidationError,
-  sendNotFound,
-  sendUnauthorized,
-  sendForbidden,
-  sendConflict,
-};

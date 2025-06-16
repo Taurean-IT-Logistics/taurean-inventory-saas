@@ -3,18 +3,155 @@ info:
   title: TAUREAN API Documentation
   version: 1.0.0
   description: API documentation for TAUREAN Inventory Management System
+
 servers:
   - url: http://localhost:3000
 
 tags:
   - name: Users
-    description: User management
+    description: User management (Protected)
+  - name: Authentication
+    description: Authentication and authorization (Partially Protected)
 
 paths:
-  /api/v1/users:
+  /api/v1/auth/login:
     post:
-      summary: Create a new user
+      summary: User login
+      tags: [Authentication]
+      security: [] # Public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponseAuth"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/auth/register:
+    post:
+      summary: User registration
+      tags: [Authentication]
+      security: [] # Public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponseAuth"
+        "409":
+          description: Email or username already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Authentication]
+      security: [] # Public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenInput"
+      responses:
+        "200":
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponseAuth"
+        "401":
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/auth/profile:
+    get:
+      summary: Get user profile
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponseUser"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+    put:
+      summary: Update user profile
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdateInput"
+      responses:
+        "200":
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponseUser"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/users:
+    get:
+      summary: Get all users
       tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Users fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponseUserList"
+
+    post:
+      summary: Create new user (admin or superadmin only)
+      tags: [Users]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -29,26 +166,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/APIResponseUser"
         "409":
-          description: Email or username already exists
+          description: Conflict - User exists
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIResponse"
-    get:
-      summary: Get all users
-      tags: [Users]
-      responses:
-        "200":
-          description: Users fetched successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIResponseUserList"
 
   /api/v1/users/{id}:
     get:
       summary: Get a user by ID
       tags: [Users]
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -68,9 +197,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIResponse"
+
     put:
       summary: Update a user
       tags: [Users]
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -98,8 +230,10 @@ paths:
                 $ref: "#/components/schemas/APIResponse"
 
     delete:
-      summary: Soft delete a user
+      summary: Soft delete a user (superadmin only)
       tags: [Users]
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -124,6 +258,8 @@ paths:
     get:
       summary: Get user by email or username
       tags: [Users]
+      security:
+        - bearerAuth: []
       parameters:
         - name: identifier
           in: path
@@ -145,6 +281,12 @@ paths:
                 $ref: "#/components/schemas/APIResponse"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     User:
       type: object
@@ -170,6 +312,8 @@ components:
           type: string
         password:
           type: string
+        role:
+          type: string
 
     UserUpdateInput:
       type: object
@@ -177,6 +321,33 @@ components:
         name:
           type: string
         email:
+          type: string
+
+    LoginInput:
+      type: object
+      required: [identifier, password]
+      properties:
+        identifier:
+          type: string
+          description: Email or username
+        password:
+          type: string
+
+    RefreshTokenInput:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    AuthData:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        accessToken:
+          type: string
+        refreshToken:
           type: string
 
     PaginationData:
@@ -225,3 +396,11 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/User"
+
+    APIResponseAuth:
+      allOf:
+        - $ref: "#/components/schemas/APIResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/AuthData"
