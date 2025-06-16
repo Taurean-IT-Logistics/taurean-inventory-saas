@@ -22,7 +22,9 @@ export async function createUser(userData: User): Promise<UserDocument> {
       userData.password = await hashPassword(userData.password);
     }
 
-    userData.role = "user";
+    if (!userData.role) {
+      userData.role = "user";
+    }
 
     const user = new UserModel(userData);
     return await user.save();
@@ -55,6 +57,9 @@ export async function getUserById(id: string): Promise<UserDocument | null> {
 export async function getUserByIdentifier(
   identifier: string
 ): Promise<UserDocument | null> {
+  if (!identifier) {
+    throw new Error("Identifier is required");
+  }
   return await UserModel.findOne({
     $or: [{ email: identifier }, { username: identifier }],
     isDeleted: false,
