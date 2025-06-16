@@ -1,5 +1,4 @@
 import { Schema, model, Document } from "mongoose";
-import { hashPassword } from "../helpers";
 
 interface UserDocument extends Document {
   name: string;
