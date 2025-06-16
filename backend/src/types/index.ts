@@ -1,22 +1,23 @@
-import { Types } from "mongoose";
-
-export interface TokenPayload {
-  id: Types.ObjectId;
-  role: string;
-  username: string;
-  email: string;
-}
-
 export interface User {
   name: string;
   username: string;
   email: string;
-  id: string;
-  role: string;
   password: string;
-  createdAt: string;
-  updatedAt: string;
-  isDeleted: boolean;
+  role: "user" | "admin" | "superadmin";
+  isDeleted?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface TokenPayload {
+  id: string;
+  email: string;
+  role: string;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface APIResponse<T = any> {
