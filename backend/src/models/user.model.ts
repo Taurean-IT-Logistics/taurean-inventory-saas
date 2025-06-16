@@ -17,7 +17,7 @@ const baseOptions = {
   timestamps: true,
 };
 
-const ROLE_ENUMS = ["user", "admin", "superadmin"];
+const ROLE_ENUMS = ["user", "admin", "staff"];
 
 const UserSchema = new Schema<UserDocument>(
   {

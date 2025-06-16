@@ -13,28 +13,28 @@ const router = Router();
 router.post(
   "/",
   AuthMiddleware,
-  AuthorizeRoles("admin", "superadmin"),
+  AuthorizeRoles("admin"),
   UserController.createUser
 );
 
 router.get(
   "/",
   AuthMiddleware,
-  AuthorizeRoles("admin", "superadmin"),
+  AuthorizeRoles("admin", "staff"),
   UserController.getAllUsers
 );
 
 router.get(
   "/identifier/:identifier",
   AuthMiddleware,
-  AuthorizeRoles("admin", "superadmin"),
+  AuthorizeRoles("admin", "staff"),
   UserController.getUserByIdentifier
 );
 
 router.get(
   "/:id",
   AuthMiddleware,
-  AuthorizeRoles("admin", "superadmin"),
+  AuthorizeRoles("admin", "staff"),
   UserController.getUserById
 );
 
@@ -43,7 +43,7 @@ router.put("/:id", AuthMiddleware, UserController.updateUser);
 router.delete(
   "/:id",
   AuthMiddleware,
-  AuthorizeRoles("superadmin"),
+  AuthorizeRoles("admin"),
   UserController.deleteUser
 );
 
