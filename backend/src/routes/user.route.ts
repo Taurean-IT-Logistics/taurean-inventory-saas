@@ -1,14 +1,8 @@
 import { Router } from "express";
 import { UserController } from "../controllers";
 import { AuthMiddleware, AuthorizeRoles } from "../middlewares";
-const router = Router();
 
-// router.post("/", UserController.createUser);
-// router.get("/", UserController.getAllUsers);
-// router.get("/identifier/:identifier", UserController.getUserByIdentifier);
-// router.get("/:id", UserController.getUserById);
-// router.put("/:id", UserController.updateUser);
-// router.delete("/:id", UserController.deleteUser);
+const router = Router();
 
 router.post(
   "/",
@@ -17,11 +11,33 @@ router.post(
   UserController.createUser
 );
 
+router.post(
+  "/register",
+  AuthMiddleware,
+  AuthorizeRoles("admin", "staff"),
+  UserController.createUser
+);
+
+router.get(
+  "/statistics",
+  AuthMiddleware,
+  AuthorizeRoles("admin"),
+  UserController.getUserStatistics
+);
+
+// Admin and staff routes
 router.get(
   "/",
   AuthMiddleware,
   AuthorizeRoles("admin", "staff"),
   UserController.getAllUsers
+);
+
+router.get(
+  "/search",
+  AuthMiddleware,
+  AuthorizeRoles("admin", "staff"),
+  UserController.searchUsers
 );
 
 router.get(
@@ -31,20 +47,23 @@ router.get(
   UserController.getUserByIdentifier
 );
 
-router.get(
-  "/:id",
-  AuthMiddleware,
-  AuthorizeRoles("admin", "staff"),
-  UserController.getUserById
-);
+router.get("/:id", AuthMiddleware, UserController.getUserById);
 
 router.put("/:id", AuthMiddleware, UserController.updateUser);
 
-router.delete(
-  "/:id",
+router.put(
+  "/:id/role",
   AuthMiddleware,
   AuthorizeRoles("admin"),
-  UserController.deleteUser
+  UserController.updateUserRole
+);
+router.delete("/:id", AuthMiddleware, UserController.deleteUser);
+
+router.post(
+  "/loyalty/update",
+  AuthMiddleware,
+  AuthorizeRoles("admin", "staff"),
+  UserController.updateUserLoyalty
 );
 
 export default router;
