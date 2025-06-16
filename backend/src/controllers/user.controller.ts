@@ -12,7 +12,7 @@ const createUser = async (req: Request, res: Response) => {
     }
 
     if (data.role) {
-      if (!["admin", "superadmin", "user"].includes(data.role)) {
+      if (!["admin", "staff", "user"].includes(data.role)) {
         data.role = "user";
       }
     }
@@ -67,8 +67,8 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = req.body;
 
-    if (data.role && ["admin", "superadmin"].includes(data.role)) {
-      if (!req.user || !req.user.role || req.user.role !== "superadmin") {
+    if (data.role && ["admin", "staff"].includes(data.role)) {
+      if (!req.user || !req.user.role || req.user.role !== "admin") {
         sendError(res, "You do not have permission to change roles", 403);
       }
     }
