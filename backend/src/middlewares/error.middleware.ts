@@ -1,46 +1,45 @@
-import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
-import { STATUS_CODES } from "../config";
+import { Request, Response, NextFunction } from "express";
 import { sendError } from "../utils";
-import { logger } from "./logger.middleware";
+import { Logger } from "../utils";
 
-function errorHandler(
+export function ErrorMiddleware(
   error: any,
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
+  Logger("Unhandled error occurred", req, "error-middleware", "error", error);
+
   if (res.headersSent) {
     return next(error);
   }
 
-  const correlationId =
-    req.headers["x-correlation-id"] ||
-    req.headers["x-request-id"] ||
-    `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const userId = req.user?.id || "anonymous";
+  // Handle specific error types
+  if (error.name === "ValidationError") {
+    sendError(res, "Validation Error", error.message, 400);
+    return;
+  }
 
-  logger.error(
-    `Request failed | URL: ${req.originalUrl} | Method: ${req.method}`,
-    {
-      error: error.message,
-      stack: error.stack,
-      statusCode: error.statusCode || STATUS_CODES.INTERNAL_SERVER_ERROR,
-      requestId: correlationId,
-      userId: userId,
-      ip: req.ip,
-      userAgent: req.headers["user-agent"],
-      component: "error-handler",
-    }
-  );
+  if (error.name === "CastError") {
+    sendError(res, "Invalid ID format", null, 400);
+    return;
+  }
 
-  sendError(
-    res,
-    `An error occurred: ${error.message || "Internal Server Error"}`,
-    error,
-    error.statusCode || STATUS_CODES.INTERNAL_SERVER_ERROR
-  );
+  if (error.code === 11000) {
+    sendError(res, "Duplicate entry", null, 409);
+    return;
+  }
+
+  if (error.name === "JsonWebTokenError") {
+    sendError(res, "Invalid token", null, 401);
+    return;
+  }
+
+  if (error.name === "TokenExpiredError") {
+    sendError(res, "Token expired", null, 401);
+    return;
+  }
+
+  // Default error response
+  sendError(res, "Internal server error", null, 500);
 }
-
-const ErrorMiddleware: ErrorRequestHandler = errorHandler;
-
-export default ErrorMiddleware;
