@@ -7,22 +7,52 @@ const TransactionSchema = new Schema<TransactionDocument>(
   {
     booking: { type: Schema.Types.ObjectId, ref: "Booking" },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    account: { type: Schema.Types.ObjectId, ref: "Account" },
     type: { type: String, enum: ["income", "expense"], required: true },
-    category: { type: String, required: true },
+    category: { type: String, required: true, trim: true },
     amount: { type: Number, required: true },
     method: {
       type: String,
-      enum: ["cash", "mobile_money", "bank", "cheque"],
+      enum: ["cash", "mobile_money", "bank", "cheque", "card"],
       required: true,
     },
-    account: { type: Schema.Types.ObjectId, ref: "Account" },
+    paymentDetails: {
+      paystackReference: { type: String },
+      chequeNumber: { type: String },
+      bankDetails: {
+        bankName: { type: String },
+        accountNumber: { type: String },
+        sortCode: { type: String },
+      },
+      mobileMoneyDetails: {
+        provider: {
+          type: String,
+          enum: ["mtn", "telecel", "airteltigo", "other"],
+        },
+        phoneNumber: { type: String },
+        transactionId: { type: String },
+      },
+    },
     ref: { type: String },
+    receiptUrl: { type: String },
+    approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    reconciled: { type: Boolean, default: false },
+    reconciledAt: { type: Date },
     facility: { type: Schema.Types.ObjectId, ref: "Facility" },
-    description: { type: String },
+    description: { type: String, trim: true },
     attachments: [{ type: String }],
+    tags: [{ type: String, trim: true }],
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
+
+// Indexes
+TransactionSchema.index({ type: 1, createdAt: -1 });
+TransactionSchema.index({ user: 1, createdAt: -1 });
+TransactionSchema.index({ facility: 1, createdAt: -1 });
+TransactionSchema.index({ reconciled: 1 });
+TransactionSchema.index({ method: 1 });
 
 const TransactionModel: Model<TransactionDocument> = model(
   "Transaction",
