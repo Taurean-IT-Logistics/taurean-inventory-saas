@@ -5,6 +5,12 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
   verifyToken,
+  verifyEmailToken,
+  verifyPasswordToken,
+  generateEmailToken,
+  generatePasswordToken,
+  updateUserToken,
+  invalidateToken,
 } from "./token.helper";
 
 export {
@@ -14,4 +20,10 @@ export {
   generateRefreshToken,
   verifyRefreshToken,
   verifyToken,
+  verifyEmailToken,
+  verifyPasswordToken,
+  generateEmailToken,
+  generatePasswordToken,
+  updateUserToken,
+  invalidateToken,
 };
