@@ -33,9 +33,6 @@ const UserSchema = new Schema<UserDocument>(
 
 UserSchema.pre<UserDocument>("save", async function (next) {
   try {
-    if (this.isModified("password")) {
-      this.password = await hashPassword(this.password);
-    }
     const fieldsToLower = ["name", "username", "email"];
     fieldsToLower.forEach((field: string) => {
       if ((this as any)[field]) {
