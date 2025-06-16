@@ -1,36 +1,23 @@
-import * as bcrypt from "bcrypt";
+import bcrypt from "bcrypt";
 import { CONFIG } from "../config";
 
 /**
- * Generates a hashed password using bcrypt.
- * @param password - The plain text password to hash.
- * @returns A promise that resolves to the hashed password.
+ * Hash a password using bcrypt
  */
-
-const hashPassword = async (password: string): Promise<string> => {
-  try {
-    return await bcrypt.hash(password, CONFIG.SALT_ROUNDS);
-  } catch (error: any) {
-    return error.message;
-  }
-};
+export async function hashPassword(password: string): Promise<string> {
+  const saltRounds =
+    typeof CONFIG.SALT_ROUNDS === "string"
+      ? parseInt(CONFIG.SALT_ROUNDS, 10)
+      : CONFIG.SALT_ROUNDS;
+  return await bcrypt.hash(password, saltRounds);
+}
 
 /**
- * Compares a plain text password with a hashed password.
- * @param password - The plain text password to compare.
- * @param hashedPassword - The hashed password to compare against.
- * @returns A promise that resolves to a boolean indicating if the passwords match.
+ * Compare a password with its hash
  */
-
-const comparePassword = async (
+export async function comparePassword(
   password: string,
-  hashedPassword: string
-): Promise<boolean> => {
-  try {
-    return await bcrypt.compare(password, hashedPassword);
-  } catch (error: any) {
-    return false;
-  }
-};
-
-export { hashPassword, comparePassword };
+  hash: string
+): Promise<boolean> {
+  return await bcrypt.compare(password, hash);
+}
