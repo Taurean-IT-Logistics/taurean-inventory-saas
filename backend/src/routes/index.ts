@@ -3,6 +3,7 @@ import authRoutes from "./auth.route";
 import facilityRoutes from "./facility.route";
 import inventoryItemRoutes from "./inventoryItem.route";
 import transactionRoutes from "./transaction.route";
+import bookingRoutes from "./booking.route";
 
 export {
   userRoutes,
@@ -10,4 +11,5 @@ export {
   facilityRoutes,
   inventoryItemRoutes,
   transactionRoutes,
+  bookingRoutes,
 };
