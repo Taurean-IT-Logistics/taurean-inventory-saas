@@ -9,7 +9,11 @@ const TransactionSchema = new Schema<TransactionDocument>(
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     account: { type: Schema.Types.ObjectId, ref: "Account" },
     type: { type: String, enum: ["income", "expense"], required: true },
-    category: { type: String, required: true, trim: true },
+    category: {
+      type: String,
+      enum: ["facility", "account", "booking", "other"],
+      required: true,
+    },
     amount: { type: Number, required: true },
     method: {
       type: String,
