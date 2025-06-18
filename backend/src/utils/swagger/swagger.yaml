@@ -18,6 +18,8 @@ tags:
     description: Inventory management (Protected)
   - name: Transaction
     description: Transaction management (Partially Protected)
+  - name: Bookings
+    description: Booking management (Protected)
 
 paths:
   /api/v1/auth/login:
@@ -1159,6 +1161,189 @@ paths:
               schema:
                 $ref: "#/components/schemas/APIResponse"
 
+  /api/v1/bookings:
+    post:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Create a new booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        201:
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        400:
+          description: Failed to create booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    get:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Get all bookings (admin access)
+      responses:
+        200:
+          description: All bookings fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/bookings/{id}:
+    get:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Get a booking by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the booking
+          schema:
+            type: string
+      responses:
+        200:
+          description: Booking fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        404:
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    put:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Update a booking by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the booking
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        200:
+          description: Booking updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        404:
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    delete:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Soft delete a booking by ID (admin/staff can delete any, but user can only delete their own)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the booking
+          schema:
+            type: string
+      responses:
+        200:
+          description: Booking deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        404:
+          description: Booking not found or already deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/bookings/user/{userId}:
+    get:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Get all bookings for a specific user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ID of the user
+          schema:
+            type: string
+      responses:
+        200:
+          description: Bookings fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/bookings/me:
+    get:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Get bookings for the authenticated user
+      responses:
+        200:
+          description: User bookings fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1238,7 +1423,12 @@ components:
             user:
               $ref: "#/components/schemas/User"
             token:
-              type: string
+              type: object
+              properties:
+                accessToken:
+                  type: string
+                refreshToken:
+                  type: string
 
     APIResponseUser:
       type: object
@@ -1623,6 +1813,129 @@ components:
         metadata:
           type: object
           description: Additional payment metadata
+
+    Booking:
+      type: object
+      properties:
+        user:
+          type: object
+          $ref: "#/components/schemas/User"
+        facility:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        duration:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "confirmed", "cancelled", "completed", "no_show"]
+        paymentStatus:
+          type: string
+          enum: ["pending", "completed", "failed", "refunded", "partial_refund"]
+        totalPrice:
+          type: number
+          format: float
+        discount:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["percentage", "fixed"]
+            value:
+              type: number
+            reason:
+              type: string
+            appliedBy:
+              type: object
+              $ref: "#/components/schemas/User"
+        paymentDetails:
+          type: object
+          $ref: "#/components/schemas/Transaction"
+        checkIn:
+          type: object
+          properties:
+            time:
+              type: string
+              format: date-time
+            verifiedBy:
+              type: object
+              $ref: "#/components/schemas/User"
+            notes:
+              type: string
+        checkOut:
+          type: object
+          properties:
+            time:
+              type: string
+              format: date-time
+            verifiedBy:
+              type: object
+              $ref: "#/components/schemas/User"
+            condition:
+              type: string
+              enum: ["good", "fair", "damaged"]
+            notes:
+              type: string
+            damageReport:
+              type: string
+        cancellation:
+          type: object
+          properties:
+            reason:
+              type: string
+            cancelledBy:
+              type: object
+              $ref: "#/components/schemas/User"
+            cancelledAt:
+              type: string
+              format: date-time
+            refundAmount:
+              type: number
+              format: float
+        notes:
+          type: string
+        internalNotes:
+          type: string
+        isDeleted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    BookingInput:
+      type: object
+      properties:
+        facility:
+          type: object
+          $ref: "#/components/schemas/APIResponseFacility"
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        duration:
+          type: string
+        totalPrice:
+          type: number
+          format: float
+        discount:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["percentage", "fixed"]
+            value:
+              type: number
+            reason:
+              type: string
 
     APIResponseUser Statistics:
       type: object
