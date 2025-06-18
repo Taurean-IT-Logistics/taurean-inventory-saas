@@ -1,14 +1,14 @@
-import { Schema, model, Model, Document } from "mongoose";
+import { Schema, Model, Document, model } from "mongoose";
 import { Facility } from "../types";
 
-interface FacilityDocument extends Document, Facility {}
+export interface FacilityDocument extends Document, Facility {}
 
 const FacilitySchema = new Schema<FacilityDocument>(
   {
     name: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
     images: [{ type: String }],
-    terms: { type: String },
+    terms: { type: String, trim: true },
     availability: [
       {
         day: {
@@ -33,8 +33,8 @@ const FacilitySchema = new Schema<FacilityDocument>(
       {
         startDate: { type: Date, required: true },
         endDate: { type: Date, required: true },
-        reason: { type: String },
-        createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        reason: { type: String, trim: true },
+        createdBy: { type: Schema.Types.ObjectId, ref: "User" },
         createdAt: { type: Date, default: Date.now },
       },
     ],
@@ -45,33 +45,29 @@ const FacilitySchema = new Schema<FacilityDocument>(
           enum: ["hour", "day", "week", "month"],
           required: true,
         },
-        amount: { type: Number, required: true, min: 0 },
+        amount: { type: Number, required: true },
         isDefault: { type: Boolean, default: false },
       },
     ],
     rating: {
-      average: { type: Number, default: 0, min: 0, max: 5 },
+      average: { type: Number, default: 0 },
       totalReviews: { type: Number, default: 0 },
     },
     reviews: [
       {
-        user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-        booking: {
-          type: Schema.Types.ObjectId,
-          ref: "Booking",
-          required: true,
-        },
-        rating: { type: Number, required: true, min: 1, max: 5 },
+        user: { type: Schema.Types.ObjectId, ref: "User" },
+        booking: { type: Schema.Types.ObjectId, ref: "Booking" },
+        rating: { type: Number, required: true },
         comment: { type: String, trim: true },
         isVerified: { type: Boolean, default: false },
         createdAt: { type: Date, default: Date.now },
       },
     ],
     capacity: {
-      maximum: { type: Number, required: true, min: 1 },
-      recommended: { type: Number, required: true, min: 1 },
+      maximum: { type: Number, required: true },
+      recommended: { type: Number, required: true },
     },
-    amenities: [{ type: String, trim: true }],
+    amenities: [{ type: String }],
     location: {
       address: { type: String, trim: true },
       coordinates: {
@@ -90,15 +86,7 @@ const FacilitySchema = new Schema<FacilityDocument>(
   { timestamps: true }
 );
 
-// Indexes
-FacilitySchema.index({ name: 1 });
-FacilitySchema.index({ isActive: 1, isDeleted: 1 });
-FacilitySchema.index({ "rating.average": -1 });
-FacilitySchema.index({ createdBy: 1 });
-
-const FacilityModel: Model<FacilityDocument> = model(
+export const FacilityModel = model<FacilityDocument>(
   "Facility",
   FacilitySchema
 );
-
-export { FacilityDocument, FacilityModel };
