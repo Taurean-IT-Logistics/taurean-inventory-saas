@@ -30,16 +30,7 @@ const BookingSchema = new Schema<BookingDocument>(
       reason: { type: String },
       appliedBy: { type: Schema.Types.ObjectId, ref: "User" },
     },
-    paymentDetails: {
-      paystackReference: { type: String },
-      transactionId: { type: String },
-      paidAmount: { type: Number, default: 0, min: 0 },
-      paymentMethod: {
-        type: String,
-        enum: ["cash", "mobile_money", "bank", "card"],
-      },
-      paidAt: { type: Date },
-    },
+    paymentDetails: { type: Schema.Types.ObjectId, ref: "Transaction" },
     checkIn: {
       time: { type: Date },
       verifiedBy: { type: Schema.Types.ObjectId, ref: "User" },
