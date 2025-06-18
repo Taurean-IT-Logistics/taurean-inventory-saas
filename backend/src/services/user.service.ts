@@ -214,12 +214,16 @@ export async function getUserByIdentifier(
 
     const selectFields = includePassword ? "" : "-password";
 
+    const orConditions: any[] = [
+      { email: identifier },
+      { username: identifier },
+    ];
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
+      orConditions.push({ _id: identifier });
+    }
+
     return await UserModel.findOne({
-      $or: [
-        { email: identifier },
-        { username: identifier },
-        { _id: identifier },
-      ],
+      $or: orConditions,
       isDeleted: false,
     })
       .select(selectFields)
