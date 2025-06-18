@@ -1,12 +1,18 @@
 import { Request, Response } from "express";
-import { PaymentService, TransactionService, UserService } from "../services";
+import {
+  PaymentService,
+  TransactionService,
+  UserService,
+  BookingService,
+  FacilityService,
+} from "../services";
 import {
   sendSuccess,
   sendError,
   sendNotFound,
   sendValidationError,
 } from "../utils";
-import { TransactionDocument } from "../models";
+import { BookingDocument, TransactionDocument } from "../models";
 import { Transaction } from "../types";
 import { isValidObjectId } from "mongoose";
 
@@ -27,10 +33,10 @@ const initializePaymentController = async (
     } = req.body;
 
     // Validate required fields
-    if (!email || !amount) {
+    if (!email || !amount || !category) {
       sendValidationError(
         res,
-        "Missing required fields: email and amount are required"
+        "Missing required fields: email, amount, and category are required"
       );
       return;
     }
@@ -89,7 +95,7 @@ const initializePaymentController = async (
       user: userDoc.id,
       facility,
       type: "income",
-      category: category || "Payment",
+      category: category,
       amount,
       method: "n/a",
       paymentDetails: {
@@ -191,6 +197,28 @@ const verifyPaymentController = async (
       updatedDoc
     );
 
+    if (!doc) {
+      throw new Error("Error updating transaction");
+    }
+
+    // Category-specific logic after transaction update
+    if (updatedDoc.category) {
+      if (updatedDoc.category === "booking" && updatedDoc.booking) {
+        if (doc.reconciled) {
+          await BookingService.updateBooking(
+            (updatedDoc.booking as BookingDocument)._id!.toString(),
+            {
+              paymentStatus: "completed",
+              updatedAt: new Date(),
+            }
+          );
+        }
+      } else if (updatedDoc.category === "account" && updatedDoc.account) {
+        // Optionally, update account balance or reconciliation status
+        // e.g., AccountService.reconcileAccount(updatedDoc.account as any)
+      }
+    }
+
     // Format the response
     const formattedResponse = {
       reference: verificationResponse.data.reference,
@@ -289,6 +317,27 @@ const handlePaystackWebhookController = async (
             transaction._id!.toString(),
             updatedDoc
           );
+
+          // Category-specific logic after transaction update
+          if (updatedDoc.category) {
+            if (updatedDoc.category === "booking" && updatedDoc.booking) {
+              if (newData && newData.reconciled) {
+                await BookingService.updateBooking(
+                  (updatedDoc.booking as BookingDocument)._id!.toString(),
+                  {
+                    paymentStatus: "completed",
+                    updatedAt: new Date(),
+                  }
+                );
+              }
+            } else if (
+              updatedDoc.category === "account" &&
+              updatedDoc.account
+            ) {
+              // Optionally, update account balance or reconciliation status
+              // e.g., AccountService.reconcileAccount(updatedDoc.account as any)
+            }
+          }
         }
         break;
 
@@ -410,8 +459,11 @@ const createTransactionFromPaymentController = async (
     const { reference, user, facility, category, description, ...remData } =
       req.body;
 
-    if (!reference || !user) {
-      sendValidationError(res, "Payment reference and user are required");
+    if (!reference || !user || !category) {
+      sendValidationError(
+        res,
+        "Payment reference, user, and category are required"
+      );
       return;
     }
 
@@ -439,7 +491,7 @@ const createTransactionFromPaymentController = async (
       user,
       facility,
       type: "income" as const,
-      category: category || "Payment",
+      category: category,
       amount: paymentDetails.data.amount / 100, // Convert from kobo
       method: "card" as const,
       paymentDetails: {
