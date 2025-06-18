@@ -17,6 +17,7 @@ import {
   facilityRoutes,
   inventoryItemRoutes,
   transactionRoutes,
+  bookingRoutes,
 } from "./routes";
 
 const app: express.Application = express();
@@ -40,6 +41,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/facilities", facilityRoutes);
 app.use("/api/v1/inventory-items", inventoryItemRoutes);
 app.use("/api/v1/transaction", transactionRoutes);
+app.use("/api/v1/bookings", bookingRoutes);
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");
