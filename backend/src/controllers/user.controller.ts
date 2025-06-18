@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as UserService from "../services/user.service";
+import { UserService } from "../services";
 import { sendSuccess, sendError, sendNotFound, sendConflict } from "../utils";
 
 // Create a new user
