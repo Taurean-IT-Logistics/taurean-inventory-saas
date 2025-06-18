@@ -167,10 +167,10 @@ export interface Transaction {
   booking?: Booking;
   user: User;
   account?: Account;
-  type: "income" | "expense";
+  type: string;
   category: string;
   amount: number;
-  method: "cash" | "mobile_money" | "bank" | "cheque" | "card";
+  method: string;
   paymentDetails: {
     paystackReference?: string;
     chequeNumber?: string;
@@ -180,12 +180,13 @@ export interface Transaction {
       sortCode?: string;
     };
     mobileMoneyDetails?: {
-      provider: "mtn" | "telecel" | "airteltigo" | "other";
+      provider: string;
       phoneNumber: string;
       transactionId: string;
     };
   };
   ref?: string;
+  accessCode?: string;
   receiptUrl?: string;
   approvedBy?: User;
   reconciled: boolean;
@@ -352,4 +353,13 @@ export interface Token {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface IPaymentFormData {
+  metadata: {
+    full_name: string;
+  };
+  email: string;
+  currency: string;
+  amount: number;
 }
