@@ -16,6 +16,8 @@ tags:
     description: Facility management (Protected)
   - name: Inventory
     description: Inventory management (Protected)
+  - name: Transaction
+    description: Transaction management (Partially Protected)
 
 paths:
   /api/v1/auth/login:
@@ -963,6 +965,200 @@ paths:
                 items:
                   $ref: "#/components/schemas/InventoryItem"
 
+  /api/v1/transaction/webhook:
+    post:
+      summary: Handle Paystack webhook
+      tags: [Transaction]
+      description: Webhook endpoint for Paystack payment notifications (no authentication required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Paystack webhook payload
+      responses:
+        "200":
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid webhook payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/transaction/initialize:
+    post:
+      summary: Initialize payment and create transaction
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      description: Initialize a payment transaction for authenticated users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInitializeInput"
+      responses:
+        "200":
+          description: Payment initialized successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      authorization_url:
+                        type: string
+                      access_code:
+                        type: string
+                      reference:
+                        type: string
+        "400":
+          description: Invalid payment data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/transaction/verify/{reference}:
+    get:
+      summary: Verify payment by reference
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      description: Verify a payment transaction using Paystack reference
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          description: Paystack payment reference
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    description: Paystack verification response
+        "400":
+          description: Invalid reference or verification failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/transaction/details/{reference}:
+    get:
+      summary: Get payment details by reference
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      description: Get detailed payment information by reference (admin and staff only)
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          description: Paystack payment reference
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "403":
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/transaction/create-transaction:
+    post:
+      summary: Create transaction from existing payment
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      description: Manual fallback to create transaction from existing payment (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionInput"
+      responses:
+        "201":
+          description: Transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          description: Invalid transaction data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden - admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1233,6 +1429,200 @@ components:
           type: string
         performedBy:
           type: string
+
+    Transaction:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Transaction ID
+        booking:
+          type: string
+          description: Associated booking ID
+        user:
+          type: string
+          description: User ID who made the transaction
+        account:
+          type: string
+          description: Account ID
+        type:
+          type: string
+          enum: [income, expense]
+          description: Transaction type
+        category:
+          type: string
+          description: Transaction category
+        amount:
+          type: number
+          description: Transaction amount
+        method:
+          type: string
+          enum: [cash, mobile_money, bank, cheque, card]
+          description: Payment method
+        paymentDetails:
+          type: object
+          properties:
+            paystackReference:
+              type: string
+              description: Paystack payment reference
+            chequeNumber:
+              type: string
+              description: Cheque number if payment method is cheque
+            bankDetails:
+              type: object
+              properties:
+                bankName:
+                  type: string
+                accountNumber:
+                  type: string
+                sortCode:
+                  type: string
+            mobileMoneyDetails:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum: [mtn, telecel, airteltigo, other]
+                phoneNumber:
+                  type: string
+                transactionId:
+                  type: string
+        ref:
+          type: string
+          description: Transaction reference
+        receiptUrl:
+          type: string
+          description: URL to receipt document
+        approvedBy:
+          type: string
+          description: ID of user who approved the transaction
+        reconciled:
+          type: boolean
+          description: Whether transaction is reconciled
+        reconciledAt:
+          type: string
+          format: date-time
+          description: Date when transaction was reconciled
+        facility:
+          type: string
+          description: Facility ID
+        description:
+          type: string
+          description: Transaction description
+        attachments:
+          type: array
+          items:
+            type: string
+          description: Array of attachment URLs
+        tags:
+          type: array
+          items:
+            type: string
+          description: Transaction tags
+        isDeleted:
+          type: boolean
+          description: Soft delete flag
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TransactionInput:
+      type: object
+      required: [user, type, category, amount, method]
+      properties:
+        booking:
+          type: string
+          description: Associated booking ID
+        user:
+          type: string
+          description: User ID who made the transaction
+        account:
+          type: string
+          description: Account ID
+        type:
+          type: string
+          enum: [income, expense]
+          description: Transaction type
+        category:
+          type: string
+          description: Transaction category
+        amount:
+          type: number
+          description: Transaction amount
+        method:
+          type: string
+          enum: [cash, mobile_money, bank, cheque, card]
+          description: Payment method
+        paymentDetails:
+          type: object
+          properties:
+            paystackReference:
+              type: string
+            chequeNumber:
+              type: string
+            bankDetails:
+              type: object
+              properties:
+                bankName:
+                  type: string
+                accountNumber:
+                  type: string
+                sortCode:
+                  type: string
+            mobileMoneyDetails:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum: [mtn, telecel, airteltigo, other]
+                phoneNumber:
+                  type: string
+                transactionId:
+                  type: string
+        ref:
+          type: string
+        receiptUrl:
+          type: string
+        facility:
+          type: string
+        description:
+          type: string
+        attachments:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    PaymentInitializeInput:
+      type: object
+      required: [email, amount]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Customer email address
+        amount:
+          type: number
+          description: Payment amount in kobo (for NGN) or pesewas (for GHS)
+        currency:
+          type: string
+          default: "GHS"
+          description: Payment currency
+        reference:
+          type: string
+          description: Custom payment reference
+        callback_url:
+          type: string
+          description: URL to redirect after payment
+        metadata:
+          type: object
+          description: Additional payment metadata
 
     APIResponseUser Statistics:
       type: object
