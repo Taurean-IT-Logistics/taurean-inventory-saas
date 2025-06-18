@@ -131,13 +131,7 @@ export interface Booking {
     reason: string;
     appliedBy: User;
   };
-  paymentDetails: {
-    paystackReference?: string;
-    transactionId?: string;
-    paidAmount: number;
-    paymentMethod: "cash" | "mobile_money" | "bank" | "card";
-    paidAt?: Date;
-  };
+  paymentDetails: Transaction;
   checkIn?: {
     time: Date;
     verifiedBy: User;
