@@ -8,10 +8,14 @@ servers:
   - url: http://localhost:3000
 
 tags:
-  - name: Users
-    description: User management (Protected)
   - name: Authentication
     description: Authentication and authorization (Partially Protected)
+  - name: Users
+    description: User management (Protected)
+  - name: Facilities
+    description: Facility management (Protected)
+  - name: Inventory
+    description: Inventory management (Protected)
 
 paths:
   /api/v1/auth/login:
@@ -286,35 +290,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/APIResponseUserList"
+                $ref: "#/components/schemas/APIResponseUser List"
     post:
       summary: Create new user (admin only)
-      tags: [Users]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserInput"
-      responses:
-        "201":
-          description: User created successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIResponseUser"
-        "409":
-          description: Conflict - User exists
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/APIResponse"
-
-  /api/v1/users/register:
-    post:
-      summary: Create new user (admin or staff)
       tags: [Users]
       security:
         - bearerAuth: []
@@ -377,7 +355,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/APIResponseUserList"
+                $ref: "#/components/schemas/APIResponseUser List"
 
   /api/v1/users/identifier/{identifier}:
     get:
@@ -553,6 +531,438 @@ paths:
               schema:
                 $ref: "#/components/schemas/APIResponse"
 
+  /api/v1/facilities:
+    get:
+      summary: Get all facilities
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Facilities fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+    post:
+      summary: Create a new facility (admin only)
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, description, location]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                location:
+                  type: string
+      responses:
+        "201":
+          description: Facility created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "409":
+          description: Conflict - Facility already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/facilities/{id}:
+    get:
+      summary: Get a facility by ID
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Facility found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+    put:
+      summary: Update a facility by ID (admin or staff)
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                location:
+                  type: string
+      responses:
+        "200":
+          description: Facility updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+    delete:
+      summary: Soft delete a facility (admin only)
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Facility deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/facilities/{id}/availability:
+    post:
+      summary: Add availability period to a facility (admin or staff)
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startTime, endTime]
+              properties:
+                startTime:
+                  type: string
+                  format: date-time
+                endTime:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: Availability period added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    delete:
+      summary: Remove availability period from a facility (admin or staff)
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [day]
+              properties:
+                day:
+                  type: string
+                  enum:
+                    [
+                      monday,
+                      tuesday,
+                      wednesday,
+                      thursday,
+                      friday,
+                      saturday,
+                      sunday,
+                    ]
+      responses:
+        "200":
+          description: Availability period marked unavailable successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/inventory-items:
+    get:
+      summary: Get all inventory items
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: showDeleted
+          in: query
+          required: false
+          description: Include deleted items in the response
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: A list of inventory items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryItem"
+
+    post:
+      summary: Create a new inventory item
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryItemInput"
+      responses:
+        "201":
+          description: Inventory item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "409":
+          description: Conflict - Inventory item already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/inventory-items/{id}:
+    get:
+      summary: Get an inventory item by ID
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the inventory item
+          schema:
+            type: string
+        - name: showDeleted
+          in: query
+          required: false
+          description: Include deleted item in the response
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: An inventory item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "404":
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    put:
+      summary: Update an inventory item by ID
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the inventory item
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryItemInput"
+      responses:
+        "200":
+          description: Inventory item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "404":
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    delete:
+      summary: Soft delete an inventory item by ID
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the inventory item
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Inventory item deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    post:
+      summary: Restore a soft deleted inventory item by ID
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the inventory item
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Inventory item restored successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "404":
+          description: Inventory item not found or not deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/inventory-items/{id}/maintenance:
+    post:
+      summary: Add maintenance schedule to an inventory item
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the inventory item
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaintenanceScheduleInput"
+      responses:
+        "201":
+          description: Maintenance schedule added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaintenanceSchedule"
+        "404":
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/inventory-items/low-stock:
+    get:
+      summary: Get low stock inventory items
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: A list of low stock inventory items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryItem"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -613,28 +1023,6 @@ components:
         refreshToken:
           type: string
 
-    AuthData:
-      type: object
-      properties:
-        user:
-          $ref: "#/components/schemas/User"
-        accessToken:
-          type: string
-        refreshToken:
-          type: string
-
-    PaginationData:
-      type: object
-      properties:
-        total:
-          type: integer
-        page:
-          type: integer
-        perPage:
-          type: integer
-        totalPages:
-          type: integer
-
     APIResponse:
       type: object
       properties:
@@ -642,38 +1030,288 @@ components:
           type: boolean
         message:
           type: string
-        errors:
-          type: object
-          nullable: true
-        statusCode:
-          type: integer
-        pagination:
-          $ref: "#/components/schemas/PaginationData"
-        data:
-          nullable: true
-
-    APIResponseUser:
-      allOf:
-        - $ref: "#/components/schemas/APIResponse"
-        - type: object
-          properties:
-            data:
-              $ref: "#/components/schemas/User"
-
-    APIResponseUserList:
-      allOf:
-        - $ref: "#/components/schemas/APIResponse"
-        - type: object
-          properties:
-            data:
-              type: array
-              items:
-                $ref: "#/components/schemas/User"
 
     APIResponseAuth:
-      allOf:
-        - $ref: "#/components/schemas/APIResponse"
-        - type: object
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
           properties:
-            data:
-              $ref: "#/components/schemas/AuthData"
+            user:
+              $ref: "#/components/schemas/User"
+            token:
+              type: string
+
+    APIResponseUser:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/User"
+
+    APIResponseUser List:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+
+    InventoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        sku:
+          type: string
+        quantity:
+          type: integer
+        status:
+          type: string
+          enum: ["in_stock", "rented", "unavailable", "maintenance", "retired"]
+        associatedFacility:
+          type: string
+        category:
+          type: string
+        purchaseInfo:
+          type: object
+          properties:
+            purchaseDate:
+              type: string
+              format: date
+            purchasePrice:
+              type: number
+            supplier:
+              type: string
+            warrantyExpiry:
+              type: string
+              format: date
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date-time
+              change:
+                type: number
+              reason:
+                type: string
+              user:
+                type: string
+              notes:
+                type: string
+        maintenanceSchedule:
+          type: array
+          items:
+            type: object
+            properties:
+              scheduledDate:
+                type: string
+                format: date
+              type:
+                type: string
+                enum: ["cleaning", "repair", "inspection", "calibration"]
+              completed:
+                type: boolean
+              completedDate:
+                type: string
+                format: date
+              cost:
+                type: number
+              notes:
+                type: string
+              performedBy:
+                type: string
+        currentBookings:
+          type: array
+          items:
+            type: string
+        specifications:
+          type: object
+          additionalProperties:
+            type: string
+        alerts:
+          type: object
+          properties:
+            lowStock:
+              type: boolean
+            maintenanceDue:
+              type: boolean
+            warrantyExpiring:
+              type: boolean
+        isDeleted:
+          type: boolean
+
+    InventoryItemInput:
+      type: object
+      required:
+        - name
+        - quantity
+        - category
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        sku:
+          type: string
+        quantity:
+          type: integer
+        status:
+          type: string
+          enum: ["in_stock", "rented", "unavailable", "maintenance", "retired"]
+        associatedFacility:
+          type: string
+        category:
+          type: string
+        purchaseInfo:
+          type: object
+          properties:
+            purchaseDate:
+              type: string
+              format: date
+            purchasePrice:
+              type: number
+            supplier:
+              type: string
+            warrantyExpiry:
+              type: string
+              format: date
+
+    MaintenanceScheduleInput:
+      type: object
+      required:
+        - scheduledDate
+        - type
+      properties:
+        scheduledDate:
+          type: string
+          format: date
+        type:
+          type: string
+          enum: ["cleaning", "repair", "inspection", "calibration"]
+        completed:
+          type: boolean
+        completedDate:
+          type: string
+          format: date
+        cost:
+          type: number
+        notes:
+          type: string
+        performedBy:
+          type: string
+
+    MaintenanceSchedule:
+      type: object
+      properties:
+        scheduledDate:
+          type: string
+          format: date
+        type:
+          type: string
+          enum: ["cleaning", "repair", "inspection", "calibration"]
+        completed:
+          type: boolean
+        completedDate:
+          type: string
+          format: date
+        cost:
+          type: number
+        notes:
+          type: string
+        performedBy:
+          type: string
+
+    APIResponseUser Statistics:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            totalUsers:
+              type: integer
+            activeUsers:
+              type: integer
+            inactiveUsers:
+              type: integer
+
+    APIResponseFacility:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            facility:
+              type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                description:
+                  type: string
+                location:
+                  type: string
+
+    APIResponseFacilityList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/APIResponseFacility"
+
+    APIResponseFacilityStatistics:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            totalFacilities:
+              type: integer
+            availableFacilities:
+              type: integer
+            bookedFacilities:
+              type: integer
+
+    APIResponseAvailability:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            availability:
+              type: array
+              items:
+                type: object
+                properties:
+                  day:
+                    type: string
+                  startTime:
+                    type: string
+                    format: date-time
+                  endTime:
+                    type: string
+                    format: date-time
