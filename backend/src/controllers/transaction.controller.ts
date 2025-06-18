@@ -35,8 +35,13 @@ const initializePaymentController = async (
       return;
     }
 
-    if (!isValidObjectId(facility)) {
+    if (facility && !isValidObjectId(facility)) {
       sendValidationError(res, "Invalid facility ID");
+      return;
+    }
+
+    if (paymentData.booking && !isValidObjectId(paymentData.booking)) {
+      sendValidationError(res, "Invalid booking ID");
       return;
     }
 
@@ -53,7 +58,6 @@ const initializePaymentController = async (
       return;
     }
 
-    // Convert amount to kobo (Paystack expects amount in kobo)
     const formattedPaymentData = {
       email,
       amount: Math.round(amount * 100), // Convert to kobo
@@ -63,12 +67,22 @@ const initializePaymentController = async (
       currency: currency || "GHS",
     };
 
+    if (paymentData.discount) {
+      if (paymentData.discount.type === "percentage") {
+        formattedPaymentData.amount -= Math.round(
+          (formattedPaymentData.amount * paymentData.discount.value) / 100
+        );
+      } else {
+        formattedPaymentData.amount -= Math.round(
+          paymentData.discount.value * 100
+        );
+      }
+    }
+
     // Initialize payment with Paystack
     const paymentResponse = await PaymentService.initializePayment(
       formattedPaymentData
     );
-
-    console.log(paymentResponse);
 
     // Create transaction document
     const transactionData: Partial<Transaction> = {
@@ -85,13 +99,12 @@ const initializePaymentController = async (
       accessCode: paymentResponse.data.access_code,
       description: description || `Payment for ${email}`,
       reconciled: false,
+      ...paymentData,
     };
 
     const transaction = await TransactionService.createTransaction(
       transactionData
     );
-
-    console.log(transaction);
 
     const response = {
       payment: paymentResponse.data,
@@ -394,7 +407,8 @@ const createTransactionFromPaymentController = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { reference, user, facility, category, description } = req.body;
+    const { reference, user, facility, category, description, ...remData } =
+      req.body;
 
     if (!reference || !user) {
       sendValidationError(res, "Payment reference and user are required");
@@ -436,6 +450,7 @@ const createTransactionFromPaymentController = async (
         description || `Payment from ${paymentDetails.data.customer.email}`,
       reconciled: true,
       reconciledAt: new Date(paymentDetails.data.paid_at),
+      ...remData,
     };
 
     const transaction = await TransactionService.createTransaction(
