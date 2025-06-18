@@ -13,7 +13,7 @@ const TransactionSchema = new Schema<TransactionDocument>(
     amount: { type: Number, required: true },
     method: {
       type: String,
-      enum: ["cash", "mobile_money", "bank", "cheque", "card"],
+      default: "n/a",
       required: true,
     },
     paymentDetails: {
@@ -27,13 +27,14 @@ const TransactionSchema = new Schema<TransactionDocument>(
       mobileMoneyDetails: {
         provider: {
           type: String,
-          enum: ["mtn", "telecel", "airteltigo", "other"],
+          default: "n/a",
         },
         phoneNumber: { type: String },
         transactionId: { type: String },
       },
     },
     ref: { type: String },
+    accessCode: { type: String },
     receiptUrl: { type: String },
     approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
     reconciled: { type: Boolean, default: false },
