@@ -215,7 +215,11 @@ export async function getUserByIdentifier(
     const selectFields = includePassword ? "" : "-password";
 
     return await UserModel.findOne({
-      $or: [{ email: identifier }, { username: identifier }],
+      $or: [
+        { email: identifier },
+        { username: identifier },
+        { _id: identifier },
+      ],
       isDeleted: false,
     })
       .select(selectFields)
