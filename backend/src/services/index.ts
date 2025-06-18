@@ -3,6 +3,7 @@ import * as FacilityService from "./facility.service";
 import * as InventoryItemService from "./inventoryItem.service";
 import * as TransactionService from "./transaction.service";
 import * as PaymentService from "./payment.service";
+import * as BookingService from "./booking.service";
 
 export {
   UserService,
@@ -10,4 +11,5 @@ export {
   InventoryItemService,
   TransactionService,
   PaymentService,
+  BookingService,
 };
