@@ -1,2 +1,4 @@
 export * as UserController from "./user.controller";
 export * as AuthController from "./auth.controller";
+export * as FacilityController from "./facility.controller";
+export * as InventoryItemController from "./inventoryItem.controller";
