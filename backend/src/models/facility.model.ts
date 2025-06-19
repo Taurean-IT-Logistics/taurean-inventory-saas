@@ -7,7 +7,14 @@ const FacilitySchema = new Schema<FacilityDocument>(
   {
     name: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
-    images: [{ type: String }],
+    images: [
+      {
+        path: { type: String, required: true },
+        originalName: { type: String, required: true },
+        mimetype: { type: String, required: true },
+        size: { type: Number, required: true },
+      },
+    ],
     terms: { type: String, trim: true },
     availability: [
       {
@@ -60,6 +67,7 @@ const FacilitySchema = new Schema<FacilityDocument>(
         rating: { type: Number, required: true },
         comment: { type: String, trim: true },
         isVerified: { type: Boolean, default: false },
+        updatedAt: { type: Date, default: Date.now },
         createdAt: { type: Date, default: Date.now },
       },
     ],

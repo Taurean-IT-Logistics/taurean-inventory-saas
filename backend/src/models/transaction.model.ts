@@ -11,7 +11,7 @@ const TransactionSchema = new Schema<TransactionDocument>(
     type: { type: String, enum: ["income", "expense"], required: true },
     category: {
       type: String,
-      enum: ["facility", "account", "booking", "other"],
+      enum: ["facility", "account", "booking", "inventory_item", "other"],
       required: true,
     },
     amount: { type: Number, required: true },
