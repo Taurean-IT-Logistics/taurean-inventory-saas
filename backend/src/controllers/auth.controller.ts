@@ -160,6 +160,7 @@ const login = async (req: Request, res: Response): Promise<void> => {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      cart: user.cart,
       loyaltyProfile: user.loyaltyProfile,
       createdAt: user.createdAt,
     };
@@ -263,6 +264,7 @@ const getProfile = async (req: Request, res: Response): Promise<void> => {
       email: fullUser.email,
       phone: fullUser.phone,
       role: fullUser.role,
+      cart: fullUser.cart,
       loyaltyProfile: fullUser.loyaltyProfile,
       analytics: (fullUser as any).analytics,
       createdAt: fullUser.createdAt,
@@ -305,6 +307,7 @@ const updateProfile = async (req: Request, res: Response): Promise<void> => {
       email: updatedUser.email,
       phone: updatedUser.phone,
       role: updatedUser.role,
+      cart: updatedUser.cart,
       loyaltyProfile: updatedUser.loyaltyProfile,
       updatedAt: updatedUser.updatedAt,
     };
