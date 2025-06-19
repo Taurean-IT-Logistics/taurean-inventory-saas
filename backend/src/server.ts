@@ -18,6 +18,7 @@ import {
   inventoryItemRoutes,
   transactionRoutes,
   bookingRoutes,
+  resourceRoutes,
 } from "./routes";
 
 const app: express.Application = express();
@@ -42,6 +43,7 @@ app.use("/api/v1/facilities", facilityRoutes);
 app.use("/api/v1/inventory-items", inventoryItemRoutes);
 app.use("/api/v1/transaction", transactionRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
+app.use("/api/v1/resources", resourceRoutes);
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");
