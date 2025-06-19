@@ -4,3 +4,4 @@ export * as FacilityController from "./facility.controller";
 export * as InventoryItemController from "./inventoryItem.controller";
 export * as TransactionController from "./transaction.controller";
 export * as BookingController from "./booking.controller";
+export * as ResourceController from "./resource.controller";
