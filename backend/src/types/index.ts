@@ -1,3 +1,13 @@
+export interface CartItem {
+  type: string;
+  itemId: string;
+  quantity?: number;
+  name?: string;
+  price?: number;
+  imageUrl?: string;
+  notes?: string;
+}
+
 export interface User {
   name: string;
   username: string;
@@ -12,6 +22,7 @@ export interface User {
     lastBookingDate?: Date;
     loyaltyTier?: "bronze" | "silver" | "gold" | "platinum";
   };
+  cart: CartItem[];
   isDeleted?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -49,7 +60,12 @@ export interface PaginationData {
 export interface Facility {
   name: string;
   description?: string;
-  images: string[];
+  images: {
+    path: string;
+    originalName: string;
+    mimetype: string;
+    size: number;
+  }[];
   terms?: string;
   availability: {
     day:
@@ -87,6 +103,7 @@ export interface Facility {
     comment: string;
     isVerified: boolean;
     createdAt: Date;
+    updatedAt: Date;
   }[];
   capacity: {
     maximum: number;
@@ -186,6 +203,7 @@ export interface Transaction {
   reconciled: boolean;
   reconciledAt?: Date;
   facility?: Facility;
+  inventoryItem?: InventoryItem;
   description?: string;
   attachments: string[];
   tags: string[];
@@ -239,21 +257,13 @@ export interface InventoryItem {
 export interface Account {
   user: User;
   name: string;
-  type: "cash" | "bank" | "mobile_money";
-  balance: number;
+  usage: number;
   currency: string;
-  accountDetails: {
-    bankName?: string;
-    accountNumber?: string;
-    sortCode?: string;
-    provider?: "mtn" | "telecel" | "airteltigo" | "other";
-    phoneNumber?: string;
-  };
   transactionHistory: {
     transactionId: Transaction;
     type: "credit" | "debit";
     amount: number;
-    balanceAfter: number;
+    usageAfter: number;
     date: Date;
     description?: string;
   }[];
