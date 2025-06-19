@@ -4,6 +4,7 @@ import facilityRoutes from "./facility.route";
 import inventoryItemRoutes from "./inventoryItem.route";
 import transactionRoutes from "./transaction.route";
 import bookingRoutes from "./booking.route";
+import resourceRoutes from "./resource.route";
 
 export {
   userRoutes,
@@ -12,4 +13,5 @@ export {
   inventoryItemRoutes,
   transactionRoutes,
   bookingRoutes,
+  resourceRoutes,
 };
