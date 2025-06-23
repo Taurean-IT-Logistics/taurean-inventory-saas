@@ -1,0 +1,129 @@
+.phoenix-react-range {
+  display: flex;
+  width: 100%;
+  .phoenix-react-range-track {
+    width: $form-range-track-width;
+    height: $form-range-track-height;
+    border: none;
+    align-self: center;
+    border-radius: 3px;
+    box-shadow: var(--#{$prefix}box-shadow-inset);
+  }
+  .phoenix-react-range-thumb {
+    width: map-get($spacers, 3);
+    height: map-get($spacers, 4);
+    background: $white;
+    border: 1px solid var(--#{$prefix}border-color);
+    border-radius: $border-radius-sm;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      box-shadow: var(--#{$prefix}hover-box-shadow);
+    }
+
+    &::after {
+      margin-left: 5px;
+    }
+    &::before {
+      margin-right: 5px;
+    }
+    &::after,
+    &::before {
+      position: absolute;
+      content: '';
+      background: $gray-300;
+      height: 10px;
+      width: 1px;
+    }
+
+    &:hover {
+      background: $white;
+    }
+
+    &:hover .phoenix-react-range-tooltip {
+      display: block;
+    }
+    .phoenix-react-range-tooltip {
+      &.show {
+        display: block;
+      }
+      position: absolute;
+      top: -2.313rem;
+      display: none;
+      padding: 5px;
+      background: $card-bg;
+      border: 1px solid var(--#{$prefix}border-color);
+      font-size: $tooltip-font-size;
+      color: $black;
+      font-weight: $font-weight-normal;
+      @include border-radius($tooltip-border-radius);
+
+      html[data-bs-theme='dark'] & {
+        color: $white;
+      }
+    }
+  }
+
+  &.phoenix-react-range-slim {
+    & .phoenix-react-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: var(--#{$prefix}primary);
+      border: var(--#{$prefix}primary);
+      border-radius: 50%;
+
+      &::before,
+      &::after {
+        display: none;
+      }
+    }
+  }
+
+  &.phoenix-react-range-medium {
+    height: 14px;
+    padding: 6px;
+    border-radius: 1.25rem;
+    background-color: var(--#{$prefix}gray-100);
+    & .phoenix-react-range-track {
+      box-shadow: none;
+    }
+    & .phoenix-react-range-thumb {
+      width: map-get($spacers, 4);
+      height: map-get($spacers, 4);
+      background: var(--#{$prefix}primary);
+      border: var(--#{$prefix}primary);
+      border-radius: 50%;
+
+      &::before,
+      &::after {
+        display: none;
+      }
+    }
+  }
+
+  &.phoenix-react-range-large {
+    height: map-get($spacers, 6);
+    padding: map-get($spacers, 3) map-get($spacers, 3) map-get($spacers, 3)
+      map-get($spacers, 5);
+    border-radius: 1.25rem;
+    background-color: var(--#{$prefix}gray-100);
+    & .phoenix-react-range-track {
+      box-shadow: none;
+    }
+    & .phoenix-react-range-thumb {
+      width: map-get($spacers, 5);
+      height: map-get($spacers, 5);
+      background: var(--#{$prefix}primary);
+      border: var(--#{$prefix}primary);
+      border-radius: 50%;
+
+      &::before,
+      &::after {
+        display: none;
+      }
+    }
+  }
+}
