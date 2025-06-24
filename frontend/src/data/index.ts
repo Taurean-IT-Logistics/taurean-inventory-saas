@@ -1,4 +1,4 @@
-import { Booking, Facility, InventoryItem, User } from '../types';
+import { Booking, Facility, InventoryItem, User, Transaction } from '../types';
 
 export const mockUser: User = {
   _id: '1',
@@ -7,6 +7,12 @@ export const mockUser: User = {
   email: 'admin@example.com',
   phone: '+1234567890',
   password: 'hashed',
+  loyaltyProfile: {
+    loyaltyTier: 'bronze',
+    totalBookings: 5,
+    totalSpent: 500,
+    preferredFacilities: [] as Facility[]
+  },
   role: 'admin',
   cart: [],
   createdAt: new Date('2024-01-01'),
@@ -281,7 +287,7 @@ export const mockFacilities: Facility[] = [
       'Elegant ballroom with crystal chandeliers and classic architecture. Perfect for weddings, galas, corporate events, and large celebrations.',
     images: [
       {
-        path: 'https://placehold.co/300x4000',
+        path: 'https://placehold.co/300x400',
         originalName: 'grand-ballroom-1.jpg',
         mimetype: 'image/jpeg',
         size: 3200000
@@ -699,5 +705,146 @@ export const mockInventoryItems: InventoryItem[] = [
     isDeleted: false,
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-01-15')
+  }
+];
+
+type DataSeries = {
+  name: string;
+  data: number[];
+  lineType?: 'solid' | 'dashed';
+  colorKey: string;
+};
+
+export const dataSeries: DataSeries[] = [
+  {
+    name: 'First-time buyers',
+    data: [30, 45, 60, 50, 65, 80, 75, 60, 55, 70, 85, 90],
+    colorKey: 'primary',
+    lineType: 'solid'
+  },
+  {
+    name: 'Returning customers',
+    data: [20, 35, 40, 38, 50, 62, 65, 60, 58, 66, 74, 80],
+    colorKey: 'info-lighter',
+    lineType: 'solid'
+  },
+  {
+    name: 'Loyal customers',
+    data: [10, 15, 20, 18, 25, 30, 33, 29, 31, 34, 37, 40],
+    colorKey: 'primary-light',
+    lineType: 'dashed'
+  }
+];
+
+export const months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec'
+];
+
+export const mockTransactions: Transaction[] = [
+  {
+    user: mockUser,
+    type: 'credit',
+    category: 'booking',
+    amount: 200,
+    method: 'paystack',
+    paymentDetails: {
+      paystackReference: 'PSK-REF-001'
+    },
+    attachments: [],
+    tags: [],
+    receiptUrl: 'https://paystack.com/receipt/001',
+    reconciled: true,
+    isDeleted: false,
+    createdAt: new Date('2025-06-15T10:23:00Z'),
+    updatedAt: new Date('2025-06-15T10:23:00Z')
+  },
+  {
+    user: mockUser,
+    attachments: [],
+    tags: [],
+    type: 'debit',
+    category: 'refund',
+    amount: 150,
+    method: 'mobile-money',
+    paymentDetails: {
+      mobileMoneyDetails: {
+        provider: 'MTN',
+        phoneNumber: '+233202000000',
+        transactionId: 'MTN-TXN-123'
+      }
+    },
+    reconciled: false,
+    isDeleted: false,
+    createdAt: new Date('2025-06-16T14:00:00Z'),
+    updatedAt: new Date('2025-06-16T14:00:00Z')
+  },
+  {
+    user: mockUser,
+    attachments: [],
+    tags: [],
+    type: 'credit',
+    category: 'booking',
+    amount: 300,
+    method: 'bank-transfer',
+    paymentDetails: {
+      bankDetails: {
+        bankName: 'GCB Bank',
+        accountNumber: '0234567891011',
+        sortCode: 'GCB001'
+      }
+    },
+    reconciled: true,
+    ref: 'BANK-TXN-788',
+    isDeleted: false,
+    createdAt: new Date('2025-06-18T09:30:00Z'),
+    updatedAt: new Date('2025-06-18T09:30:00Z')
+  },
+  {
+    user: mockUser,
+    attachments: [],
+    tags: [],
+    type: 'credit',
+    category: 'inventory',
+    amount: 120,
+    method: 'paystack',
+    paymentDetails: {
+      paystackReference: 'PSK-REF-456'
+    },
+    receiptUrl: 'https://paystack.com/receipt/456',
+    reconciled: true,
+    isDeleted: false,
+    createdAt: new Date('2025-06-20T11:45:00Z'),
+    updatedAt: new Date('2025-06-20T11:45:00Z')
+  },
+  {
+    user: mockUser,
+    attachments: [],
+    tags: [],
+    type: 'credit',
+    category: 'booking',
+    amount: 250,
+    method: 'mobile-money',
+    paymentDetails: {
+      mobileMoneyDetails: {
+        provider: 'Vodafone Cash',
+        phoneNumber: '+233501000000',
+        transactionId: 'VODA-TXN-999'
+      }
+    },
+    reconciled: false,
+    isDeleted: false,
+    createdAt: new Date('2025-06-22T08:15:00Z'),
+    updatedAt: new Date('2025-06-22T08:15:00Z')
   }
 ];

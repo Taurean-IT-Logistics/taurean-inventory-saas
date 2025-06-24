@@ -11,6 +11,7 @@ const NotificationDropdownMenu = ({ className }: { className?: string }) => {
   return (
     <Dropdown.Menu
       align="end"
+      style={{ zIndex: 2000 }}
       className={classNames(
         className,
         'navbar-dropdown-caret py-0 notification-dropdown-menu shadow border'

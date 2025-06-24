@@ -868,7 +868,7 @@ const UserInvoicePage = () => {
 
         <div
           className={`d-flex justify-content-between align-items-center mb-4 px-2 ${
-            theme === 'dark' ? 'bg-dark text-white' : 'bg-dark text-dark'
+            theme === 'dark' ? 'bg-dark text-white' : 'bg-light text-dark'
           }`}
           style={{
             position: 'sticky',

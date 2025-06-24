@@ -158,6 +158,7 @@ export interface InventoryItem {
   description?: string;
   sku?: string;
   quantity: number;
+  images: string[];
   status: 'in_stock' | 'rented' | 'unavailable' | 'maintenance' | 'retired';
   associatedFacility?: Facility;
   category: string;

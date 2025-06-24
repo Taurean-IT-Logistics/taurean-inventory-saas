@@ -36,6 +36,7 @@ const ProfileDropdownMenu = ({ className }: { className?: string }) => {
   return (
     <Dropdown.Menu
       align="end"
+      style={{ zIndex: 2000 }}
       className={classNames(
         className,
         'navbar-top-dropdown-menu navbar-dropdown-caret py-0 dropdown-profile shadow border'

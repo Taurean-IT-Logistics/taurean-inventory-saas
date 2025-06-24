@@ -39,6 +39,7 @@
     "bootstrap": "^5.3.5",
     "chokidar": "^3.6.0",
     "classnames": "^2.3.2",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.7",
     "dhtmlx-gantt": "^8.0.1",
     "echarts-for-react": "^3.0.2",

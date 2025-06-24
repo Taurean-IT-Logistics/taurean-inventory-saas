@@ -1,7 +1,21 @@
 import EcomReturningCustomerRateChart from 'components/charts/e-charts/EcomReturningCustomerRateChart';
 import React from 'react';
 
-const EcomReturningCustomerRate = () => {
+type DataSeries = {
+  name: string;
+  data: number[];
+  lineType?: 'solid' | 'dashed';
+  colorKey: string;
+};
+
+interface EcommerceReturningCustomerRateProps {
+  dataSeries: DataSeries[];
+  months: string[];
+}
+const EcomReturningCustomerRate = ({
+  dataSeries,
+  months
+}: EcommerceReturningCustomerRateProps) => {
   return (
     <>
       <div>
@@ -10,7 +24,7 @@ const EcomReturningCustomerRate = () => {
           Rate of customers returning to your shop over time
         </p>
       </div>
-      <EcomReturningCustomerRateChart />
+      <EcomReturningCustomerRateChart dataSeries={dataSeries} months={months} />
     </>
   );
 };

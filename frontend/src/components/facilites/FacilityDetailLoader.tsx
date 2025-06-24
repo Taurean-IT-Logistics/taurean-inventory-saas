@@ -189,7 +189,7 @@ const LoadingOverlay: React.FC = () => (
 
 const FacilityDetailLoader: React.FC = () => (
   <div style={{ minHeight: '100vh' }}>
-    <Container>
+    <Container fluid>
       <ImageGallerySkeleton />
     </Container>
     <Container>
