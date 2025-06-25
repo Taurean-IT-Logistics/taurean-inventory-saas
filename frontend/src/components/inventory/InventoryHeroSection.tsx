@@ -1,27 +1,27 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import FacilityCard from 'components/facilites/FacilityCard';
-import { Facility } from 'types';
+import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { InventoryItem } from 'types';
+import InventoryItemCard from './InventoryItemCard';
 import Swiper from 'components/base/Swiper';
 import { SwiperSlide } from 'swiper/react';
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
-interface PageHeroSectionProps {
-  facilities: Facility[];
+interface InventoryHeroSectionProps {
+  items: InventoryItem[];
   title: string;
   to: string;
-  onAddToCart: (item: Facility) => void;
-  onAddToWishlist: (item: Facility) => void;
+  onAddToCart: (item: InventoryItem) => void;
+  onAddToWishlist: (item: InventoryItem) => void;
 }
 
-const PageHeroSections = ({
-  facilities,
+const InventoryHeroSection = ({
+  items,
   title,
   to,
   onAddToCart,
   onAddToWishlist
-}: PageHeroSectionProps) => {
+}: InventoryHeroSectionProps) => {
   return (
     <>
       <div className="d-flex flex-between-center mb-3">
@@ -37,6 +37,7 @@ const PageHeroSections = ({
         </Link>
       </div>
       <Swiper
+        className="mb-5"
         slidesPerView={1}
         spaceBetween={16}
         navigationPosition={{ top: '25%' }}
@@ -63,12 +64,12 @@ const PageHeroSections = ({
           }
         }}
       >
-        {facilities.map(facility => (
-          <SwiperSlide key={facility._id}>
-            <FacilityCard
+        {items.map(item => (
+          <SwiperSlide key={item._id}>
+            <InventoryItemCard
+              item={item}
               onAddToCart={onAddToCart}
               onAddToWishlist={onAddToWishlist}
-              facility={facility}
             />
           </SwiperSlide>
         ))}
@@ -77,4 +78,4 @@ const PageHeroSections = ({
   );
 };
 
-export default PageHeroSections;
+export default InventoryHeroSection;

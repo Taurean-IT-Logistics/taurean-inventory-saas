@@ -667,6 +667,7 @@ export const mockInventoryItems: InventoryItem[] = [
     description: 'High-quality business projector with 3600 lumens',
     sku: 'PROJ-EP-X41-001',
     quantity: 5,
+    images: ["'https://placehold.co/300x400'"],
     status: 'in_stock',
     category: 'AV Equipment',
     purchaseInfo: {
@@ -846,5 +847,83 @@ export const mockTransactions: Transaction[] = [
     isDeleted: false,
     createdAt: new Date('2025-06-22T08:15:00Z'),
     updatedAt: new Date('2025-06-22T08:15:00Z')
+  }
+];
+
+export const mockBookings: Booking[] = [
+  {
+    user: mockUser,
+    facility: mockFacilities[0],
+    startDate: new Date('2024-12-25T09:00:00'),
+    endDate: new Date('2024-12-25T17:00:00'),
+    duration: '8 hours',
+    status: 'confirmed',
+    paymentStatus: 'completed',
+    totalPrice: 1000,
+    paymentDetails: {} as Transaction,
+    notes: 'Corporate meeting setup required',
+    isDeleted: false,
+    createdAt: new Date('2024-12-20'),
+    updatedAt: new Date('2024-12-20')
+  },
+  {
+    user: mockUser,
+    facility: mockFacilities[1],
+    startDate: new Date('2024-12-26T14:00:00'),
+    endDate: new Date('2024-12-26T18:00:00'),
+    duration: '4 hours',
+    status: 'pending',
+    paymentStatus: 'pending',
+    totalPrice: 180,
+    paymentDetails: {} as Transaction,
+    notes: 'Team building workshop',
+    isDeleted: false,
+    createdAt: new Date('2024-12-21'),
+    updatedAt: new Date('2024-12-21')
+  },
+  {
+    user: mockUser,
+    facility: mockFacilities[2],
+    startDate: new Date('2024-12-28T18:00:00'),
+    endDate: new Date('2024-12-28T23:00:00'),
+    duration: '5 hours',
+    status: 'completed',
+    paymentStatus: 'completed',
+    totalPrice: 1750,
+    paymentDetails: {} as Transaction,
+    notes: 'Wedding reception',
+    isDeleted: false,
+    createdAt: new Date('2024-11-15'),
+    updatedAt: new Date('2024-11-15')
+  },
+  {
+    user: mockUser,
+    facility: mockFacilities[3],
+    startDate: new Date('2024-12-30T10:00:00'),
+    endDate: new Date('2024-12-30T18:00:00'),
+    duration: '8 hours',
+    status: 'cancelled',
+    paymentStatus: 'refunded',
+    totalPrice: 280,
+    paymentDetails: {} as Transaction,
+    notes: 'Co-working space for remote team',
+    isDeleted: false,
+    createdAt: new Date('2024-12-22'),
+    updatedAt: new Date('2024-12-28')
+  },
+  {
+    user: mockUser,
+    facility: mockFacilities[4],
+    startDate: new Date('2024-12-31T15:00:00'),
+    endDate: new Date('2024-12-31T20:00:00'),
+    duration: '5 hours',
+    status: 'no_show',
+    paymentStatus: 'completed',
+    totalPrice: 900,
+    paymentDetails: {} as Transaction,
+    notes: 'Outdoor event planning',
+    isDeleted: false,
+    createdAt: new Date('2024-12-23'),
+    updatedAt: new Date('2024-12-31')
   }
 ];

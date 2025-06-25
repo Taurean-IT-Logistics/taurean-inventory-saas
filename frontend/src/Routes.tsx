@@ -15,6 +15,11 @@ import TransactionManagement from 'pages/admin/Transaction';
 import UserManagement from 'pages/admin/UserManagement';
 import SystemAlerts from 'pages/admin/SystemAlert';
 import InventoryManagement from 'pages/admin/InventoryManagement';
+import CartPage from 'pages/customer/CartPage';
+import RentalPage from 'pages/customer/RentalPage';
+import WishlistPage from 'pages/customer/WishListPage';
+import CreateAlert from 'pages/admin/CreateAlert';
+import BookingDashboard from 'pages/admin/Booking';
 
 const routes: RouteObject[] = [
   {
@@ -52,6 +57,18 @@ const routes: RouteObject[] = [
           {
             path: 'invoice/:transactionId',
             element: <UserInvoicePage />
+          },
+          {
+            path: 'cart',
+            element: <CartPage />
+          },
+          {
+            path: 'wishlist',
+            element: <WishlistPage />
+          },
+          {
+            path: 'rental',
+            element: <RentalPage />
           }
         ]
       },
@@ -90,6 +107,14 @@ const routes: RouteObject[] = [
           {
             path: 'inventory',
             element: <InventoryManagement />
+          },
+          {
+            path: 'create-alert',
+            element: <CreateAlert />
+          },
+          {
+            path: 'bookings',
+            element: <BookingDashboard />
           }
         ]
       }

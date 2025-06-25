@@ -4,12 +4,20 @@ import { Link } from 'react-router-dom';
 import {
   faCheck,
   faStar,
-  faHeart as faHeartSolid
+  faHeart as faHeartSolid,
+  faShoppingCart,
+  faEye
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as faHeartRegular } from '@fortawesome/free-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { Facility } from 'types';
 import { currencyFormat } from 'helpers/utils';
+
+interface FacilityCardProps {
+  facility: Facility;
+  onAddToCart?: (facility: Facility) => void;
+  onAddToWishlist?: (facility: Facility) => void;
+}
 
 // Heart Button Component
 const HeartButton: React.FC<{
@@ -128,7 +136,11 @@ const Rating: React.FC<{ average: number; totalReviews: number }> = ({
   ) : null;
 
 // Main FacilityCard Component
-const FacilityCard = ({ facility }: { facility: Facility }) => {
+const FacilityCard = ({
+  facility,
+  onAddToCart,
+  onAddToWishlist
+}: FacilityCardProps) => {
   const mainImage =
     facility.images && facility.images.length > 0
       ? facility.images[0].path
@@ -145,8 +157,20 @@ const FacilityCard = ({ facility }: { facility: Facility }) => {
     e.preventDefault();
     e.stopPropagation();
     setIsLiked(liked => !liked);
-    // Optionally: handle wishlist logic here
+    if (onAddToWishlist) {
+      onAddToWishlist(facility);
+    }
   };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onAddToCart) {
+      onAddToCart(facility);
+    }
+  };
+
+  const isAvailable = facility.isActive;
 
   return (
     <Link
@@ -175,62 +199,89 @@ const FacilityCard = ({ facility }: { facility: Facility }) => {
           )}
           {hasVerifiedReviews && <VerifiedBadge />}
         </div>
-        <Card.Body className="p-3">
-          <Stack
-            direction="horizontal"
-            className="justify-content-between align-items-start mb-2"
-          >
-            <div className="flex-grow-1 me-2">
-              <Card.Title
-                as="h6"
-                className="mb-0 fw-semibold text-body-emphasis lh-sm"
-              >
-                {facility.location?.address?.split(',')[0] ||
-                  'Professional Space'}
-              </Card.Title>
-            </div>
-            {facility.rating && (
-              <Rating
-                average={facility.rating.average}
-                totalReviews={facility.rating.totalReviews}
-              />
-            )}
-          </Stack>
-          <Card.Text className="text-body-secondary mb-2 lh-sm">
-            {facility.name}
-          </Card.Text>
-          <Card.Text className="text-body-secondary mb-2 small">
-            {facility.capacity.maximum} guests
-          </Card.Text>
-          {facility.amenities && facility.amenities.length > 0 && (
-            <Amenities amenities={facility.amenities} />
-          )}
-          <Stack
-            direction="horizontal"
-            className="justify-content-between align-items-center"
-          >
-            <div>
-              {defaultPricing && (
-                <Stack
-                  direction="horizontal"
-                  gap={1}
-                  className="align-items-baseline"
+        <Card.Body className="p-3 d-flex flex-column">
+          <div className="flex-grow-1">
+            <Stack
+              direction="horizontal"
+              className="justify-content-between align-items-start mb-2"
+            >
+              <div className="flex-grow-1 me-2">
+                <Card.Title
+                  as="h6"
+                  className="mb-0 fw-semibold text-body-emphasis lh-sm"
                 >
-                  <span className="fw-bold text-body-emphasis text-decoration-underline">
-                    {currencyFormat(defaultPricing.amount)}
-                  </span>
-                  <span className="text-body-emphasis small">
-                    per {defaultPricing.unit}
-                  </span>
-                </Stack>
+                  {facility.location?.address?.split(',')[0] ||
+                    'Professional Space'}
+                </Card.Title>
+              </div>
+              {facility.rating && (
+                <Rating
+                  average={facility.rating.average}
+                  totalReviews={facility.rating.totalReviews}
+                />
               )}
-            </div>
-            {!facility.isActive && (
-              <Badge bg="warning" text="dark">
-                Unavailable
-              </Badge>
+            </Stack>
+            <Card.Text className="text-body-secondary mb-2 lh-sm">
+              {facility.name}
+            </Card.Text>
+            <Card.Text className="text-body-secondary mb-2 small">
+              {facility.capacity.maximum} guests
+            </Card.Text>
+            {facility.amenities && facility.amenities.length > 0 && (
+              <Amenities amenities={facility.amenities} />
             )}
-          </Stack>
+            <Stack
+              direction="horizontal"
+              className="justify-content-between align-items-center mb-3"
+            >
+              <div>
+                {defaultPricing && (
+                  <Stack
+                    direction="horizontal"
+                    gap={1}
+                    className="align-items-baseline"
+                  >
+                    <span className="fw-bold text-body-emphasis text-decoration-underline">
+                      {currencyFormat(defaultPricing.amount)}
+                    </span>
+                    <span className="text-body-emphasis small">
+                      per {defaultPricing.unit}
+                    </span>
+                  </Stack>
+                )}
+              </div>
+              {!facility.isActive && (
+                <Badge bg="warning" text="dark">
+                  Unavailable
+                </Badge>
+              )}
+            </Stack>
+          </div>
+
+          <div className="d-flex gap-2">
+            {onAddToCart && (
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={!isAvailable}
+                onClick={handleAddToCart}
+                style={{ minWidth: '100px' }}
+              >
+                <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
+                {isAvailable ? 'Add to Cart' : 'Unavailable'}
+              </Button>
+            )}
+            <Button
+              as={Link}
+              to={`/facility/${facility._id}`}
+              variant={onAddToCart ? 'outline-secondary' : 'primary'}
+              size="sm"
+              className="flex-fill"
+            >
+              <FontAwesomeIcon icon={faEye} className="me-1" />
+              {onAddToCart ? 'View Details' : 'Book Now'}
+            </Button>
+          </div>
         </Card.Body>
       </Card>
     </Link>

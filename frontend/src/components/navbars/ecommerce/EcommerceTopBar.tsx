@@ -1,13 +1,19 @@
-import Logo from 'components/common/Logo';
-import { Col, Dropdown, Nav, Navbar, Row } from 'react-bootstrap';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { Col, Dropdown, Nav, Navbar, Row } from 'react-bootstrap';
 import FeatherIcon from 'feather-icons-react';
-import NotificationDropdownMenu from 'components/navbars/nav-items/NotificationDropdownMenu';
-import ProfileDropdownMenu from 'components/navbars/nav-items/ProfileDropdownMenu';
+import Logo from 'components/common/Logo';
+import NotificationDropdownMenu from '../nav-items/NotificationDropdownMenu';
+import ProfileDropdownMenu from '../nav-items/ProfileDropdownMenu';
 import SearchBox from 'components/common/SearchBox';
 import ThemeToggler from 'components/common/ThemeToggler';
+import { useCart } from 'hooks/useCart';
+import { useWishlist } from 'hooks/useWishlist';
 
 const EcommerceTopbar = () => {
+  const { totalItems: cartItems } = useCart();
+  const { totalItems: wishlistItems } = useWishlist();
+
   return (
     <div className="container-fluid px-7">
       <div className="ecommerce-topbar">
@@ -24,17 +30,37 @@ const EcommerceTopbar = () => {
                   <ThemeToggler />
                 </Nav.Item>
 
+                {/* Wishlist */}
                 <Nav.Item as="li">
                   <Nav.Link
                     as={Link}
-                    to="/apps/e-commerce/customer/cart"
+                    to="/wishlist"
                     className="px-2 icon-indicator icon-indicator-primary"
                   >
-                    <FeatherIcon icon="shopping-cart" size={20} />
-                    <span className="icon-indicator-number">3</span>
+                    <FeatherIcon icon="heart" size={20} />
+                    {wishlistItems > 0 && (
+                      <span className="icon-indicator-number">
+                        {wishlistItems}
+                      </span>
+                    )}
                   </Nav.Link>
                 </Nav.Item>
 
+                {/* Shopping Cart */}
+                <Nav.Item as="li">
+                  <Nav.Link
+                    as={Link}
+                    to="/cart"
+                    className="px-2 icon-indicator icon-indicator-primary"
+                  >
+                    <FeatherIcon icon="shopping-cart" size={20} />
+                    {cartItems > 0 && (
+                      <span className="icon-indicator-number">{cartItems}</span>
+                    )}
+                  </Nav.Link>
+                </Nav.Item>
+
+                {/* Notifications */}
                 <Nav.Item as="li">
                   <Dropdown autoClose="outside">
                     <Dropdown.Toggle
@@ -49,6 +75,7 @@ const EcommerceTopbar = () => {
                   </Dropdown>
                 </Nav.Item>
 
+                {/* User Profile */}
                 <Nav.Item as="li">
                   <Dropdown autoClose="outside">
                     <Dropdown.Toggle
@@ -70,7 +97,6 @@ const EcommerceTopbar = () => {
                 className="ecommerce-search-box w-100"
                 inputClassName="rounded-pill"
                 size="sm"
-                // style={{ width: '25rem' }}
               />
             </Col>
           </Row>
