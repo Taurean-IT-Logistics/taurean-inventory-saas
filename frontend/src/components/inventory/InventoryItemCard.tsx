@@ -22,6 +22,11 @@ const InventoryItemCard = ({
   onAddToCart,
   onAddToWishlist
 }: InventoryItemCardProps) => {
+  // Early return if item is null, undefined, or doesn't have required properties
+  if (!item || !item._id || !item.name) {
+    return null;
+  }
+
   const mainImage =
     item.images && item.images.length > 0 ? item.images[0].path : '';
 
@@ -42,16 +47,37 @@ const InventoryItemCard = ({
     return <Badge bg={config.bg}>{config.text}</Badge>;
   };
 
-  const isAvailable = item.status === 'in_stock' && item.quantity > 0;
-  const price = item.purchaseInfo.purchasePrice || 0;
+  const isAvailable = item.status === 'in_stock' && (item.quantity || 0) > 0;
+  const price = item.purchaseInfo?.purchasePrice || 0;
 
   useEffect(() => {
-    setImage(getResourceUrl(mainImage));
-  }, []);
+    if (mainImage) {
+      setImage(getResourceUrl(mainImage));
+    }
+  }, [mainImage]);
 
+  // Handle click events to prevent navigation when clicking action buttons
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onAddToCart(item);
+  };
+
+  const handleAddToWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onAddToWishlist(item);
+  };
+
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  console.log(item);
   return (
     <Link
-      to={`/rental/${item._id}`}
+      to={`/item/${item._id}`}
       style={{ textDecoration: 'none', display: 'block' }}
     >
       <Card className="h-100 border-secondary" style={{ minWidth: 290 }}>
@@ -61,16 +87,17 @@ const InventoryItemCard = ({
             src={image}
             style={{ height: '200px', objectFit: 'cover' }}
             alt={item.name}
+            onError={() => setImage('https://placehold.com/300x400')}
           />
           <div className="position-absolute top-0 start-0 p-2">
-            {getStatusBadge(item.status)}
+            {getStatusBadge(item.status || 'unavailable')}
           </div>
           <div className="position-absolute top-0 end-0 p-2">
             <Button
               variant="outline-light"
               size="sm"
               className="rounded-circle"
-              onClick={() => onAddToWishlist(item)}
+              onClick={handleAddToWishlist}
             >
               <FontAwesomeIcon icon={faHeart} />
             </Button>
@@ -84,13 +111,11 @@ const InventoryItemCard = ({
               {item.description || 'No description available'}
             </Card.Text>
             <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="text-white fw-bold">
-                {currencyFormat(price)}/day
-              </span>
-              <Badge bg="secondary">{item.category}</Badge>
+              <span className="fw-bold">{currencyFormat(price)}/day</span>
+              <Badge bg="secondary">{item.category || 'Uncategorized'}</Badge>
             </div>
             <div className="text-muted small">
-              <div>Quantity: {item.quantity}</div>
+              <div>Quantity: {item.quantity || 0}</div>
               <div>SKU: {item.sku || 'N/A'}</div>
             </div>
           </div>
@@ -101,7 +126,7 @@ const InventoryItemCard = ({
               size="sm"
               className="flex-fill"
               disabled={!isAvailable}
-              onClick={() => onAddToCart(item)}
+              onClick={handleAddToCart}
             >
               <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
               {isAvailable ? 'Add to Cart' : 'Unavailable'}
@@ -109,6 +134,7 @@ const InventoryItemCard = ({
             <Link
               to={`/inventory/${item._id}`}
               className="btn btn-outline-secondary btn-sm"
+              onClick={handleViewDetails}
             >
               <FontAwesomeIcon icon={faEye} />
             </Link>

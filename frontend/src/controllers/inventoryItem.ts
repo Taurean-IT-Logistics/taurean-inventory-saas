@@ -103,4 +103,47 @@ const getAllInventoryItems = async () => {
   }
 };
 
-export { createInventoryItem, getAllInventoryItems };
+const getLowStockItems = async (accessToken: string) => {
+  try {
+    const response = await apiClient.get('/inventory-items/low-stock', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to create item');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+const getItemById = async (id: string) => {
+  try {
+    const response = await apiClient.get<APIResponse<InventoryItem>>(
+      `/inventory-items/${id}`
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to create item');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+export {
+  createInventoryItem,
+  getAllInventoryItems,
+  getLowStockItems,
+  getItemById
+};

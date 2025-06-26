@@ -33,4 +33,27 @@ const createTransaction = async (
   }
 };
 
-export { createTransaction };
+const getAllTransactions = async (accessToken: string) => {
+  try {
+    const response = await apiClient.get<APIResponse<Partial<Transaction>>>(
+      '/transaction',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+export { createTransaction, getAllTransactions };

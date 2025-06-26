@@ -15,6 +15,17 @@ const InventoryItemSchema = new Schema<InventoryItemDocument>(
         size: { type: Number, required: true },
       },
     ],
+    pricing: [
+      {
+        unit: {
+          type: String,
+          enum: ["hour", "day", "week", "month"],
+          required: true,
+        },
+        amount: { type: Number, required: true },
+        isDefault: { type: Boolean, default: false },
+      },
+    ],
     sku: { type: String, unique: true, sparse: true },
     quantity: { type: Number, required: true, min: 0 },
     status: {

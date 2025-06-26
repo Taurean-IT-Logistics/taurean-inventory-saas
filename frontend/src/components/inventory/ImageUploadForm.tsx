@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUpload, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { InventoryItem } from 'types';
 
 interface ImageUploadFormProps {
   images: any[];
-  onImagesChange: (images: string[], files: File[]) => void;
+  onImagesChange: (images: InventoryItem['images'], files: File[]) => void;
 }
 
 const ImageUploadForm = ({ images, onImagesChange }: ImageUploadFormProps) => {

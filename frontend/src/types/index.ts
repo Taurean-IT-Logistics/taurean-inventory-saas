@@ -183,6 +183,11 @@ export interface InventoryItem {
     size: number;
   }[];
   status: 'in_stock' | 'rented' | 'unavailable' | 'maintenance' | 'retired';
+  pricing: {
+    unit: 'hour' | 'day' | 'week' | 'month';
+    amount: number;
+    isDefault: boolean;
+  }[];
   associatedFacility?: string;
   category: string;
   purchaseInfo: {

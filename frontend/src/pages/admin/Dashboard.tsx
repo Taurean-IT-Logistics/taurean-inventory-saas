@@ -3,8 +3,23 @@ import { Container, Row, Col } from 'react-bootstrap';
 import DashboardMetrics from 'components/dashboard/DashboardMetrics';
 import QuickActionsSidebar from 'components/dashboard/QuickActions';
 import RecentActivity from 'components/dashboard/RecentActivity';
+import { Booking } from 'types';
+import {
+  BookingController,
+  FacilityController,
+  InventoryItemController,
+  TransactionController,
+  UserController
+} from 'controllers';
+import { useAppSelector } from 'hooks/useAppDispatch';
+import { StateManagement } from 'lib';
 
 const Dashboard = () => {
+  const { tokens } = useAppSelector(
+    (state: StateManagement.RootState) => state.auth
+  );
+
+  const accessToken = tokens.accessToken;
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState({
     totalInventory: 0,
@@ -14,6 +29,61 @@ const Dashboard = () => {
     lowStockItems: 0,
     activeBookings: 0
   });
+
+  useEffect(() => {
+    async function fetchData() {
+      const [
+        transactionData,
+        facilitiesData,
+        usersData,
+        inventoryData,
+        stockData,
+        bookingsData
+      ] = await Promise.all([
+        TransactionController.getAllTransactions(accessToken),
+        FacilityController.getAllFacilites(),
+        UserController.getAllusers(accessToken),
+        InventoryItemController.getAllInventoryItems(),
+        InventoryItemController.getLowStockItems(accessToken),
+        BookingController.getAllBookings(accessToken)
+      ]);
+
+      if (
+        transactionData &&
+        facilitiesData &&
+        usersData &&
+        inventoryData &&
+        stockData &&
+        bookingsData
+      ) {
+        setIsLoading(false);
+        const metricsData = {
+          totalInventory: inventoryData.data.length,
+          totalFacilities: facilitiesData.data.facilities.length,
+          totalUsers: (usersData.data as any).users.length,
+          totalAlerts: 0,
+          lowStockItems: stockData.data.length,
+          activeBookings: (bookingsData.data as Booking[]).length
+        };
+
+        setMetrics(metricsData);
+      } else {
+        setIsLoading(false);
+        const metricsData = {
+          totalInventory: 0,
+          totalFacilities: 0,
+          totalUsers: 0,
+          totalAlerts: 0,
+          lowStockItems: 0,
+          activeBookings: 0
+        };
+
+        setMetrics(metricsData);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   const [recentActivities] = useState([
     {
@@ -50,23 +120,6 @@ const Dashboard = () => {
     }
   ]);
 
-  useEffect(() => {
-    // Simulate loading metrics
-    const timer = setTimeout(() => {
-      setMetrics({
-        totalInventory: 156,
-        totalFacilities: 12,
-        totalUsers: 48,
-        totalAlerts: 7,
-        lowStockItems: 3,
-        activeBookings: 15
-      });
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   if (isLoading) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center">
@@ -94,7 +147,6 @@ const Dashboard = () => {
         </div>
 
         <DashboardMetrics metrics={metrics} />
-
         <Row>
           <Col lg={8} className="mb-4">
             <RecentActivity activities={recentActivities} />

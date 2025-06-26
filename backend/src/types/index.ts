@@ -232,6 +232,11 @@ export interface InventoryItem {
     supplier?: string;
     warrantyExpiry?: Date;
   };
+  pricing: {
+    unit: "hour" | "day" | "week" | "month";
+    amount: number;
+    isDefault: boolean;
+  }[];
   history: {
     date: Date;
     change: number;
