@@ -8,10 +8,18 @@ servers:
   - url: http://localhost:3000
 
 tags:
-  - name: Users
-    description: User management (Protected)
   - name: Authentication
     description: Authentication and authorization (Partially Protected)
+  - name: Users
+    description: User management (Protected)
+  - name: Facilities
+    description: Facility management (Protected)
+  - name: Inventory
+    description: Inventory management (Protected)
+  - name: Transaction
+    description: Transaction management (Partially Protected)
+  - name: Bookings
+    description: Booking management (Protected)
 
 paths:
   /api/v1/auth/login:
@@ -89,6 +97,95 @@ paths:
               schema:
                 $ref: "#/components/schemas/APIResponse"
 
+  /api/v1/auth/forgot-password:
+    post:
+      summary: Forgot password
+      tags: [Authentication]
+      security: [] # Public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Email not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/auth/reset-password:
+    post:
+      summary: Reset password
+      tags: [Authentication]
+      security: [] # Public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/auth/verify-email:
+    post:
+      summary: Verify email
+      tags: [Authentication]
+      security: [] # Public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
   /api/v1/auth/profile:
     get:
       summary: Get user profile
@@ -133,6 +230,58 @@ paths:
               schema:
                 $ref: "#/components/schemas/APIResponse"
 
+  /api/v1/auth/logout:
+    post:
+      summary: Logout user
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/auth/change-password:
+    post:
+      summary: Change password
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [oldPassword, newPassword]
+              properties:
+                oldPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
   /api/v1/users:
     get:
       summary: Get all users
@@ -145,10 +294,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/APIResponseUserList"
-
+                $ref: "#/components/schemas/APIResponseUser List"
     post:
-      summary: Create new user (admin or superadmin only)
+      summary: Create new user (admin only)
       tags: [Users]
       security:
         - bearerAuth: []
@@ -167,6 +315,73 @@ paths:
                 $ref: "#/components/schemas/APIResponseUser"
         "409":
           description: Conflict - User exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/users/statistics:
+    get:
+      summary: Get user statistics (admin only)
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User statistics fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalUsers:
+                    type: integer
+                  activeUsers:
+                    type: integer
+                  inactiveUsers:
+                    type: integer
+
+  /api/v1/users/search:
+    get:
+      summary: Search users (admin or staff)
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Users found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponseUser List"
+
+  /api/v1/users/identifier/{identifier}:
+    get:
+      summary: Get user by email or username (admin or staff)
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: identifier
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponseUser"
+        "404":
+          description: User not found
           content:
             application/json:
               schema:
@@ -197,7 +412,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIResponse"
-
     put:
       summary: Update a user
       tags: [Users]
@@ -228,9 +442,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIResponse"
-
     delete:
-      summary: Soft delete a user (superadmin only)
+      summary: Soft delete a user
       tags: [Users]
       security:
         - bearerAuth: []
@@ -254,27 +467,1250 @@ paths:
               schema:
                 $ref: "#/components/schemas/APIResponse"
 
-  /api/v1/users/identifier/{identifier}:
-    get:
-      summary: Get user by email or username
+  /api/v1/users/{id}/role:
+    put:
+      summary: Update user role (admin only)
       tags: [Users]
       security:
         - bearerAuth: []
       parameters:
-        - name: identifier
+        - name: id
           in: path
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
       responses:
         "200":
-          description: User found
+          description: User role updated successfully
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIResponseUser"
         "404":
           description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/users/loyalty/update:
+    post:
+      summary: Update user loyalty (admin or staff)
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, loyaltyPoints]
+              properties:
+                userId:
+                  type: string
+                loyaltyPoints:
+                  type: integer
+      responses:
+        "200":
+          description: User loyalty updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponseUser"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/facilities:
+    get:
+      summary: Get all facilities with pagination and filtering
+      tags: [Facilities]
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: filter
+          in: query
+          description: JSON string for filtering facilities
+          schema:
+            type: string
+            example: '{"location": "Downtown", "isActive": true}'
+        - name: showDeleted
+          in: query
+          description: Include soft-deleted facilities (admin/staff only)
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Facilities fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Facilities fetched successfully"
+                  data:
+                    type: object
+                    properties:
+                      facilities:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Facility"
+                      pagination:
+                        $ref: "#/components/schemas/Pagination"
+        "400":
+          description: Invalid filter format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    post:
+      summary: Update a facility by ID (admin or staff)
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - location
+                - capacity
+                - operationalHours
+              properties:
+                name:
+                  type: string
+                  description: Facility name
+                  example: "Community Center"
+
+                description:
+                  type: string
+                  description: Facility description
+                  example: "A modern community center with various amenities"
+
+                "location[address]":
+                  type: string
+                  description: Facility address
+                  example: "123 Main Street, Downtown"
+
+                "location[coordinates][latitude]":
+                  type: number
+                  description: Latitude
+                  example: 5.6037
+
+                "location[coordinates][longitude]":
+                  type: number
+                  description: Longitude
+                  example: -0.1870
+
+                "capacity[maximum]":
+                  type: integer
+                  description: Maximum capacity
+                  example: 100
+
+                "capacity[recommended]":
+                  type: integer
+                  description: Recommended capacity
+                  example: 50
+
+                "operationalHours[opening]":
+                  type: string
+                  description: Opening time (HH:MM)
+                  example: "08:00"
+
+                "operationalHours[closing]":
+                  type: string
+                  description: Closing time (HH:MM)
+                  example: "22:00"
+
+                amenities:
+                  type: array
+                  items:
+                    type: string
+                  description: List of amenities
+                  example: ["WiFi", "Parking", "Air Conditioning"]
+                  style: form
+                  explode: true
+
+                terms:
+                  type: string
+                  description: Terms and conditions for the facility
+                  example: "No smoking. ID required."
+
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Image files (max 10 files, 5MB each)
+      responses:
+        "200":
+          description: Facility updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid facility ID format or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/facilities/{id}:
+    get:
+      summary: Get a facility by ID
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Facility ObjectId
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+            example: "507f1f77bcf86cd799439011"
+        - name: showDeleted
+          in: query
+          description: Include if facility is soft-deleted (admin/staff only)
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Facility found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Facility fetched successfully"
+                  data:
+                    $ref: "#/components/schemas/Facility"
+        "400":
+          description: Invalid facility ID format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    put:
+      summary: Update a facility by ID (admin or staff)
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Facility ObjectId
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - location
+                - capacity
+                - operationalHours
+              properties:
+                name:
+                  type: string
+                  description: Facility name
+                  example: "Community Center"
+
+                description:
+                  type: string
+                  description: Facility description
+                  example: "A modern community center with various amenities"
+
+                "location[address]":
+                  type: string
+                  description: Facility address
+                  example: "123 Main Street, Downtown"
+
+                "location[coordinates][latitude]":
+                  type: number
+                  description: Latitude
+                  example: 5.6037
+
+                "location[coordinates][longitude]":
+                  type: number
+                  description: Longitude
+                  example: -0.1870
+
+                "capacity[maximum]":
+                  type: integer
+                  description: Maximum capacity
+                  example: 100
+
+                "capacity[recommended]":
+                  type: integer
+                  description: Recommended capacity
+                  example: 50
+
+                "operationalHours[opening]":
+                  type: string
+                  description: Opening time (HH:MM)
+                  example: "08:00"
+
+                "operationalHours[closing]":
+                  type: string
+                  description: Closing time (HH:MM)
+                  example: "22:00"
+
+                amenities:
+                  type: array
+                  items:
+                    type: string
+                  description: List of amenities
+                  example: ["WiFi", "Parking", "Air Conditioning"]
+                  style: form
+                  explode: true
+
+                terms:
+                  type: string
+                  description: Terms and conditions for the facility
+                  example: "No smoking. ID required."
+
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Image files (max 10 files, 5MB each)
+      responses:
+        "200":
+          description: Facility updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid facility ID format or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    delete:
+      summary: Soft delete a facility (admin only)
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Facility ObjectId
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+      responses:
+        "200":
+          description: Facility deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid facility ID format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/facilities/{id}/availability:
+    post:
+      summary: Add availability period to a facility (admin or staff)
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Facility ObjectId
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startDate, endDate]
+              properties:
+                startDate:
+                  type: string
+                  format: date-time
+                  description: Start date and time for availability
+                  example: "2024-12-01T09:00:00Z"
+                endDate:
+                  type: string
+                  format: date-time
+                  description: End date and time for availability
+                  example: "2024-12-01T17:00:00Z"
+                daysOfWeek:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      [
+                        monday,
+                        tuesday,
+                        wednesday,
+                        thursday,
+                        friday,
+                        saturday,
+                        sunday,
+                      ]
+                  description: Days of the week when facility is available
+                  example:
+                    ["monday", "tuesday", "wednesday", "thursday", "friday"]
+                recurring:
+                  type: boolean
+                  description: Whether this availability period repeats
+                  default: false
+      responses:
+        "200":
+          description: Availability period added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid facility ID format or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    delete:
+      summary: Remove availability period from a facility (admin or staff)
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Facility ObjectId
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dayId]
+              properties:
+                dayId:
+                  type: string
+                  description: ID of the availability period to remove
+                  example: "507f1f77bcf86cd799439012"
+      responses:
+        "200":
+          description: Availability period marked unavailable successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid facility ID format or missing dayId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/facilities/{id}/review:
+    post:
+      summary: Leave a review for a facility
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Facility ObjectId
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating, comment]
+              properties:
+                rating:
+                  type: number
+                  minimum: 1
+                  maximum: 5
+                  description: Rating from 1 to 5
+                  example: 4.5
+                comment:
+                  type: string
+                  minLength: 10
+                  maxLength: 500
+                  description: Review comment (10-500 characters)
+                  example: "Great facility with excellent amenities and friendly staff."
+      responses:
+        "201":
+          description: Review added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid facility ID format, validation error, or user already reviewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Facility not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/facilities/{id}/reviews:
+    get:
+      summary: Get reviews for a facility with pagination
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Facility ObjectId
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of reviews per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        "200":
+          description: Reviews fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Reviews fetched successfully"
+                  data:
+                    type: object
+                    properties:
+                      reviews:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Review"
+                      pagination:
+                        $ref: "#/components/schemas/Pagination"
+        "400":
+          description: Invalid facility ID format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/inventory-items:
+    get:
+      summary: Get all inventory items
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: showDeleted
+          in: query
+          required: false
+          description: Include deleted items in the response
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: A list of inventory items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryItem"
+
+    post:
+      summary: Create a new inventory item
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryItemInput"
+      responses:
+        "201":
+          description: Inventory item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "409":
+          description: Conflict - Inventory item already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/inventory-items/{id}:
+    get:
+      summary: Get an inventory item by ID
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the inventory item
+          schema:
+            type: string
+        - name: showDeleted
+          in: query
+          required: false
+          description: Include deleted item in the response
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: An inventory item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "404":
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    put:
+      summary: Update an inventory item by ID
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the inventory item
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryItemInput"
+      responses:
+        "200":
+          description: Inventory item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "404":
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    delete:
+      summary: Soft delete an inventory item by ID
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the inventory item
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Inventory item deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    post:
+      summary: Restore a soft deleted inventory item by ID
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the inventory item
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Inventory item restored successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "404":
+          description: Inventory item not found or not deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/inventory-items/{id}/maintenance:
+    post:
+      summary: Add maintenance schedule to an inventory item
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the inventory item
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaintenanceScheduleInput"
+      responses:
+        "201":
+          description: Maintenance schedule added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaintenanceSchedule"
+        "404":
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/inventory-items/low-stock:
+    get:
+      summary: Get low stock inventory items
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: A list of low stock inventory items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryItem"
+
+  /api/v1/transaction/webhook:
+    post:
+      summary: Handle Paystack webhook
+      tags: [Transaction]
+      description: Webhook endpoint for Paystack payment notifications (no authentication required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Paystack webhook payload
+      responses:
+        "200":
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid webhook payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/transaction/initialize:
+    post:
+      summary: Initialize payment and create transaction
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      description: Initialize a payment transaction for authenticated users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInitializeInput"
+      responses:
+        "200":
+          description: Payment initialized successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      authorization_url:
+                        type: string
+                      access_code:
+                        type: string
+                      reference:
+                        type: string
+        "400":
+          description: Invalid payment data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/transaction/verify/{reference}:
+    get:
+      summary: Verify payment by reference
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      description: Verify a payment transaction using Paystack reference
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          description: Paystack payment reference
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    description: Paystack verification response
+        "400":
+          description: Invalid reference or verification failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/transaction/details/{reference}:
+    get:
+      summary: Get payment details by reference
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      description: Get detailed payment information by reference (admin and staff only)
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          description: Paystack payment reference
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "403":
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/transaction/create-transaction:
+    post:
+      summary: Create transaction from existing payment
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      description: Manual fallback to create transaction from existing payment (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionInput"
+      responses:
+        "201":
+          description: Transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          description: Invalid transaction data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden - admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/bookings:
+    post:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Create a new booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        201:
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        400:
+          description: Failed to create booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    get:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Get all bookings (admin access)
+      responses:
+        200:
+          description: All bookings fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/bookings/{id}:
+    get:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Get a booking by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the booking
+          schema:
+            type: string
+      responses:
+        200:
+          description: Booking fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        404:
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    put:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Update a booking by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the booking
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        200:
+          description: Booking updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        404:
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    delete:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Soft delete a booking by ID (admin/staff can delete any, but user can only delete their own)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the booking
+          schema:
+            type: string
+      responses:
+        200:
+          description: Booking deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        404:
+          description: Booking not found or already deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/bookings/user/{userId}:
+    get:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Get all bookings for a specific user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ID of the user
+          schema:
+            type: string
+      responses:
+        200:
+          description: Bookings fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/bookings/me:
+    get:
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      summary: Get bookings for the authenticated user
+      responses:
+        200:
+          description: User bookings fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+        403:
+          description: Forbidden
           content:
             application/json:
               schema:
@@ -340,28 +1776,6 @@ components:
         refreshToken:
           type: string
 
-    AuthData:
-      type: object
-      properties:
-        user:
-          $ref: "#/components/schemas/User"
-        accessToken:
-          type: string
-        refreshToken:
-          type: string
-
-    PaginationData:
-      type: object
-      properties:
-        total:
-          type: integer
-        page:
-          type: integer
-        perPage:
-          type: integer
-        totalPages:
-          type: integer
-
     APIResponse:
       type: object
       properties:
@@ -369,38 +1783,694 @@ components:
           type: boolean
         message:
           type: string
-        errors:
-          type: object
-          nullable: true
-        statusCode:
-          type: integer
-        pagination:
-          $ref: "#/components/schemas/PaginationData"
-        data:
-          nullable: true
-
-    APIResponseUser:
-      allOf:
-        - $ref: "#/components/schemas/APIResponse"
-        - type: object
-          properties:
-            data:
-              $ref: "#/components/schemas/User"
-
-    APIResponseUserList:
-      allOf:
-        - $ref: "#/components/schemas/APIResponse"
-        - type: object
-          properties:
-            data:
-              type: array
-              items:
-                $ref: "#/components/schemas/User"
 
     APIResponseAuth:
-      allOf:
-        - $ref: "#/components/schemas/APIResponse"
-        - type: object
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
           properties:
-            data:
-              $ref: "#/components/schemas/AuthData"
+            user:
+              $ref: "#/components/schemas/User"
+            token:
+              type: object
+              properties:
+                accessToken:
+                  type: string
+                refreshToken:
+                  type: string
+
+    APIResponseUser:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/User"
+
+    APIResponseUser List:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+
+    InventoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        sku:
+          type: string
+        quantity:
+          type: integer
+        status:
+          type: string
+          enum: ["in_stock", "rented", "unavailable", "maintenance", "retired"]
+        associatedFacility:
+          type: string
+        category:
+          type: string
+        purchaseInfo:
+          type: object
+          properties:
+            purchaseDate:
+              type: string
+              format: date
+            purchasePrice:
+              type: number
+            supplier:
+              type: string
+            warrantyExpiry:
+              type: string
+              format: date
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date-time
+              change:
+                type: number
+              reason:
+                type: string
+              user:
+                type: string
+              notes:
+                type: string
+        maintenanceSchedule:
+          type: array
+          items:
+            type: object
+            properties:
+              scheduledDate:
+                type: string
+                format: date
+              type:
+                type: string
+                enum: ["cleaning", "repair", "inspection", "calibration"]
+              completed:
+                type: boolean
+              completedDate:
+                type: string
+                format: date
+              cost:
+                type: number
+              notes:
+                type: string
+              performedBy:
+                type: string
+        currentBookings:
+          type: array
+          items:
+            type: string
+        specifications:
+          type: object
+          additionalProperties:
+            type: string
+        alerts:
+          type: object
+          properties:
+            lowStock:
+              type: boolean
+            maintenanceDue:
+              type: boolean
+            warrantyExpiring:
+              type: boolean
+        isDeleted:
+          type: boolean
+
+    InventoryItemInput:
+      type: object
+      required:
+        - name
+        - quantity
+        - category
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        sku:
+          type: string
+        quantity:
+          type: integer
+        status:
+          type: string
+          enum: ["in_stock", "rented", "unavailable", "maintenance", "retired"]
+        associatedFacility:
+          type: string
+        category:
+          type: string
+        purchaseInfo:
+          type: object
+          properties:
+            purchaseDate:
+              type: string
+              format: date
+            purchasePrice:
+              type: number
+            supplier:
+              type: string
+            warrantyExpiry:
+              type: string
+              format: date
+
+    MaintenanceScheduleInput:
+      type: object
+      required:
+        - scheduledDate
+        - type
+      properties:
+        scheduledDate:
+          type: string
+          format: date
+        type:
+          type: string
+          enum: ["cleaning", "repair", "inspection", "calibration"]
+        completed:
+          type: boolean
+        completedDate:
+          type: string
+          format: date
+        cost:
+          type: number
+        notes:
+          type: string
+        performedBy:
+          type: string
+
+    MaintenanceSchedule:
+      type: object
+      properties:
+        scheduledDate:
+          type: string
+          format: date
+        type:
+          type: string
+          enum: ["cleaning", "repair", "inspection", "calibration"]
+        completed:
+          type: boolean
+        completedDate:
+          type: string
+          format: date
+        cost:
+          type: number
+        notes:
+          type: string
+        performedBy:
+          type: string
+
+    Transaction:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Transaction ID
+        booking:
+          type: string
+          description: Associated booking ID
+        user:
+          type: string
+          description: User ID who made the transaction
+        account:
+          type: string
+          description: Account ID
+        type:
+          type: string
+          enum: [income, expense]
+          description: Transaction type
+        category:
+          type: string
+          description: Transaction category
+        amount:
+          type: number
+          description: Transaction amount
+        method:
+          type: string
+          enum: [cash, mobile_money, bank, cheque, card]
+          description: Payment method
+        paymentDetails:
+          type: object
+          properties:
+            paystackReference:
+              type: string
+              description: Paystack payment reference
+            chequeNumber:
+              type: string
+              description: Cheque number if payment method is cheque
+            bankDetails:
+              type: object
+              properties:
+                bankName:
+                  type: string
+                accountNumber:
+                  type: string
+                sortCode:
+                  type: string
+            mobileMoneyDetails:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum: [mtn, telecel, airteltigo, other]
+                phoneNumber:
+                  type: string
+                transactionId:
+                  type: string
+        ref:
+          type: string
+          description: Transaction reference
+        receiptUrl:
+          type: string
+          description: URL to receipt document
+        approvedBy:
+          type: string
+          description: ID of user who approved the transaction
+        reconciled:
+          type: boolean
+          description: Whether transaction is reconciled
+        reconciledAt:
+          type: string
+          format: date-time
+          description: Date when transaction was reconciled
+        facility:
+          type: string
+          description: Facility ID
+        description:
+          type: string
+          description: Transaction description
+        attachments:
+          type: array
+          items:
+            type: string
+          description: Array of attachment URLs
+        tags:
+          type: array
+          items:
+            type: string
+          description: Transaction tags
+        isDeleted:
+          type: boolean
+          description: Soft delete flag
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TransactionInput:
+      type: object
+      required: [user, type, category, amount, method]
+      properties:
+        booking:
+          type: string
+          description: Associated booking ID
+        user:
+          type: string
+          description: User ID who made the transaction
+        account:
+          type: string
+          description: Account ID
+        type:
+          type: string
+          enum: [income, expense]
+          description: Transaction type
+        category:
+          type: string
+          description: Transaction category
+        amount:
+          type: number
+          description: Transaction amount
+        method:
+          type: string
+          enum: [cash, mobile_money, bank, cheque, card]
+          description: Payment method
+        paymentDetails:
+          type: object
+          properties:
+            paystackReference:
+              type: string
+            chequeNumber:
+              type: string
+            bankDetails:
+              type: object
+              properties:
+                bankName:
+                  type: string
+                accountNumber:
+                  type: string
+                sortCode:
+                  type: string
+            mobileMoneyDetails:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum: [mtn, telecel, airteltigo, other]
+                phoneNumber:
+                  type: string
+                transactionId:
+                  type: string
+        ref:
+          type: string
+        receiptUrl:
+          type: string
+        facility:
+          type: string
+        description:
+          type: string
+        attachments:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    PaymentInitializeInput:
+      type: object
+      required: [email, amount]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Customer email address
+        amount:
+          type: number
+          description: Payment amount in kobo (for NGN) or pesewas (for GHS)
+        currency:
+          type: string
+          default: "GHS"
+          description: Payment currency
+        reference:
+          type: string
+          description: Custom payment reference
+        callback_url:
+          type: string
+          description: URL to redirect after payment
+        metadata:
+          type: object
+          description: Additional payment metadata
+
+    Booking:
+      type: object
+      properties:
+        user:
+          type: object
+          $ref: "#/components/schemas/User"
+        facility:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        duration:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "confirmed", "cancelled", "completed", "no_show"]
+        paymentStatus:
+          type: string
+          enum: ["pending", "completed", "failed", "refunded", "partial_refund"]
+        totalPrice:
+          type: number
+          format: float
+        discount:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["percentage", "fixed"]
+            value:
+              type: number
+            reason:
+              type: string
+            appliedBy:
+              type: object
+              $ref: "#/components/schemas/User"
+        paymentDetails:
+          type: object
+          $ref: "#/components/schemas/Transaction"
+        checkIn:
+          type: object
+          properties:
+            time:
+              type: string
+              format: date-time
+            verifiedBy:
+              type: object
+              $ref: "#/components/schemas/User"
+            notes:
+              type: string
+        checkOut:
+          type: object
+          properties:
+            time:
+              type: string
+              format: date-time
+            verifiedBy:
+              type: object
+              $ref: "#/components/schemas/User"
+            condition:
+              type: string
+              enum: ["good", "fair", "damaged"]
+            notes:
+              type: string
+            damageReport:
+              type: string
+        cancellation:
+          type: object
+          properties:
+            reason:
+              type: string
+            cancelledBy:
+              type: object
+              $ref: "#/components/schemas/User"
+            cancelledAt:
+              type: string
+              format: date-time
+            refundAmount:
+              type: number
+              format: float
+        notes:
+          type: string
+        internalNotes:
+          type: string
+        isDeleted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    BookingInput:
+      type: object
+      properties:
+        facility:
+          type: object
+          $ref: "#/components/schemas/Facility"
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        duration:
+          type: string
+        totalPrice:
+          type: number
+          format: float
+        discount:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["percentage", "fixed"]
+            value:
+              type: number
+            reason:
+              type: string
+
+    APIResponseUser Statistics:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            totalUsers:
+              type: integer
+            activeUsers:
+              type: integer
+            inactiveUsers:
+              type: integer
+
+    Facility:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        name:
+          type: string
+          example: "Community Center"
+        description:
+          type: string
+          example: "A modern community center with various amenities"
+        location:
+          type: string
+          example: "123 Main Street, Downtown"
+        capacity:
+          type: object
+          properties:
+            minimum:
+              type: integer
+              example: 10
+            maximum:
+              type: integer
+              example: 100
+            recommended:
+              type: integer
+              example: 50
+
+        operationalHours:
+          type: object
+          properties:
+            opening:
+              type: string
+              example: "08:00"
+            closing:
+              type: string
+              example: "22:00"
+        amenities:
+          type: array
+          items:
+            type: string
+          example: ["WiFi", "Parking", "Air Conditioning"]
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              originalName:
+                type: string
+              mimetype:
+                type: string
+              size:
+                type: integer
+        availability:
+          type: array
+          items:
+            type: object
+            properties:
+              _id:
+                type: string
+              startDate:
+                type: string
+                format: date-time
+              endDate:
+                type: string
+                format: date-time
+              daysOfWeek:
+                type: array
+                items:
+                  type: string
+        averageRating:
+          type: number
+          example: 4.2
+        totalReviews:
+          type: integer
+          example: 15
+        isDeleted:
+          type: boolean
+          example: false
+        createdBy:
+          type: string
+          example: "507f1f77bcf86cd799439013"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Review:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439014"
+        userId:
+          type: string
+          example: "507f1f77bcf86cd799439015"
+        userName:
+          type: string
+          example: "John Doe"
+        rating:
+          type: number
+          example: 4.5
+        comment:
+          type: string
+          example: "Great facility with excellent amenities"
+        createdAt:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          example: 1
+        totalPages:
+          type: integer
+          example: 5
+        totalItems:
+          type: integer
+          example: 47
+        itemsPerPage:
+          type: integer
+          example: 10
+
+    APIResponseAvailability:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            availability:
+              type: array
+              items:
+                type: object
+                properties:
+                  day:
+                    type: string
+                  startTime:
+                    type: string
+                    format: date-time
+                  endTime:
+                    type: string
+                    format: date-time

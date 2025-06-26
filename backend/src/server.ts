@@ -11,7 +11,15 @@ import {
 } from "./middlewares";
 import { Logger } from "./utils";
 import swaggerUi from "swagger-ui-express";
-import { userRoutes, authRoutes } from "./routes";
+import {
+  userRoutes,
+  authRoutes,
+  facilityRoutes,
+  inventoryItemRoutes,
+  transactionRoutes,
+  bookingRoutes,
+  resourceRoutes,
+} from "./routes";
 
 const app: express.Application = express();
 const server = createServer(app);
@@ -31,6 +39,11 @@ const swaggerDocument = YAML.load("./src/utils/swagger/swagger.yaml");
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/facilities", facilityRoutes);
+app.use("/api/v1/inventory-items", inventoryItemRoutes);
+app.use("/api/v1/transaction", transactionRoutes);
+app.use("/api/v1/bookings", bookingRoutes);
+app.use("/api/v1/resources", resourceRoutes);
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");

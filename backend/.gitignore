@@ -16,7 +16,8 @@ env.txt
 
 # Build output
 dist/               
-.vscode/              
+.vscode/  
+uploads/*            
 
 # Testing
 coverage/             # Code coverage reports
