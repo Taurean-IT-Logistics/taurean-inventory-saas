@@ -218,6 +218,12 @@ export interface InventoryItem {
   sku?: string;
   quantity: number;
   status: "in_stock" | "rented" | "unavailable" | "maintenance" | "retired";
+  images: {
+    path: string;
+    originalName: string;
+    mimetype: string;
+    size: number;
+  }[];
   associatedFacility?: Facility;
   category: string;
   purchaseInfo: {

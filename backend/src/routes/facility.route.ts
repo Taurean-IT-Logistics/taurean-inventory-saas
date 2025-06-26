@@ -22,13 +22,14 @@ const router = Router();
 // Public: Get list of facilities (with pagination, filtering, and sorting), no authentication required
 router.get("/", FacilityController.getFacilities);
 
-router.use(AuthMiddleware);
-
 // Public: Get facility by ID
 router.get("/:id", FacilityController.getFacilityById);
 
-// Public: Get facility reviews with pagination
 router.get("/:id/reviews", FacilityController.getFacilityReviews);
+
+router.use(AuthMiddleware);
+
+// Public: Get facility reviews with pagination
 
 // Admin only: Create a new facility
 router.post(

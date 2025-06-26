@@ -7,6 +7,14 @@ const InventoryItemSchema = new Schema<InventoryItemDocument>(
   {
     name: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
+    images: [
+      {
+        path: { type: String, required: true },
+        originalName: { type: String, required: true },
+        mimetype: { type: String, required: true },
+        size: { type: Number, required: true },
+      },
+    ],
     sku: { type: String, unique: true, sparse: true },
     quantity: { type: Number, required: true, min: 0 },
     status: {

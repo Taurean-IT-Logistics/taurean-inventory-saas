@@ -10,7 +10,7 @@ const createInventoryItem = async (
     const newItem = new InventoryItemModel(itemData);
     return await newItem.save();
   } catch (error) {
-    throw new Error("Error creating inventory item");
+    throw new Error("Error creating inventory item" + (error as Error).message);
   }
 };
 

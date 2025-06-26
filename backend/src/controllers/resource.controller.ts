@@ -19,16 +19,20 @@ export const getResource = async (req: Request, res: Response) => {
       return;
     }
 
-    // Detect the MIME type based on file extension
+    // Detect MIME type from file extension
     const contentType = mime.lookup(filePath) || "application/octet-stream";
 
-    res.setHeader("Content-Type", contentType);
+    // CORS headers for browser access
+    res.setHeader("Access-Control-Allow-Origin", "*"); // Or your frontend domain
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
-    // Optionally: display inline instead of download
+    // Set Content-Type and inline disposition
+    res.setHeader("Content-Type", contentType);
     res.setHeader("Content-Disposition", "inline");
 
     res.send(resource);
   } catch (error) {
+    console.error("Resource fetch failed:", error);
     sendError(res, "Failed to fetch resource");
   }
 };

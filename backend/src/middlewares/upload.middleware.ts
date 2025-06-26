@@ -15,6 +15,9 @@ const storage = multer.diskStorage({
       case "/api/v1/users":
         uploadPath = path.join(uploadPath, "users");
         break;
+      case "/api/v1/inventory-items":
+        uploadPath = path.join(uploadPath, "inventory");
+        break;
       default:
         uploadPath = path.join(uploadPath, "general");
     }

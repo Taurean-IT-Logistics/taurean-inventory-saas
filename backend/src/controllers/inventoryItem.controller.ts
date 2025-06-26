@@ -7,6 +7,14 @@ import {
   sendValidationError,
 } from "../utils";
 
+interface MulterFile {
+  path?: string;
+  filename?: string;
+  originalname: string;
+  mimetype: string;
+  size: number;
+}
+
 // Get all inventory items, with optional showDeleted flag for admin/staff
 export const getAllInventoryItems = async (
   req: Request,
@@ -57,6 +65,49 @@ export const createInventoryItem = async (
   try {
     // Assume authorization middleware handled admin role
     const itemData = req.body;
+    if (req.files && Array.isArray(req.files)) {
+      // Validate file sizes and types
+      const maxFileSize = 10 * 1024 * 1024; // 10MB
+      const invalidFiles = req.files.filter(
+        (file: MulterFile) => file.size > maxFileSize
+      );
+
+      if (invalidFiles.length > 0) {
+        sendValidationError(res, "Some files exceed the 10MB size limit");
+        return;
+      }
+
+      itemData.images = req.files.map((file: MulterFile) => ({
+        path: file.path || file.filename,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      }));
+    } else if (req.file) {
+      if (req.file.size > 10 * 1024 * 1024) {
+        sendValidationError(res, "File exceeds the 10MB size limit");
+        return;
+      }
+
+      itemData.images = [
+        {
+          path: req.file.path || req.file.filename,
+          originalName: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+        },
+      ];
+    }
+
+    if (
+      itemData.specifications &&
+      typeof itemData.specifications === "string"
+    ) {
+      itemData.specifications = new Map(
+        Object.entries(JSON.parse(itemData.specifications))
+      );
+    }
+
     const newItem = await InventoryItemService.createInventoryItem(itemData);
     sendSuccess(res, "Inventory item created successfully", newItem);
   } catch (error: any) {
@@ -76,6 +127,49 @@ export const updateInventoryItem = async (
     const { id } = req.params;
     const updateData = req.body;
     const showDeleted = req.user?.role === "admin";
+
+    if (req.files && Array.isArray(req.files)) {
+      // Validate file sizes and types
+      const maxFileSize = 10 * 1024 * 1024; // 10MB
+      const invalidFiles = req.files.filter(
+        (file: MulterFile) => file.size > maxFileSize
+      );
+
+      if (invalidFiles.length > 0) {
+        sendValidationError(res, "Some files exceed the 10MB size limit");
+        return;
+      }
+
+      updateData.images = req.files.map((file: MulterFile) => ({
+        path: file.path || file.filename,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      }));
+    } else if (req.file) {
+      if (req.file.size > 10 * 1024 * 1024) {
+        sendValidationError(res, "File exceeds the 10MB size limit");
+        return;
+      }
+
+      updateData.images = [
+        {
+          path: req.file.path || req.file.filename,
+          originalName: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+        },
+      ];
+    }
+
+    if (
+      updateData.specifications &&
+      typeof updateData.specifications === "string"
+    ) {
+      updateData.specifications = new Map(
+        Object.entries(JSON.parse(updateData.specifications))
+      );
+    }
     const updatedItem = await InventoryItemService.updateInventoryItem(
       id,
       updateData,
