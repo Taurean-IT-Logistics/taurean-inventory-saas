@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Badge, Button, Image, Stack } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import {
@@ -12,6 +12,7 @@ import { faHeart as faHeartRegular } from '@fortawesome/free-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { Facility } from 'types';
 import { currencyFormat } from 'helpers/utils';
+import { getResourceUrl } from 'controllers';
 
 interface FacilityCardProps {
   facility: Facility;
@@ -146,6 +147,12 @@ const FacilityCard = ({
       ? facility.images[0].path
       : '';
 
+  const [image, setImage] = useState<string>('https://placehold.co/300x400');
+
+  useEffect(() => {
+    setImage(getResourceUrl(mainImage));
+  }, []);
+
   const defaultPricing =
     facility.pricing.find(p => p.isDefault) || facility.pricing[0];
 
@@ -183,7 +190,7 @@ const FacilityCard = ({
       >
         <div className="position-relative" style={{ height: 220 }}>
           <Image
-            src={mainImage || 'https://placehold.co/600x400'}
+            src={image}
             alt={facility.name}
             className="w-100 h-100"
             style={{

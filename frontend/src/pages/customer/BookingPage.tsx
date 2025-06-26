@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import {
   faCalendarAlt,
   faClock,
@@ -31,10 +31,24 @@ import {
   Spinner,
   Container
 } from 'react-bootstrap';
-import { mockFacilities } from 'data';
 import { currencyFormat } from 'helpers/utils';
-import { Facility, User } from 'types';
+import { Booking, Facility } from 'types';
 import BookingPageLoader from 'booking/BookingPageLoader';
+import { showToast } from 'components/toaster/toaster';
+import {
+  BookingController,
+  FacilityController,
+  getResourceUrl,
+  TransactionController
+} from 'controllers';
+import { useAppSelector } from 'hooks/useAppDispatch';
+import { StateManagement } from 'lib';
+
+interface PaymentResponse {
+  payment: {
+    authorization_url: string;
+  };
+}
 
 interface BookingFormData {
   selectedDate: string;
@@ -43,8 +57,7 @@ interface BookingFormData {
   duration: string;
   guests: number;
   customerInfo: {
-    firstName: string;
-    lastName: string;
+    name: string;
     email: string;
     phone: string;
     company?: string;
@@ -181,7 +194,15 @@ const BookingFormStep = ({
                 >
                   <FontAwesomeIcon icon={faMinus} />
                 </Button>
-                <span className="mx-3 fw-bold">{formData.duration}</span>
+                <Form.Control
+                  className="mx-3 fw-bold text-center"
+                  size="sm"
+                  value={formData.duration}
+                  onChange={() =>
+                    handleDurationChange(parseInt(formData.duration) - 1)
+                  }
+                  style={{ width: '70px' }}
+                />
                 <Button
                   variant="outline-secondary"
                   size="sm"
@@ -210,7 +231,22 @@ const BookingFormStep = ({
                 >
                   <FontAwesomeIcon icon={faMinus} />
                 </Button>
-                <span className="mx-3 fw-bold">{formData.guests}</span>
+                <Form.Control
+                  type="number"
+                  min={1}
+                  max={facility.capacity.maximum}
+                  value={formData.guests}
+                  onChange={e =>
+                    handleGuestsChange(
+                      Math.min(
+                        Math.max(1, parseInt(e.target.value) || 1),
+                        facility.capacity.maximum
+                      )
+                    )
+                  }
+                  className="mx-3 text-center"
+                  style={{ width: '70px' }}
+                />
                 <Button
                   variant="outline-secondary"
                   size="sm"
@@ -220,6 +256,7 @@ const BookingFormStep = ({
                   <FontAwesomeIcon icon={faPlus} />
                 </Button>
               </div>
+
               <small className="text-muted">
                 Max capacity: {facility.capacity.maximum}
               </small>
@@ -231,37 +268,18 @@ const BookingFormStep = ({
         <div className="mb-4">
           <h6 className="text-primary mb-3">Customer Information</h6>
           <Row>
-            <Col md={6}>
+            <Col>
               <Form.Group className="mb-3">
-                <Form.Label>First Name *</Form.Label>
+                <Form.Label>Name</Form.Label>
                 <Form.Control
                   type="text"
-                  value={formData.customerInfo.firstName}
+                  value={formData.customerInfo.name}
                   onChange={e =>
                     setFormData(prev => ({
                       ...prev,
                       customerInfo: {
                         ...prev.customerInfo,
-                        firstName: e.target.value
-                      }
-                    }))
-                  }
-                  required
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Last Name *</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={formData.customerInfo.lastName}
-                  onChange={e =>
-                    setFormData(prev => ({
-                      ...prev,
-                      customerInfo: {
-                        ...prev.customerInfo,
-                        lastName: e.target.value
+                        name: e.target.value
                       }
                     }))
                   }
@@ -422,7 +440,8 @@ const FacilitySummary = ({ facility }: { facility: Facility }) => (
       <div className="d-flex mb-3">
         <img
           src={
-            facility.images[0]?.path || '/placeholder.svg?height=80&width=80'
+            getResourceUrl(facility.images[0]?.path) ||
+            '/placeholder.svg?height=80&width=80'
           }
           alt={facility.name}
           className="rounded me-3 object-fit-cover"
@@ -629,10 +648,7 @@ const ReviewConfirmationStep = ({
           <Col md={6}>
             <div className="mb-3">
               <strong className="text-muted small">CONTACT PERSON</strong>
-              <div className="fw-semibold">
-                {formData.customerInfo.firstName}{' '}
-                {formData.customerInfo.lastName}
-              </div>
+              <div className="fw-semibold">{formData.customerInfo.name}</div>
               <div className="text-muted">{formData.customerInfo.email}</div>
               <div className="text-muted">{formData.customerInfo.phone}</div>
             </div>
@@ -723,13 +739,18 @@ const ReviewConfirmationStep = ({
 );
 
 const BookingPage = () => {
+  const { tokens, user } = useAppSelector(
+    (state: StateManagement.RootState) => state.auth
+  );
+
+  const accessToken = tokens.accessToken;
   const { facilityId } = useParams<{ facilityId: string }>();
-  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [facility, setFacility] = useState<Facility>();
 
   const [formData, setFormData] = useState<BookingFormData>({
     selectedDate: '',
@@ -738,9 +759,8 @@ const BookingPage = () => {
     duration: '1',
     guests: 1,
     customerInfo: {
-      firstName: '',
-      lastName: '',
-      email: '',
+      name: user.name,
+      email: user.email,
       phone: '',
       company: ''
     },
@@ -757,16 +777,27 @@ const BookingPage = () => {
     total: 0
   });
 
-  // Simulate loading
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    async function fetchFacility() {
+      try {
+        const facilityData = await FacilityController.getFacilityById(
+          facilityId!
+        );
 
-  // Find facility by slug
-  const facility = mockFacilities.find(f => f._id === facilityId);
+        if (facilityData.success) {
+          setIsLoading(false);
+          setFacility(facilityData.data);
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        setIsLoading(false);
+        showToast('error', "Couldn't load facility");
+      }
+    }
+
+    fetchFacility();
+  }, [facilityId]);
 
   useEffect(() => {
     if (facility) {
@@ -780,8 +811,8 @@ const BookingPage = () => {
 
   const calculatePricing = (basePrice: number, duration: number) => {
     const subtotal = basePrice * duration;
-    const serviceFee = subtotal * 0.1;
-    const tax = (subtotal + serviceFee) * 0.08;
+    const serviceFee = Math.round(subtotal * 0.08);
+    const tax = Math.round((subtotal + serviceFee) * 0.02);
     const total = subtotal + serviceFee + tax;
     setPricing({
       basePrice,
@@ -793,26 +824,68 @@ const BookingPage = () => {
     });
   };
 
-  const checkAvailability = async (date: string) => {
-    if (!date) return;
+  const getDayOfWeek = (
+    dateStr: string
+  ): Facility['availability'][0]['day'] => {
+    const days = [
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday'
+    ] as const;
+
+    const dayIndex = new Date(dateStr).getDay(); // 0 = Sunday, 6 = Saturday
+    return days[dayIndex];
+  };
+
+  const generateTimeSlots = (start: string, end: string): string[] => {
+    const slots: string[] = [];
+    const [startH, startM] = start.split(':').map(Number);
+    const [endH, endM] = end.split(':').map(Number);
+
+    const current = new Date();
+    current.setHours(startH, startM, 0, 0);
+
+    const endTime = new Date();
+    endTime.setHours(endH, endM, 0, 0);
+
+    while (current <= endTime) {
+      const h = current.getHours().toString().padStart(2, '0');
+      const m = current.getMinutes().toString().padStart(2, '0');
+      slots.push(`${h}:${m}`);
+
+      current.setHours(current.getHours() + 1); // hourly interval
+    }
+
+    return slots;
+  };
+
+  const checkAvailability = async (date: string, facility: Facility) => {
+    if (!date || !facility) return;
+
     setIsCheckingAvailability(true);
+
     setTimeout(() => {
-      const slots = [
-        '08:00',
-        '09:00',
-        '10:00',
-        '11:00',
-        '12:00',
-        '13:00',
-        '14:00',
-        '15:00',
-        '16:00',
-        '17:00',
-        '18:00'
-      ];
-      setAvailableSlots(slots);
+      const dayOfWeek = getDayOfWeek(date);
+      const daySchedule = facility.availability.find(
+        d => d.day === dayOfWeek && d.isAvailable
+      );
+
+      if (daySchedule) {
+        const slots = generateTimeSlots(
+          daySchedule.startTime,
+          daySchedule.endTime
+        );
+        setAvailableSlots(slots);
+      } else {
+        setAvailableSlots([]);
+      }
+
       setIsCheckingAvailability(false);
-    }, 1000);
+    }, 500); // simulate API delay
   };
 
   const handleDateChange = (date: string) => {
@@ -822,7 +895,7 @@ const BookingPage = () => {
       selectedTime: '',
       endTime: ''
     }));
-    checkAvailability(date);
+    checkAvailability(date, facility!);
   };
 
   const handleTimeChange = (time: string) => {
@@ -866,21 +939,11 @@ const BookingPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setIsLoading(true);
     try {
       if (!facility) throw new Error('Facility not found');
       const bookingData = {
-        user: {
-          name: `${formData.customerInfo.firstName} ${formData.customerInfo.lastName}`,
-          username: formData.customerInfo.email.split('@')[0],
-          email: formData.customerInfo.email,
-          phone: formData.customerInfo.phone,
-          password: 'hashed',
-          role: 'user' as const,
-          cart: [],
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        facility: facility,
+        facility: facility._id,
         startDate: new Date(
           `${formData.selectedDate}T${formData.selectedTime}:00`
         ),
@@ -888,35 +951,53 @@ const BookingPage = () => {
         duration: formData.duration,
         status: 'pending' as const,
         paymentStatus: 'pending' as const,
-        totalPrice: pricing.total,
-        paymentDetails: {
-          user: {
-            name: `${formData.customerInfo.firstName} ${formData.customerInfo.lastName}`,
-            username: formData.customerInfo.email.split('@')[0],
-            email: formData.customerInfo.email,
-            phone: formData.customerInfo.phone,
-            password: 'hashed',
-            role: 'user' as const,
-            cart: [],
-            createdAt: new Date(),
-            updatedAt: new Date()
-          } as Partial<User>,
-          type: 'booking',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
+        totalPrice: pricing.total
       };
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const data = await BookingController.bookFacility(
+        bookingData as unknown as Partial<Booking>,
+        accessToken
+      );
 
-      // Navigate to success page or show success message
-      navigate('/booking-success', { state: { bookingData } });
+      const transactionData = {
+        email: user.email,
+        amount: pricing.total,
+        category: 'booking',
+        description: `Booking for ${facility.name}: ${facility._id}`
+      };
+
+      const transactionResponse = await TransactionController.createTransaction(
+        transactionData,
+        accessToken
+      );
+
+      if (data.success && transactionResponse.success) {
+        setIsSubmitting(false);
+        setIsLoading(false);
+        showToast('success', 'Booking completed redirecting to paystack');
+        window.location.href = (
+          transactionResponse.data as PaymentResponse
+        ).payment.authorization_url;
+      } else if (!data.success) {
+        showToast('error', 'Booking Failed');
+        setIsSubmitting(false);
+        setIsLoading(false);
+      } else if (!transactionResponse.success) {
+        showToast('error', 'Transaction Initialization');
+        setIsSubmitting(false);
+        setIsLoading(false);
+      } else {
+        showToast('error', 'Something went wrong');
+        setIsSubmitting(false);
+        setIsLoading(false);
+      }
     } catch (error) {
-      console.error('Booking failed:', error);
-      // Handle error appropriately
+      showToast('error', 'Something went wrong');
+      setIsSubmitting(false);
+      setIsLoading(false);
     } finally {
       setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -972,8 +1053,7 @@ const BookingPage = () => {
                   disabled={
                     !formData.selectedDate ||
                     !formData.selectedTime ||
-                    !formData.customerInfo.firstName ||
-                    !formData.customerInfo.lastName ||
+                    !formData.customerInfo.name ||
                     !formData.customerInfo.email ||
                     !formData.customerInfo.phone ||
                     !formData.agreeToTerms

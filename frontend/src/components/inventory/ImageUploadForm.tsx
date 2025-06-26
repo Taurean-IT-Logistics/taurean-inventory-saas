@@ -3,8 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUpload, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 interface ImageUploadFormProps {
-  images: string[];
-  onImagesChange: (images: string[]) => void;
+  images: any[];
+  onImagesChange: (images: string[], files: File[]) => void;
 }
 
 const ImageUploadForm = ({ images, onImagesChange }: ImageUploadFormProps) => {
@@ -12,27 +12,34 @@ const ImageUploadForm = ({ images, onImagesChange }: ImageUploadFormProps) => {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setImageFiles(prev => [...prev, ...files]);
+    const updatedFiles = [...imageFiles, ...files];
+    setImageFiles(updatedFiles);
 
-    // Create preview URLs
+    const newPreviews: string[] = [];
+    let loadedCount = 0;
+
     files.forEach(file => {
       const reader = new FileReader();
       reader.onload = event => {
         if (event.target?.result) {
-          const newImages = [...images, event.target.result as string];
-          onImagesChange(newImages);
+          newPreviews.push(event.target.result as string);
+        }
+
+        loadedCount++;
+        if (loadedCount === files.length) {
+          const updatedPreviews = [...images, ...newPreviews];
+          onImagesChange(updatedPreviews, updatedFiles);
         }
       };
       reader.readAsDataURL(file);
     });
-
-    console.log(imageFiles);
   };
 
   const removeImage = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    onImagesChange(newImages);
-    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    const updatedImages = images.filter((_, i) => i !== index);
+    const updatedFiles = imageFiles.filter((_, i) => i !== index);
+    setImageFiles(updatedFiles);
+    onImagesChange(updatedImages, updatedFiles);
   };
 
   return (
@@ -41,13 +48,13 @@ const ImageUploadForm = ({ images, onImagesChange }: ImageUploadFormProps) => {
         <h5 className="mb-0">Item Images</h5>
       </div>
       <div className="card-body">
-        <div className="border border-secondary rounded p-3 ">
+        <div className="border border-secondary rounded p-3">
           <input
             type="file"
             multiple
             accept="image/*"
             onChange={handleImageUpload}
-            className="form-control  border-secondary mb-3"
+            className="form-control border-secondary mb-3"
           />
           <div className="d-flex flex-wrap gap-3">
             {images.map((preview, index) => (

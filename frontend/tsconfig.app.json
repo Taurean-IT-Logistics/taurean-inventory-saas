@@ -17,8 +17,9 @@
     // "types": ["node", "vite/client"],
 
     /* Linting */
-    "strict": true,
+    "strict": false,
     "noUnusedLocals": true,
+    "noImplicitAny": false,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,

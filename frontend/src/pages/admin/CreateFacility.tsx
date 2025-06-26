@@ -6,14 +6,24 @@ import FacilityProgressSteps from 'components/facilites/FacilityProgressSteps';
 import BasicInfoStep from 'components/facilites/BasicInfoStep';
 import DetailsAmenitiesStep from 'components/facilites/DetailsAmenitiesStep';
 import AvailabilityPricingStep from 'components/facilites/AvailabilityPricingStep';
-
+import { FacilityController } from 'controllers';
+import { useAppSelector } from 'hooks/useAppDispatch';
+import { StateManagement } from 'lib';
+import { useNavigate } from 'react-router-dom';
+import { showToast } from 'components/toaster/toaster';
 const CreateFacility = () => {
+  const { tokens } = useAppSelector(
+    (state: StateManagement.RootState) => state.auth
+  );
+
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState<Partial<Facility>>({
     name: '',
     description: '',
     capacity: { maximum: 0, recommended: 0 },
     operationalHours: { opening: '', closing: '' },
-    location: { address: '' },
+    location: { address: '', coordinates: { latitude: 0, longitude: 0 } },
     amenities: [],
     pricing: [{ unit: 'hour', amount: 0, isDefault: true }],
     availability: [],
@@ -21,6 +31,18 @@ const CreateFacility = () => {
     isActive: true
   });
 
+  const setNestedValue = (obj, path: string[], value) => {
+    if (path.length === 1) {
+      return { ...obj, [path[0]]: value };
+    }
+    const [key, ...rest] = path;
+    return {
+      ...obj,
+      [key]: setNestedValue(obj?.[key] || {}, rest, value)
+    };
+  };
+
+  const [rawFiles, setRawFiles] = useState<File[]>([]);
   const [newAmenity, setNewAmenity] = useState('');
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,22 +54,10 @@ const CreateFacility = () => {
     >
   ) => {
     const { name, value, type } = e.target;
+    const inputValue = type === 'number' ? Number(value) : value;
+    const path = name.split('.');
 
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent as keyof Facility] as Partial<Facility>),
-          [child]: type === 'number' ? Number(value) : value
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'number' ? Number(value) : value
-      }));
-    }
+    setFormData(prev => setNestedValue(prev, path, inputValue));
   };
 
   const handleImageUpload = async (files: FileList) => {
@@ -55,23 +65,18 @@ const CreateFacility = () => {
 
     setUploadingImages(true);
     try {
-      const imagePromises = Array.from(files).map(async file => {
-        // Simulate upload delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      const previewImages = Array.from(files).map(file => ({
+        path: URL.createObjectURL(file),
+        originalName: file.name,
+        mimetype: file.type,
+        size: file.size
+      }));
 
-        return {
-          path: URL.createObjectURL(file),
-          originalName: file.name,
-          mimetype: file.type,
-          size: file.size
-        };
-      });
-
-      const uploadedImages = await Promise.all(imagePromises);
+      setRawFiles(prev => [...prev, ...Array.from(files)]);
 
       setFormData(prev => ({
         ...prev,
-        images: [...(prev.images || []), ...uploadedImages]
+        images: [...(prev.images || []), ...previewImages]
       }));
     } catch (error) {
       console.error('Error uploading images:', error);
@@ -85,6 +90,7 @@ const CreateFacility = () => {
       ...prev,
       images: prev.images?.filter((_, i) => i !== index) || []
     }));
+    setRawFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const addAmenity = () => {
@@ -118,7 +124,7 @@ const CreateFacility = () => {
     }));
   };
 
-  const updateAvailability = (index: number, field: string, value: any) => {
+  const updateAvailability = (index: number, field: string, value) => {
     setFormData(prev => ({
       ...prev,
       availability:
@@ -144,15 +150,23 @@ const CreateFacility = () => {
     }
 
     setIsSubmitting(true);
+    const accessToken = tokens.accessToken;
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const data = await FacilityController.createFacility(
+        formData,
+        accessToken,
+        rawFiles
+      );
 
-      console.log('Creating facility:', formData);
-      alert('Facility created successfully!');
+      if (data.success && data.data) {
+        showToast('success', 'Facility created successfully!');
+        navigate('/admin/dashboard');
+      } else {
+        showToast('error', data.message);
+        setIsSubmitting(false);
+      }
     } catch (error) {
-      console.error('Error creating facility:', error);
-      alert('Error creating facility. Please try again.');
+      showToast('error', 'Error creating facility. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

@@ -1,15 +1,18 @@
-import { Col, Container, Row } from 'react-bootstrap';
+import { useEffect, useState } from 'react';
+import { Col, Container, Row, Spinner } from 'react-bootstrap';
 import EcomGiftItemsBanner from 'components/banners/EcomGiftItemsBanner';
 import PageHeroSections from 'components/sliders/PageHeroSections';
 import EcomBecomeMember from 'components/cta/EcomBecomeMember';
-import { mockFacilities, mockInventoryItems } from 'data';
 import { useCart } from 'hooks/useCart';
 import { useWishlist } from 'hooks/useWishlist';
 import InventoryHeroSection from 'components/inventory/InventoryHeroSection';
 import { Facility, InventoryItem } from 'types';
+import { InventoryItemController, FacilityController } from 'controllers';
 
 const Homepage = () => {
-  // Call the hooks here to get the actual functions
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const { addToCart } = useCart();
   const { addToWishlist } = useWishlist();
 
@@ -56,7 +59,7 @@ const Homepage = () => {
       name: item.name,
       price: item.purchaseInfo.purchasePrice || 0,
       imageUrl:
-        item.images && item.images.length > 0 ? item.images[0] : undefined
+        item.images && item.images.length > 0 ? item.images[0].path : undefined
     });
   };
 
@@ -67,49 +70,100 @@ const Homepage = () => {
       name: item.name,
       price: item.purchaseInfo.purchasePrice || 0,
       imageUrl:
-        item.images && item.images.length > 0 ? item.images[0] : undefined
+        item.images && item.images.length > 0 ? item.images[0].path : undefined
     });
   };
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      const [facilitiesResponse, inventoryResponse] = await Promise.all([
+        FacilityController.getAllFacilites(),
+        InventoryItemController.getAllInventoryItems()
+      ]);
+
+      const facilitiesData = facilitiesResponse?.data.facilities || [];
+      const inventoryItemData = inventoryResponse?.data || [];
+
+      setFacilities(Array.isArray(facilitiesData) ? facilitiesData : []);
+      setInventoryItems(
+        Array.isArray(inventoryItemData) ? inventoryItemData : []
+      );
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
 
   return (
     <div className="pt-5 mb-9">
       <section className="py-0">
-        <Container fluid className="w-100%">
-          <Row className="gap-10 mb-9 justify-content-center align-items-center">
-            <Col className="text-center mb-4">
-              <EcomGiftItemsBanner />
-            </Col>
-            <Col>
-              <PageHeroSections
-                onAddToCart={handleAddToCartFacility}
-                onAddToWishlist={handleAddToWishlistFacility}
-                to="facilites"
-                title="Top Facilities today"
-                facilities={mockFacilities}
-              />
-            </Col>
-            <Col>
-              <PageHeroSections
-                onAddToCart={handleAddToCartFacility}
-                onAddToWishlist={handleAddToWishlistFacility}
-                to="/faciliites"
-                title="Top Booked Facilites"
-                facilities={mockFacilities}
-              />
-            </Col>
-            <Col>
-              <InventoryHeroSection
-                to="rental"
-                title="Top Items"
-                onAddToCart={handleAddToCartInventory}
-                onAddToWishlist={handleAddToWishlistInventory}
-                items={mockInventoryItems}
-              />
-            </Col>
-          </Row>
-          <div className="text-center">
-            <EcomBecomeMember />
-          </div>
+        <Container fluid>
+          {loading ? (
+            <div className="text-center py-5">
+              <Spinner animation="border" variant="primary" />
+            </div>
+          ) : (
+            <>
+              {/* Banner */}
+              <Row className="mb-5">
+                <Col className="text-center">
+                  <EcomGiftItemsBanner />
+                </Col>
+              </Row>
+
+              {/* Top Facilities Today */}
+              <Row className="mb-5">
+                <Col>
+                  <PageHeroSections
+                    onAddToCart={handleAddToCartFacility}
+                    onAddToWishlist={handleAddToWishlistFacility}
+                    to="/facilities"
+                    title="Top Facilities Today"
+                    facilities={facilities}
+                  />
+                </Col>
+              </Row>
+
+              {/* Top Booked Facilities */}
+              <Row className="mb-5">
+                <Col>
+                  <PageHeroSections
+                    onAddToCart={handleAddToCartFacility}
+                    onAddToWishlist={handleAddToWishlistFacility}
+                    to="/facilities"
+                    title="Top Booked Facilities"
+                    facilities={facilities}
+                  />
+                </Col>
+              </Row>
+
+              {/* Top Inventory Items */}
+              <Row className="mb-5">
+                <Col>
+                  <InventoryHeroSection
+                    to="rental"
+                    title="Top Items"
+                    onAddToCart={handleAddToCartInventory}
+                    onAddToWishlist={handleAddToWishlistInventory}
+                    items={inventoryItems}
+                  />
+                </Col>
+              </Row>
+
+              {/* Become Member CTA */}
+              <Row className="mb-5">
+                <Col className="text-center">
+                  <EcomBecomeMember />
+                </Col>
+              </Row>
+            </>
+          )}
         </Container>
       </section>
     </div>

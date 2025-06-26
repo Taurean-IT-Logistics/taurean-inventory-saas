@@ -6,6 +6,8 @@ import { CartProvider } from 'hooks/useCart';
 import { WishlistProvider } from 'hooks/useWishlist';
 import AppProvider from 'providers/AppProvider';
 import BreakpointsProvider from 'providers/BreakpointsProvider';
+import { Toaster } from 'react-hot-toast';
+import AuthProvider from 'components/providers/AuthProvider';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -13,7 +15,10 @@ createRoot(document.getElementById('root')!).render(
       <BreakpointsProvider>
         <CartProvider>
           <WishlistProvider>
-            <RouterProvider router={router} />
+            <Toaster />
+            <AuthProvider>
+              <RouterProvider router={router} />
+            </AuthProvider>
           </WishlistProvider>
         </CartProvider>
       </BreakpointsProvider>

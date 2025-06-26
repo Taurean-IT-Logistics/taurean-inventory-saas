@@ -4,7 +4,7 @@ import AuthSimpleLayout from 'layouts/AuthSimpleLayout';
 const SignIn = () => {
   return (
     <AuthSimpleLayout>
-      <SignInForm layout="simple" />
+      <SignInForm />
     </AuthSimpleLayout>
   );
 };

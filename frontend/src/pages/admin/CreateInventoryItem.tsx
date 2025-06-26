@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { InventoryItem } from 'types';
 import { mockFacilities } from 'data';
 import BasicInfoForm from 'components/inventory/BasicInfoForm';
@@ -9,8 +9,18 @@ import ActionsSidebar from 'components/inventory/ActionSidebar';
 import ImageUploadForm from 'components/inventory/ImageUploadForm';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { useAppSelector } from 'hooks/useAppDispatch';
+import { StateManagement } from 'lib';
+import { showToast } from 'components/toaster/toaster';
+import { InventoryItemController } from 'controllers';
 
 const CreateInventory = () => {
+  const { tokens } = useAppSelector(
+    (state: StateManagement.RootState) => state.auth
+  );
+  const navigate = useNavigate();
+  const accessToken = tokens.accessToken;
+
   const [formData, setFormData] = useState<Partial<InventoryItem>>({
     name: '',
     description: '',
@@ -37,19 +47,21 @@ const CreateInventory = () => {
     isDeleted: false
   });
 
+  const [rawFiles, setRawFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     const { name, value, type } = e.target;
-
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof InventoryItem] as Partial<InventoryItem>),
+          ...(prev[parent as keyof InventoryItem] as any),
           [child]:
             type === 'number'
               ? Number(value)
@@ -91,20 +103,36 @@ const CreateInventory = () => {
     }));
   };
 
-  const handleImagesChange = (images: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      images
-    }));
+  const handleImagesChange = (images: string[], files: File[]) => {
+    setFormData(prev => ({ ...prev, images }));
+    setRawFiles(files);
   };
 
-  const handleSubmit = () => {
-    console.log('Creating inventory item:', formData);
-    alert('Inventory item created successfully!');
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const data = await InventoryItemController.createInventoryItem(
+        formData,
+        accessToken,
+        rawFiles
+      );
+
+      if (data.data && data.success) {
+        showToast('success', 'Inventory item created successfully!');
+        navigate('/admin/inventory');
+      } else {
+        showToast('error', 'Failed to create inventory item');
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      showToast('error', error.message || 'Failed to create inventory item');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className=" min-vh-100">
+    <div className="min-vh-100">
       <div className="container-fluid py-4">
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
@@ -129,7 +157,7 @@ const CreateInventory = () => {
             />
 
             <ImageUploadForm
-              images={formData.images || []}
+              images={formData.images as any}
               onImagesChange={handleImagesChange}
             />
 
@@ -146,7 +174,11 @@ const CreateInventory = () => {
           </div>
 
           <div className="col-lg-4 mt-4 mt-lg-0">
-            <ActionsSidebar formData={formData} onSubmit={handleSubmit} />
+            <ActionsSidebar
+              formData={formData}
+              onSubmit={handleSubmit}
+              isLoading={isSubmitting}
+            />
           </div>
         </div>
       </div>

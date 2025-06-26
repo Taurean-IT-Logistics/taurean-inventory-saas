@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Button, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,6 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { InventoryItem } from 'types';
 import { currencyFormat } from 'helpers/utils';
+import { getResourceUrl } from 'controllers';
 
 interface InventoryItemCardProps {
   item: InventoryItem;
@@ -21,7 +22,10 @@ const InventoryItemCard = ({
   onAddToCart,
   onAddToWishlist
 }: InventoryItemCardProps) => {
-  const [imageError, setImageError] = useState(false);
+  const mainImage =
+    item.images && item.images.length > 0 ? item.images[0].path : '';
+
+  const [image, setImage] = useState<string>('https://placehold.com/300x400');
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -38,37 +42,12 @@ const InventoryItemCard = ({
     return <Badge bg={config.bg}>{config.text}</Badge>;
   };
 
-  const getImageUrl = () => {
-    if (imageError) {
-      return 'https://via.placeholder.com/300x400/666/fff?text=No+Image';
-    }
-
-    if (item.images && item.images.length > 0 && item.images[0]) {
-      const url = item.images[0];
-      // Ensure URL has protocol for external images
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        return url;
-      }
-      return url;
-    }
-
-    return 'https://via.placeholder.com/300x400/666/fff?text=No+Image';
-  };
-
-  const handleImageError = () => {
-    console.warn(
-      `Failed to load image for item: ${item.name}`,
-      item.images?.[0]
-    );
-    setImageError(true);
-  };
-
-  const handleImageLoad = () => {
-    setImageError(false);
-  };
-
   const isAvailable = item.status === 'in_stock' && item.quantity > 0;
   const price = item.purchaseInfo.purchasePrice || 0;
+
+  useEffect(() => {
+    setImage(getResourceUrl(mainImage));
+  }, []);
 
   return (
     <Link
@@ -79,11 +58,9 @@ const InventoryItemCard = ({
         <div className="position-relative">
           <Card.Img
             variant="top"
-            src="http://placehold.co/300x400"
+            src={image}
             style={{ height: '200px', objectFit: 'cover' }}
             alt={item.name}
-            onError={handleImageError}
-            onLoad={handleImageLoad}
           />
           <div className="position-absolute top-0 start-0 p-2">
             {getStatusBadge(item.status)}

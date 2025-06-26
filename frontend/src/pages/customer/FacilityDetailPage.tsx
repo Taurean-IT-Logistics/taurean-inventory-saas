@@ -21,10 +21,14 @@ import {
   faCalendarAlt
 } from '@fortawesome/free-solid-svg-icons';
 import { currencyFormat } from 'helpers/utils';
-import { mockFacilities } from 'data';
 import FacilityDetailLoader from 'components/facilites/FacilityDetailLoader';
 import { Facility } from 'types';
 import PageHeroSections from 'components/sliders/PageHeroSections';
+import { FacilityController } from 'controllers';
+import { showToast } from 'components/toaster/toaster';
+import { useCart } from 'hooks/useCart';
+import { useWishlist } from 'hooks/useWishlist';
+import { getResourceUrl } from 'controllers';
 
 interface FacilityImageGalleryProps {
   images: { path: string }[];
@@ -51,7 +55,7 @@ const FacilityImageGallery = ({
       >
         <img
           src={
-            images[currentImageIndex]?.path ||
+            getResourceUrl(images[currentImageIndex]?.path) ||
             '/placeholder.svg?height=400&width=600'
           }
           alt={name}
@@ -94,7 +98,7 @@ const FacilityImageGallery = ({
               onClick={() => setCurrentImageIndex(idx + 1)}
             >
               <img
-                src={image.path || '/placeholder.svg'}
+                src={getResourceUrl(image.path) || '/placeholder.svg'}
                 alt={`${name} ${idx + 2}`}
                 className="w-100 h-100 object-fit-cover"
               />
@@ -353,7 +357,7 @@ const FacilityBookingCard = ({
     <Card.Body className="p-4">
       <div className="d-flex align-items-baseline mb-3">
         <span className="h3 fw-bold mb-0">
-          {currencyFormat(defaultPricing.amount)}
+          {currencyFormat(defaultPricing.amount || 0)}
         </span>
         <span className="text-muted ms-2">per {defaultPricing.unit}</span>
       </div>
@@ -364,7 +368,7 @@ const FacilityBookingCard = ({
             .filter((p: Pricing) => !p.isDefault)
             .map((pricing: Pricing, idx: number) => (
               <div key={idx} className="small text-muted">
-                {currencyFormat(pricing.amount)} per {pricing.unit}
+                {currencyFormat(pricing?.amount || 0)} per {pricing.unit}
               </div>
             ))}
         </div>
@@ -421,13 +425,74 @@ const FacilityDetailPage = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [facility, setFacility] = useState<Facility>();
+  const [similarFacilities, setSimilarFacilities] = useState<Facility[]>();
+
+  const { addToCart } = useCart();
+  const { addToWishlist } = useWishlist();
+
+  const handleAddToCartFacility = (facility: Facility) => {
+    const defaultPricing =
+      facility.pricing.find(p => p.isDefault) || facility.pricing[0];
+    const mainImage =
+      facility.images && facility.images.length > 0
+        ? facility.images[0].path
+        : undefined;
+
+    addToCart({
+      type: 'facility',
+      itemId: facility._id || '',
+      quantity: 1,
+      name: facility.name,
+      price: defaultPricing?.amount || 0,
+      imageUrl: mainImage
+    });
+  };
+
+  const handleAddToWishlistFacility = (facility: Facility) => {
+    const defaultPricing =
+      facility.pricing.find(p => p.isDefault) || facility.pricing[0];
+    const mainImage =
+      facility.images && facility.images.length > 0
+        ? facility.images[0].path
+        : undefined;
+
+    addToWishlist({
+      type: 'facility',
+      itemId: facility._id || '',
+      name: facility.name,
+      price: defaultPricing?.amount || 0,
+      imageUrl: mainImage
+    });
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
+    async function fetchFacility() {
+      try {
+        const [facilityData, similarFacilitiesData] = await Promise.all([
+          FacilityController.getFacilityById(facilityId!),
+          FacilityController.getAllFacilites()
+        ]);
 
-  const facility = mockFacilities.find(f => f._id === facilityId);
+        if (facilityData.success && similarFacilitiesData.success) {
+          setIsLoading(false);
+          setFacility(facilityData.data);
+          const filteredFacilites = (
+            similarFacilitiesData.data.facilities as Facility[]
+          ).filter(facility => facility.name != facilityData.data.name);
+          setSimilarFacilities(filteredFacilites);
+          console.log(similarFacilities);
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        setIsLoading(false);
+        showToast('error', "Couldn't load facility");
+      }
+    }
+
+    fetchFacility();
+  }, [facilityId]);
 
   if (isLoading) return <FacilityDetailLoader />;
 
@@ -444,9 +509,6 @@ const FacilityDetailPage = () => {
     );
   }
 
-  const similarFacilities = mockFacilities
-    .filter(f => f.name !== facility.name)
-    .slice(0, 4);
   const defaultPricing =
     facility.pricing.find((p: Pricing) => p.isDefault) || facility.pricing[0];
   const hasVerifiedReviews = facility.reviews.some(
@@ -497,13 +559,17 @@ const FacilityDetailPage = () => {
           </Col>
         </Row>
       </Container>
-      <div className="mb-6 mt-12">
-        <PageHeroSections
-          to="facilites"
-          title="Similar spaces you might like"
-          facilities={similarFacilities}
-        />
-      </div>
+      {similarFacilities && (
+        <div className="mb-6 mt-12">
+          <PageHeroSections
+            to="facilites"
+            onAddToCart={handleAddToCartFacility}
+            onAddToWishlist={handleAddToWishlistFacility}
+            title={similarFacilities ? 'Similar spaces you might like' : ''}
+            facilities={similarFacilities!}
+          />
+        </div>
+      )}
     </div>
   );
 };

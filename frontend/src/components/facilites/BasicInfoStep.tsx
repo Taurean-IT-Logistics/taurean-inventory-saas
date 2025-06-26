@@ -15,7 +15,9 @@ import { Facility } from 'types';
 interface BasicInfoStepProps {
   formData: Partial<Facility>;
   handleInputChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => void;
   handleImageUpload: (files: FileList) => void;
   removeImage: (index: number) => void;
@@ -127,9 +129,38 @@ const BasicInfoStep = ({
               <Form.Control
                 type="text"
                 name="location.address"
-                value={formData.location?.address || ''}
+                value={formData.location?.address}
                 onChange={handleInputChange}
                 placeholder="Enter facility address"
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col md={6} className="mb-3">
+            <Form.Group>
+              <Form.Label className="fw-semibold">Latitude</Form.Label>
+              <Form.Control
+                type="number"
+                step="any"
+                name="location.coordinates.latitude"
+                value={formData.location?.coordinates?.latitude}
+                onChange={handleInputChange}
+                placeholder="Latitude"
+              />
+            </Form.Group>
+          </Col>
+          <Col md={6} className="mb-3">
+            <Form.Group>
+              <Form.Label className="fw-semibold">Longitude</Form.Label>
+              <Form.Control
+                type="number"
+                step="any"
+                name="location.coordinates.longitude"
+                value={formData.location?.coordinates?.longitude}
+                onChange={handleInputChange}
+                placeholder="Longitude"
               />
             </Form.Group>
           </Col>

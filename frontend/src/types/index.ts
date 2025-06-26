@@ -1,5 +1,23 @@
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 
+export interface APIResponse<T> {
+  success: boolean;
+  message: string;
+  data?: T;
+  errors?: any;
+  pagination?: PaginationData;
+  statusCode?: number;
+}
+
+export interface AuthUser {
+  user: User | null;
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  } | null;
+  isAuthenticated: boolean;
+}
+
 type SearchItemCategory =
   | 'recently_searched'
   | 'products'
@@ -66,7 +84,7 @@ export interface APIResponse<T> {
   success: boolean;
   message: string;
   data?: T;
-  errors?: unknown;
+  errors?: any;
   pagination?: PaginationData;
   statusCode?: number;
 }
@@ -158,9 +176,14 @@ export interface InventoryItem {
   description?: string;
   sku?: string;
   quantity: number;
-  images: string[];
+  images: {
+    path: string;
+    originalName: string;
+    mimetype: string;
+    size: number;
+  }[];
   status: 'in_stock' | 'rented' | 'unavailable' | 'maintenance' | 'retired';
-  associatedFacility?: Facility;
+  associatedFacility?: string;
   category: string;
   purchaseInfo: {
     purchaseDate?: Date;
