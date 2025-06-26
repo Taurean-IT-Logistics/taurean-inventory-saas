@@ -520,10 +520,28 @@ const createTransactionFromPaymentController = async (
   }
 };
 
+const getAllTransactions = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const transactions = await TransactionService.getAllTransactions();
+
+    if (!transactions) {
+      throw new Error("No transactions found");
+    }
+
+    sendSuccess(res, "Payment details retrieved successfully", transactions);
+  } catch (error) {
+    sendError(res, "Failed to retrieve payment details", error);
+  }
+};
+
 export {
   initializePaymentController,
   verifyPaymentController,
   handlePaystackWebhookController,
   getPaymentDetailsController,
   createTransactionFromPaymentController,
+  getAllTransactions,
 };

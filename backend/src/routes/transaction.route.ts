@@ -11,6 +11,13 @@ router.post("/webhook", TransactionController.handlePaystackWebhookController);
 router.use(AuthMiddleware);
 
 // Initialize payment and create transaction - authenticated users
+
+router.get(
+  "/",
+  AuthorizeRoles("admin", "staff"),
+  TransactionController.getAllTransactions
+);
+
 router.post("/initialize", TransactionController.initializePaymentController);
 
 // Verify payment by reference - authenticated users
