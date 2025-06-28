@@ -74,7 +74,6 @@ const InventoryItemCard = ({
     e.stopPropagation();
   };
 
-  console.log(item);
   return (
     <Link
       to={`/item/${item._id}`}

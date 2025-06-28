@@ -2,16 +2,26 @@ import { InventoryItem } from 'types';
 import { currencyFormat } from 'helpers/utils';
 import { Card, Table, Button, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
+import {
+  faEdit,
+  faTrash,
+  faTrashRestore
+} from '@fortawesome/free-solid-svg-icons';
 import { BadgeBg } from 'components/base/Badge';
 
 interface InventoryTableProps {
   items: InventoryItem[];
   onEdit: (item: InventoryItem) => void;
   onDelete: (itemId: string) => void;
+  onRestore: (itemId: string) => void;
 }
 
-const InventoryTable = ({ items, onEdit, onDelete }: InventoryTableProps) => {
+const InventoryTable = ({
+  items,
+  onEdit,
+  onDelete,
+  onRestore
+}: InventoryTableProps) => {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       in_stock: { bg: 'success', text: 'In Stock' },
@@ -109,13 +119,26 @@ const InventoryTable = ({ items, onEdit, onDelete }: InventoryTableProps) => {
                       >
                         <FontAwesomeIcon icon={faEdit} />
                       </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => onDelete(item._id!)}
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </Button>
+                      {!item.isDeleted && (
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          disabled={item.isDeleted}
+                          onClick={() => onDelete(item._id!)}
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </Button>
+                      )}
+                      {item.isDeleted && (
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          disabled={!item.isDeleted}
+                          onClick={() => onRestore(item._id!)}
+                        >
+                          <FontAwesomeIcon icon={faTrashRestore} />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

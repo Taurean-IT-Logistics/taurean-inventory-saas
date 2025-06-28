@@ -21,7 +21,7 @@ const UserSchema = new Schema<UserDocument>(
     },
     phone: {
       type: String,
-      match: [/^\+?[\d\s-()]+$/, "Please enter a valid phone number"],
+      default: null,
     },
     password: { type: String, required: true, minlength: 6 },
     role: { type: String, enum: ["admin", "staff", "user"], default: "user" },

@@ -20,13 +20,14 @@ router.get(
 
 router.post("/initialize", TransactionController.initializePaymentController);
 
+router.get("/user", AuthMiddleware, TransactionController.getUserTransactions);
+
 // Verify payment by reference - authenticated users
 router.get("/verify/:reference", TransactionController.verifyPaymentController);
 
 // Get payment details by reference - admin and staff
 router.get(
   "/details/:reference",
-  AuthorizeRoles("admin", "staff"),
   TransactionController.getPaymentDetailsController
 );
 

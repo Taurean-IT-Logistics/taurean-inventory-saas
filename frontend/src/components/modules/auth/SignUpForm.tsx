@@ -18,6 +18,7 @@ const SignUpForm = () => {
     username: '',
     email: '',
     password: '',
+    phone: '',
     confirmPassword: '',
     agreeToTerms: false
   });
@@ -35,10 +36,24 @@ const SignUpForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { name, username, email, password, confirmPassword, agreeToTerms } =
-      form;
+    const {
+      name,
+      username,
+      email,
+      password,
+      confirmPassword,
+      agreeToTerms,
+      phone
+    } = form;
 
-    if (!name || !username || !email || !password || !confirmPassword) {
+    if (
+      !name ||
+      !username ||
+      !email ||
+      !password ||
+      !confirmPassword ||
+      !phone
+    ) {
       showToast('error', 'All fields are required.');
       return;
     }
@@ -60,7 +75,8 @@ const SignUpForm = () => {
         name,
         username,
         email,
-        password
+        password,
+        phone
       });
 
       if (response.success && response.data) {
@@ -119,6 +135,19 @@ const SignUpForm = () => {
             value={form.username}
             onChange={handleChange}
             placeholder="Choose a username"
+            required
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3 text-start">
+          <Form.Label htmlFor="phone">Phone</Form.Label>
+          <Form.Control
+            id="phone"
+            name="phone"
+            type="telephone"
+            value={form.phone}
+            onChange={handleChange}
+            placeholder="Enter phone number"
             required
           />
         </Form.Group>

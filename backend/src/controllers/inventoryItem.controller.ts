@@ -21,10 +21,7 @@ export const getAllInventoryItems = async (
   res: Response
 ): Promise<void> => {
   try {
-    const showDeleted =
-      req.user?.role === "admin" || req.user?.role === "staff"
-        ? req.query.showDeleted === "true"
-        : false;
+    const showDeleted = true;
     const items = await InventoryItemService.getAllInventoryItems(showDeleted);
     sendSuccess(res, "Inventory items fetched successfully", items);
   } catch (error: any) {
@@ -40,9 +37,7 @@ export const getInventoryItemById = async (
   try {
     const { id } = req.params;
     const showDeleted =
-      req.user?.role === "admin" || req.user?.role === "staff"
-        ? req.query.showDeleted === "true"
-        : false;
+      req.user?.role === "admin" || req.user?.role === "staff" ? true : false;
     const item = await InventoryItemService.getInventoryItemById(
       id,
       showDeleted
@@ -125,11 +120,22 @@ export const updateInventoryItem = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
     const showDeleted = req.user?.role === "admin";
 
+    // Extract image operation parameters
+    const removeImageIds = req.body.removeImageIds;
+    const replaceAllImages = req.body.replaceAllImages === "true";
+
+    // Clean up image-related fields from updateData
+    delete updateData.removeImageIds;
+    delete updateData.replaceAllImages;
+
+    let newImages: any[] = [];
+
+    // Handle new image uploads
     if (req.files && Array.isArray(req.files)) {
-      // Validate file sizes and types
+      // Validate file sizes
       const maxFileSize = 10 * 1024 * 1024; // 10MB
       const invalidFiles = req.files.filter(
         (file: MulterFile) => file.size > maxFileSize
@@ -140,11 +146,12 @@ export const updateInventoryItem = async (
         return;
       }
 
-      updateData.images = req.files.map((file: MulterFile) => ({
+      newImages = req.files.map((file: MulterFile) => ({
         path: file.path || file.filename,
         originalName: file.originalname,
         mimetype: file.mimetype,
         size: file.size,
+        uploadedAt: new Date(),
       }));
     } else if (req.file) {
       if (req.file.size > 10 * 1024 * 1024) {
@@ -152,16 +159,18 @@ export const updateInventoryItem = async (
         return;
       }
 
-      updateData.images = [
+      newImages = [
         {
           path: req.file.path || req.file.filename,
           originalName: req.file.originalname,
           mimetype: req.file.mimetype,
           size: req.file.size,
+          uploadedAt: new Date(),
         },
       ];
     }
 
+    // Handle specifications parsing
     if (
       updateData.specifications &&
       typeof updateData.specifications === "string"
@@ -170,15 +179,22 @@ export const updateInventoryItem = async (
         Object.entries(JSON.parse(updateData.specifications))
       );
     }
+
+    // Call enhanced service method
     const updatedItem = await InventoryItemService.updateInventoryItem(
       id,
       updateData,
+      newImages.length > 0 ? newImages : undefined,
+      removeImageIds,
+      replaceAllImages,
       showDeleted
     );
+
     if (!updatedItem) {
       sendNotFound(res, "Inventory item not found");
       return;
     }
+
     sendSuccess(res, "Inventory item updated successfully", updatedItem);
   } catch (error: any) {
     sendValidationError(
@@ -187,7 +203,6 @@ export const updateInventoryItem = async (
     );
   }
 };
-
 // Soft delete inventory item by ID (admin only)
 export const deleteInventoryItem = async (
   req: Request,

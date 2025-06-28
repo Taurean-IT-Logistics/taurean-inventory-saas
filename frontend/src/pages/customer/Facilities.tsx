@@ -7,7 +7,8 @@ import {
   Button,
   Form,
   InputGroup,
-  Stack
+  Stack,
+  Alert
 } from 'react-bootstrap';
 import {
   faSearch,
@@ -17,12 +18,14 @@ import {
   faStar,
   faTh,
   faList,
-  faChevronDown
+  faChevronDown,
+  faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { showToast } from 'components/toaster/toaster';
 import FacilitiesLoader from 'components/facilites/FacilitiesLoader';
 import FacilityCard from 'components/facilites/FacilityCard';
-import { mockFacilities } from 'data';
+import { FacilityController } from 'controllers';
 import { Facility } from 'types';
 
 interface FilterOptions {
@@ -56,21 +59,47 @@ const priceRangeOptions = [
 function useFacilities() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate async loading
-    const timer = setTimeout(() => {
-      setFacilities(mockFacilities);
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    async function fetchFacilities() {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const data = await FacilityController.getAllFacilites();
+
+        if (data?.success && data?.data?.facilities) {
+          const facilitiesData = Array.isArray(data.data.facilities)
+            ? data.data.facilities
+            : [];
+          setFacilities(facilitiesData as Facility[]);
+
+          if (facilitiesData.length === 0) {
+            showToast('info', 'No facilities available at the moment');
+          }
+        } else {
+          throw new Error('Invalid response format');
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to load facilities';
+        setError(errorMessage);
+        showToast('error', `Error loading facilities: ${errorMessage}`);
+        setFacilities([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchFacilities();
   }, []);
 
-  return { facilities, isLoading };
+  return { facilities, isLoading, error };
 }
 
 function FacilitiesPage() {
-  const { facilities, isLoading } = useFacilities();
+  const { facilities, isLoading, error } = useFacilities();
   const [filteredFacilities, setFilteredFacilities] = useState<Facility[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<
@@ -89,185 +118,290 @@ function FacilitiesPage() {
     availability: ''
   });
 
-  const allAmenities = React.useMemo(
-    () => Array.from(new Set(mockFacilities.flatMap(f => f.amenities))).sort(),
-    []
-  );
+  const allAmenities = React.useMemo(() => {
+    try {
+      if (!Array.isArray(facilities) || facilities.length === 0) {
+        return [];
+      }
+
+      const amenities = facilities
+        .filter(f => f?.amenities && Array.isArray(f.amenities))
+        .flatMap(f =>
+          f.amenities.filter(amenity => amenity && typeof amenity === 'string')
+        )
+        .filter(Boolean);
+
+      return Array.from(new Set(amenities)).sort();
+    } catch (error) {
+      console.error('Error processing amenities:', error);
+      return [];
+    }
+  }, [facilities]);
 
   useEffect(() => {
-    applyFiltersAndSort();
+    if (!isLoading && !error) {
+      applyFiltersAndSort();
+    }
     // eslint-disable-next-line
-  }, [facilities, filters, sortBy, sortOrder]);
+  }, [facilities, filters, sortBy, sortOrder, isLoading, error]);
 
   const applyFiltersAndSort = () => {
-    let filtered = [...facilities];
-
-    // Search
-    if (filters.search) {
-      filtered = filtered.filter(
-        facility =>
-          facility.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-          facility.description
-            ?.toLowerCase()
-            .includes(filters.search.toLowerCase()) ||
-          facility.location.address
-            ?.toLowerCase()
-            .includes(filters.search.toLowerCase())
-      );
-    }
-
-    // Location
-    if (filters.location) {
-      filtered = filtered.filter(
-        facility =>
-          facility.location.address
-            ?.toLowerCase()
-            .includes(filters.location.toLowerCase())
-      );
-    }
-
-    // Capacity
-    if (filters.capacity) {
-      filtered = filtered.filter(facility => {
-        const capacity = facility.capacity.maximum;
-        switch (filters.capacity) {
-          case '1-10':
-            return capacity >= 1 && capacity <= 10;
-          case '11-25':
-            return capacity >= 11 && capacity <= 25;
-          case '26-50':
-            return capacity >= 26 && capacity <= 50;
-          case '51-100':
-            return capacity >= 51 && capacity <= 100;
-          case '100+':
-            return capacity > 100;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Price
-    if (filters.priceRange) {
-      filtered = filtered.filter(facility => {
-        const price = facility.pricing.find(p => p.isDefault)?.amount || 0;
-        switch (filters.priceRange) {
-          case '0-50':
-            return price >= 0 && price <= 50;
-          case '51-100':
-            return price >= 51 && price <= 100;
-          case '101-200':
-            return price >= 101 && price <= 200;
-          case '201-500':
-            return price >= 201 && price <= 500;
-          case '500+':
-            return price > 500;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Amenities
-    if (filters.amenities.length > 0) {
-      filtered = filtered.filter(facility =>
-        filters.amenities.every(amenity => facility.amenities.includes(amenity))
-      );
-    }
-
-    // Rating
-    if (filters.rating) {
-      const minRating = Number.parseFloat(filters.rating);
-      filtered = filtered.filter(
-        facility => facility.rating.average >= minRating
-      );
-    }
-
-    // Availability
-    if (filters.availability) {
-      filtered = filtered.filter(facility => {
-        if (filters.availability === 'available') return facility.isActive;
-        if (filters.availability === 'unavailable') return !facility.isActive;
-        return true;
-      });
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      let aValue: string | number;
-      let bValue: string | number;
-      switch (sortBy) {
-        case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-          break;
-        case 'price':
-          aValue = a.pricing.find(p => p.isDefault)?.amount || 0;
-          bValue = b.pricing.find(p => p.isDefault)?.amount || 0;
-          break;
-        case 'rating':
-          aValue = a.rating.average;
-          bValue = b.rating.average;
-          break;
-        case 'capacity':
-          aValue = a.capacity.maximum;
-          bValue = b.capacity.maximum;
-          break;
-        default:
-          return 0;
+    try {
+      if (!Array.isArray(facilities)) {
+        setFilteredFacilities([]);
+        return;
       }
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
 
-    setFilteredFacilities(filtered);
+      let filtered = [...facilities];
+
+      // Search
+      if (filters.search?.trim()) {
+        const searchTerm = filters.search.toLowerCase().trim();
+        filtered = filtered.filter(facility => {
+          if (!facility) return false;
+
+          const name = facility.name?.toLowerCase() || '';
+          const description = facility.description?.toLowerCase() || '';
+          const address = facility.location?.address?.toLowerCase() || '';
+
+          return (
+            name.includes(searchTerm) ||
+            description.includes(searchTerm) ||
+            address.includes(searchTerm)
+          );
+        });
+      }
+
+      // Location
+      if (filters.location?.trim()) {
+        const locationTerm = filters.location.toLowerCase().trim();
+        filtered = filtered.filter(
+          facility =>
+            facility?.location?.address?.toLowerCase().includes(locationTerm)
+        );
+      }
+
+      // Capacity
+      if (filters.capacity) {
+        filtered = filtered.filter(facility => {
+          const capacity = facility?.capacity?.maximum;
+          if (typeof capacity !== 'number') return false;
+
+          switch (filters.capacity) {
+            case '1-10':
+              return capacity >= 1 && capacity <= 10;
+            case '11-25':
+              return capacity >= 11 && capacity <= 25;
+            case '26-50':
+              return capacity >= 26 && capacity <= 50;
+            case '51-100':
+              return capacity >= 51 && capacity <= 100;
+            case '100+':
+              return capacity > 100;
+            default:
+              return true;
+          }
+        });
+      }
+
+      // Price
+      if (filters.priceRange) {
+        filtered = filtered.filter(facility => {
+          if (!facility?.pricing || !Array.isArray(facility.pricing))
+            return false;
+
+          const defaultPricing =
+            facility.pricing.find(p => p?.isDefault) || facility.pricing[0];
+          const price = defaultPricing?.amount || 0;
+
+          switch (filters.priceRange) {
+            case '0-50':
+              return price >= 0 && price <= 50;
+            case '51-100':
+              return price >= 51 && price <= 100;
+            case '101-200':
+              return price >= 101 && price <= 200;
+            case '201-500':
+              return price >= 201 && price <= 500;
+            case '500+':
+              return price > 500;
+            default:
+              return true;
+          }
+        });
+      }
+
+      // Amenities
+      if (filters.amenities?.length > 0) {
+        filtered = filtered.filter(facility => {
+          if (!facility?.amenities || !Array.isArray(facility.amenities))
+            return false;
+
+          return filters.amenities.every(amenity =>
+            facility.amenities.includes(amenity)
+          );
+        });
+      }
+
+      // Rating
+      if (filters.rating) {
+        const minRating = Number.parseFloat(filters.rating);
+        if (!isNaN(minRating)) {
+          filtered = filtered.filter(facility => {
+            const rating = facility?.rating?.average;
+            return typeof rating === 'number' && rating >= minRating;
+          });
+        }
+      }
+
+      // Availability
+      if (filters.availability) {
+        filtered = filtered.filter(facility => {
+          if (filters.availability === 'available')
+            return facility?.isActive === true;
+          if (filters.availability === 'unavailable')
+            return facility?.isActive === false;
+          return true;
+        });
+      }
+
+      // Sort
+      filtered.sort((a, b) => {
+        if (!a || !b) return 0;
+
+        let aValue: string | number;
+        let bValue: string | number;
+
+        switch (sortBy) {
+          case 'name':
+            aValue = a.name?.toLowerCase() || '';
+            bValue = b.name?.toLowerCase() || '';
+            break;
+          case 'price':
+            aValue = a.pricing?.find(p => p?.isDefault)?.amount || 0;
+            bValue = b.pricing?.find(p => p?.isDefault)?.amount || 0;
+            break;
+          case 'rating':
+            aValue = a.rating?.average || 0;
+            bValue = b.rating?.average || 0;
+            break;
+          case 'capacity':
+            aValue = a.capacity?.maximum || 0;
+            bValue = b.capacity?.maximum || 0;
+            break;
+          default:
+            return 0;
+        }
+
+        if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      setFilteredFacilities(filtered);
+    } catch (error) {
+      console.error('Error applying filters:', error);
+      showToast('error', 'Error applying filters');
+      setFilteredFacilities([]);
+    }
   };
 
   const handleFilterChange = <K extends keyof FilterOptions>(
     key: K,
     value: FilterOptions[K]
   ) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleAmenityToggle = (amenity: string) => {
-    setFilters(prev => ({
-      ...prev,
-      amenities: prev.amenities.includes(amenity)
-        ? prev.amenities.filter(a => a !== amenity)
-        : [...prev.amenities, amenity]
-    }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      search: '',
-      location: '',
-      capacity: '',
-      priceRange: '',
-      amenities: [],
-      rating: '',
-      availability: ''
-    });
-  };
-
-  const handleSort = (newSortBy: typeof sortBy) => {
-    if (sortBy === newSortBy) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(newSortBy);
-      setSortOrder('asc');
+    try {
+      setFilters(prev => ({ ...prev, [key]: value }));
+    } catch (error) {
+      console.error('Error updating filter:', error);
+      showToast('error', 'Error updating filter');
     }
   };
 
-  return isLoading ? (
-    <FacilitiesLoader />
-  ) : (
+  const handleAmenityToggle = (amenity: string) => {
+    try {
+      if (!amenity?.trim()) return;
+
+      setFilters(prev => ({
+        ...prev,
+        amenities: prev.amenities?.includes(amenity)
+          ? prev.amenities.filter(a => a !== amenity)
+          : [...(prev.amenities || []), amenity]
+      }));
+    } catch (error) {
+      console.error('Error toggling amenity:', error);
+      showToast('error', 'Error updating amenity filter');
+    }
+  };
+
+  const clearFilters = () => {
+    try {
+      setFilters({
+        search: '',
+        location: '',
+        capacity: '',
+        priceRange: '',
+        amenities: [],
+        rating: '',
+        availability: ''
+      });
+      showToast('info', 'Filters cleared');
+    } catch (error) {
+      console.error('Error clearing filters:', error);
+      showToast('error', 'Error clearing filters');
+    }
+  };
+
+  const handleSort = (newSortBy: typeof sortBy) => {
+    try {
+      if (sortBy === newSortBy) {
+        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      } else {
+        setSortBy(newSortBy);
+        setSortOrder('asc');
+      }
+    } catch (error) {
+      console.error('Error updating sort:', error);
+      showToast('error', 'Error updating sort');
+    }
+  };
+
+  const retryFetch = () => {
+    window.location.reload();
+  };
+
+  if (isLoading) {
+    return <FacilitiesLoader />;
+  }
+
+  if (error) {
+    return (
+      <Container fluid className="py-4">
+        <Row className="justify-content-center">
+          <Col md={8}>
+            <Alert variant="danger" className="text-center">
+              <FontAwesomeIcon
+                icon={faExclamationTriangle}
+                size="3x"
+                className="mb-3"
+              />
+              <h4>Failed to Load Facilities</h4>
+              <p>{error}</p>
+              <Button variant="danger" onClick={retryFetch}>
+                Try Again
+              </Button>
+            </Alert>
+          </Col>
+        </Row>
+      </Container>
+    );
+  }
+
+  return (
     <Container fluid className="py-4">
       <Header
-        filteredCount={filteredFacilities.length}
-        totalCount={facilities.length}
+        filteredCount={filteredFacilities?.length || 0}
+        totalCount={facilities?.length || 0}
         viewMode={viewMode}
         setViewMode={setViewMode}
       />
@@ -290,16 +424,16 @@ function FacilitiesPage() {
             sortBy={sortBy}
             sortOrder={sortOrder}
             onSort={handleSort}
-            resultCount={filteredFacilities.length}
+            resultCount={filteredFacilities?.length || 0}
           />
         </Col>
       </Row>
       <FacilitiesList
-        filteredFacilities={filteredFacilities}
+        filteredFacilities={filteredFacilities || []}
         viewMode={viewMode}
         clearFilters={clearFilters}
       />
-      {filteredFacilities.length > 0 && (
+      {filteredFacilities && filteredFacilities.length > 0 && (
         <Row className="mt-5">
           <Col className="text-center">
             <Button variant="outline-primary" size="lg">
@@ -390,19 +524,18 @@ function FiltersBar({
               <Form.Control
                 type="text"
                 placeholder="Search facilities..."
-                value={filters.search}
+                value={filters.search || ''}
                 onChange={e => onFilterChange('search', e.target.value)}
               />
             </InputGroup>
           </Col>
           <Col md={2} className="mb-2">
             <Form.Select
-              value={filters.capacity}
+              value={filters.capacity || ''}
               onChange={e => onFilterChange('capacity', e.target.value)}
             >
               {capacityOptions.map(option => (
                 <option key={option.value} value={option.value}>
-                  {' '}
                   {option.label}
                 </option>
               ))}
@@ -410,7 +543,7 @@ function FiltersBar({
           </Col>
           <Col md={2} className="mb-2">
             <Form.Select
-              value={filters.priceRange}
+              value={filters.priceRange || ''}
               onChange={e => onFilterChange('priceRange', e.target.value)}
             >
               {priceRangeOptions.map(option => (
@@ -422,7 +555,7 @@ function FiltersBar({
           </Col>
           <Col md={2} className="mb-2">
             <Form.Select
-              value={filters.availability}
+              value={filters.availability || ''}
               onChange={e => onFilterChange('availability', e.target.value)}
             >
               <option value="">All Status</option>
@@ -451,14 +584,14 @@ function FiltersBar({
                 <Form.Control
                   type="text"
                   placeholder="Enter location..."
-                  value={filters.location}
+                  value={filters.location || ''}
                   onChange={e => onFilterChange('location', e.target.value)}
                 />
               </Col>
               <Col md={3} className="mb-3">
                 <Form.Label className="small">Minimum Rating</Form.Label>
                 <Form.Select
-                  value={filters.rating}
+                  value={filters.rating || ''}
                   onChange={e => onFilterChange('rating', e.target.value)}
                 >
                   <option value="">Any Rating</option>
@@ -482,7 +615,7 @@ function FiltersBar({
                       label={
                         <span className="small text-muted">{amenity}</span>
                       }
-                      checked={filters.amenities.includes(amenity)}
+                      checked={filters.amenities?.includes(amenity) || false}
                       onChange={() => onAmenityToggle(amenity)}
                     />
                   ))}
@@ -570,7 +703,7 @@ function FacilitiesList({
   viewMode: 'grid' | 'list';
   clearFilters: () => void;
 }) {
-  if (filteredFacilities.length === 0) {
+  if (!Array.isArray(filteredFacilities) || filteredFacilities.length === 0) {
     return (
       <div className="text-center py-5">
         <div className="text-muted mb-3">
@@ -590,11 +723,15 @@ function FacilitiesList({
   if (viewMode === 'grid') {
     return (
       <Row className="g-4">
-        {filteredFacilities.map((facility, index) => (
-          <Col key={facility._id || index} sm={6} lg={4} xl={3}>
-            <FacilityCard facility={facility} />
-          </Col>
-        ))}
+        {filteredFacilities.map((facility, index) => {
+          if (!facility) return null;
+
+          return (
+            <Col key={facility._id || `facility-${index}`} sm={6} lg={4} xl={3}>
+              <FacilityCard facility={facility} />
+            </Col>
+          );
+        })}
       </Row>
     );
   }
@@ -602,18 +739,33 @@ function FacilitiesList({
   // List view
   return (
     <div>
-      {filteredFacilities.map((facility, index) => (
-        <div key={facility._id || index} className="mb-4">
-          <FacilityListItem facility={facility} />
-        </div>
-      ))}
+      {filteredFacilities.map((facility, index) => {
+        if (!facility) return null;
+
+        return (
+          <div key={facility._id || `facility-${index}`} className="mb-4">
+            <FacilityListItem facility={facility} />
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 function FacilityListItem({ facility }: { facility: Facility }) {
+  if (!facility) return null;
+
   const defaultPricing =
-    facility.pricing.find(p => p.isDefault) || facility.pricing[0];
+    facility.pricing?.find(p => p?.isDefault) || facility.pricing?.[0];
+  const facilityImage =
+    facility.images?.[0]?.path || '/placeholder.svg?height=150&width=200';
+  const facilityName = facility.name || 'Unnamed Facility';
+  const facilityDescription =
+    facility.description || 'No description available';
+  const facilityAddress = facility.location?.address || 'Address not available';
+  const facilityCapacity = facility.capacity?.maximum || 0;
+  const facilityRating = facility.rating?.average;
+  const facilityReviews = facility.rating?.totalReviews || 0;
 
   return (
     <Card className="border-secondary">
@@ -621,36 +773,35 @@ function FacilityListItem({ facility }: { facility: Facility }) {
         <Row className="align-items-center">
           <Col md={3}>
             <img
-              src={
-                facility.images[0]?.path ||
-                '/placeholder.svg?height=150&width=200'
-              }
-              alt={facility.name}
+              src={facilityImage}
+              alt={facilityName}
               className="img-fluid rounded"
               style={{ height: '150px', width: '100%', objectFit: 'cover' }}
+              onError={e => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder.svg?height=150&width=200';
+              }}
             />
           </Col>
           <Col md={6}>
-            <h5 className="fw-bold mb-2">{facility.name}</h5>
-            <div className="mb-2 text-muted">{facility.description}</div>
+            <h5 className="fw-bold mb-2">{facilityName}</h5>
+            <div className="mb-2 text-muted">{facilityDescription}</div>
             <Stack direction="horizontal" gap={2} className="mb-2">
               <FontAwesomeIcon icon={faMapMarkerAlt} className="text-primary" />
-              <span className="small text-muted">
-                {facility.location.address}
-              </span>
+              <span className="small text-muted">{facilityAddress}</span>
             </Stack>
             <Stack direction="horizontal" gap={2} className="mb-2">
               <FontAwesomeIcon icon={faUsers} className="text-primary" />
               <span className="small text-muted">
-                Up to {facility.capacity.maximum} guests
+                Up to {facilityCapacity} guests
               </span>
             </Stack>
-            {facility.rating && (
+            {facilityRating && (
               <Stack direction="horizontal" gap={1} className="mb-2">
                 <FontAwesomeIcon icon={faStar} className="text-warning" />
-                <span className="small">{facility.rating.average}</span>
+                <span className="small">{facilityRating}</span>
                 <span className="small text-muted">
-                  ({facility.rating.totalReviews} reviews)
+                  ({facilityReviews} reviews)
                 </span>
               </Stack>
             )}
@@ -658,16 +809,18 @@ function FacilityListItem({ facility }: { facility: Facility }) {
           <Col md={3} className="text-end">
             <div className="mb-3">
               <div className="h4 fw-bold mb-0">
-                {defaultPricing ? `$${defaultPricing.amount}` : 'Contact'}
+                {defaultPricing?.amount
+                  ? `$${defaultPricing.amount}`
+                  : 'Contact'}
               </div>
-              {defaultPricing && (
+              {defaultPricing?.unit && (
                 <small className="text-muted">per {defaultPricing.unit}</small>
               )}
             </div>
             <Stack gap={2}>
               <Button
                 as="a"
-                href={`/facility/${facility.name
+                href={`/facility/${facilityName
                   .toLowerCase()
                   .replace(/\s+/g, '-')}`}
                 variant="primary"
@@ -676,7 +829,7 @@ function FacilityListItem({ facility }: { facility: Facility }) {
               </Button>
               <Button
                 as="a"
-                href={`/book/${facility.name
+                href={`/book/${facilityName
                   .toLowerCase()
                   .replace(/\s+/g, '-')}`}
                 variant="outline-primary"

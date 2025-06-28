@@ -213,7 +213,7 @@ export interface InventoryItem {
     performedBy?: User;
   }[];
   currentBookings: Booking[];
-  specifications: Map<string, unknown>;
+  specifications: Map<string, string>;
   alerts: {
     lowStock: boolean;
     maintenanceDue: boolean;
@@ -225,6 +225,7 @@ export interface InventoryItem {
 }
 
 export interface Booking {
+  _id: string;
   user: User;
   facility: Facility;
   startDate: Date;
@@ -271,6 +272,7 @@ export interface Booking {
 }
 
 export interface Transaction {
+  _id: string;
   booking?: Booking;
   user: User;
   account?: Account;

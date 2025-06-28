@@ -537,6 +537,28 @@ const getAllTransactions = async (
   }
 };
 
+const getUserTransactions = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      throw new Error("User not authenticated");
+    }
+
+    const userId = req.user.id;
+
+    const transactions = await TransactionService.getAllUserTransactions(
+      userId
+    );
+
+    if (!transactions) {
+      throw new Error("No transactions found");
+    }
+
+    sendSuccess(res, "Payment details retrieved successfully", transactions);
+  } catch (error) {
+    sendError(res, "Failed to retrieve payment details", error);
+  }
+};
+
 export {
   initializePaymentController,
   verifyPaymentController,
@@ -544,4 +566,5 @@ export {
   getPaymentDetailsController,
   createTransactionFromPaymentController,
   getAllTransactions,
+  getUserTransactions,
 };

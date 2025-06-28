@@ -2,6 +2,25 @@ import { Request, Response } from "express";
 import { UserService } from "../services";
 import { sendSuccess, sendError, sendNotFound, sendConflict } from "../utils";
 
+const canUpdateRole = (
+  currentUserRole: string,
+  targetRole: string
+): boolean => {
+  const roleHierarchy = {
+    admin: 3,
+    staff: 2,
+    user: 1,
+  };
+
+  const currentLevel =
+    roleHierarchy[currentUserRole as keyof typeof roleHierarchy] || 0;
+  const targetLevel =
+    roleHierarchy[targetRole as keyof typeof roleHierarchy] || 0;
+
+  // Only allow role updates if current user has higher or equal permission level
+  return currentLevel >= targetLevel && currentUserRole === "admin";
+};
+
 // Create a new user
 const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -100,17 +119,53 @@ const getUserByIdentifier = async (
 const updateUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = req.body;
+    const targetUserId = req.params.id;
+    const currentUser = req.user;
 
-    // Check if user is trying to update role to admin/staff
-    if (data.role && ["admin", "staff"].includes(data.role)) {
-      if (!req.user || !req.user.role || req.user.role !== "admin") {
-        sendError(res, "You do not have permission to change roles", null, 403);
+    if (!currentUser) {
+      sendError(res, "Authentication required", null, 401);
+      return;
+    }
+
+    // Check if target user exists first
+    const targetUser = await UserService.getUserById(targetUserId);
+    if (!targetUser) {
+      sendNotFound(res, "User not found");
+      return;
+    }
+
+    // Role update permissions
+    if (data.role) {
+      if (!canUpdateRole(currentUser.role, data.role)) {
+        sendError(
+          res,
+          "You do not have permission to assign this role",
+          null,
+          403
+        );
         return;
       }
     }
 
-    // Check if regular user is trying to update another user
-    if (req.user?.role === "user" && req.user.id !== req.params.id) {
+    if (data.isDeleted) {
+      if (!canUpdateRole(currentUser.role, data.role)) {
+        sendError(
+          res,
+          "You do not have permission to assign this role",
+          null,
+          403
+        );
+        return;
+      }
+    }
+
+    // General update permissions
+    const canUpdate =
+      currentUser.role === "admin" ||
+      (currentUser.role === "staff" && targetUser.role === "user") ||
+      currentUser.id === targetUserId;
+
+    if (!canUpdate) {
       sendError(
         res,
         "You do not have permission to update this user",
@@ -120,20 +175,40 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await UserService.updateUser(req.params.id, data);
+    // Filter sensitive fields
+    const allowedFields = [
+      "name",
+      "email",
+      "username",
+      "role",
+      "phone",
+      "isDeleted",
+      "status",
+      "profile",
+    ];
+    const filteredData = Object.keys(data)
+      .filter((key) => allowedFields.includes(key))
+      .reduce((obj, key) => {
+        obj[key] = data[key];
+        return obj;
+      }, {} as any);
 
-    if (!user) {
-      sendNotFound(res, "User not found");
-      return;
-    }
+    const updatedUser = await UserService.updateUser(
+      targetUserId,
+      filteredData
+    );
 
-    sendSuccess(res, "User updated successfully", user);
+    sendSuccess(res, "User updated successfully", updatedUser);
   } catch (error: any) {
-    if (error.message.includes("already exists")) {
+    console.error("Error updating user:", error);
+
+    if (error.message?.includes("already exists")) {
       sendConflict(res, "Email or username already exists");
-      return;
+    } else if (error.message?.includes("validation")) {
+      sendError(res, "Invalid data provided", error.message, 400);
+    } else {
+      sendError(res, "Failed to update user", error.message);
     }
-    sendError(res, "Failed to update user", error.message);
   }
 };
 

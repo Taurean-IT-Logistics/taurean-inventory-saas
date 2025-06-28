@@ -14,5 +14,9 @@ export const getResourceUrl = (path: string): string => {
   // Normalize path for all OS (especially Windows backslashes)
   const normalizedPath = path.replace(/\\/g, '/');
 
+  if (path.includes('http') || !normalizedPath.includes('uploads/')) {
+    return path;
+  }
+
   return `${API_BASE_URL}${normalizedPath}`;
 };

@@ -3,12 +3,17 @@ import { Modal, Button, Form, Row, Col, Badge } from 'react-bootstrap';
 import { InventoryItem } from 'types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUpload, faTimes, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { getResourceUrl } from 'controllers';
 
 interface EditInventoryModalProps {
   item: InventoryItem | null;
   show: boolean;
   onHide: () => void;
-  onSave: (item: InventoryItem) => void;
+  onSave: (
+    item: InventoryItem,
+    rawFiles: File[],
+    removedImageIds: string[]
+  ) => void;
 }
 
 const EditInventoryModal = ({
@@ -22,6 +27,8 @@ const EditInventoryModal = ({
   const [specValue, setSpecValue] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<any[]>([]);
+  const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
 
   const categories = [
     'AV Equipment',
@@ -38,7 +45,14 @@ const EditInventoryModal = ({
   useEffect(() => {
     if (item) {
       setFormData({ ...item });
-      setImagePreviews(item.images || []);
+
+      // Reset file states when item changes
+      setImageFiles([]);
+      setExistingImages(item.images || []);
+      setRemovedImageIds([]);
+
+      // Set previews for existing images
+      setImagePreviews(item.images?.map(i => i.path) || []);
     }
   }, [item]);
 
@@ -75,9 +89,11 @@ const EditInventoryModal = ({
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+
+    // Add new files to the existing files
     setImageFiles(prev => [...prev, ...files]);
 
-    // Create preview URLs
+    // Create preview URLs for new files
     files.forEach(file => {
       const reader = new FileReader();
       reader.onload = event => {
@@ -90,13 +106,39 @@ const EditInventoryModal = ({
   };
 
   const removeImage = (index: number) => {
+    const existingImagesCount = existingImages.length;
+
+    if (index < existingImagesCount) {
+      // Removing an existing image - track its ID for removal
+      const imageToRemove = existingImages[index];
+      if (imageToRemove._id) {
+        setRemovedImageIds(prev => [...prev, imageToRemove._id]);
+      }
+      setExistingImages(prev => prev.filter((_, i) => i !== index));
+    } else {
+      // Removing a new file
+      const fileIndex = index - existingImagesCount;
+      setImageFiles(prev => prev.filter((_, i) => i !== fileIndex));
+    }
+
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
-    setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const addSpecification = () => {
     if (specKey.trim() && specValue.trim()) {
-      const newSpecs = new Map(formData.specifications);
+      let newSpecs: Map<string, string>;
+
+      if (formData.specifications instanceof Map) {
+        newSpecs = new Map(formData.specifications);
+      } else if (
+        formData.specifications &&
+        typeof formData.specifications === 'object'
+      ) {
+        newSpecs = new Map(Object.entries(formData.specifications));
+      } else {
+        newSpecs = new Map();
+      }
+
       newSpecs.set(specKey.trim(), specValue.trim());
       setFormData(prev => ({
         ...prev,
@@ -108,7 +150,19 @@ const EditInventoryModal = ({
   };
 
   const removeSpecification = (key: string) => {
-    const newSpecs = new Map(formData.specifications);
+    let newSpecs: Map<string, string>;
+
+    if (formData.specifications instanceof Map) {
+      newSpecs = new Map(formData.specifications);
+    } else if (
+      formData.specifications &&
+      typeof formData.specifications === 'object'
+    ) {
+      newSpecs = new Map(Object.entries(formData.specifications));
+    } else {
+      return;
+    }
+
     newSpecs.delete(key);
     setFormData(prev => ({
       ...prev,
@@ -122,14 +176,25 @@ const EditInventoryModal = ({
       const updatedItem: InventoryItem = {
         ...item,
         ...formData,
-        images: imagePreviews,
         updatedAt: new Date()
       };
-      onSave(updatedItem);
-      console.log(imageFiles);
+
+      // Pass the updated item, raw files, and removed image IDs
+      onSave(updatedItem, imageFiles, removedImageIds);
       onHide();
     }
   };
+
+  // Clean up object URLs on unmount
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(preview => {
+        if (preview.startsWith('blob:')) {
+          URL.revokeObjectURL(preview);
+        }
+      });
+    };
+  }, [imagePreviews]);
 
   if (!show || !item) return null;
 
@@ -152,29 +217,44 @@ const EditInventoryModal = ({
                 className="border-secondary mb-3"
               />
               <div className="d-flex flex-wrap gap-4">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="position-relative">
-                    <img
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      className="rounded"
-                      style={{
-                        width: '100px',
-                        height: '100px',
-                        objectFit: 'cover'
-                      }}
-                    />
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      className="position-absolute top-0 end-0"
-                      style={{ transform: 'translate(25%, -25%)' }}
-                      onClick={() => removeImage(index)}
-                    >
-                      <FontAwesomeIcon icon={faTimes} />
-                    </Button>
-                  </div>
-                ))}
+                {imagePreviews.map((preview, index) => {
+                  const isExisting = index < existingImages.length;
+                  return (
+                    <div key={index} className="position-relative">
+                      <img
+                        src={getResourceUrl(preview)}
+                        alt={`Preview ${index + 1}`}
+                        className="rounded"
+                        style={{
+                          width: '100px',
+                          height: '100px',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className="position-absolute top-0 end-0"
+                        style={{ transform: 'translate(25%, -25%)' }}
+                        onClick={() => removeImage(index)}
+                      >
+                        <FontAwesomeIcon icon={faTimes} />
+                      </Button>
+                      {!isExisting && (
+                        <Badge
+                          bg="success"
+                          className="position-absolute bottom-0 start-0"
+                          style={{
+                            transform: 'translate(-25%, 25%)',
+                            fontSize: '0.6rem'
+                          }}
+                        >
+                          New
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
                 {imagePreviews.length === 0 && (
                   <div className="text-center w-100 py-4">
                     <FontAwesomeIcon
@@ -186,9 +266,26 @@ const EditInventoryModal = ({
                   </div>
                 )}
               </div>
+              <div className="mt-2 text-muted small">
+                {existingImages.length > 0 && (
+                  <div>
+                    Existing images: {existingImages.length}
+                    {removedImageIds.length > 0 && (
+                      <span className="text-danger">
+                        {' '}
+                        ({removedImageIds.length} to be removed)
+                      </span>
+                    )}
+                  </div>
+                )}
+                {imageFiles.length > 0 && (
+                  <div>New files: {imageFiles.length}</div>
+                )}
+              </div>
             </div>
           </div>
 
+          {/* Rest of your form fields remain the same... */}
           <Row>
             <Col md={8} className="mb-3">
               <Form.Label>Item Name *</Form.Label>
@@ -273,7 +370,7 @@ const EditInventoryModal = ({
 
           <div className="mb-3">
             <Form.Label>Specifications</Form.Label>
-            <Row className="mb-2">
+            <Row className="mb-2 gap-2">
               <Col md={4}>
                 <Form.Control
                   type="text"
@@ -305,8 +402,13 @@ const EditInventoryModal = ({
             </Row>
             <div className="d-flex flex-wrap gap-2">
               {formData.specifications &&
-                Array.from(formData.specifications.entries()).map(
-                  ([key, value]) => (
+                (() => {
+                  const specs =
+                    formData.specifications instanceof Map
+                      ? Array.from(formData.specifications.entries())
+                      : Object.entries(formData.specifications);
+
+                  return specs.map(([key, value]) => (
                     <Badge
                       key={key}
                       bg="secondary"
@@ -322,8 +424,8 @@ const EditInventoryModal = ({
                         ×
                       </Button>
                     </Badge>
-                  )
-                )}
+                  ));
+                })()}
             </div>
           </div>
         </Modal.Body>

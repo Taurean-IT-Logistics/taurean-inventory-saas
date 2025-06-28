@@ -4,8 +4,6 @@ import {
   faBox,
   faBuilding,
   faUsers,
-  faBell,
-  faExclamationTriangle,
   faCheckCircle
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -14,8 +12,6 @@ interface DashboardMetricsProps {
     totalInventory: number;
     totalFacilities: number;
     totalUsers: number;
-    totalAlerts: number;
-    lowStockItems: number;
     activeBookings: number;
   };
 }
@@ -33,7 +29,7 @@ const DashboardMetrics = ({ metrics }: DashboardMetricsProps) => {
       title: 'Facilities',
       value: metrics.totalFacilities,
       icon: faBuilding,
-      color: 'success',
+      color: 'warning',
       description: 'Active facilities'
     },
     {
@@ -42,20 +38,6 @@ const DashboardMetrics = ({ metrics }: DashboardMetricsProps) => {
       icon: faUsers,
       color: 'info',
       description: 'Registered users'
-    },
-    {
-      title: 'Active Alerts',
-      value: metrics.totalAlerts,
-      icon: faBell,
-      color: 'warning',
-      description: 'System notifications'
-    },
-    {
-      title: 'Low Stock Items',
-      value: metrics.lowStockItems,
-      icon: faExclamationTriangle,
-      color: 'danger',
-      description: 'Need attention'
     },
     {
       title: 'Active Bookings',
@@ -67,9 +49,9 @@ const DashboardMetrics = ({ metrics }: DashboardMetricsProps) => {
   ];
 
   return (
-    <Row className="mb-4">
+    <Row className="mb-4 justify-content-between">
       {metricCards.map((metric, index) => (
-        <Col key={index} lg={2} md={4} sm={6} className="mb-3">
+        <Col key={index} lg={3} md={3} sm={6} className="mb-3">
           <Card
             className={`bg-${metric.color} bg-opacity-10 border-${metric.color} h-100`}
           >

@@ -5,8 +5,8 @@ import {
   faBox,
   faBuilding,
   faUsers,
-  faBell,
-  faChartLine
+  faChartLine,
+  faBook
 } from '@fortawesome/free-solid-svg-icons';
 
 const QuickActionsSidebar = () => {
@@ -26,17 +26,17 @@ const QuickActionsSidebar = () => {
       variant: 'success'
     },
     {
-      title: 'Create User',
-      description: 'Add new user account',
+      title: 'Manage Users',
+      description: 'Manage users and roles',
       icon: faUsers,
-      to: '/admin/create-user',
+      to: '/admin/users',
       variant: 'info'
     },
     {
-      title: 'New Alert',
-      description: 'Create system alert',
-      icon: faBell,
-      to: '/admin/create-alert',
+      title: 'Manage Bookings',
+      description: 'Manage pending and completed bookings',
+      icon: faBook,
+      to: '/admin/bookings',
       variant: 'warning'
     }
   ];
@@ -58,23 +58,15 @@ const QuickActionsSidebar = () => {
       icon: faChartLine
     },
     {
-      title: 'System Alerts',
-      to: '/admin/alerts',
-      icon: faBell
+      title: 'Booking Management',
+      to: '/admin/bookings',
+      icon: faBook
     }
   ];
 
   return (
     <div>
-      <Card
-        className="border-secondary mb-4"
-        style={{
-          position: 'sticky',
-          top: '20px',
-          zIndex: 1020,
-          alignSelf: 'flex-start'
-        }}
-      >
+      <Card className="border-secondary mb-4">
         <Card.Header className="border-secondary">
           <h5 className="mb-0">Quick Actions</h5>
         </Card.Header>

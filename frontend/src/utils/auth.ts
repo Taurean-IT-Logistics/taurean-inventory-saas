@@ -17,8 +17,6 @@ export const refreshAccessToken = async () => {
         isAuthenticated: true
       };
 
-      console.log(response);
-
       StateManagement.store.dispatch(
         StateManagement.AuthReducer.login(newData)
       );

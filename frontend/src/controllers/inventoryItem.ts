@@ -141,9 +141,151 @@ const getItemById = async (id: string) => {
   }
 };
 
+const updateItem = async (
+  id: string,
+  data: Partial<InventoryItem>,
+  accessToken: string,
+  rawFiles?: File[],
+  removedImageIds?: string[]
+) => {
+  try {
+    const formData = new FormData();
+
+    // Add regular form fields
+    if (data.name) formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    if (data.sku) formData.append('sku', data.sku);
+    if (data.quantity !== undefined)
+      formData.append('quantity', data.quantity.toString());
+    if (data.status) formData.append('status', data.status);
+    if (data.associatedFacility)
+      formData.append('associatedFacility', data.associatedFacility);
+    if (data.category) formData.append('category', data.category);
+
+    if (data.purchaseInfo) {
+      const { purchaseDate, purchasePrice, supplier, warrantyExpiry } =
+        data.purchaseInfo;
+
+      if (purchaseDate)
+        formData.append('purchaseInfo[purchaseDate]', purchaseDate.toString());
+      if (purchasePrice !== undefined)
+        formData.append(
+          'purchaseInfo[purchasePrice]',
+          purchasePrice.toString()
+        );
+      if (supplier) formData.append('purchaseInfo[supplier]', supplier);
+      if (warrantyExpiry)
+        formData.append(
+          'purchaseInfo[warrantyExpiry]',
+          warrantyExpiry.toString()
+        );
+    }
+
+    if (data.alerts) {
+      Object.entries(data.alerts).forEach(([key, value]) => {
+        if (value !== undefined) {
+          formData.append(`alerts[${key}]`, String(value));
+        }
+      });
+    }
+
+    if (data.specifications && data.specifications instanceof Map) {
+      const plainObject: Record<string, unknown> = {};
+      data.specifications.forEach((value, key) => {
+        plainObject[key] = value;
+      });
+      formData.append('specifications', JSON.stringify(plainObject));
+    }
+
+    // Add new image files
+    if (rawFiles && rawFiles.length > 0) {
+      rawFiles.forEach(file => {
+        formData.append('files', file);
+      });
+    }
+
+    // Add removed image IDs
+    if (removedImageIds && removedImageIds.length > 0) {
+      formData.append('removeImageIds', JSON.stringify(removedImageIds));
+    }
+
+    const response = await apiClient.put<APIResponse<InventoryItem>>(
+      `/inventory-items/${id}`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to update item');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+const deleteItem = async (id: string, accessToken: string) => {
+  try {
+    const response = await apiClient.delete<APIResponse<InventoryItem>>(
+      `/inventory-items/${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to update item');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+const restoreItem = async (id: string, accessToken: string) => {
+  try {
+    const response = await apiClient.post<APIResponse<InventoryItem>>(
+      `/inventory-items/${id}/restore`,
+      {}, // Empty body for POST request
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(
+        error.response?.data?.message || 'Failed to restore item'
+      );
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
 export {
   createInventoryItem,
   getAllInventoryItems,
   getLowStockItems,
-  getItemById
+  getItemById,
+  updateItem,
+  deleteItem,
+  restoreItem
 };

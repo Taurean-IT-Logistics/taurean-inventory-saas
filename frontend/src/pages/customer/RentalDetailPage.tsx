@@ -18,21 +18,33 @@ import {
   faClock,
   faCreditCard
 } from '@fortawesome/free-solid-svg-icons';
-import { useCart } from 'hooks/useCart';
 import { useWishlist } from 'hooks/useWishlist';
 import RentDetailSkeleton from 'components/inventory/RentailDetailLoader';
 import { InventoryItem } from 'types';
 import { getResourceUrl } from 'controllers';
-import { InventoryItemController } from 'controllers';
+import { InventoryItemController, TransactionController } from 'controllers';
 import { currencyFormat } from 'helpers/utils';
 import {
   differenceInCalendarDays,
   format,
   formatDistanceToNow
 } from 'date-fns';
+import { useAppSelector } from 'hooks/useAppDispatch';
+import { StateManagement } from 'lib';
+import { showToast } from 'components/toaster/toaster';
+
+interface PaymentResponse {
+  payment: {
+    authorization_url: string;
+  };
+}
 
 const RentDetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { user, tokens } = useAppSelector(
+    (state: StateManagement.RootState) => state.auth
+  );
+  const accessToken = tokens.accessToken;
   const [selectedImage, setSelectedImage] = useState(0);
   const [item, setItem] = useState<InventoryItem>();
   const [quantity, setQuantity] = useState(1);
@@ -40,6 +52,9 @@ const RentDetailPage = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { addToWishlist, isInWishlist } = useWishlist();
 
   useEffect(() => {
     if (startDate && endDate) {
@@ -55,9 +70,6 @@ const RentDetailPage = () => {
     const diff = differenceInCalendarDays(date, new Date());
     return diff === 0 ? 'today' : `${diff} day${diff > 1 ? 's' : ''}`;
   };
-
-  const { addToCart } = useCart();
-  const { addToWishlist, isInWishlist } = useWishlist();
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -78,10 +90,7 @@ const RentDetailPage = () => {
     fetchItem();
   }, [id]);
 
-  if (isLoading) {
-    return <RentDetailSkeleton />;
-  }
-
+  if (isLoading) return <RentDetailSkeleton />;
   if (!item) {
     return (
       <div className="min-vh-100">
@@ -116,21 +125,6 @@ const RentDetailPage = () => {
   const price = item.purchaseInfo.purchasePrice || 0;
   const totalPrice = price * quantity * rentalDays;
 
-  const handleAddToCart = () => {
-    addToCart({
-      type: 'inventory_item',
-      itemId: item._id || '',
-      quantity: quantity,
-      name: item.name,
-      price: price,
-      imageUrl:
-        item.images && item.images.length > 0 ? item.images[0].path : undefined,
-      notes: `Rental for ${rentalDays} day${
-        rentalDays > 1 ? 's' : ''
-      } from ${startDate} to ${endDate}`
-    });
-  };
-
   const handleAddToWishlist = () => {
     addToWishlist({
       type: 'inventory_item',
@@ -142,12 +136,46 @@ const RentDetailPage = () => {
     });
   };
 
+  const handleTransaction = async () => {
+    if (!user || !accessToken) return;
+
+    setIsSubmitting(true);
+    setIsLoading(true);
+    try {
+      const transactionData = {
+        email: user.email,
+        amount: totalPrice,
+        category: 'inventory_item',
+        description: `Rental for ${item.name} (${item._id}) from ${startDate} to ${endDate}`
+      };
+
+      const transactionResponse = await TransactionController.createTransaction(
+        transactionData,
+        accessToken
+      );
+
+      if (transactionResponse?.success) {
+        showToast('success', 'Redirecting to Paystack...');
+        window.location.href = (
+          transactionResponse.data as PaymentResponse
+        ).payment.authorization_url;
+      } else {
+        showToast('error', 'Transaction failed to initialize.');
+      }
+    } catch (error) {
+      showToast('error', 'Something went wrong during transaction.');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+      setIsLoading(false);
+    }
+  };
+
   const images = item.images?.map(img => img.path) || ['/placeholder.svg'];
 
   return (
     <div className="min-vh-100">
       <Container fluid className="py-4">
-        {/* Navigation */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <Link to="/rental" className="btn btn-outline-secondary">
             <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
@@ -161,7 +189,6 @@ const RentDetailPage = () => {
 
         <Row>
           <Col lg={6}>
-            {/* Image Gallery */}
             <Card border="secondary" className="mb-4">
               <Card.Body className="p-0">
                 <div className="position-relative">
@@ -198,7 +225,6 @@ const RentDetailPage = () => {
           </Col>
 
           <Col lg={6}>
-            {/* Item Details */}
             <div className="mb-4">
               <div className="d-flex justify-content-between align-items-start mb-3">
                 <div>
@@ -228,7 +254,6 @@ const RentDetailPage = () => {
                 </p>
               </div>
 
-              {/* Rental Booking Form */}
               <Card border="secondary" className="mb-4">
                 <Card.Header className="border-secondary">
                   <h5 className="mb-0">
@@ -300,14 +325,11 @@ const RentDetailPage = () => {
                   </Row>
 
                   {startDate && endDate && (
-                    <div
-                      className="bg-primary p-3 rounded mb-3"
-                      style={{ backgroundColor: '#1e3a8a' }}
-                    >
+                    <div className="bg-primary p-3 text-white rounded mb-3">
                       <div>
                         <FontAwesomeIcon icon={faClock} className="me-2" />
-                        Period: in {daysFromNow(new Date(startDate))} – starts
-                        on {format(new Date(endDate), 'MMMM d, yyyy')}, ends in{' '}
+                        Period: Ends on{' '}
+                        {format(new Date(endDate), 'MMMM d, yyyy')},{' '}
                         {daysFromNow(new Date(endDate))} from now.
                       </div>
                     </div>
@@ -324,16 +346,17 @@ const RentDetailPage = () => {
                     variant="primary"
                     size="lg"
                     className="w-100"
-                    disabled={!isAvailable || !startDate || !endDate}
-                    onClick={handleAddToCart}
+                    disabled={
+                      !isAvailable || !startDate || !endDate || isSubmitting
+                    }
+                    onClick={handleTransaction}
                   >
                     <FontAwesomeIcon icon={faCreditCard} className="me-2" />
-                    {isAvailable ? 'Proceed to Checkout' : 'Unavailable'}
+                    {isSubmitting ? 'Processing...' : 'Proceed to Checkout'}
                   </Button>
                 </Card.Body>
               </Card>
 
-              {/* Item Information */}
               <Card border="secondary">
                 <Card.Header className="border-secondary">
                   <h5 className="mb-0">

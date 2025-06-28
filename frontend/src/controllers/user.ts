@@ -97,4 +97,87 @@ const getAllusers = async (accessToken: string) => {
     }
   }
 };
-export { loginUser, createUser, refreshToken, getAllusers };
+
+const deleteUser = async (userId: string, accessToken: string) => {
+  try {
+    const response = await apiClient.delete<APIResponse<User>>(
+      `/users/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+const updateUser = async (
+  userId: string,
+  data: Partial<User>,
+  accessToken: string
+) => {
+  try {
+    const response = await apiClient.put<APIResponse<User>>(
+      `/users/${userId}`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+const getUserStatistics = async (accessToken: string) => {
+  try {
+    const response = await apiClient.get<APIResponse<any>>(
+      `/users/statistics`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+export {
+  loginUser,
+  createUser,
+  refreshToken,
+  getAllusers,
+  deleteUser,
+  updateUser,
+  getUserStatistics
+};

@@ -5,7 +5,6 @@ import FeatherIcon from 'feather-icons-react';
 import Logo from 'components/common/Logo';
 import NotificationDropdownMenu from '../nav-items/NotificationDropdownMenu';
 import ProfileDropdownMenu from '../nav-items/ProfileDropdownMenu';
-import SearchBox from 'components/common/SearchBox';
 import ThemeToggler from 'components/common/ThemeToggler';
 import { useCart } from 'hooks/useCart';
 import { useWishlist } from 'hooks/useWishlist';
@@ -86,14 +85,6 @@ const EcommerceTopbar = () => {
                   </Dropdown>
                 </Nav.Item>
               </Nav>
-            </Col>
-            <Col xs={12} md={6}>
-              <SearchBox
-                placeholder="Search..."
-                className="ecommerce-search-box w-100"
-                inputClassName="rounded-pill"
-                size="sm"
-              />
             </Col>
           </Row>
         </Navbar>
