@@ -559,6 +559,31 @@ const getUserTransactions = async (req: Request, res: Response) => {
   }
 };
 
+const updateTransaction = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { ...data } = req.body;
+    const transactionId = req.params.id;
+
+    const doc = await TransactionService.updateTransaction(
+      transactionId,
+      data,
+      true
+    );
+
+    if (!doc) {
+      sendNotFound(res, "Transaction not found");
+      return;
+    }
+
+    sendSuccess(res, "Transaction updatted successfully", doc, 200);
+  } catch (error) {
+    sendError(res, "Failed to update transaction details", error);
+  }
+};
+
 export {
   initializePaymentController,
   verifyPaymentController,
@@ -566,5 +591,6 @@ export {
   getPaymentDetailsController,
   createTransactionFromPaymentController,
   getAllTransactions,
+  updateTransaction,
   getUserTransactions,
 };

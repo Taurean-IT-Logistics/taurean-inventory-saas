@@ -38,4 +38,11 @@ router.post(
   TransactionController.createTransactionFromPaymentController
 );
 
+// update transaction - staff and admin
+router.post(
+  "/:id",
+  AuthorizeRoles("staff", "admin"),
+  TransactionController.updateTransaction
+);
+
 export default router;
