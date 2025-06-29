@@ -730,7 +730,7 @@ const BookingCalendar = ({
             onClick={() =>
               selectedBooking && handleDeleteBooking(selectedBooking)
             }
-            disabled={isSaving || selectedBooking.isDeleted}
+            disabled={isSaving}
           >
             <FontAwesomeIcon icon={faTrash} className="me-2" /> Delete
           </Button>

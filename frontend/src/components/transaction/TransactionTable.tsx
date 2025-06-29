@@ -163,7 +163,7 @@ const TransactionTable = ({
                   <td>{getStatusBadge(txn.reconciled)}</td>
                   <td>
                     <span className="text-muted">
-                      {txn.createdAt.toLocaleDateString()}
+                      {new Date(txn.createdAt).toLocaleDateString()}
                     </span>
                   </td>
                   <td>

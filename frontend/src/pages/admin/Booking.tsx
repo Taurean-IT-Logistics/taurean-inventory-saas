@@ -24,6 +24,7 @@ import {
   faTachometerAlt
 } from '@fortawesome/free-solid-svg-icons';
 import Button from 'components/base/Button';
+import { showToast } from 'components/toaster/toaster';
 
 interface DashboardStats {
   totalBookings: number;
@@ -274,6 +275,54 @@ const BookingDashboard = () => {
   useEffect(() => {
     fetchData();
   }, [accessToken]);
+
+  const handleDeleteBooking = async (bookingId: string) => {
+    try {
+      const response = await BookingController.deleteBooking(
+        bookingId,
+        accessToken
+      );
+
+      if (response.success) {
+        showToast('success', 'Booking created successfully');
+      }
+    } catch (error) {
+      showToast('error', error.message || 'Failed to delete booking');
+    }
+  };
+
+  const handleUpdateBooking = async (booking: Partial<Booking>) => {
+    try {
+      const response = await BookingController.updateBooking(
+        booking._id,
+        booking,
+        accessToken
+      );
+
+      console.log(response);
+
+      if (response.success) {
+        showToast('success', 'Booking updated successfully');
+      }
+    } catch (error) {
+      showToast('error', error.message || 'Failed to delete booking');
+    }
+  };
+
+  const handleCreateBooking = async (booking: Partial<Booking>) => {
+    try {
+      const response = await BookingController.bookFacility(
+        booking,
+        accessToken
+      );
+
+      if (response.success) {
+        showToast('success', 'Booking created successfully');
+      }
+    } catch (error) {
+      showToast('error', error.message || 'Failed to delete booking');
+    }
+  };
 
   const getStatusIcon = (status: string): string => {
     switch (status) {
@@ -677,18 +726,9 @@ const BookingDashboard = () => {
             onRefresh={fetchData}
             facilities={facilities}
             bookings={bookings}
-            onUpdateBooking={async (booking: Booking) => {
-              console.log('Update booking:', booking);
-              await fetchData();
-            }}
-            onDeleteBooking={async (bookingId: string) => {
-              console.log('Delete booking:', bookingId);
-              await fetchData();
-            }}
-            onCreateBooking={async (booking: Partial<Booking>) => {
-              console.log('Create booking:', booking);
-              await fetchData();
-            }}
+            onUpdateBooking={handleUpdateBooking}
+            onDeleteBooking={handleDeleteBooking}
+            onCreateBooking={handleCreateBooking}
           />
         )}
 
@@ -697,18 +737,9 @@ const BookingDashboard = () => {
             bookings={bookings}
             facilities={facilities}
             onRefresh={fetchData}
-            onUpdateBooking={async (booking: Booking) => {
-              console.log('Update booking:', booking);
-              await fetchData();
-            }}
-            onDeleteBooking={async (bookingId: string) => {
-              console.log('Delete booking:', bookingId);
-              await fetchData();
-            }}
-            onCreateBooking={async (booking: Partial<Booking>) => {
-              console.log('Create booking:', booking);
-              await fetchData();
-            }}
+            onUpdateBooking={handleUpdateBooking}
+            onDeleteBooking={handleDeleteBooking}
+            onCreateBooking={handleCreateBooking}
           />
         )}
       </div>

@@ -1,45 +1,42 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Transaction } from 'types';
 import { currencyFormat } from 'helpers/utils';
-import { mockUser } from 'data';
 import TransactionStatsCards from 'components/transaction/TransactionStatsCard';
 import TransactionFilters from 'components/transaction/TransactionFilters';
 import TransactionTable from 'components/transaction/TransactionTable';
 import EditTransactionModal from 'components/transaction/EditTransactionModal';
+import { TransactionController } from 'controllers';
+import { useAppSelector } from 'hooks/useAppDispatch';
+import { RootState } from 'lib/store';
 
 const TransactionManagement = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      user: mockUser,
-      type: 'booking_payment',
-      category: 'facility_booking',
-      amount: 1500,
-      method: 'card',
-      paymentDetails: {
-        paystackReference: 'PS_REF_123456789'
-      },
-      ref: 'TXN_001',
-      reconciled: true,
-      reconciledAt: new Date('2024-12-20'),
-      description: 'Conference Room A booking payment',
-      attachments: [],
-      tags: ['booking', 'conference'],
-      isDeleted: false,
-      createdAt: new Date('2024-12-20'),
-      updatedAt: new Date('2024-12-20')
-    }
-  ]);
+  const { tokens } = useAppSelector((state: RootState) => state.auth);
+  const accessToken = tokens.accessToken;
 
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      const response =
+        await TransactionController.getAllTransactions(accessToken);
+
+      if (response.success) {
+        setTransactions(response.data as Transaction[]);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   const filteredTransactions = transactions.filter(txn => {
     const matchesSearch =
@@ -108,7 +105,9 @@ const TransactionManagement = () => {
               </div>
               <div class="details">
                 <p><strong>Reference:</strong> ${transaction.ref}</p>
-                <p><strong>Date:</strong> ${transaction.createdAt.toLocaleDateString()}</p>
+                <p><strong>Date:</strong> ${new Date(
+                  transaction.createdAt
+                ).toLocaleDateString()}</p>
                 <p><strong>User:</strong> ${transaction.user.name}</p>
                 <p><strong>Email:</strong> ${transaction.user.email}</p>
                 <p><strong>Type:</strong> ${transaction.type}</p>
