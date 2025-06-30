@@ -1,10 +1,11 @@
-import { Card, Table, Button, Badge, Dropdown } from 'react-bootstrap';
+import { Card, Button, Badge, Dropdown } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faEye,
   faCheck,
   faPrint,
-  faDownload
+  faDownload,
+  faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons';
 import { Transaction } from 'types';
 import { currencyFormat } from 'helpers/utils';
@@ -12,6 +13,7 @@ import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import SimplePaginatedList from 'booking/PaginatedComponent';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -122,94 +124,102 @@ const TransactionTable = ({
         </Dropdown>
       </Card.Header>
       <Card.Body className="px-2">
-        <div className="table-responsive">
-          <Table hover className="mb-0">
-            <thead>
-              <tr>
-                <th>Reference</th>
-                <th>User</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((txn, index) => (
-                <tr key={index}>
-                  <td>
-                    <div>
-                      <div className="fw-semibold">{txn.ref}</div>
-                      <small className="text-muted">{txn.description}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <div>
-                      <div>{txn.user.name}</div>
-                      <small className="text-muted">{txn.user.email}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <Badge bg="secondary">{txn.type}</Badge>
-                  </td>
-                  <td>
-                    <span className="fw-bold">
-                      {currencyFormat(txn.amount)}
-                    </span>
-                  </td>
-                  <td>{getMethodBadge(txn.method)}</td>
-                  <td>{getStatusBadge(txn.reconciled)}</td>
-                  <td>
-                    <span className="text-muted">
-                      {new Date(txn.createdAt).toLocaleDateString()}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="d-flex gap-1">
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => onView(txn)}
-                        title="View Details"
+        <SimplePaginatedList
+          data={transactions}
+          itemsPerPage={5}
+          emptyMessage="No transactions found"
+          className="pb-3"
+          tableHeaders={
+            <tr>
+              <th>Reference</th>
+              <th>User</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          }
+          renderRow={(txn, index) => (
+            <tr key={index}>
+              <td>
+                <div>
+                  <div className="fw-semibold">{txn.ref}</div>
+                  <small className="text-muted">{txn.description}</small>
+                </div>
+              </td>
+              <td>
+                <div>
+                  <div>{txn.user.name}</div>
+                  <small className="text-muted">{txn.user.email}</small>
+                </div>
+              </td>
+              <td>
+                <Badge bg="secondary">{txn.type}</Badge>
+              </td>
+              <td>
+                <span className="fw-bold">{currencyFormat(txn.amount)}</span>
+              </td>
+              <td>{getMethodBadge(txn.method)}</td>
+              <td>{getStatusBadge(txn.reconciled)}</td>
+              <td>
+                <span className="text-muted">
+                  {new Date(txn.createdAt).toLocaleDateString()}
+                </span>
+              </td>
+              <td>
+                <div className="d-flex gap-1">
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={() => onView(txn)}
+                    title="View Details"
+                  >
+                    <FontAwesomeIcon icon={faEye} />
+                  </Button>
+                  {!txn.reconciled && (
+                    <Button
+                      variant="outline-success"
+                      size="sm"
+                      onClick={() => onReconcile(txn.ref || '')}
+                      title="Reconcile"
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                    </Button>
+                  )}
+                  {txn.reconciled && (
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => onReconcile(txn.ref || '')}
+                      title="Unreconcile"
+                    >
+                      <FontAwesomeIcon icon={faExclamationTriangle} />
+                    </Button>
+                  )}
+                  <Dropdown>
+                    <Dropdown.Toggle variant="outline-secondary" size="sm">
+                      <FontAwesomeIcon icon={faPrint} />
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu className="border-secondary">
+                      <Dropdown.Item
+                        onClick={() => onPrint(txn.ref || '', 'receipt')}
                       >
-                        <FontAwesomeIcon icon={faEye} />
-                      </Button>
-                      {!txn.reconciled && (
-                        <Button
-                          variant="outline-success"
-                          size="sm"
-                          onClick={() => onReconcile(txn.ref || '')}
-                          title="Reconcile"
-                        >
-                          <FontAwesomeIcon icon={faCheck} />
-                        </Button>
-                      )}
-                      <Dropdown>
-                        <Dropdown.Toggle variant="outline-secondary" size="sm">
-                          <FontAwesomeIcon icon={faPrint} />
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu className="border-secondary">
-                          <Dropdown.Item
-                            onClick={() => onPrint(txn.ref || '', 'receipt')}
-                          >
-                            Print Receipt
-                          </Dropdown.Item>
-                          <Dropdown.Item
-                            onClick={() => onPrint(txn.ref || '', 'report')}
-                          >
-                            Print Report
-                          </Dropdown.Item>
-                        </Dropdown.Menu>
-                      </Dropdown>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </div>
+                        Print Receipt
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => onPrint(txn.ref || '', 'report')}
+                      >
+                        Print Report
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                </div>
+              </td>
+            </tr>
+          )}
+        />
       </Card.Body>
     </Card>
   );

@@ -11,6 +11,7 @@ import { InventoryItemController } from 'controllers';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
 import { showToast } from 'components/toaster/toaster';
+import QuickActionsSidebar from 'components/dashboard/QuickActions';
 
 const InventoryManagement = () => {
   const { tokens } = useAppSelector(
@@ -36,7 +37,6 @@ const InventoryManagement = () => {
   useEffect(() => {
     async function fetchData() {
       const data = await InventoryItemController.getAllInventoryItems();
-      console.log(data);
       setItems(data.data);
     }
 
@@ -72,8 +72,6 @@ const InventoryManagement = () => {
 
         showToast('success', 'Item updated successfully!');
       }
-
-      console.log(response);
     } catch (error: any) {
       showToast('error', error.message || 'Failed to update item');
     }
@@ -178,6 +176,9 @@ const InventoryManagement = () => {
             </p>
           </div>
         )}
+        <div className="mt-6">
+          <QuickActionsSidebar />
+        </div>
       </div>
 
       {/* Edit Modal */}
