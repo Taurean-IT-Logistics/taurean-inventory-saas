@@ -368,7 +368,7 @@ const BookingCalendar = ({
 
         <Card className="border-secondary mb-4">
           <Card.Body>
-            <Row>
+            <Row className="gap-3">
               <Col md={3}>
                 <Form.Label className="text-muted small">View</Form.Label>
                 <Form.Select
@@ -415,7 +415,13 @@ const BookingCalendar = ({
                 <Form.Label className="text-muted small">Stats</Form.Label>
                 <div>
                   <Badge bg="success" className="me-2">
-                    {bookings.filter(b => b && b.status === 'confirmed').length}{' '}
+                    {
+                      bookings.filter(
+                        b =>
+                          b &&
+                          (b.status === 'confirmed' || b.status === 'completed')
+                      ).length
+                    }{' '}
                     Confirmed
                   </Badge>
                   <Badge bg="warning">

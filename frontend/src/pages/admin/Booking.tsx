@@ -108,7 +108,7 @@ const BookingDashboard = () => {
 
     const totalBookings = validBookings.length;
     const confirmedBookings = validBookings.filter(
-      b => b.status === 'confirmed'
+      b => b.status === 'confirmed' || b.status === 'completed'
     ).length;
     const pendingBookings = validBookings.filter(
       b => b.status === 'pending'
@@ -311,6 +311,14 @@ const BookingDashboard = () => {
 
   const handleCreateBooking = async (booking: Partial<Booking>) => {
     try {
+      if (booking.facility) {
+        booking.facility = booking.facility._id as any;
+      }
+
+      if (booking.user) {
+        booking.user = booking.user._id as any;
+      }
+
       const response = await BookingController.bookFacility(
         booking,
         accessToken

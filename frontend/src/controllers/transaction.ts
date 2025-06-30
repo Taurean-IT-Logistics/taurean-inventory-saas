@@ -102,9 +102,36 @@ const getTransaction = async (reference: string, accessToken: string) => {
   }
 };
 
+const verifyTransaction = async (
+  paymentReference: string,
+  accessToken: string
+) => {
+  try {
+    const response = await apiClient.get(
+      `/transaction/verify/${paymentReference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
 export {
   createTransaction,
   getAllTransactions,
   getAllUserTransactions,
-  getTransaction
+  getTransaction,
+  verifyTransaction
 };

@@ -231,21 +231,23 @@ const BookingManagement = ({
             ...editingBooking,
             ...bookingData
           } as Booking);
+          if (onRefresh) onRefresh();
         }
       } else {
+        // Create new booking
         if (onCreateBooking) {
           await onCreateBooking({
             ...bookingData,
             createdAt: new Date(),
             isDeleted: false
           });
+          if (onRefresh) onRefresh();
         }
       }
 
       setShowEditModal(false);
       setFormData({});
       setEditingBooking(null);
-      if (onRefresh) onRefresh();
     } catch (err) {
       console.error('Error saving booking:', err);
       setError('Failed to save booking');
@@ -253,7 +255,6 @@ const BookingManagement = ({
       setIsSaving(false);
     }
   };
-
   const handleDeleteBooking = async (booking: Booking) => {
     if (!window.confirm('Are you sure you want to delete this booking?')) {
       return;
@@ -355,8 +356,12 @@ const BookingManagement = ({
                   <div>
                     <h5 className="text-success mb-0">
                       {
-                        bookings.filter(b => b && b.status === 'confirmed')
-                          .length
+                        bookings.filter(
+                          b =>
+                            b &&
+                            (b.status === 'confirmed' ||
+                              b.status === 'completed')
+                        ).length
                       }
                     </h5>
                     <small className="text-muted">Confirmed</small>
@@ -857,10 +862,10 @@ const BookingManagement = ({
                 <Form.Group className="mb-3">
                   <Form.Label>Facility *</Form.Label>
                   <Form.Select
-                    value={formData.facility?._id || ''}
+                    value={formData.facility?.name || ''}
                     onChange={e => {
                       const selectedFacility = facilities.find(
-                        f => f._id === e.target.value
+                        f => f.name === e.target.value
                       );
                       setFormData(prev => ({
                         ...prev,
@@ -871,7 +876,7 @@ const BookingManagement = ({
                   >
                     <option value="">Select a facility</option>
                     {facilities.map(facility => (
-                      <option key={facility._id} value={facility._id}>
+                      <option key={facility._id} value={facility.name}>
                         {facility.name}
                       </option>
                     ))}
@@ -949,6 +954,46 @@ const BookingManagement = ({
               </Col>
             </Row>
 
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Payment Status</Form.Label>
+                  <Form.Select
+                    value={formData.paymentStatus || 'pending'}
+                    onChange={e =>
+                      setFormData(prev => ({
+                        ...prev,
+                        paymentStatus: e.target
+                          .value as Booking['paymentStatus']
+                      }))
+                    }
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="refunded">Refunded</option>
+                    <option value="partial_refund">Partial Refund</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Total Price</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    value={formData.totalPrice || 0}
+                    onChange={e =>
+                      setFormData(prev => ({
+                        ...prev,
+                        totalPrice: parseFloat(e.target.value) || 0
+                      }))
+                    }
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
             <Form.Group className="mb-3">
               <Form.Label>Notes</Form.Label>
               <Form.Control
@@ -959,6 +1004,22 @@ const BookingManagement = ({
                   setFormData(prev => ({ ...prev, notes: e.target.value }))
                 }
                 placeholder="Customer notes..."
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Internal Notes</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={formData.internalNotes || ''}
+                onChange={e =>
+                  setFormData(prev => ({
+                    ...prev,
+                    internalNotes: e.target.value
+                  }))
+                }
+                placeholder="Internal staff notes..."
               />
             </Form.Group>
           </Form>

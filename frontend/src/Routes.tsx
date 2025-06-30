@@ -27,6 +27,7 @@ import EcommerceLayout from 'layouts/EcommerceLayout';
 import AuthenticatedLayout from 'components/providers/AuthenticatedProvider';
 import AdminLayout from 'components/providers/AdminLayout';
 import RentDetailPage from 'pages/customer/RentalDetailPage';
+import PaymentCallback from 'pages/customer/PaymentCallback';
 
 const withAuth = (element: React.ReactNode) => (
   <AuthenticatedLayout>{element}</AuthenticatedLayout>
@@ -47,6 +48,7 @@ const customerRoutes: RouteObject = {
     { path: '/item/:id', element: <InventoryItemDetailPage /> },
     { path: 'invoices', element: withAuth(<UserInvoicePage />) },
     { path: 'invoices/:reference', element: withAuth(<UserInvoicePage />) },
+    { path: 'callback', element: withAuth(<PaymentCallback />) },
     { path: 'profile', element: withAuth(<Profile />) },
     { path: 'cart', element: withAuth(<CartPage />) },
     { path: 'wishlist', element: withAuth(<WishlistPage />) },

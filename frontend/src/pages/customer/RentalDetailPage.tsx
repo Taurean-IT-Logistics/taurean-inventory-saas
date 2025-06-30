@@ -46,6 +46,7 @@ const RentDetailPage = () => {
   );
   const accessToken = tokens.accessToken;
   const [selectedImage, setSelectedImage] = useState(0);
+  const [transactionRef, setTransactionRef] = useState<string>('');
   const [item, setItem] = useState<InventoryItem>();
   const [quantity, setQuantity] = useState(1);
   const [rentalDays, setRentalDays] = useState(1);
@@ -89,6 +90,10 @@ const RentDetailPage = () => {
 
     fetchItem();
   }, [id]);
+
+  useEffect(() => {
+    localStorage.setItem('paymentReference', transactionRef);
+  }, [transactionRef]);
 
   if (isLoading) return <RentDetailSkeleton />;
   if (!item) {
@@ -156,6 +161,7 @@ const RentDetailPage = () => {
 
       if (transactionResponse?.success) {
         showToast('success', 'Redirecting to Paystack...');
+        setTransactionRef((transactionResponse.data as any).transaction.ref);
         window.location.href = (
           transactionResponse.data as PaymentResponse
         ).payment.authorization_url;

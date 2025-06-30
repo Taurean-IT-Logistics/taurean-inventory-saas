@@ -751,6 +751,7 @@ const BookingPage = () => {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [facility, setFacility] = useState<Facility>();
+  const [transactionRef, setTransactionRef] = useState<string>('');
 
   const [formData, setFormData] = useState<BookingFormData>({
     selectedDate: '',
@@ -975,6 +976,8 @@ const BookingPage = () => {
         setIsSubmitting(false);
         setIsLoading(false);
         showToast('success', 'Booking completed redirecting to paystack');
+
+        setTransactionRef((transactionResponse.data as any).transaction.ref);
         window.location.href = (
           transactionResponse.data as PaymentResponse
         ).payment.authorization_url;
@@ -1000,6 +1003,10 @@ const BookingPage = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    localStorage.setItem('paymentReference', transactionRef);
+  }, [transactionRef]);
 
   if (isLoading) {
     return <BookingPageLoader />;
