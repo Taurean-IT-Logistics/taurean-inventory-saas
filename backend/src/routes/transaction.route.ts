@@ -39,7 +39,7 @@ router.post(
 );
 
 // update transaction - staff and admin
-router.post(
+router.put(
   "/:id",
   AuthorizeRoles("staff", "admin"),
   TransactionController.updateTransaction
