@@ -2,7 +2,7 @@
   "watch": ["src"],
   "ext": "ts,js",
   "ignore": ["node_modules", "dist", ".git"],
-  "exec": "ts-node ./src/index.ts",
+  "exec": "npm run seed && ts-node ./src/index.ts",
   "delay": "1500",
   "verbose": true,
   "colours": true,
