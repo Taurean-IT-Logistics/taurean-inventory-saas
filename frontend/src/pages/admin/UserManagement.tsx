@@ -12,6 +12,7 @@ import { TransactionController, UserController } from 'controllers';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
 import { showToast } from 'components/toaster/toaster';
+import QuickActionsSidebar from 'components/dashboard/QuickActions';
 
 const UserManagement = () => {
   const { tokens } = useAppSelector(
@@ -247,6 +248,9 @@ const UserManagement = () => {
           }}
           onSave={handleSaveEdit}
         />
+        <div className="mt-6">
+          <QuickActionsSidebar />
+        </div>
       </Container>
     </div>
   );

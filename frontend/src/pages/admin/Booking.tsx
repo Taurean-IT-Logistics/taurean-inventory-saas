@@ -25,6 +25,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import Button from 'components/base/Button';
 import { showToast } from 'components/toaster/toaster';
+import SimplePaginatedList from 'booking/PaginatedComponent';
 
 interface DashboardStats {
   totalBookings: number;
@@ -230,8 +231,6 @@ const BookingDashboard = () => {
         ? facilitiesResponse.data.facilities
         : [];
 
-      console.log('Fetched data:', { bookingResponse, facilitiesResponse });
-
       // Process bookings - convert date strings to Date objects
       const processedBookings = fetchedBookings.map(booking => ({
         ...booking,
@@ -259,7 +258,6 @@ const BookingDashboard = () => {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error occurred';
-      console.error('Error fetching data:', err);
       setError(`Failed to load dashboard data: ${errorMessage}`);
 
       // Set empty states on error
@@ -298,8 +296,6 @@ const BookingDashboard = () => {
         booking,
         accessToken
       );
-
-      console.log(response);
 
       if (response.success) {
         showToast('success', 'Booking updated successfully');
@@ -643,88 +639,60 @@ const BookingDashboard = () => {
             )}
 
             {/* Recent Bookings */}
-            <div className="row">
-              <div className="col-lg-8 mb-4">
-                <div className="card  border-secondary h-100">
-                  <div className="card-header  border-secondary">
-                    <h5 className=" mb-0">Recent Bookings</h5>
-                  </div>
-                  <div className="card-body px-2">
-                    {recentBookings.length > 0 ? (
-                      <div className="table-responsive">
-                        <table className="table table-hover mb-0">
-                          <thead>
-                            <tr>
-                              <th>Customer</th>
-                              <th>Facility</th>
-                              <th>Date</th>
-                              <th>Status</th>
-                              <th>Amount</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {recentBookings.map((booking, index) => (
-                              <tr key={booking._id || index}>
-                                <td>
-                                  <div>
-                                    <div className=" fw-semibold">
-                                      {safeGetUserName(booking)}
-                                    </div>
-                                    <small className="-50">
-                                      {safeGetUserEmail(booking)}
-                                    </small>
-                                  </div>
-                                </td>
-                                <td>
-                                  <span className="">
-                                    {safeGetFacilityName(booking)}
-                                  </span>
-                                </td>
-                                <td>
-                                  <div>
-                                    <div className="">
-                                      {formatDate(booking.startDate)}
-                                    </div>
-                                    <small className="-50">
-                                      {booking.duration || 'N/A'}
-                                    </small>
-                                  </div>
-                                </td>
-                                <td>
-                                  <span
-                                    className={`badge bg-${getStatusColor(
-                                      booking.status
-                                    )} d-flex align-items-center`}
-                                    style={{ width: 'fit-content' }}
-                                  >
-                                    <span className="me-1">
-                                      {getStatusIcon(booking.status)}
-                                    </span>
-                                    {booking.status.toUpperCase()}
-                                  </span>
-                                </td>
-                                <td>
-                                  <span className=" fw-bold">
-                                    {currencyFormat(booking.totalPrice || 0)}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+            <SimplePaginatedList
+              data={recentBookings}
+              itemsPerPage={5}
+              emptyMessage="No recent bookings found"
+              className="mt-3"
+              tableHeaders={
+                <tr>
+                  <th>Customer</th>
+                  <th>Facility</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Amount</th>
+                </tr>
+              }
+              renderRow={(booking, index) => (
+                <tr key={booking._id || index}>
+                  <td>
+                    <div>
+                      <div className="fw-semibold">
+                        {safeGetUserName(booking)}
                       </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="-50">No recent bookings found</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-lg-4 mb-4">
-                <QuickActionsSidebar />
-              </div>
+                      <small className="-50">{safeGetUserEmail(booking)}</small>
+                    </div>
+                  </td>
+                  <td>{safeGetFacilityName(booking)}</td>
+                  <td>
+                    <div>
+                      <div>{formatDate(booking.startDate)}</div>
+                      <small className="-50">{booking.duration || 'N/A'}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <span
+                      className={`badge bg-${getStatusColor(
+                        booking.status
+                      )} d-flex align-items-center`}
+                      style={{ width: 'fit-content' }}
+                    >
+                      <span className="me-1">
+                        {getStatusIcon(booking.status)}
+                      </span>
+                      {booking.status.toUpperCase()}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="fw-bold">
+                      {currencyFormat(booking.totalPrice || 0)}
+                    </span>
+                  </td>
+                </tr>
+              )}
+            />
+            <div className="mt-6">
+              <QuickActionsSidebar />
             </div>
           </div>
         )}

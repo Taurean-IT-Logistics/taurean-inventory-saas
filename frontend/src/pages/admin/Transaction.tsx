@@ -12,6 +12,8 @@ import EditTransactionModal from 'components/transaction/EditTransactionModal';
 import { TransactionController } from 'controllers';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { RootState } from 'lib/store';
+import { showToast } from 'components/toaster/toaster';
+import QuickActionsSidebar from 'components/dashboard/QuickActions';
 
 const TransactionManagement = () => {
   const { tokens } = useAppSelector((state: RootState) => state.auth);
@@ -56,22 +58,50 @@ const TransactionManagement = () => {
     setShowEditModal(true);
   };
 
-  const handleSaveEdit = (updatedTransaction: Transaction) => {
-    setTransactions(prev =>
-      prev.map(txn =>
-        txn.ref === updatedTransaction.ref ? updatedTransaction : txn
-      )
-    );
+  const handleSaveEdit = async (updatedTransaction: Transaction) => {
+    try {
+      const response = await TransactionController.updateTransaction(
+        updatedTransaction._id,
+        updatedTransaction,
+        accessToken
+      );
+
+      if (response.success) {
+        setTransactions(prev =>
+          prev.map(txn =>
+            txn.ref === updatedTransaction.ref ? updatedTransaction : txn
+          )
+        );
+        showToast('success', 'Transaction updated successfully');
+      }
+    } catch (error) {
+      showToast('error', error);
+    }
   };
 
-  const handleReconcile = (transactionRef: string) => {
-    setTransactions(prev =>
-      prev.map(txn =>
-        txn.ref === transactionRef
-          ? { ...txn, reconciled: true, reconciledAt: new Date() }
-          : txn
-      )
-    );
+  const handleReconcile = async (transactionRef: string) => {
+    try {
+      const transaction = transactions.find(t => t.ref === transactionRef);
+
+      transaction.reconciled = !transaction.reconciled;
+      const response = await TransactionController.updateTransaction(
+        transaction._id,
+        transaction,
+        accessToken
+      );
+      if (response.success) {
+        setTransactions(prev =>
+          prev.map(txn =>
+            txn.ref === transactionRef
+              ? { ...txn, reconciled: true, reconciledAt: new Date() }
+              : txn
+          )
+        );
+        showToast('success', 'Transaction reconciled successfully');
+      }
+    } catch (error) {
+      showToast('error', error);
+    }
   };
 
   const handlePrint = (transactionId: string, type: 'receipt' | 'report') => {
@@ -179,7 +209,7 @@ const TransactionManagement = () => {
               <FontAwesomeIcon icon={faPlus} className="me-2" />
               Add Transaction
             </Link>
-            <Link to="/" className="btn btn-outline-secondary">
+            <Link to="/admin/" className="btn btn-outline-secondary">
               <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
               Back to Dashboard
             </Link>
@@ -214,6 +244,10 @@ const TransactionManagement = () => {
           }}
           onSave={handleSaveEdit}
         />
+
+        <div className="mt-6">
+          <QuickActionsSidebar />
+        </div>
       </Container>
     </div>
   );

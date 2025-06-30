@@ -399,10 +399,15 @@ const BookingManagement = ({
                   <div>
                     <h5 className="text-info mb-0">
                       {currencyFormat(
-                        bookings.reduce(
-                          (sum, b) => sum + (b?.totalPrice || 0),
-                          0
-                        )
+                        bookings.reduce((sum, b) => {
+                          if (
+                            b?.status === 'confirmed' ||
+                            b?.status === 'completed'
+                          ) {
+                            return sum + (b.totalPrice || 0);
+                          }
+                          return sum;
+                        }, 0)
                       )}
                     </h5>
                     <small className="text-muted">Total Revenue</small>

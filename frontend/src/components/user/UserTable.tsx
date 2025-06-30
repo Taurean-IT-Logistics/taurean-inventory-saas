@@ -1,4 +1,4 @@
-import { Card, Table, Button, Badge } from 'react-bootstrap';
+import { Card, Button, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faEdit,
@@ -6,6 +6,7 @@ import {
   faTrashRestore
 } from '@fortawesome/free-solid-svg-icons';
 import { Transaction, User } from 'types';
+import SimplePaginatedList from 'booking/PaginatedComponent';
 
 interface UserTableProps {
   users: User[];
@@ -56,83 +57,78 @@ const UserTable = ({
   return (
     <Card className="border-secondary">
       <Card.Body className="px-2">
-        <div className="table-responsive">
-          <Table hover className="mb-0">
-            <thead>
-              <tr>
-                <th>Details</th>
-                <th>Role</th>
-                <th>Tier</th>
-                <th>Bookings</th>
-                <th>Transactions</th>
-                <th>Joined</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user, index) => (
-                <tr key={index}>
-                  <td>
-                    <div>
-                      <div className="fw-semibold">{user.name}</div>
-                      <small className="text-muted">{user.email}</small>
-                      <div className="text-muted small">@{user.username}</div>
-                    </div>
-                  </td>
-                  <td>{getRoleBadge(user.role)}</td>
-                  <td>
-                    {getLoyaltyTierBadge(user.loyaltyProfile?.loyaltyTier)}
-                  </td>
-                  <td>
-                    <span>{user.loyaltyProfile?.totalBookings || 0}</span>
-                  </td>
-                  <td>
-                    <span>
-                      {transactions.filter(t => t.user._id === user._id)
-                        .length || 0}
-                    </span>
-                  </td>
-                  <td>
-                    <span>
-                      {new Date(user.createdAt)?.toLocaleDateString() || 'N/A'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="d-flex gap-2">
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => onEdit(user)}
-                      >
-                        <FontAwesomeIcon icon={faEdit} />
-                      </Button>
-                      {!user.isDeleted && (
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          disabled={user.isDeleted}
-                          onClick={() => onDelete(user._id!)}
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </Button>
-                      )}
-                      {user.isDeleted && (
-                        <Button
-                          variant="outline-success"
-                          size="sm"
-                          disabled={!user.isDeleted}
-                          onClick={() => onRestore(user._id)}
-                        >
-                          <FontAwesomeIcon icon={faTrashRestore} />
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </div>
+        <SimplePaginatedList
+          data={users}
+          itemsPerPage={5}
+          emptyMessage="No users found."
+          tableHeaders={
+            <tr>
+              <th>Details</th>
+              <th>Role</th>
+              <th>Tier</th>
+              <th>Bookings</th>
+              <th>Transactions</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          }
+          renderRow={(user, index) => (
+            <tr key={index}>
+              <td>
+                <div>
+                  <div className="fw-semibold">{user.name}</div>
+                  <small className="text-muted">{user.email}</small>
+                  <div className="text-muted small">@{user.username}</div>
+                </div>
+              </td>
+              <td>{getRoleBadge(user.role)}</td>
+              <td>{getLoyaltyTierBadge(user.loyaltyProfile?.loyaltyTier)}</td>
+              <td>
+                <span>{user.loyaltyProfile?.totalBookings || 0}</span>
+              </td>
+              <td>
+                <span>
+                  {transactions.filter(t => t.user._id === user._id).length ||
+                    0}
+                </span>
+              </td>
+              <td>
+                <span>
+                  {new Date(user.createdAt)?.toLocaleDateString() || 'N/A'}
+                </span>
+              </td>
+              <td>
+                <div className="d-flex gap-2">
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={() => onEdit(user)}
+                  >
+                    <FontAwesomeIcon icon={faEdit} />
+                  </Button>
+                  {!user.isDeleted && (
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => onDelete(user._id!)}
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </Button>
+                  )}
+                  {user.isDeleted && (
+                    <Button
+                      variant="outline-success"
+                      size="sm"
+                      onClick={() => onRestore(user._id)}
+                    >
+                      <FontAwesomeIcon icon={faTrashRestore} />
+                    </Button>
+                  )}
+                </div>
+              </td>
+            </tr>
+          )}
+        />
       </Card.Body>
     </Card>
   );
