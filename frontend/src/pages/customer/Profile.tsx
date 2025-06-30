@@ -12,6 +12,8 @@ import Button from 'components/base/Button';
 import Section from 'components/base/Section';
 import EcoimDefaultAddressCard from 'components/cards/EcoimDefaultAddressCard';
 import EcomProfileCard from 'components/cards/EcomProfileCard';
+import { showToast } from 'components/toaster/toaster';
+import { UserController } from 'controllers';
 import { useAppSelector, useAppDispatch } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
 import { RootState } from 'lib/store';
@@ -450,7 +452,8 @@ const EditDetailsModal = ({
 
 const Profile = () => {
   const [showEditModal, setShowEditModal] = useState(false);
-  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { user, tokens } = useAppSelector((state: RootState) => state.auth);
+  const accessToken = tokens.accessToken;
   const userData = user as User;
   const [userDetails, setUserDetails] = useState<User | undefined>(userData);
   const dispatch = useAppDispatch();
@@ -465,22 +468,30 @@ const Profile = () => {
     setShowEditModal(true);
   };
 
-  const handleSaveUserDetails = async (updatedData: any): Promise<void> => {
+  const handleSaveUserDetails = async (
+    updatedData: Partial<User>
+  ): Promise<void> => {
     try {
       // Here you would typically make an API call to update the user
       // const response = await updateUserProfile(user._id, updatedData);
 
-      // For now, just update the local state
-      setUserDetails(prev => ({
-        ...prev,
-        ...updatedData
-      }));
+      const response = await UserController.updateUser(
+        user.id,
+        updatedData,
+        accessToken
+      );
 
-      console.log('User updated:', updatedData);
-      dispatch(StateManagement.AuthReducer.updateProfile(updatedData));
+      if (response.success) {
+        showToast('success', 'Details updated');
+        setUserDetails(prev => ({
+          ...prev,
+          ...updatedData
+        }));
+
+        dispatch(StateManagement.AuthReducer.updateProfile(updatedData));
+      }
     } catch (error) {
-      console.error('Failed to update user:', error);
-      throw error; // Re-throw to be handled by the modal
+      showToast('error', error || 'Error updating user details');
     }
   };
 
