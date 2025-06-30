@@ -51,18 +51,98 @@ const getInventoryItemById = async (
 const updateInventoryItem = async (
   id: string,
   updateData: Partial<InventoryItem>,
+  newImages?: any[],
+  removeImageIds?: string[],
+  replaceAllImages = false,
   showDeleted = false
 ): Promise<InventoryItemDocument | null> => {
   try {
     if (!Types.ObjectId.isValid(id)) {
       throw new Error("Invalid ID format");
     }
+
     const filter = showDeleted ? { _id: id } : { _id: id, isDeleted: false };
+
+    // Handle image operations
+    if (newImages?.length || removeImageIds?.length || replaceAllImages) {
+      const currentItem = await InventoryItemModel.findOne(filter);
+      if (!currentItem) {
+        throw new Error("Inventory item not found");
+      }
+
+      let updatedImages = [...(currentItem.images || [])];
+
+      // Remove specified images
+      if (removeImageIds?.length) {
+        updatedImages = updatedImages.filter(
+          (img: any) => !removeImageIds.includes(img._id?.toString())
+        );
+      }
+
+      // Handle new images
+      if (newImages?.length) {
+        if (replaceAllImages) {
+          updatedImages = newImages;
+        } else {
+          updatedImages = [...updatedImages, ...newImages];
+        }
+      }
+
+      updateData.images = updatedImages;
+    }
+
     return await InventoryItemModel.findOneAndUpdate(filter, updateData, {
       new: true,
     }).populate("associatedFacility");
-  } catch (error) {
-    throw new Error("Error updating inventory item");
+  } catch (error: any) {
+    throw new Error(`Error updating inventory item: ${error.message}`);
+  }
+};
+
+// Alternative MongoDB operator approach (more efficient for large arrays)
+const updateInventoryItemWithOperators = async (
+  id: string,
+  updateData: Partial<InventoryItem>,
+  newImages?: any[],
+  removeImageIds?: string[],
+  replaceAllImages = false,
+  showDeleted = false
+): Promise<InventoryItemDocument | null> => {
+  try {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new Error("Invalid ID format");
+    }
+
+    const filter = showDeleted ? { _id: id } : { _id: id, isDeleted: false };
+
+    // Build update operations
+    const updateOperations: any = { ...updateData };
+
+    if (replaceAllImages && newImages?.length) {
+      // Replace all images
+      updateOperations.images = newImages;
+    } else {
+      // Handle add/remove operations
+      if (removeImageIds?.length) {
+        updateOperations.$pull = {
+          images: {
+            _id: { $in: removeImageIds.map((id) => new Types.ObjectId(id)) },
+          },
+        };
+      }
+
+      if (newImages?.length) {
+        updateOperations.$push = {
+          images: { $each: newImages },
+        };
+      }
+    }
+
+    return await InventoryItemModel.findOneAndUpdate(filter, updateOperations, {
+      new: true,
+    }).populate("associatedFacility");
+  } catch (error: any) {
+    throw new Error(`Error updating inventory item: ${error.message}`);
   }
 };
 
@@ -162,4 +242,5 @@ export {
   getInventoryItemsByStatus,
   addMaintenanceSchedule,
   getLowStockItems,
+  updateInventoryItemWithOperators,
 };

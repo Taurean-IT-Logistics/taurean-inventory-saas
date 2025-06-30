@@ -30,4 +30,79 @@ const bookFacility = async (data: Partial<Booking>, accessToken: string) => {
   }
 };
 
-export { bookFacility };
+const getAllBookings = async (accessToken: string) => {
+  try {
+    const response = await apiClient.get<APIResponse<Partial<Booking>>>(
+      '/bookings',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+const updateBooking = async (
+  bookingId: string,
+  data: Partial<Booking>,
+  accessToken: string
+) => {
+  try {
+    const response = await apiClient.put<APIResponse<Partial<Booking>>>(
+      `/bookings/${bookingId}`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+const deleteBooking = async (bookingId: string, accessToken: string) => {
+  try {
+    const response = await apiClient.delete<APIResponse<Partial<Booking>>>(
+      `/bookings/${bookingId}`,
+
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+export { bookFacility, getAllBookings, updateBooking, deleteBooking };

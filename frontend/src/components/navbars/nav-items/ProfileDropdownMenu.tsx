@@ -15,10 +15,10 @@ const ProfileDropdownMenu = ({ className }: { className?: string }) => {
   const dispatch = useAppDispatch();
 
   const [navItems] = useState([
-    { label: 'Profile', icon: 'user' },
-    { label: 'Cart', icon: 'shopping-cart' },
-    { label: 'Wish List', icon: 'heart' },
-    { label: 'Invoices', icon: 'file-text' }
+    { label: 'Profile', icon: 'user', link: '/profile' },
+    { label: 'Cart', icon: 'shopping-cart', link: '/cart' },
+    { label: 'Wish List', icon: 'heart', link: '/wishlist' },
+    { label: 'Invoices', icon: 'file-text', link: '/invoices' }
   ]);
 
   return (
@@ -37,16 +37,14 @@ const ProfileDropdownMenu = ({ className }: { className?: string }) => {
               <Avatar variant="name" size="xl">
                 {user?.name?.[0] || 'U'}
               </Avatar>
-              <h6 className="text-body-emphasis">
-                {user?.firstName} {user?.lastName}
-              </h6>
+              <h6 className="text-body-emphasis">{user?.name}</h6>
             </div>
             <div style={{ height: '10rem' }}>
               <Scrollbar>
                 <Nav className="nav flex-column mb-2 pb-1">
                   {navItems.map(item => (
                     <Nav.Item key={item.label}>
-                      <Nav.Link href="#!" className="px-3">
+                      <Nav.Link href={item.link} className="px-3">
                         <FeatherIcon
                           icon={item.icon}
                           size={16}
@@ -63,20 +61,7 @@ const ProfileDropdownMenu = ({ className }: { className?: string }) => {
             </div>
           </Card.Body>
           <Card.Footer className="p-0 border-top border-translucent">
-            <Nav className="nav flex-column my-3">
-              <Nav.Item>
-                <Nav.Link href="#!" className="px-3">
-                  <FeatherIcon
-                    icon="user-plus"
-                    size={16}
-                    className="me-2 text-body"
-                  />
-                  <span>Add another account</span>
-                </Nav.Link>
-              </Nav.Item>
-            </Nav>
-            <hr />
-            <div className="px-3">
+            <div className="px-3 mt-3">
               <Button
                 onClick={() => dispatch(StateManagement.AuthReducer.logout())}
                 className="btn btn-phoenix-secondary d-flex flex-center w-100"

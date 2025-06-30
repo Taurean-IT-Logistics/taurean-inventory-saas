@@ -117,7 +117,7 @@ export async function getAllUsers(
     } = options;
 
     const skip = (page - 1) * limit;
-    const query: any = { isDeleted: false };
+    const query: any = {};
 
     // Add role filter
     if (role) {
@@ -175,7 +175,7 @@ export async function getUserById(
       throw new Error("Invalid user ID");
     }
 
-    const user = await UserModel.findOne({ _id: id, isDeleted: false })
+    const user = await UserModel.findOne({ _id: id })
       .select("-password")
       .exec();
 
@@ -246,7 +246,7 @@ export async function updateUser(
     }
 
     // Remove fields that shouldn't be updated directly
-    const { role, ...safeUpdates } = updates;
+    const safeUpdates = updates;
 
     // Handle password update separately if provided
     if (safeUpdates.password) {
@@ -266,7 +266,6 @@ export async function updateUser(
       const existingUser = await UserModel.findOne({
         $or: duplicateQuery,
         _id: { $ne: id },
-        isDeleted: false,
       }).exec();
 
       if (existingUser) {
@@ -275,7 +274,7 @@ export async function updateUser(
     }
 
     const updatedUser = await UserModel.findOneAndUpdate(
-      { _id: id, isDeleted: false },
+      { _id: id },
       safeUpdates,
       { new: true, runValidators: true }
     )

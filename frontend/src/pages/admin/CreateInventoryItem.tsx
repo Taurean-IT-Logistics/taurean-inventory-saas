@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { InventoryItem } from 'types';
-import { mockFacilities } from 'data';
 import BasicInfoForm from 'components/inventory/BasicInfoForm';
 import PurchaseInfoForm from 'components/inventory/PurchaseInfoForm';
 import SpecificationsForm from 'components/inventory/SpecificationsForm';
@@ -13,6 +12,14 @@ import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
 import { showToast } from 'components/toaster/toaster';
 import { InventoryItemController } from 'controllers';
+import PricingForm from 'components/inventory/PricingForm';
+
+// interface imageData {
+//   path: string;
+//   originalName: string;
+//   mimetype: string;
+//   size: number;
+// }
 
 const CreateInventory = () => {
   const { tokens } = useAppSelector(
@@ -35,6 +42,14 @@ const CreateInventory = () => {
       supplier: '',
       warrantyExpiry: undefined
     },
+    pricing: [
+      {
+        unit: 'day',
+        amount: 0,
+        isDefault: false
+      }
+    ],
+    associatedFacility: '',
     history: [],
     maintenanceSchedule: [],
     currentBookings: [],
@@ -81,8 +96,7 @@ const CreateInventory = () => {
   };
 
   const handleFacilityChange = (facilityId: string) => {
-    const facility = mockFacilities.find(f => f._id === facilityId);
-    setFormData(prev => ({ ...prev, associatedFacility: facility }));
+    setFormData(prev => ({ ...prev, associatedFacility: facilityId }));
   };
 
   const handleSpecificationAdd = (key: string, value: string) => {
@@ -103,8 +117,15 @@ const CreateInventory = () => {
     }));
   };
 
-  const handleImagesChange = (images: string[], files: File[]) => {
-    setFormData(prev => ({ ...prev, images }));
+  const handleImagesChange = (
+    images: InventoryItem['images'],
+    files: File[]
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      images
+    }));
+
     setRawFiles(files);
   };
 
@@ -171,6 +192,8 @@ const CreateInventory = () => {
               onSpecificationAdd={handleSpecificationAdd}
               onSpecificationRemove={handleSpecificationRemove}
             />
+
+            <PricingForm formData={formData} setFormData={setFormData} />
           </div>
 
           <div className="col-lg-4 mt-4 mt-lg-0">

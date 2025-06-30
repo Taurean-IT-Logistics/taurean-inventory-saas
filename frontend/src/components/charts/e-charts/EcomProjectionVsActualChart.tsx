@@ -3,26 +3,26 @@ import ReactEChartsCore from 'echarts-for-react/lib/core';
 import * as echarts from 'echarts/core';
 import { TooltipComponent } from 'echarts/components';
 import { BarChart } from 'echarts/charts';
+import { CanvasRenderer } from 'echarts/renderers';
 import { CallbackDataParams } from 'echarts/types/dist/shared';
 import { useAppContext } from 'providers/AppProvider';
 import dayjs from 'dayjs';
 import { Transaction } from 'types';
 import { tooltipFormatterDefault } from 'helpers/echart-utils';
 
-echarts.use([TooltipComponent, BarChart]);
+echarts.use([TooltipComponent, BarChart, CanvasRenderer]);
+
+interface Props {
+  transactions: Transaction[];
+  projections?: Record<string, number>; // format: { 'YYYY-MM-DD': number }
+}
 
 const EcomProjectionVsActualChart = ({
   transactions,
-  height,
-  width
-}: {
-  transactions: Transaction[];
-  height: string;
-  width: string;
-}) => {
+  projections = {}
+}: Props) => {
   const { getThemeColor } = useAppContext();
 
-  // Get the past 10 dates as formatted strings: ['Jun 24', 'Jun 23', ...]
   const dates = useMemo(() => {
     const today = dayjs();
     return Array.from({ length: 10 }, (_, i) =>
@@ -30,7 +30,6 @@ const EcomProjectionVsActualChart = ({
     );
   }, []);
 
-  // Actual revenue totals for each date
   const actualRevenue = useMemo(() => {
     const totals: Record<string, number> = {};
     for (const date of dates) totals[date] = 0;
@@ -45,8 +44,15 @@ const EcomProjectionVsActualChart = ({
     return dates.map(date => totals[date] || 0);
   }, [transactions, dates]);
 
-  // Projected revenue — simple example: 10% more than actuals
-  const projectedRevenue = actualRevenue.map(val => Math.round(val * 1.1));
+  const projectedRevenue = useMemo(() => {
+    return dates.map(date => {
+      if (projections[date] !== undefined) {
+        return projections[date];
+      }
+      const index = dates.indexOf(date);
+      return Math.round(actualRevenue[index] * 1.1);
+    });
+  }, [actualRevenue, projections, dates]);
 
   const hasData = actualRevenue.some(val => val > 0);
 
@@ -78,38 +84,42 @@ const EcomProjectionVsActualChart = ({
         fontFamily: 'Nunito Sans'
       }
     },
-    xAxis: {
-      type: 'category',
-      axisLabel: {
-        color: getThemeColor('secondary-color'),
-        formatter: (value: string) => dayjs(value).format('MMM DD'),
-        interval: 3,
-        fontFamily: 'Nunito Sans',
-        fontWeight: 600,
-        fontSize: 12.8
-      },
-      data: dates,
-      axisLine: { lineStyle: { color: getThemeColor('tertiary-bg') } },
-      axisTick: false
-    },
-    yAxis: {
-      axisPointer: { type: 'none' },
-      axisTick: 'none',
-      splitLine: {
-        interval: 5,
-        lineStyle: { color: getThemeColor('secondary-bg') }
-      },
-      axisLine: { show: false },
-      axisLabel: {
-        fontFamily: 'Nunito Sans',
-        fontWeight: 600,
-        fontSize: 12.8,
-        color: getThemeColor('secondary-color'),
-        margin: 20,
-        verticalAlign: 'bottom',
-        formatter: (value: number) => `$${value.toLocaleString()}`
+    xAxis: [
+      {
+        type: 'category',
+        data: dates,
+        axisLabel: {
+          color: getThemeColor('secondary-color'),
+          formatter: (value: string) => dayjs(value).format('MMM DD'),
+          interval: 3,
+          fontFamily: 'Nunito Sans',
+          fontWeight: 600,
+          fontSize: 12.8
+        },
+        axisLine: { lineStyle: { color: getThemeColor('tertiary-bg') } },
+        axisTick: false
       }
-    },
+    ],
+    yAxis: [
+      {
+        axisPointer: { type: 'none' },
+        axisTick: 'none',
+        splitLine: {
+          interval: 5,
+          lineStyle: { color: getThemeColor('secondary-bg') }
+        },
+        axisLine: { show: false },
+        axisLabel: {
+          fontFamily: 'Nunito Sans',
+          fontWeight: 600,
+          fontSize: 12.8,
+          color: getThemeColor('secondary-color'),
+          margin: 20,
+          verticalAlign: 'bottom',
+          formatter: (value: number) => `$${value.toLocaleString()}`
+        }
+      }
+    ],
     series: hasData
       ? [
           {
@@ -163,7 +173,10 @@ const EcomProjectionVsActualChart = ({
     <ReactEChartsCore
       echarts={echarts}
       option={options}
-      style={{ height, width }}
+      notMerge={true}
+      lazyUpdate={true}
+      opts={{ renderer: 'canvas' }}
+      style={{ height: 300, width: '100%' }}
     />
   );
 };

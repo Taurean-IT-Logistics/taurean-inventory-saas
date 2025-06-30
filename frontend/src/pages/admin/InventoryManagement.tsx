@@ -1,16 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { InventoryItem } from 'types';
-import { mockInventoryItems } from 'data';
 import EditInventoryModal from 'components/inventory/EditInventoryModal';
 import InventoryStatsCards from 'components/inventory/InventoryStatsCard';
 import InventoryFilters from 'components/inventory/InventoryFilters';
 import InventoryTable from 'components/inventory/InventoryTable';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { InventoryItemController } from 'controllers';
+import { useAppSelector } from 'hooks/useAppDispatch';
+import { StateManagement } from 'lib';
+import { showToast } from 'components/toaster/toaster';
 
 const InventoryManagement = () => {
-  const [items, setItems] = useState<InventoryItem[]>(mockInventoryItems);
+  const { tokens } = useAppSelector(
+    (state: StateManagement.RootState) => state.auth
+  );
+  const accessToken = tokens.accessToken;
+  const [items, setItems] = useState<InventoryItem[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,27 +30,98 @@ const InventoryManagement = () => {
       (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus =
       statusFilter === 'all' || item.status === statusFilter;
-    return matchesSearch && matchesStatus && !item.isDeleted;
+    return matchesSearch && matchesStatus;
   });
+
+  useEffect(() => {
+    async function fetchData() {
+      const data = await InventoryItemController.getAllInventoryItems();
+      console.log(data);
+      setItems(data.data);
+    }
+
+    fetchData();
+  }, []);
 
   const handleEdit = (item: InventoryItem) => {
     setEditingItem(item);
     setShowEditModal(true);
   };
 
-  const handleSaveEdit = (updatedItem: InventoryItem) => {
-    setItems(prev =>
-      prev.map(item => (item._id === updatedItem._id ? updatedItem : item))
-    );
+  const handleSaveItem = async (
+    updatedItem: InventoryItem,
+    rawFiles: File[],
+    removedImageIds: string[]
+  ) => {
+    try {
+      const response = await InventoryItemController.updateItem(
+        updatedItem._id,
+        updatedItem,
+        accessToken,
+        rawFiles,
+        removedImageIds
+      );
+
+      if (response.success) {
+        // Update your local state
+        setItems(prev =>
+          prev.map(item =>
+            item._id === updatedItem._id ? response.data : item
+          )
+        );
+
+        showToast('success', 'Item updated successfully!');
+      }
+
+      console.log(response);
+    } catch (error: any) {
+      showToast('error', error.message || 'Failed to update item');
+    }
   };
 
-  const handleDelete = (itemId: string) => {
+  const handleDelete = async (itemId: string) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
-      setItems(prev =>
-        prev.map(item =>
-          item._id === itemId ? { ...item, isDeleted: true } : item
-        )
+      try {
+        const response = await InventoryItemController.deleteItem(
+          itemId,
+          accessToken
+        );
+
+        if (response.success) {
+          setItems(prev =>
+            prev.map(item =>
+              item._id === itemId
+                ? { ...item, isDeleted: !item.isDeleted }
+                : item
+            )
+          );
+
+          showToast('success', 'Item deleted successfully');
+        }
+      } catch (error) {
+        showToast('error', error.message || 'Failed to delete item');
+      }
+    }
+  };
+
+  const handleRestore = async (itemId: string) => {
+    try {
+      const response = await InventoryItemController.restoreItem(
+        itemId,
+        accessToken
       );
+
+      if (response.success) {
+        setItems(prev =>
+          prev.map(item =>
+            item._id === itemId ? { ...item, isDeleted: !item.isDeleted } : item
+          )
+        );
+
+        showToast('success', 'Item restored Succesfully');
+      }
+    } catch (error) {
+      showToast('error', error.message || 'Failed to restore item');
     }
   };
 
@@ -59,7 +137,7 @@ const InventoryManagement = () => {
             </p>
           </div>
           <div className="d-flex gap-2">
-            <Link to="/admin/create-inventory" className="btn btn-primary">
+            <Link to="/admin/create-inventory-item" className="btn btn-primary">
               <FontAwesomeIcon icon={faPlus} className="me-2" />
               Add New Item
             </Link>
@@ -87,6 +165,7 @@ const InventoryManagement = () => {
         <InventoryTable
           items={filteredItems}
           onEdit={handleEdit}
+          onRestore={handleRestore}
           onDelete={handleDelete}
         />
 
@@ -109,7 +188,7 @@ const InventoryManagement = () => {
           setShowEditModal(false);
           setEditingItem(null);
         }}
-        onSave={handleSaveEdit}
+        onSave={handleSaveItem}
       />
     </div>
   );

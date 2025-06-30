@@ -31,6 +31,25 @@ const getAllTransactions = async (
   }
 };
 
+const getAllUserTransactions = async (
+  user: string,
+  showDeleted = false
+): Promise<TransactionDocument[]> => {
+  try {
+    const filter = showDeleted
+      ? { user: user }
+      : { isDeleted: false, user: user };
+    return await TransactionModel.find(filter)
+      .populate("user")
+      .populate("booking")
+      .populate("account")
+      .populate("facility")
+      .populate("approvedBy");
+  } catch (error) {
+    throw new Error("Error fetching transactions");
+  }
+};
+
 // Get a transaction by ID, excluding deleted by default
 const getTransactionById = async (
   id: string,
@@ -182,6 +201,7 @@ export {
   createTransaction,
   getAllTransactions,
   getTransactionById,
+  getAllUserTransactions,
   updateTransaction,
   deleteTransaction,
   restoreTransaction,

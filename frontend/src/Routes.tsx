@@ -21,10 +21,13 @@ import SystemAlerts from 'pages/admin/SystemAlert';
 import InventoryManagement from 'pages/admin/InventoryManagement';
 import CreateAlert from 'pages/admin/CreateAlert';
 import BookingDashboard from 'pages/admin/Booking';
+import InventoryItemDetailPage from 'pages/customer/ItemDetailPage';
 
 import EcommerceLayout from 'layouts/EcommerceLayout';
 import AuthenticatedLayout from 'components/providers/AuthenticatedProvider';
 import AdminLayout from 'components/providers/AdminLayout';
+import RentDetailPage from 'pages/customer/RentalDetailPage';
+import PaymentCallback from 'pages/customer/PaymentCallback';
 
 const withAuth = (element: React.ReactNode) => (
   <AuthenticatedLayout>{element}</AuthenticatedLayout>
@@ -41,7 +44,11 @@ const customerRoutes: RouteObject = {
       path: 'facility/:facilityId/booking',
       element: withAuth(<BookingPage />)
     },
-    { path: 'invoice/:transactionId', element: withAuth(<UserInvoicePage />) },
+    { path: '/rent/:id', element: withAuth(<RentDetailPage />) },
+    { path: '/item/:id', element: <InventoryItemDetailPage /> },
+    { path: 'invoices', element: withAuth(<UserInvoicePage />) },
+    { path: 'invoices/:reference', element: withAuth(<UserInvoicePage />) },
+    { path: 'callback', element: withAuth(<PaymentCallback />) },
     { path: 'profile', element: withAuth(<Profile />) },
     { path: 'cart', element: withAuth(<CartPage />) },
     { path: 'wishlist', element: withAuth(<WishlistPage />) },

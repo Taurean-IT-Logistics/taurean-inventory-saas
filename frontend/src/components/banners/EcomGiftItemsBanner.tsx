@@ -21,9 +21,9 @@ const EcomGiftItemsBanner = () => {
         </h2>
         <Link
           className="btn btn-lg btn-primary rounded-pill banner-button"
-          to="#!"
+          to="/facilities"
         >
-          Buy Now
+          Book Now
         </Link>
       </div>
     </div>

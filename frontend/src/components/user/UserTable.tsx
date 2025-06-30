@@ -1,15 +1,27 @@
 import { Card, Table, Button, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faEye, faTrash } from '@fortawesome/free-solid-svg-icons';
-import { User } from 'types';
+import {
+  faEdit,
+  faTrash,
+  faTrashRestore
+} from '@fortawesome/free-solid-svg-icons';
+import { Transaction, User } from 'types';
 
 interface UserTableProps {
   users: User[];
+  transactions: Transaction[];
   onEdit: (user: User) => void;
   onDelete: (userId: string) => void;
+  onRestore: (userId: string) => void;
 }
 
-const UserTable = ({ users, onEdit, onDelete }: UserTableProps) => {
+const UserTable = ({
+  users,
+  transactions,
+  onEdit,
+  onDelete,
+  onRestore
+}: UserTableProps) => {
   const getRoleBadge = (role: string) => {
     const roleConfig = {
       admin: { bg: 'danger', text: 'Admin' },
@@ -52,7 +64,7 @@ const UserTable = ({ users, onEdit, onDelete }: UserTableProps) => {
                 <th>Role</th>
                 <th>Tier</th>
                 <th>Bookings</th>
-                <th>Spent</th>
+                <th>Transactions</th>
                 <th>Joined</th>
                 <th>Actions</th>
               </tr>
@@ -75,10 +87,15 @@ const UserTable = ({ users, onEdit, onDelete }: UserTableProps) => {
                     <span>{user.loyaltyProfile?.totalBookings || 0}</span>
                   </td>
                   <td>
-                    <span>${user.loyaltyProfile?.totalSpent || 0}</span>
+                    <span>
+                      {transactions.filter(t => t.user._id === user._id)
+                        .length || 0}
+                    </span>
                   </td>
                   <td>
-                    <span>{user.createdAt?.toLocaleDateString() || 'N/A'}</span>
+                    <span>
+                      {new Date(user.createdAt)?.toLocaleDateString() || 'N/A'}
+                    </span>
                   </td>
                   <td>
                     <div className="d-flex gap-2">
@@ -89,16 +106,26 @@ const UserTable = ({ users, onEdit, onDelete }: UserTableProps) => {
                       >
                         <FontAwesomeIcon icon={faEdit} />
                       </Button>
-                      <Button variant="outline-info" size="sm">
-                        <FontAwesomeIcon icon={faEye} />
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => onDelete(user.email)}
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </Button>
+                      {!user.isDeleted && (
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          disabled={user.isDeleted}
+                          onClick={() => onDelete(user._id!)}
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </Button>
+                      )}
+                      {user.isDeleted && (
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          disabled={!user.isDeleted}
+                          onClick={() => onRestore(user._id)}
+                        >
+                          <FontAwesomeIcon icon={faTrashRestore} />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

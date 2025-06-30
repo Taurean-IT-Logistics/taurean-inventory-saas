@@ -520,10 +520,77 @@ const createTransactionFromPaymentController = async (
   }
 };
 
+const getAllTransactions = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const transactions = await TransactionService.getAllTransactions();
+
+    if (!transactions) {
+      throw new Error("No transactions found");
+    }
+
+    sendSuccess(res, "Payment details retrieved successfully", transactions);
+  } catch (error) {
+    sendError(res, "Failed to retrieve payment details", error);
+  }
+};
+
+const getUserTransactions = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      throw new Error("User not authenticated");
+    }
+
+    const userId = req.user.id;
+
+    const transactions = await TransactionService.getAllUserTransactions(
+      userId
+    );
+
+    if (!transactions) {
+      throw new Error("No transactions found");
+    }
+
+    sendSuccess(res, "Payment details retrieved successfully", transactions);
+  } catch (error) {
+    sendError(res, "Failed to retrieve payment details", error);
+  }
+};
+
+const updateTransaction = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { ...data } = req.body;
+    const transactionId = req.params.id;
+
+    const doc = await TransactionService.updateTransaction(
+      transactionId,
+      data,
+      true
+    );
+
+    if (!doc) {
+      sendNotFound(res, "Transaction not found");
+      return;
+    }
+
+    sendSuccess(res, "Transaction updatted successfully", doc, 200);
+  } catch (error) {
+    sendError(res, "Failed to update transaction details", error);
+  }
+};
+
 export {
   initializePaymentController,
   verifyPaymentController,
   handlePaystackWebhookController,
   getPaymentDetailsController,
   createTransactionFromPaymentController,
+  getAllTransactions,
+  updateTransaction,
+  getUserTransactions,
 };

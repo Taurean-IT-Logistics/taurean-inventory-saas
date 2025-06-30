@@ -11,15 +11,52 @@ import {
   faCheckCircle,
   faTimesCircle,
   faClock,
-  faExclamationTriangle
+  faExclamationTriangle,
+  faCheck,
+  faCalendarCheck,
+  faCalendarTimes
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Booking } from 'types';
-import { mockBookings } from 'data';
+import {
+  Card,
+  Button,
+  Spinner,
+  Row,
+  Col,
+  Form,
+  Modal,
+  Alert,
+  Table,
+  Badge,
+  Tabs,
+  Tab
+} from 'react-bootstrap';
+import { Booking, Facility } from 'types';
 import { currencyFormat } from 'helpers/utils';
+import { useAppSelector } from 'hooks/useAppDispatch';
+import { StateManagement } from 'lib';
 
-const BookingManagement = () => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
+interface BookingManagementProps {
+  bookings: Booking[];
+  facilities: Facility[];
+  onRefresh?: () => void;
+  onUpdateBooking?: (booking: Booking) => Promise<void>;
+  onDeleteBooking?: (bookingId: string) => Promise<void>;
+  onCreateBooking?: (booking: Partial<Booking>) => Promise<void>;
+}
+
+const BookingManagement = ({
+  bookings,
+  facilities,
+  onRefresh,
+  onUpdateBooking,
+  onDeleteBooking,
+  onCreateBooking
+}: BookingManagementProps) => {
+  const { user } = useAppSelector(
+    (state: StateManagement.RootState) => state.auth
+  );
+
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -27,29 +64,24 @@ const BookingManagement = () => {
   const [dateFilter, setDateFilter] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setBookings(mockBookings);
-      setFilteredBookings(mockBookings);
-      setIsLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const [formData, setFormData] = useState<Partial<Booking>>({});
 
   useEffect(() => {
     const filtered = bookings.filter(booking => {
+      if (!booking || booking.isDeleted) return false;
+
       const matchesSearch =
-        booking.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.facility.name
-          .toLowerCase()
+        booking.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.facility?.name
+          ?.toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        booking.user.email.toLowerCase().includes(searchTerm.toLowerCase());
+        booking.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
         statusFilter === 'all' || booking.status === statusFilter;
@@ -59,15 +91,16 @@ const BookingManagement = () => {
       let matchesDate = true;
       if (dateFilter === 'today') {
         const today = new Date();
-        matchesDate = booking.startDate.toDateString() === today.toDateString();
+        matchesDate =
+          new Date(booking.startDate).toDateString() === today.toDateString();
       } else if (dateFilter === 'week') {
         const weekFromNow = new Date();
         weekFromNow.setDate(weekFromNow.getDate() + 7);
-        matchesDate = booking.startDate <= weekFromNow;
+        matchesDate = new Date(booking.startDate) <= weekFromNow;
       } else if (dateFilter === 'month') {
         const monthFromNow = new Date();
         monthFromNow.setMonth(monthFromNow.getMonth() + 1);
-        matchesDate = booking.startDate <= monthFromNow;
+        matchesDate = new Date(booking.startDate) <= monthFromNow;
       }
 
       return matchesSearch && matchesStatus && matchesPayment && matchesDate;
@@ -80,13 +113,12 @@ const BookingManagement = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'confirmed':
+      case 'completed':
         return faCheckCircle;
       case 'pending':
         return faClock;
       case 'cancelled':
         return faTimesCircle;
-      case 'completed':
-        return faCheckCircle;
       case 'no_show':
         return faExclamationTriangle;
       default:
@@ -128,7 +160,6 @@ const BookingManagement = () => {
     }
   };
 
-  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentBookings = filteredBookings.slice(
@@ -142,26 +173,125 @@ const BookingManagement = () => {
     setShowDetailsModal(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center">
-        <div className="text-center">
-          <div
-            className="spinner-border text-primary mb-3"
-            style={{ width: '3rem', height: '3rem' }}
-          >
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="muted">Loading bookings...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleEditBooking = (booking: Booking) => {
+    setEditingBooking(booking);
+    setFormData({
+      ...booking,
+      startDate: new Date(booking.startDate),
+      endDate: new Date(booking.endDate)
+    });
+    setShowDetailsModal(false);
+    setShowEditModal(true);
+  };
+
+  const handleStatusChange = async (booking: Booking, newStatus: string) => {
+    setIsSaving(true);
+    try {
+      const updatedBooking = {
+        ...booking,
+        status: newStatus as Booking['status'],
+        updatedAt: new Date()
+      };
+
+      if (onUpdateBooking) {
+        await onUpdateBooking(updatedBooking);
+        setSelectedBooking(updatedBooking);
+        if (onRefresh) onRefresh();
+      }
+    } catch (err) {
+      console.error('Error updating status:', err);
+      setError('Failed to update booking status');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveBooking = async () => {
+    if (!formData.facility || !formData.startDate || !formData.endDate) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const bookingData = {
+        ...formData,
+        user: formData.user || user,
+        duration: calculateDuration(
+          formData.startDate.toISOString(),
+          formData.endDate.toISOString()
+        )
+      };
+
+      if (editingBooking) {
+        if (onUpdateBooking) {
+          await onUpdateBooking({
+            ...editingBooking,
+            ...bookingData
+          } as Booking);
+          if (onRefresh) onRefresh();
+        }
+      } else {
+        // Create new booking
+        if (onCreateBooking) {
+          await onCreateBooking({
+            ...bookingData,
+            createdAt: new Date(),
+            isDeleted: false
+          });
+          if (onRefresh) onRefresh();
+        }
+      }
+
+      setShowEditModal(false);
+      setFormData({});
+      setEditingBooking(null);
+    } catch (err) {
+      console.error('Error saving booking:', err);
+      setError('Failed to save booking');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  const handleDeleteBooking = async (booking: Booking) => {
+    if (!window.confirm('Are you sure you want to delete this booking?')) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      if (onDeleteBooking && booking._id) {
+        await onDeleteBooking(booking._id);
+        setShowDetailsModal(false);
+        if (onRefresh) onRefresh();
+      }
+    } catch (err) {
+      console.error('Error deleting booking:', err);
+      setError('Failed to delete booking');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const calculateDuration = (start: string, end: string) => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const diffMs = endDate.getTime() - startDate.getTime();
+    const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+    return `${diffHours} hour${diffHours !== 1 ? 's' : ''}`;
+  };
 
   return (
     <div className="min-vh-100">
       <div className="container-fluid py-4">
-        {/* Header */}
+        {error && (
+          <Alert variant="danger" dismissible onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="h3 fw-bold mb-1">Booking Management</h1>
@@ -170,22 +300,38 @@ const BookingManagement = () => {
             </p>
           </div>
           <div className="d-flex gap-2">
-            <button className="btn btn-primary">
+            <Button
+              variant="primary"
+              onClick={() => {
+                setFormData({
+                  startDate: new Date(),
+                  endDate: new Date(Date.now() + 60 * 60 * 1000),
+                  status: 'pending',
+                  paymentStatus: 'pending',
+                  totalPrice: 0,
+                  duration: '1 hour',
+                  notes: '',
+                  internalNotes: ''
+                });
+                setEditingBooking(null);
+                setShowEditModal(true);
+              }}
+            >
               <FontAwesomeIcon icon={faPlus} className="me-2" />
               New Booking
-            </button>
-            <button className="btn btn-outline-success">
+            </Button>
+            <Button variant="outline-success">
               <FontAwesomeIcon icon={faDownload} className="me-2" />
               Export
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="row mb-4">
-          <div className="col-md-3 mb-3">
-            <div className="card bg-primary bg-opacity-10 border-primary">
-              <div className="card-body">
+        <Row className="mb-4">
+          <Col md={3} className="mb-3">
+            <Card className="bg-primary bg-opacity-10 border-primary">
+              <Card.Body>
                 <div className="d-flex align-items-center">
                   <FontAwesomeIcon
                     icon={faCalendarAlt}
@@ -193,15 +339,15 @@ const BookingManagement = () => {
                   />
                   <div>
                     <h5 className="text-primary mb-0">{bookings.length}</h5>
-                    <small className="text-muted-50">Total Bookings</small>
+                    <small className="text-muted">Total Bookings</small>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3 mb-3">
-            <div className="card bg-success bg-opacity-10 border-success">
-              <div className="card-body">
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={3} className="mb-3">
+            <Card className="bg-success bg-opacity-10 border-success">
+              <Card.Body>
                 <div className="d-flex align-items-center">
                   <FontAwesomeIcon
                     icon={faCheckCircle}
@@ -209,17 +355,24 @@ const BookingManagement = () => {
                   />
                   <div>
                     <h5 className="text-success mb-0">
-                      {bookings.filter(b => b.status === 'confirmed').length}
+                      {
+                        bookings.filter(
+                          b =>
+                            b &&
+                            (b.status === 'confirmed' ||
+                              b.status === 'completed')
+                        ).length
+                      }
                     </h5>
                     <small className="text-muted">Confirmed</small>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3 mb-3">
-            <div className="card bg-warning bg-opacity-10 border-warning">
-              <div className="card-body">
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={3} className="mb-3">
+            <Card className="bg-warning bg-opacity-10 border-warning">
+              <Card.Body>
                 <div className="d-flex align-items-center">
                   <FontAwesomeIcon
                     icon={faClock}
@@ -227,17 +380,17 @@ const BookingManagement = () => {
                   />
                   <div>
                     <h5 className="text-warning mb-0">
-                      {bookings.filter(b => b.status === 'pending').length}
+                      {bookings.filter(b => b && b.status === 'pending').length}
                     </h5>
                     <small className="text-muted">Pending</small>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3 mb-3">
-            <div className="card bg-info bg-opacity-10 border-info">
-              <div className="card-body">
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={3} className="mb-3">
+            <Card className="bg-info bg-opacity-10 border-info">
+              <Card.Body>
                 <div className="d-flex align-items-center">
                   <FontAwesomeIcon
                     icon={faDollarSign}
@@ -246,38 +399,41 @@ const BookingManagement = () => {
                   <div>
                     <h5 className="text-info mb-0">
                       {currencyFormat(
-                        bookings.reduce((sum, b) => sum + b.totalPrice, 0)
+                        bookings.reduce(
+                          (sum, b) => sum + (b?.totalPrice || 0),
+                          0
+                        )
                       )}
                     </h5>
                     <small className="text-muted">Total Revenue</small>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
 
         {/* Filters */}
-        <div className="card border-secondary mb-4">
-          <div className="card-body p-3">
-            <div className="row align-items-center">
-              <div className="col-md-3 mb-2">
+        <Card className="border-secondary mb-4">
+          <Card.Body className="p-3">
+            <Row className="align-items-center">
+              <Col md={3} className="mb-2">
                 <div className="input-group">
-                  <span className="input-group-text  border-secondary text-muted">
+                  <span className="input-group-text border-secondary text-muted">
                     <FontAwesomeIcon icon={faSearch} />
                   </span>
-                  <input
+                  <Form.Control
                     type="text"
-                    className="form-control  border-secondary "
+                    className="border-secondary"
                     placeholder="Search bookings..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="col-md-2 mb-2">
-                <select
-                  className="form-select  border-secondary "
+              </Col>
+              <Col md={2} className="mb-2">
+                <Form.Select
+                  className="border-secondary"
                   value={statusFilter}
                   onChange={e => setStatusFilter(e.target.value)}
                 >
@@ -287,11 +443,11 @@ const BookingManagement = () => {
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
                   <option value="no_show">No Show</option>
-                </select>
-              </div>
-              <div className="col-md-2 mb-2">
-                <select
-                  className="form-select  border-secondary "
+                </Form.Select>
+              </Col>
+              <Col md={2} className="mb-2">
+                <Form.Select
+                  className="border-secondary"
                   value={paymentFilter}
                   onChange={e => setPaymentFilter(e.target.value)}
                 >
@@ -300,11 +456,11 @@ const BookingManagement = () => {
                   <option value="completed">Completed</option>
                   <option value="failed">Failed</option>
                   <option value="refunded">Refunded</option>
-                </select>
-              </div>
-              <div className="col-md-2 mb-2">
-                <select
-                  className="form-select  border-secondary "
+                </Form.Select>
+              </Col>
+              <Col md={2} className="mb-2">
+                <Form.Select
+                  className="border-secondary"
                   value={dateFilter}
                   onChange={e => setDateFilter(e.target.value)}
                 >
@@ -312,23 +468,23 @@ const BookingManagement = () => {
                   <option value="today">Today</option>
                   <option value="week">This Week</option>
                   <option value="month">This Month</option>
-                </select>
-              </div>
-              <div className="col-md-3 mb-2">
+                </Form.Select>
+              </Col>
+              <Col md={3} className="mb-2">
                 <div className="text-muted small">
                   Showing {filteredBookings.length} of {bookings.length}{' '}
                   bookings
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
 
         {/* Bookings Table */}
-        <div className="card  border-secondary">
-          <div className="card-body px-2">
+        <Card className="border-secondary">
+          <Card.Body className="px-2">
             <div className="table-responsive">
-              <table className="table table-hover mb-0">
+              <Table hover className="mb-0">
                 <thead>
                   <tr>
                     <th>Booking ID</th>
@@ -347,90 +503,115 @@ const BookingManagement = () => {
                     <tr key={index}>
                       <td>
                         <span className="text-primary fw-semibold">
-                          #{booking.createdAt.getTime().toString().slice(-6)}
+                          #
+                          {booking.createdAt
+                            ? new Date(booking.createdAt)
+                                .getTime()
+                                .toString()
+                                .slice(-6)
+                            : 'N/A'}
                         </span>
                       </td>
                       <td>
                         <div>
-                          <div className=" fw-semibold">
-                            {booking.user.name}
+                          <div className="fw-semibold">
+                            {booking.user?.name || 'N/A'}
                           </div>
                           <small className="text-muted">
-                            {booking.user.email}
+                            {booking.user?.email || 'N/A'}
                           </small>
                         </div>
                       </td>
                       <td>
-                        <div className="">{booking.facility.name}</div>
+                        <div>{booking.facility?.name || 'N/A'}</div>
                       </td>
                       <td>
                         <div>
-                          <div className="">
-                            {booking.startDate.toLocaleDateString()}
+                          <div>
+                            {booking.startDate
+                              ? new Date(booking.startDate).toLocaleDateString()
+                              : 'N/A'}
                           </div>
                           <small className="text-muted">
-                            {booking.startDate.toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}{' '}
-                            -
-                            {booking.endDate.toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {booking.startDate
+                              ? new Date(booking.startDate).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  }
+                                )
+                              : ''}{' '}
+                            -{' '}
+                            {booking.endDate
+                              ? new Date(booking.endDate).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  }
+                                )
+                              : ''}
                           </small>
                         </div>
                       </td>
                       <td>
-                        <span className="">{booking.duration}</span>
+                        <span>{booking.duration || 'N/A'}</span>
                       </td>
                       <td>
-                        <span
-                          className={`badge bg-${getStatusColor(
-                            booking.status
-                          )} d-flex align-items-center`}
+                        <Badge
+                          bg={getStatusColor(booking.status)}
+                          className="d-flex align-items-center"
                         >
                           <FontAwesomeIcon
                             icon={getStatusIcon(booking.status)}
                             className="me-1"
                           />
-                          {booking.status.toUpperCase()}
-                        </span>
+                          {booking.status?.toUpperCase() || 'N/A'}
+                        </Badge>
                       </td>
                       <td>
-                        <span
-                          className={`badge bg-${getPaymentStatusColor(
-                            booking.paymentStatus
-                          )}`}
+                        <Badge
+                          bg={getPaymentStatusColor(booking.paymentStatus)}
                         >
-                          {booking.paymentStatus.toUpperCase()}
-                        </span>
+                          {booking.paymentStatus?.toUpperCase() || 'N/A'}
+                        </Badge>
                       </td>
                       <td>
-                        <span className=" fw-bold">
-                          {currencyFormat(booking.totalPrice)}
+                        <span className="fw-bold">
+                          {currencyFormat(booking.totalPrice || 0)}
                         </span>
                       </td>
                       <td>
                         <div className="d-flex gap-1">
-                          <button
-                            className="btn btn-outline-primary btn-sm"
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
                             onClick={() => handleViewDetails(booking)}
                           >
                             <FontAwesomeIcon icon={faEye} />
-                          </button>
-                          <button className="btn btn-outline-warning btn-sm">
+                          </Button>
+                          <Button
+                            variant="outline-warning"
+                            size="sm"
+                            onClick={() => handleEditBooking(booking)}
+                          >
                             <FontAwesomeIcon icon={faEdit} />
-                          </button>
-                          <button className="btn btn-outline-danger btn-sm">
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => handleDeleteBooking(booking)}
+                            disabled={isSaving}
+                          >
                             <FontAwesomeIcon icon={faTrash} />
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
 
             {/* Pagination */}
@@ -448,13 +629,14 @@ const BookingManagement = () => {
                         currentPage === 1 ? 'disabled' : ''
                       }`}
                     >
-                      <button
-                        className="page-link  border-secondary "
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
                         onClick={() => setCurrentPage(currentPage - 1)}
                         disabled={currentPage === 1}
                       >
                         Previous
-                      </button>
+                      </Button>
                     </li>
                     {[...Array(totalPages)].map((_, i) => (
                       <li
@@ -463,12 +645,17 @@ const BookingManagement = () => {
                           currentPage === i + 1 ? 'active' : ''
                         }`}
                       >
-                        <button
-                          className="page-link  border-secondary "
+                        <Button
+                          variant={
+                            currentPage === i + 1
+                              ? 'primary'
+                              : 'outline-secondary'
+                          }
+                          size="sm"
                           onClick={() => setCurrentPage(i + 1)}
                         >
                           {i + 1}
-                        </button>
+                        </Button>
                       </li>
                     ))}
                     <li
@@ -476,237 +663,386 @@ const BookingManagement = () => {
                         currentPage === totalPages ? 'disabled' : ''
                       }`}
                     >
-                      <button
-                        className="page-link  border-secondary "
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
                         onClick={() => setCurrentPage(currentPage + 1)}
                         disabled={currentPage === totalPages}
                       >
                         Next
-                      </button>
+                      </Button>
                     </li>
                   </ul>
                 </nav>
               </div>
             )}
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
       </div>
 
       {/* Booking Details Modal */}
-      {showDetailsModal && selectedBooking && (
-        <div
-          className="modal show d-block"
-          style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
-        >
-          <div className="modal-dialog modal-xl">
-            <div className="modal-content  border-secondary">
-              <div className="modal-header border-secondary">
-                <h5 className="modal-title ">
-                  Booking Details - #
-                  {selectedBooking.createdAt.getTime().toString().slice(-6)}
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setShowDetailsModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="row">
-                  <div className="col-md-6">
-                    <h6 className="text-primary mb-3">Customer Information</h6>
-                    <div className="mb-2">
-                      <small className="text-muted">Name:</small>
-                      <div className="">{selectedBooking.user.name}</div>
-                    </div>
-                    <div className="mb-2">
-                      <small className="text-muted">Email:</small>
-                      <div className="">{selectedBooking.user.email}</div>
-                    </div>
-                    {selectedBooking.user.phone && (
-                      <div className="mb-2">
-                        <small className="text-muted">Phone:</small>
-                        <div className="">{selectedBooking.user.phone}</div>
-                      </div>
-                    )}
-                    <div className="mb-2">
-                      <small className="text-muted">Customer Since:</small>
-                      <div className="">
-                        {selectedBooking.user.createdAt?.toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <h6 className="text-primary mb-3">Booking Information</h6>
-                    <div className="mb-2">
-                      <small className="text-muted">Facility:</small>
-                      <div className="">{selectedBooking.facility.name}</div>
-                    </div>
-                    <div className="mb-2">
-                      <small className="text-muted">Location:</small>
-                      <div className="">
-                        {selectedBooking.facility.location.address}
-                      </div>
-                    </div>
-                    <div className="mb-2">
-                      <small className="text-muted">Date & Time:</small>
-                      <div className="">
-                        {selectedBooking.startDate.toLocaleDateString()} <br />
-                        {selectedBooking.startDate.toLocaleTimeString()} -{' '}
-                        {selectedBooking.endDate.toLocaleTimeString()}
-                      </div>
-                    </div>
-                    <div className="mb-2">
-                      <small className="text-muted">Duration:</small>
-                      <div className="">{selectedBooking.duration}</div>
-                    </div>
-                  </div>
-                </div>
+      <Modal
+        show={showDetailsModal}
+        onHide={() => setShowDetailsModal(false)}
+        centered
+        size="xl"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            Booking Details - #
+            {selectedBooking?.createdAt
+              ? new Date(selectedBooking.createdAt)
+                  .getTime()
+                  .toString()
+                  .slice(-6)
+              : 'N/A'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedBooking && (
+            <>
+              <Tabs defaultActiveKey="details" className="mb-3">
+                <Tab eventKey="details" title="Details">
+                  <Row className="mb-3">
+                    <Col md={6}>
+                      <h6 className="text-primary mb-3">
+                        Customer Information
+                      </h6>
+                      <p>
+                        <strong>Name:</strong>{' '}
+                        {selectedBooking.user?.name || 'N/A'}
+                      </p>
+                      <p>
+                        <strong>Email:</strong>{' '}
+                        {selectedBooking.user?.email || 'N/A'}
+                      </p>
+                      <p>
+                        <strong>Phone:</strong>{' '}
+                        {selectedBooking.user?.phone || 'N/A'}
+                      </p>
+                      <p>
+                        <strong>Duration:</strong>{' '}
+                        {selectedBooking.duration || 'N/A'}
+                      </p>
+                    </Col>
+                    <Col md={6}>
+                      <h6 className="text-primary mb-3">Booking Information</h6>
+                      <p>
+                        <strong>Facility:</strong>{' '}
+                        {selectedBooking.facility?.name || 'N/A'}
+                      </p>
+                      <p>
+                        <strong>Date:</strong>{' '}
+                        {selectedBooking.startDate
+                          ? new Date(
+                              selectedBooking.startDate
+                            ).toLocaleDateString()
+                          : 'N/A'}
+                      </p>
+                      <p>
+                        <strong>Start Time:</strong>{' '}
+                        {selectedBooking.startDate
+                          ? new Date(
+                              selectedBooking.startDate
+                            ).toLocaleTimeString()
+                          : 'N/A'}
+                      </p>
+                      <p>
+                        <strong>End Time:</strong>{' '}
+                        {selectedBooking.endDate
+                          ? new Date(
+                              selectedBooking.endDate
+                            ).toLocaleTimeString()
+                          : 'N/A'}
+                      </p>
+                      <p>
+                        <strong>Total Price:</strong>{' '}
+                        {currencyFormat(selectedBooking.totalPrice || 0)}
+                      </p>
+                    </Col>
+                  </Row>
 
-                <hr className="border-secondary" />
+                  {selectedBooking.notes && (
+                    <p>
+                      <strong>Notes:</strong> {selectedBooking.notes}
+                    </p>
+                  )}
+                </Tab>
+              </Tabs>
 
-                <div className="row">
-                  <div className="col-md-6">
-                    <h6 className="text-primary mb-3">Status & Payment</h6>
-                    <div className="mb-2">
-                      <small className="text-muted">Booking Status:</small>
-                      <div>
-                        <span
-                          className={`badge bg-${getStatusColor(
-                            selectedBooking.status
-                          )}`}
-                        >
-                          {selectedBooking.status.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mb-2">
-                      <small className="text-muted">Payment Status:</small>
-                      <div>
-                        <span
-                          className={`badge bg-${getPaymentStatusColor(
-                            selectedBooking.paymentStatus
-                          )}`}
-                        >
-                          {selectedBooking.paymentStatus.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mb-2">
-                      <small className="text-muted">Total Amount:</small>
-                      <div className=" fw-bold fs-5">
-                        {currencyFormat(selectedBooking.totalPrice)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <h6 className="text-primary mb-3">Timeline</h6>
-                    <div className="mb-2">
-                      <small className="text-muted">Booking Created:</small>
-                      <div className="">
-                        {selectedBooking.createdAt.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="mb-2">
-                      <small className="text-muted">Last Updated:</small>
-                      <div className="">
-                        {selectedBooking.updatedAt.toLocaleString()}
-                      </div>
-                    </div>
-                    {selectedBooking.checkIn && (
-                      <div className="mb-2">
-                        <small className="text-muted">Check-in:</small>
-                        <div className="">
-                          {selectedBooking.checkIn.time.toLocaleString()}
-                        </div>
-                        <small className="text-success">
-                          Verified by {selectedBooking.checkIn.verifiedBy.name}
-                        </small>
-                      </div>
-                    )}
-                    {selectedBooking.checkOut && (
-                      <div className="mb-2">
-                        <small className="text-muted">Check-out:</small>
-                        <div className="">
-                          {selectedBooking.checkOut.time.toLocaleString()}
-                        </div>
-                        <small className="text-success">
-                          Condition:{' '}
-                          {selectedBooking.checkOut.condition.toUpperCase()}
-                        </small>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {selectedBooking.notes && (
-                  <>
-                    <hr className="border-secondary" />
-                    <div>
-                      <h6 className="text-primary mb-2">Customer Notes</h6>
-                      <p className="text-muted">{selectedBooking.notes}</p>
-                    </div>
-                  </>
+              <div className="d-flex gap-2 flex-wrap">
+                {selectedBooking.status === 'pending' && (
+                  <Button
+                    variant="success"
+                    size="sm"
+                    onClick={() =>
+                      handleStatusChange(selectedBooking, 'confirmed')
+                    }
+                    disabled={isSaving}
+                  >
+                    <FontAwesomeIcon icon={faCheck} className="me-1" />
+                    Confirm
+                  </Button>
                 )}
 
-                {selectedBooking.cancellation && (
-                  <>
-                    <hr className="border-secondary" />
-                    <div>
-                      <h6 className="text-danger mb-2">Cancellation Details</h6>
-                      <div className="mb-2">
-                        <small className="text-muted">Reason:</small>
-                        <div className="">
-                          {selectedBooking.cancellation.reason}
-                        </div>
-                      </div>
-                      <div className="mb-2">
-                        <small className="text-muted">Cancelled By:</small>
-                        <div className="">
-                          {selectedBooking.cancellation.cancelledBy.name}
-                        </div>
-                      </div>
-                      <div className="mb-2">
-                        <small className="text-muted">Cancelled At:</small>
-                        <div className="">
-                          {selectedBooking.cancellation.cancelledAt.toLocaleString()}
-                        </div>
-                      </div>
-                      {selectedBooking.cancellation.refundAmount && (
-                        <div className="mb-2">
-                          <small className="text-muted">Refund Amount:</small>
-                          <div className="text-success fw-bold">
-                            {currencyFormat(
-                              selectedBooking.cancellation.refundAmount
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </>
+                {selectedBooking.status === 'confirmed' && (
+                  <Button
+                    variant="info"
+                    size="sm"
+                    onClick={() =>
+                      handleStatusChange(selectedBooking, 'completed')
+                    }
+                    disabled={isSaving}
+                  >
+                    <FontAwesomeIcon icon={faCalendarCheck} className="me-1" />
+                    Complete
+                  </Button>
+                )}
+
+                {['pending', 'confirmed'].includes(selectedBooking.status) && (
+                  <Button
+                    variant="warning"
+                    size="sm"
+                    onClick={() =>
+                      handleStatusChange(selectedBooking, 'cancelled')
+                    }
+                    disabled={isSaving}
+                  >
+                    <FontAwesomeIcon icon={faCalendarTimes} className="me-1" />
+                    Cancel
+                  </Button>
                 )}
               </div>
-              <div className="modal-footer border-secondary">
-                <button className="btn btn-outline-primary">
-                  <FontAwesomeIcon icon={faEdit} className="me-2" />
-                  Edit Booking
-                </button>
-                <button className="btn btn-outline-success">
-                  <FontAwesomeIcon icon={faDownload} className="me-2" />
-                  Download Invoice
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowDetailsModal(false)}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="outline-primary"
+            onClick={() =>
+              selectedBooking && handleEditBooking(selectedBooking)
+            }
+          >
+            <FontAwesomeIcon icon={faEdit} className="me-2" /> Edit
+          </Button>
+          <Button
+            variant="outline-danger"
+            onClick={() =>
+              selectedBooking && handleDeleteBooking(selectedBooking)
+            }
+            disabled={isSaving}
+          >
+            <FontAwesomeIcon icon={faTrash} className="me-2" /> Delete
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setShowDetailsModal(false)}
+          >
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Edit/Create Booking Modal */}
+      <Modal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {editingBooking ? 'Edit Booking' : 'New Booking'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Facility *</Form.Label>
+                  <Form.Select
+                    value={formData.facility?.name || ''}
+                    onChange={e => {
+                      const selectedFacility = facilities.find(
+                        f => f.name === e.target.value
+                      );
+                      setFormData(prev => ({
+                        ...prev,
+                        facility: selectedFacility
+                      }));
+                    }}
+                    required
+                  >
+                    <option value="">Select a facility</option>
+                    {facilities.map(facility => (
+                      <option key={facility._id} value={facility.name}>
+                        {facility.name}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Status</Form.Label>
+                  <Form.Select
+                    value={formData.status || 'pending'}
+                    onChange={e =>
+                      setFormData(prev => ({
+                        ...prev,
+                        status: e.target.value as Booking['status']
+                      }))
+                    }
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="no_show">No Show</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Start Date & Time *</Form.Label>
+                  <Form.Control
+                    type="datetime-local"
+                    value={
+                      formData.startDate
+                        ? new Date(
+                            formData.startDate.getTime() -
+                              formData.startDate.getTimezoneOffset() * 60000
+                          )
+                            .toISOString()
+                            .slice(0, 16)
+                        : ''
+                    }
+                    onChange={e => {
+                      const date = new Date(e.target.value);
+                      setFormData(prev => ({ ...prev, startDate: date }));
+                    }}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>End Date & Time *</Form.Label>
+                  <Form.Control
+                    type="datetime-local"
+                    value={
+                      formData.endDate
+                        ? new Date(
+                            formData.endDate.getTime() -
+                              formData.endDate.getTimezoneOffset() * 60000
+                          )
+                            .toISOString()
+                            .slice(0, 16)
+                        : ''
+                    }
+                    onChange={e => {
+                      const date = new Date(e.target.value);
+                      setFormData(prev => ({ ...prev, endDate: date }));
+                    }}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Payment Status</Form.Label>
+                  <Form.Select
+                    value={formData.paymentStatus || 'pending'}
+                    onChange={e =>
+                      setFormData(prev => ({
+                        ...prev,
+                        paymentStatus: e.target
+                          .value as Booking['paymentStatus']
+                      }))
+                    }
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="refunded">Refunded</option>
+                    <option value="partial_refund">Partial Refund</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Total Price</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    value={formData.totalPrice || 0}
+                    onChange={e =>
+                      setFormData(prev => ({
+                        ...prev,
+                        totalPrice: parseFloat(e.target.value) || 0
+                      }))
+                    }
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Notes</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={formData.notes || ''}
+                onChange={e =>
+                  setFormData(prev => ({ ...prev, notes: e.target.value }))
+                }
+                placeholder="Customer notes..."
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Internal Notes</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={formData.internalNotes || ''}
+                onChange={e =>
+                  setFormData(prev => ({
+                    ...prev,
+                    internalNotes: e.target.value
+                  }))
+                }
+                placeholder="Internal staff notes..."
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="primary"
+            onClick={handleSaveBooking}
+            disabled={
+              isSaving ||
+              !formData.facility ||
+              !formData.startDate ||
+              !formData.endDate
+            }
+          >
+            {isSaving ? <Spinner size="sm" className="me-2" /> : null}
+            {editingBooking ? 'Update' : 'Create'} Booking
+          </Button>
+          <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+            Cancel
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

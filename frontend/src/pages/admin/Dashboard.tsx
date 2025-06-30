@@ -2,69 +2,86 @@ import { useState, useEffect } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import DashboardMetrics from 'components/dashboard/DashboardMetrics';
 import QuickActionsSidebar from 'components/dashboard/QuickActions';
-import RecentActivity from 'components/dashboard/RecentActivity';
+import { Booking, Facility } from 'types';
+import {
+  BookingController,
+  FacilityController,
+  InventoryItemController,
+  TransactionController,
+  UserController
+} from 'controllers';
+import { useAppSelector } from 'hooks/useAppDispatch';
+import { StateManagement } from 'lib';
+import BookingCalendar from 'components/booking/BookingCalendar';
 
 const Dashboard = () => {
+  const { tokens } = useAppSelector(
+    (state: StateManagement.RootState) => state.auth
+  );
+
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [facilities, setFacilites] = useState<Facility[]>([]);
+  const accessToken = tokens.accessToken;
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState({
     totalInventory: 0,
     totalFacilities: 0,
     totalUsers: 0,
-    totalAlerts: 0,
-    lowStockItems: 0,
     activeBookings: 0
   });
 
-  const [recentActivities] = useState([
-    {
-      id: '1',
-      type: 'inventory' as const,
-      action: 'Added',
-      description: 'New projector added to AV equipment',
-      timestamp: new Date(),
-      user: 'Admin'
-    },
-    {
-      id: '2',
-      type: 'user' as const,
-      action: 'Created',
-      description: 'New user account created',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30),
-      user: 'Manager'
-    },
-    {
-      id: '3',
-      type: 'facility' as const,
-      action: 'Updated',
-      description: 'Conference room capacity updated',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60),
-      user: 'Admin'
-    },
-    {
-      id: '4',
-      type: 'alert' as const,
-      action: 'Created',
-      description: 'Low stock alert for office supplies',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-      user: 'System'
-    }
-  ]);
-
   useEffect(() => {
-    // Simulate loading metrics
-    const timer = setTimeout(() => {
-      setMetrics({
-        totalInventory: 156,
-        totalFacilities: 12,
-        totalUsers: 48,
-        totalAlerts: 7,
-        lowStockItems: 3,
-        activeBookings: 15
-      });
-      setIsLoading(false);
-    }, 1000);
+    async function fetchData() {
+      const [
+        transactionData,
+        facilitiesData,
+        usersData,
+        inventoryData,
+        stockData,
+        bookingsData
+      ] = await Promise.all([
+        TransactionController.getAllTransactions(accessToken),
+        FacilityController.getAllFacilites(),
+        UserController.getAllusers(accessToken),
+        InventoryItemController.getAllInventoryItems(),
+        InventoryItemController.getLowStockItems(accessToken),
+        BookingController.getAllBookings(accessToken)
+      ]);
 
-    return () => clearTimeout(timer);
+      if (
+        transactionData &&
+        facilitiesData &&
+        usersData &&
+        inventoryData &&
+        stockData &&
+        bookingsData
+      ) {
+        setIsLoading(false);
+        const metricsData = {
+          totalInventory: inventoryData.data.length,
+          totalFacilities: facilitiesData.data.facilities.length,
+          totalUsers: (usersData.data as any).users.length,
+          activeBookings: (bookingsData.data as Booking[]).length
+        };
+
+        setBookings(bookingsData.data as Booking[]);
+        setFacilites(facilitiesData.data.facilities as Facility[]);
+
+        setMetrics(metricsData);
+      } else {
+        setIsLoading(false);
+        const metricsData = {
+          totalInventory: 0,
+          totalFacilities: 0,
+          totalUsers: 0,
+          activeBookings: 0
+        };
+
+        setMetrics(metricsData);
+      }
+    }
+
+    fetchData();
   }, []);
 
   if (isLoading) {
@@ -94,10 +111,9 @@ const Dashboard = () => {
         </div>
 
         <DashboardMetrics metrics={metrics} />
-
         <Row>
           <Col lg={8} className="mb-4">
-            <RecentActivity activities={recentActivities} />
+            <BookingCalendar facilities={facilities} bookings={bookings} />
           </Col>
           <Col lg={4}>
             <QuickActionsSidebar />

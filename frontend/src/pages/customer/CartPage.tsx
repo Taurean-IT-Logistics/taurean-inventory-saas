@@ -11,6 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useCart } from 'hooks/useCart';
 import { currencyFormat } from 'helpers/utils';
+import { getResourceUrl } from 'controllers';
 
 const CartPage = () => {
   const {
@@ -92,7 +93,7 @@ const CartPage = () => {
                   >
                     <div className="me-3">
                       <img
-                        src="https://placehold.co/300x400"
+                        src={getResourceUrl(item.imageUrl)}
                         alt={item.name}
                         style={{
                           width: '80px',

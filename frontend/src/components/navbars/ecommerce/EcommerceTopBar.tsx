@@ -5,7 +5,6 @@ import FeatherIcon from 'feather-icons-react';
 import Logo from 'components/common/Logo';
 import NotificationDropdownMenu from '../nav-items/NotificationDropdownMenu';
 import ProfileDropdownMenu from '../nav-items/ProfileDropdownMenu';
-import SearchBox from 'components/common/SearchBox';
 import ThemeToggler from 'components/common/ThemeToggler';
 import { useCart } from 'hooks/useCart';
 import { useWishlist } from 'hooks/useWishlist';
@@ -32,14 +31,10 @@ const EcommerceTopbar = () => {
 
                 {/* Wishlist */}
                 <Nav.Item as="li">
-                  <Nav.Link
-                    as={Link}
-                    to="/wishlist"
-                    className="px-2 icon-indicator icon-indicator-primary"
-                  >
+                  <Nav.Link as={Link} to="/wishlist" className="px-2 ">
                     <FeatherIcon icon="heart" size={20} />
                     {wishlistItems > 0 && (
-                      <span className="icon-indicator-number">
+                      <span className="icon-indicator-number icon-indicator icon-indicator-primary">
                         {wishlistItems}
                       </span>
                     )}
@@ -90,14 +85,6 @@ const EcommerceTopbar = () => {
                   </Dropdown>
                 </Nav.Item>
               </Nav>
-            </Col>
-            <Col xs={12} md={6}>
-              <SearchBox
-                placeholder="Search..."
-                className="ecommerce-search-box w-100"
-                inputClassName="rounded-pill"
-                size="sm"
-              />
             </Col>
           </Row>
         </Navbar>

@@ -11,6 +11,7 @@ import {
 import { useWishlist } from 'hooks/useWishlist';
 import { useCart } from 'hooks/useCart';
 import { currencyFormat } from 'helpers/utils';
+import { getResourceUrl } from 'controllers';
 
 const WishlistPage = () => {
   const { items, removeFromWishlist, clearWishlist, totalItems } =
@@ -85,7 +86,7 @@ const WishlistPage = () => {
                 <div className="position-relative">
                   <Card.Img
                     variant="top"
-                    src="https://placehold.co/300x400"
+                    src={getResourceUrl(item.imageUrl)}
                     style={{ height: '200px', objectFit: 'cover' }}
                     alt={item.name}
                   />

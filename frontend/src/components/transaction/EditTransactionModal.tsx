@@ -75,10 +75,10 @@ const EditTransactionModal = ({
                 <Form.Control
                   type="number"
                   name="amount"
-                  value={formData.amount || ''}
                   onChange={handleInputChange}
+                  value={formData.amount}
                   className="border-secondary"
-                  step="0.01"
+                  readOnly
                 />
               </Form.Group>
             </Col>

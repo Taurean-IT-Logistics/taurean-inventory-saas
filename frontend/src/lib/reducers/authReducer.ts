@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AuthUser } from 'types';
+import { AuthUser, User } from 'types';
 
 const initialState: AuthUser = {
   user: null,
@@ -25,10 +25,19 @@ const authSlice = createSlice({
       (state.user = action.payload.user!),
         (state.tokens = action.payload.tokens!),
         (state.isAuthenticated = action.payload.isAuthenticated!);
+    },
+    updateProfile(state, action: PayloadAction<Partial<User>>) {
+      if (state.user) {
+        // Merge the updated profile data with existing user data
+        state.user = {
+          ...state.user,
+          ...action.payload
+        };
+      }
     }
   }
 });
 
-const { login, logout, update } = authSlice.actions;
+const { login, logout, update, updateProfile } = authSlice.actions;
 const authReducer = authSlice.reducer;
-export { login, logout, update, authReducer };
+export { login, logout, update, authReducer, updateProfile };

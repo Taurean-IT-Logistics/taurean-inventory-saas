@@ -11,7 +11,16 @@ router.post("/webhook", TransactionController.handlePaystackWebhookController);
 router.use(AuthMiddleware);
 
 // Initialize payment and create transaction - authenticated users
+
+router.get(
+  "/",
+  AuthorizeRoles("admin", "staff"),
+  TransactionController.getAllTransactions
+);
+
 router.post("/initialize", TransactionController.initializePaymentController);
+
+router.get("/user", AuthMiddleware, TransactionController.getUserTransactions);
 
 // Verify payment by reference - authenticated users
 router.get("/verify/:reference", TransactionController.verifyPaymentController);
@@ -19,7 +28,6 @@ router.get("/verify/:reference", TransactionController.verifyPaymentController);
 // Get payment details by reference - admin and staff
 router.get(
   "/details/:reference",
-  AuthorizeRoles("admin", "staff"),
   TransactionController.getPaymentDetailsController
 );
 
@@ -28,6 +36,13 @@ router.post(
   "/create-transaction",
   AuthorizeRoles("admin"),
   TransactionController.createTransactionFromPaymentController
+);
+
+// update transaction - staff and admin
+router.post(
+  "/:id",
+  AuthorizeRoles("staff", "admin"),
+  TransactionController.updateTransaction
 );
 
 export default router;

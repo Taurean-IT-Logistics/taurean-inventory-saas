@@ -139,4 +139,32 @@ const getFacilityById = async (id: string) => {
   }
 };
 
-export { createFacility, getAllFacilites, getFacilityById };
+const updateFacility = async (
+  id: string,
+  data: Partial<Facility>,
+  accessToken: string
+) => {
+  try {
+    const response = await apiClient.put<APIResponse<Facility>>(
+      `/facilities/${id}`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+export { createFacility, getAllFacilites, getFacilityById, updateFacility };
