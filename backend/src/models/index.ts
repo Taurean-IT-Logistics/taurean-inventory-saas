@@ -12,3 +12,4 @@ export {
 } from "./inventoryItem.model";
 export { SystemAlertModel, SystemAlertDocument } from "./systemAlert.model";
 export { TransactionModel, TransactionDocument } from "./transaction.model";
+export { TaxModel, TaxDocument } from "./tax.model";

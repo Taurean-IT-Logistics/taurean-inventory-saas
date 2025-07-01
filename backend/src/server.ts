@@ -19,6 +19,7 @@ import {
   transactionRoutes,
   bookingRoutes,
   resourceRoutes,
+  taxRoutes,
 } from "./routes";
 
 const app: express.Application = express();
@@ -44,6 +45,7 @@ app.use("/api/v1/inventory-items", inventoryItemRoutes);
 app.use("/api/v1/transaction", transactionRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
 app.use("/api/v1/resources", resourceRoutes);
+app.use("/api/v1/taxes", taxRoutes);
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");
