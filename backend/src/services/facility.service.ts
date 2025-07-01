@@ -1,5 +1,6 @@
 import { FacilityModel, FacilityDocument } from "../models/facility.model";
 import { FilterQuery, Types, UpdateQuery } from "mongoose";
+import { Facility } from "../types";
 
 interface AvailabilityPeriod {
   _id: Types.ObjectId;
@@ -95,20 +96,49 @@ export async function createFacility(
 // If showDeleted is true, allows update on soft-deleted facilities.
 export async function updateFacility(
   id: string,
-  updateData: UpdateQuery<FacilityDocument>,
+  updateData: Partial<Facility>,
+  newImages?: any[],
+  removeImageIds?: string[],
+  replaceAllImages = false,
   showDeleted = false
-): Promise<FacilityDocument> {
+): Promise<FacilityDocument | null> {
   try {
-    const queryFilter = showDeleted
-      ? { _id: id }
-      : { _id: id, isDeleted: false };
-    const facility = await FacilityModel.findOneAndUpdate(
-      queryFilter,
-      { ...updateData },
-      { new: true }
-    ).exec();
-    if (!facility) throw new Error("Facility not found");
-    return facility;
+    if (!Types.ObjectId.isValid(id)) {
+      throw new Error("Invalid ID format");
+    }
+
+    const filter = showDeleted ? { _id: id } : { _id: id, isDeleted: false };
+
+    if (newImages?.length || removeImageIds?.length || replaceAllImages) {
+      const currentItem = await FacilityModel.findOne(filter);
+      if (!currentItem) {
+        throw new Error("Inventory item not found");
+      }
+
+      let updatedImages = [...(currentItem.images || [])];
+
+      // Remove specified images
+      if (removeImageIds?.length) {
+        updatedImages = updatedImages.filter(
+          (img: any) => !removeImageIds.includes(img._id?.toString())
+        );
+      }
+
+      // Handle new images
+      if (newImages?.length) {
+        if (replaceAllImages) {
+          updatedImages = newImages;
+        } else {
+          updatedImages = [...updatedImages, ...newImages];
+        }
+      }
+
+      updateData.images = updatedImages;
+    }
+
+    return await FacilityModel.findOneAndUpdate(filter, updateData, {
+      new: true,
+    });
   } catch (error) {
     throw new Error("Error updating facility");
   }
