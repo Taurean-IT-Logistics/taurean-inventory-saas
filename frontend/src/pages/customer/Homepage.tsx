@@ -7,6 +7,7 @@ import { useCart } from 'hooks/useCart';
 import { useWishlist } from 'hooks/useWishlist';
 import InventoryHeroSection from 'components/inventory/InventoryHeroSection';
 import { Facility, InventoryItem } from 'types';
+import Carousel from 'components/carousel';
 import { InventoryItemController, FacilityController } from 'controllers';
 
 const Homepage = () => {
@@ -82,12 +83,21 @@ const Homepage = () => {
         InventoryItemController.getAllInventoryItems()
       ]);
 
-      const facilitiesData = facilitiesResponse?.data.facilities || [];
+      const facilitiesData = (facilitiesResponse?.data.facilities ||
+        []) as Facility[];
       const inventoryItemData = inventoryResponse?.data || [];
 
-      setFacilities(Array.isArray(facilitiesData) ? facilitiesData : []);
+      const filteredFacilities = facilitiesData.filter(
+        f => f && !f.isDeleted && f.isActive
+      );
+
+      setFacilities(filteredFacilities);
       setInventoryItems(
-        Array.isArray(inventoryItemData) ? inventoryItemData : []
+        (
+          (Array.isArray(inventoryItemData)
+            ? inventoryItemData
+            : []) as InventoryItem[]
+        ).filter(item => item && !item.isDeleted && item._id && item.name)
       );
     } catch (error) {
       console.error('Failed to fetch data:', error);
@@ -113,7 +123,12 @@ const Homepage = () => {
               {/* Banner */}
               <Row className="mb-5">
                 <Col className="text-center">
-                  <EcomGiftItemsBanner />
+                  <Carousel autoPlay={true}>
+                    <EcomGiftItemsBanner />
+                    <EcomGiftItemsBanner />
+                    <EcomGiftItemsBanner />
+                    <EcomGiftItemsBanner />
+                  </Carousel>
                 </Col>
               </Row>
 
@@ -123,7 +138,7 @@ const Homepage = () => {
                   <PageHeroSections
                     onAddToCart={handleAddToCartFacility}
                     onAddToWishlist={handleAddToWishlistFacility}
-                    to="/facilities"
+                    to="facilities"
                     title="Top Facilities Today"
                     facilities={facilities}
                   />
@@ -136,7 +151,7 @@ const Homepage = () => {
                   <PageHeroSections
                     onAddToCart={handleAddToCartFacility}
                     onAddToWishlist={handleAddToWishlistFacility}
-                    to="/facilities"
+                    to="facilities"
                     title="Top Booked Facilities"
                     facilities={facilities}
                   />

@@ -59,7 +59,8 @@ const CreateInventory = () => {
       maintenanceDue: false,
       warrantyExpiring: false
     },
-    isDeleted: false
+    isDeleted: false,
+    isTaxable: true
   });
 
   const [rawFiles, setRawFiles] = useState<File[]>([]);

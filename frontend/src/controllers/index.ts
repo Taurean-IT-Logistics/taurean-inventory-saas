@@ -5,6 +5,7 @@ export * as FacilityController from './facilty';
 export * as InventoryItemController from './inventoryItem';
 export * as BookingController from './booking';
 export * as TransactionController from './transaction';
+export * as TaxController from './tax';
 
 const API_BASE_URL = `${Config.API_URL}/resources/`;
 

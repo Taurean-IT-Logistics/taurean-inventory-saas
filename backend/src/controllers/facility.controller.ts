@@ -152,10 +152,22 @@ const updateFacility = async (req: Request, res: Response): Promise<void> => {
     }
 
     const updateData = { ...req.body };
+    const showDeleted = req.user?.role === "admin";
+
+    // Extract image operation parameters
+    const removeImageIds = req.body.removeImageIds;
+    const replaceAllImages = req.body.replaceAllImages === "true";
+
+    // Clean up image-related fields from updateData
+    delete updateData.removeImageIds;
+    delete updateData.replaceAllImages;
+
+    let newImages: any[] = [];
 
     // Enhanced file handling for updates
     if (req.files && Array.isArray(req.files)) {
-      const maxFileSize = 10 * 1024 * 1024;
+      // Validate file sizes
+      const maxFileSize = 10 * 1024 * 1024; // 10MB
       const invalidFiles = req.files.filter(
         (file: MulterFile) => file.size > maxFileSize
       );
@@ -165,11 +177,12 @@ const updateFacility = async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
-      updateData.images = req.files.map((file: MulterFile) => ({
+      newImages = req.files.map((file: MulterFile) => ({
         path: file.path || file.filename,
         originalName: file.originalname,
         mimetype: file.mimetype,
         size: file.size,
+        uploadedAt: new Date(),
       }));
     } else if (req.file) {
       if (req.file.size > 10 * 1024 * 1024) {
@@ -177,23 +190,26 @@ const updateFacility = async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
-      updateData.images = [
+      newImages = [
         {
           path: req.file.path || req.file.filename,
           originalName: req.file.originalname,
           mimetype: req.file.mimetype,
           size: req.file.size,
+          uploadedAt: new Date(),
         },
       ];
     }
 
-    const showDeleted = req.user?.role === "admin";
     updateData.updatedBy = req.user?.id;
     updateData.updatedAt = new Date();
 
     const updatedFacility = await FacilityService.updateFacility(
       id,
       updateData,
+      newImages.length > 0 ? newImages : undefined,
+      removeImageIds,
+      replaceAllImages,
       showDeleted
     );
     sendSuccess(res, "Facility updated successfully", updatedFacility);

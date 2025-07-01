@@ -73,6 +73,7 @@ const InventoryItemSchema = new Schema<InventoryItemDocument>(
       warrantyExpiring: { type: Boolean, default: false },
     },
     isDeleted: { type: Boolean, default: false },
+    isTaxable: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

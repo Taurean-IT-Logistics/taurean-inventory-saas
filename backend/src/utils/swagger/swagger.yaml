@@ -20,6 +20,8 @@ tags:
     description: Transaction management (Partially Protected)
   - name: Bookings
     description: Booking management (Protected)
+  - name: Taxes
+    description: Tax management (Protected)
 
 paths:
   /api/v1/auth/login:
@@ -1716,6 +1718,208 @@ paths:
               schema:
                 $ref: "#/components/schemas/APIResponse"
 
+  /api/v1/taxes:
+    post:
+      summary: Create a new Tax
+      tags: [Taxes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxInput"
+
+      responses:
+        "201":
+          description: Tax created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    get:
+      summary: Get all taxes
+      tags: [Taxes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: active
+          schema:
+            type: boolean
+          description: Filter taxes by active status
+        - in: query
+          name: type
+          schema:
+            type: string
+          description: Filter taxes by type
+        - in: query
+          name: appliesTo
+          schema:
+            type: string
+            enum: [inventory_item, facilitly, both]
+          description: Filter taxes by what they apply to
+      responses:
+        "200":
+          description: Taxes fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/taxes/{id}:
+    get:
+      summary: Get tax by ID
+      tags: [Taxes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Tax ID
+      responses:
+        "200":
+          description: Tax fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Tax not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    put:
+      summary: Update tax by ID
+      tags: [Taxes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Tax ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxInput"
+      responses:
+        "200":
+          description: Tax updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Tax not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    delete:
+      summary: Delete tax by ID
+      tags: [Taxes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Tax ID
+      responses:
+        "200":
+          description: Tax deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Tax not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1735,6 +1939,32 @@ components:
           type: string
         email:
           type: string
+
+    TaxInput:
+      type: object
+      required:
+        - name
+        - rate
+        - type
+        - appliesTo
+        - active
+      properties:
+        name:
+          type: string
+          example: VAT
+        rate:
+          type: number
+          example: 12.5
+        type:
+          type: string
+          example: "Servie Fee"
+        appliesTo:
+          type: string
+          enum: [inventory_item, facility, both]
+          example: inventory_item
+        active:
+          type: boolean
+          example: true
 
     UserInput:
       type: object

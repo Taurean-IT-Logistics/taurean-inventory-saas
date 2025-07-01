@@ -6,7 +6,8 @@ import {
   faBuilding,
   faUsers,
   faChartLine,
-  faBook
+  faBook,
+  faCoins
 } from '@fortawesome/free-solid-svg-icons';
 
 const QuickActionsSidebar = () => {
@@ -38,6 +39,13 @@ const QuickActionsSidebar = () => {
       icon: faBook,
       to: '/admin/bookings',
       variant: 'warning'
+    },
+    {
+      title: 'Create Tax',
+      description: 'Create new service charges and taxes',
+      icon: faCoins,
+      to: '/admin/create-tax',
+      variant: 'secondary'
     }
   ];
 
@@ -61,6 +69,11 @@ const QuickActionsSidebar = () => {
       title: 'Booking Management',
       to: '/admin/bookings',
       icon: faBook
+    },
+    {
+      title: 'Tax management',
+      to: '/admin/tax',
+      icon: faCoins
     }
   ];
 

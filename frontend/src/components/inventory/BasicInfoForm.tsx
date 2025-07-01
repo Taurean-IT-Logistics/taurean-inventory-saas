@@ -62,6 +62,27 @@ const BasicInfoForm = ({
     fetchFacilities();
   }, []);
 
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Capitalize first letter of each word
+    const capitalizedValue = value
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+
+    // Create a synthetic event to pass to onInputChange
+    const syntheticEvent = {
+      ...e,
+      target: {
+        ...e.target,
+        name: 'category',
+        value: capitalizedValue
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+
+    onInputChange(syntheticEvent);
+  };
+
   const renderFacilitySelect = () => {
     if (facilitiesLoading) {
       return (
@@ -154,20 +175,21 @@ const BasicInfoForm = ({
         <div className="row">
           <div className="col-md-4 mb-3">
             <label className="form-label">Category *</label>
-            <select
-              className="form-select border-secondary"
+            <input
+              type="text"
+              className="form-control border-secondary"
               name="category"
               value={formData.category || ''}
-              onChange={onInputChange}
+              onChange={handleCategoryChange}
+              list="category-options"
+              placeholder="Select or type a category"
               required
-            >
-              <option value="">Select category</option>
+            />
+            <datalist id="category-options">
               {categories.map(cat => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
+                <option key={cat} value={cat} />
               ))}
-            </select>
+            </datalist>
           </div>
           <div className="col-md-4 mb-3">
             <label className="form-label">Quantity *</label>

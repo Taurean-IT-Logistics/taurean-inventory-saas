@@ -63,7 +63,6 @@ const RentalPage = () => {
 
   const handleAddToCart = (item: InventoryItem) => {
     if (!item || !item._id) {
-      console.error('Invalid item for cart');
       return;
     }
 
@@ -72,7 +71,8 @@ const RentalPage = () => {
       itemId: item._id,
       quantity: 1,
       name: item.name || 'Unknown Item',
-      price: item.purchaseInfo?.purchasePrice || 0,
+      price:
+        item.pricing.find(p => p.isDefault || p.unit === 'day').amount || 0,
       imageUrl:
         item.images && item.images.length > 0 ? item.images[0].path : undefined
     });
@@ -80,7 +80,6 @@ const RentalPage = () => {
 
   const handleAddToWishlist = (item: InventoryItem) => {
     if (!item || !item._id) {
-      console.error('Invalid item for wishlist');
       return;
     }
 
@@ -88,7 +87,8 @@ const RentalPage = () => {
       type: 'inventory_item',
       itemId: item._id,
       name: item.name || 'Unknown Item',
-      price: item.purchaseInfo?.purchasePrice || 0,
+      price:
+        item.pricing.find(p => p.isDefault || p.unit === 'day').amount || 0,
       imageUrl:
         item.images && item.images.length > 0 ? item.images[0].path : undefined
     });
@@ -115,7 +115,6 @@ const RentalPage = () => {
 
         setItems(filteredItems);
       } catch (error) {
-        console.error('Error fetching items:', error);
         setError('Failed to load inventory items. Please try again.');
         setItems([]); // Ensure items is always an array
       } finally {

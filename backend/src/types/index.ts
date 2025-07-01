@@ -122,6 +122,7 @@ export interface Facility {
     closing: string;
   };
   isActive: boolean;
+  isTaxable: boolean;
   isDeleted: boolean;
   createdBy: User;
   createdAt: Date;
@@ -260,6 +261,7 @@ export interface InventoryItem {
     maintenanceDue: boolean;
     warrantyExpiring: boolean;
   };
+  isTaxable: boolean;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -377,4 +379,12 @@ export interface IPaymentFormData {
   email: string;
   currency: string;
   amount: number;
+}
+
+export interface Tax {
+  name: string;
+  rate: number;
+  type: string;
+  appliesTo: "inventory_item" | "facitlity" | "both";
+  active: boolean;
 }

@@ -54,6 +54,11 @@ const InventoryManagement = () => {
     removedImageIds: string[]
   ) => {
     try {
+      if (updatedItem.associatedFacility) {
+        updatedItem.associatedFacility = (
+          updatedItem.associatedFacility as any
+        )._id;
+      }
       const response = await InventoryItemController.updateItem(
         updatedItem._id,
         updatedItem,

@@ -1,4 +1,5 @@
 import { InventoryItem } from 'types';
+import { Form } from 'react-bootstrap';
 
 interface PricingFormProps {
   formData: Partial<InventoryItem>;
@@ -138,6 +139,25 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
             </div>
           ))
         )}
+
+        <div>
+          <Form.Check type="checkbox" className="mb-0">
+            <Form.Check.Input
+              id="tax"
+              checked={formData.isTaxable}
+              onChange={e =>
+                setFormData(prev => ({
+                  ...prev,
+                  isTaxable: Boolean(e.target.checked)
+                }))
+              }
+              defaultChecked
+            />
+            <Form.Check.Label htmlFor="tax" className="mb-0">
+              Tax Item
+            </Form.Check.Label>
+          </Form.Check>
+        </div>
       </div>
     </div>
   );

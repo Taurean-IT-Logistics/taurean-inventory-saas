@@ -23,8 +23,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { showToast } from 'components/toaster/toaster';
-import FacilitiesLoader from 'components/facilites/FacilitiesLoader';
-import FacilityCard from 'components/facilites/FacilityCard';
+import FacilitiesLoader from 'components/facilities/FacilitiesLoader';
+import FacilityCard from 'components/facilities/FacilityCard';
 import { FacilityController } from 'controllers';
 import { Facility } from 'types';
 
@@ -73,7 +73,11 @@ function useFacilities() {
           const facilitiesData = Array.isArray(data.data.facilities)
             ? data.data.facilities
             : [];
-          setFacilities(facilitiesData as Facility[]);
+          setFacilities(
+            (facilitiesData as Facility[]).filter(
+              f => f && !f.isDeleted && f.isActive
+            )
+          );
 
           if (facilitiesData.length === 0) {
             showToast('info', 'No facilities available at the moment');

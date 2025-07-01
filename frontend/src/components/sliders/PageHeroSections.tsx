@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import FacilityCard from 'components/facilites/FacilityCard';
+import FacilityCard from 'components/facilities/FacilityCard';
 import { Facility } from 'types';
 import Swiper from 'components/base/Swiper';
 import { SwiperSlide } from 'swiper/react';

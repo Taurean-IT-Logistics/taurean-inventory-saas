@@ -7,7 +7,7 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 const createInventoryItem = async (
-  data: Partial<InventoryItem>,
+  data: any,
   accessToken: string,
   rawFiles: File[] = []
 ) => {
@@ -23,6 +23,27 @@ const createInventoryItem = async (
     if (data.associatedFacility)
       formData.append('associatedFacility', data.associatedFacility);
     if (data.category) formData.append('category', data.category);
+
+    // Handle pricing array
+    if (data.pricing && Array.isArray(data.pricing)) {
+      data.pricing.forEach((priceItem, index) => {
+        if (priceItem.unit) {
+          formData.append(`pricing[${index}][unit]`, priceItem.unit);
+        }
+        if (priceItem.amount !== undefined) {
+          formData.append(
+            `pricing[${index}][amount]`,
+            priceItem.amount.toString()
+          );
+        }
+        if (priceItem.isDefault !== undefined) {
+          formData.append(
+            `pricing[${index}][isDefault]`,
+            priceItem.isDefault.toString()
+          );
+        }
+      });
+    }
 
     if (data.purchaseInfo) {
       const { purchaseDate, purchasePrice, supplier, warrantyExpiry } =
@@ -51,8 +72,11 @@ const createInventoryItem = async (
       });
     }
 
+    if (data.isTaxable)
+      formData.append('isTaxable', data.isTaxable ? 'true' : 'false');
+
     if (data.specifications && data.specifications instanceof Map) {
-      const plainObject: Record<string, unknown> = {};
+      const plainObject: Record<string, any> = {};
       data.specifications.forEach((value, key) => {
         plainObject[key] = value;
       });
@@ -86,7 +110,6 @@ const createInventoryItem = async (
     }
   }
 };
-
 const getAllInventoryItems = async () => {
   try {
     const response = await apiClient.get('/inventory-items');
@@ -162,6 +185,26 @@ const updateItem = async (
       formData.append('associatedFacility', data.associatedFacility);
     if (data.category) formData.append('category', data.category);
 
+    if (data.pricing && Array.isArray(data.pricing)) {
+      data.pricing.forEach((priceItem, index) => {
+        if (priceItem.unit) {
+          formData.append(`pricing[${index}][unit]`, priceItem.unit);
+        }
+        if (priceItem.amount !== undefined) {
+          formData.append(
+            `pricing[${index}][amount]`,
+            priceItem.amount.toString()
+          );
+        }
+        if (priceItem.isDefault !== undefined) {
+          formData.append(
+            `pricing[${index}][isDefault]`,
+            priceItem.isDefault.toString()
+          );
+        }
+      });
+    }
+
     if (data.purchaseInfo) {
       const { purchaseDate, purchasePrice, supplier, warrantyExpiry } =
         data.purchaseInfo;
@@ -188,6 +231,9 @@ const updateItem = async (
         }
       });
     }
+
+    if (data.isTaxable)
+      formData.append('isTaxable', data.isTaxable ? 'true' : 'false');
 
     if (data.specifications && data.specifications instanceof Map) {
       const plainObject: Record<string, unknown> = {};

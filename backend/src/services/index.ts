@@ -5,6 +5,7 @@ import * as TransactionService from "./transaction.service";
 import * as PaymentService from "./payment.service";
 import * as BookingService from "./booking.service";
 import * as ResourceService from "./resource.service";
+import * as TaxService from "./tax.service";
 
 export {
   UserService,
@@ -14,4 +15,5 @@ export {
   PaymentService,
   BookingService,
   ResourceService,
+  TaxService,
 };

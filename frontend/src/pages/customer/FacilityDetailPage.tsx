@@ -21,7 +21,7 @@ import {
   faCalendarAlt
 } from '@fortawesome/free-solid-svg-icons';
 import { currencyFormat } from 'helpers/utils';
-import FacilityDetailLoader from 'components/facilites/FacilityDetailLoader';
+import FacilityDetailLoader from 'components/facilities/FacilityDetailLoader';
 import { Facility } from 'types';
 import PageHeroSections from 'components/sliders/PageHeroSections';
 import { FacilityController } from 'controllers';
