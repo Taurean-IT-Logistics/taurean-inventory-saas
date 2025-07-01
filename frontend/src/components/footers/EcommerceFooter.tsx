@@ -24,9 +24,11 @@ const EcommerceFooter = () => {
           <Col xs={12} lg={4}>
             <Logo className="mb-3" />
             <p className="text-body-tertiary mb-1 fw-semibold lh-sm fs-9">
-              Phoenix is an admin dashboard template with fascinating features
-              and amazing layout. The template is responsive to all major
-              browsers and is compatible with all available devices and screen
+              Taurean IT Facility Management SaaS is a powerful admin dashboard
+              template designed with a sleek, modern layout and packed with
+              essential features for efficient facility and inventory oversight.
+              It&apos;s fully responsive, cross-browser compatible, and
+              optimized for seamless performance across all devices and screen
               sizes.
             </p>
           </Col>
