@@ -31,18 +31,8 @@ const EcommerceFooter = () => {
             </p>
           </Col>
           <Col xs={6} md="auto">
-            <h5 className="fw-bolder mb-3">About Phoenix</h5>
-            <Stack>
-              <LinkItem to="#!">Careers</LinkItem>
-              <LinkItem to="#!">Affiliate Program</LinkItem>
-              <LinkItem to="#!">Privacy Policy</LinkItem>
-              <LinkItem to="#!">Terms & Conditions</LinkItem>
-            </Stack>
-          </Col>
-          <Col xs={6} md="auto">
             <h5 className="fw-bolder mb-3">Stay Connected</h5>
             <Stack>
-              <LinkItem to="#!">Blogs</LinkItem>
               <Link to="#!" className="mb-1 fw-semibold fs-9">
                 <FontAwesomeIcon
                   icon={faFacebookSquare}

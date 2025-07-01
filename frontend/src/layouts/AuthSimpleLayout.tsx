@@ -25,7 +25,7 @@ const AuthSimpleLayout = ({
             >
               <Logo
                 text={false}
-                width={58}
+                width={100}
                 className="fw-bolder fs-5 d-inline-block"
               />
             </Link>
