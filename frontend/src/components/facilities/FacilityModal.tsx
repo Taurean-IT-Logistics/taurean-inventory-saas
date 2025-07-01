@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col, Badge } from 'react-bootstrap';
-import { InventoryItem } from 'types';
+import {
+  Modal,
+  Form,
+  Button,
+  Row,
+  Col,
+  Alert,
+  Badge,
+  InputGroup
+} from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload, faTimes, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faPlus, faUpload } from '@fortawesome/free-solid-svg-icons';
+import { Facility } from 'types';
 import { getResourceUrl } from 'controllers';
 
 interface PricingFormProps {
-  formData: Partial<InventoryItem>;
-  setFormData: (data: Partial<InventoryItem>) => void;
+  formData: Partial<Facility>;
+  setFormData: (data: Partial<Facility>) => void;
 }
 
 const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
@@ -150,56 +159,54 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
   );
 };
 
-interface EditInventoryModalProps {
-  item: InventoryItem | null;
+interface FacilityModalProps {
   show: boolean;
   onHide: () => void;
+  facility?: Facility | null;
   onSave: (
-    item: InventoryItem,
+    facility: Partial<Facility>,
     rawFiles: File[],
-    removedImageIds: string[]
+    removeImageIds: string[]
   ) => void;
+  isEdit?: boolean;
 }
 
-const EditInventoryModal = ({
-  item,
+const FacilityModal = ({
   show,
   onHide,
-  onSave
-}: EditInventoryModalProps) => {
-  const [formData, setFormData] = useState<Partial<InventoryItem>>({});
-  const [specKey, setSpecKey] = useState('');
-  const [specValue, setSpecValue] = useState('');
+  facility,
+  onSave,
+  isEdit = false
+}: FacilityModalProps) => {
+  const [formData, setFormData] = useState<Partial<Facility>>({
+    name: '',
+    description: '',
+    capacity: { maximum: 0, recommended: 0 },
+    operationalHours: { opening: '', closing: '' },
+    location: { address: '' },
+    amenities: [],
+    pricing: [{ unit: 'hour', amount: 0, isDefault: true }],
+    isActive: true
+  });
+  const [newAmenity, setNewAmenity] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<any[]>([]);
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
 
-  const categories = [
-    'AV Equipment',
-    'Furniture',
-    'IT Equipment',
-    'Kitchen Appliances',
-    'Cleaning Supplies',
-    'Office Supplies',
-    'Safety Equipment',
-    'Decorative Items',
-    'Other'
-  ];
-
   useEffect(() => {
-    if (item) {
-      setFormData({ ...item });
+    if (facility) {
+      setFormData({ ...facility });
 
-      // Reset file states when item changes
       setImageFiles([]);
-      setExistingImages(item.images || []);
+      setExistingImages(facility.images || []);
       setRemovedImageIds([]);
 
-      // Set previews for existing images
-      setImagePreviews(item.images?.map(i => i.path) || []);
+      setImagePreviews(facility.images?.map(i => i.path) || []);
+      setErrors({});
     }
-  }, [item]);
+  }, [facility, isEdit, show]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -213,15 +220,8 @@ const EditInventoryModal = ({
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof InventoryItem] as Partial<InventoryItem>),
-          [child]:
-            type === 'number'
-              ? Number(value)
-              : type === 'date'
-              ? value
-                ? new Date(value)
-                : undefined
-              : value
+          ...(prev[parent as keyof Facility] as any),
+          [child]: type === 'number' ? Number(value) : value
         }
       }));
     } else {
@@ -229,6 +229,11 @@ const EditInventoryModal = ({
         ...prev,
         [name]: type === 'number' ? Number(value) : value
       }));
+    }
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -269,67 +274,59 @@ const EditInventoryModal = ({
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const addSpecification = () => {
-    if (specKey.trim() && specValue.trim()) {
-      let newSpecs: Map<string, string>;
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
 
-      if (formData.specifications instanceof Map) {
-        newSpecs = new Map(formData.specifications);
-      } else if (
-        formData.specifications &&
-        typeof formData.specifications === 'object'
-      ) {
-        newSpecs = new Map(Object.entries(formData.specifications));
-      } else {
-        newSpecs = new Map();
-      }
-
-      newSpecs.set(specKey.trim(), specValue.trim());
+  const addAmenity = () => {
+    if (newAmenity.trim() && !formData.amenities?.includes(newAmenity.trim())) {
       setFormData(prev => ({
         ...prev,
-        specifications: newSpecs
+        amenities: [...(prev.amenities || []), newAmenity.trim()]
       }));
-      setSpecKey('');
-      setSpecValue('');
+      setNewAmenity('');
     }
   };
 
-  const removeSpecification = (key: string) => {
-    let newSpecs: Map<string, string>;
-
-    if (formData.specifications instanceof Map) {
-      newSpecs = new Map(formData.specifications);
-    } else if (
-      formData.specifications &&
-      typeof formData.specifications === 'object'
-    ) {
-      newSpecs = new Map(Object.entries(formData.specifications));
-    } else {
-      return;
-    }
-
-    newSpecs.delete(key);
+  const removeAmenity = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      specifications: newSpecs
+      amenities: prev.amenities?.filter((_, i) => i !== index) || []
     }));
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name?.trim()) {
+      newErrors.name = 'Facility name is required';
+    }
+    if (!formData.capacity?.maximum || formData.capacity.maximum <= 0) {
+      newErrors['capacity.maximum'] = 'Maximum capacity must be greater than 0';
+    }
+    if (!formData.operationalHours?.opening) {
+      newErrors['operationalHours.opening'] = 'Opening time is required';
+    }
+    if (!formData.operationalHours?.closing) {
+      newErrors['operationalHours.closing'] = 'Closing time is required';
+    }
+    if (!formData.pricing?.[0]?.amount || formData.pricing[0].amount <= 0) {
+      newErrors.pricing = 'Price must be greater than 0';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData && item) {
-      const updatedItem: InventoryItem = {
-        ...item,
-        ...formData,
-        updatedAt: new Date()
-      };
-      // Pass the updated item, raw files, and removed image IDs
-      onSave(updatedItem, imageFiles, removedImageIds);
+    if (validateForm()) {
+      onSave(formData, imageFiles, removedImageIds);
       onHide();
     }
   };
 
-  // Clean up object URLs on unmount
   useEffect(() => {
     return () => {
       imagePreviews.forEach(preview => {
@@ -340,16 +337,15 @@ const EditInventoryModal = ({
     };
   }, [imagePreviews]);
 
-  if (!show || !item) return null;
+  if (!show || !facility) return null;
 
   return (
     <Modal show={show} onHide={onHide} size="lg">
-      <Modal.Header closeButton className="border-secondary">
-        <Modal.Title>Edit Inventory Item</Modal.Title>
+      <Modal.Header closeButton className=" border-secondary">
+        <Modal.Title>{isEdit ? 'Edit' : 'Create'} Facility</Modal.Title>
       </Modal.Header>
-      <Form onSubmit={handleSubmit}>
-        <Modal.Body>
-          {/* Image Upload Section */}
+      <Modal.Body>
+        <Form onSubmit={handleSubmit}>
           <div className="mb-4">
             <Form.Label>Item Images</Form.Label>
             <div className="border border-secondary rounded p-3">
@@ -428,186 +424,195 @@ const EditInventoryModal = ({
               </div>
             </div>
           </div>
-
-          {/* Basic Information */}
           <Row>
-            <Col md={8} className="mb-3">
-              <Form.Label>Item Name *</Form.Label>
-              <Form.Control
-                type="text"
-                className="border-secondary"
-                name="name"
-                value={formData.name || ''}
-                onChange={handleInputChange}
-                required
-              />
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Facility Name *</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="name"
+                  value={formData.name || ''}
+                  onChange={handleInputChange}
+                  className=" border-secondary "
+                  isInvalid={!!errors.name}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.name}
+                </Form.Control.Feedback>
+              </Form.Group>
             </Col>
-            <Col md={4} className="mb-3">
-              <Form.Label>SKU</Form.Label>
-              <Form.Control
-                type="text"
-                className="border-secondary"
-                name="sku"
-                value={formData.sku || ''}
-                onChange={handleInputChange}
-              />
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Address</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="location.address"
+                  value={formData.location?.address || ''}
+                  onChange={handleInputChange}
+                  className=" border-secondary "
+                />
+              </Form.Group>
             </Col>
           </Row>
 
-          <div className="mb-3">
+          <Form.Group className="mb-3">
             <Form.Label>Description</Form.Label>
             <Form.Control
               as="textarea"
-              className="border-secondary"
+              rows={3}
               name="description"
               value={formData.description || ''}
               onChange={handleInputChange}
-              rows={3}
+              className=" border-secondary "
             />
-          </div>
+          </Form.Group>
 
           <Row>
-            <Col md={4} className="mb-3">
-              <Form.Label>Category *</Form.Label>
-              <Form.Control
-                type="text"
-                className="border-secondary"
-                name="category"
-                value={formData.category || ''}
-                onChange={handleInputChange}
-                list="category-options"
-                placeholder="Select or type a category"
-                required
-              />
-              <datalist id="category-options">
-                {categories.map(cat => (
-                  <option key={cat} value={cat} />
-                ))}
-              </datalist>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Maximum Capacity *</Form.Label>
+                <Form.Control
+                  type="number"
+                  name="capacity.maximum"
+                  value={formData.capacity?.maximum || ''}
+                  onChange={handleInputChange}
+                  className=" border-secondary "
+                  isInvalid={!!errors['capacity.maximum']}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors['capacity.maximum']}
+                </Form.Control.Feedback>
+              </Form.Group>
             </Col>
-            <Col md={4} className="mb-3">
-              <Form.Label>Quantity *</Form.Label>
-              <Form.Control
-                type="number"
-                className="border-secondary"
-                name="quantity"
-                value={formData.quantity || 0}
-                onChange={handleInputChange}
-                required
-                min="0"
-              />
-            </Col>
-            <Col md={4} className="mb-3">
-              <Form.Label>Status</Form.Label>
-              <Form.Select
-                className="border-secondary"
-                name="status"
-                value={formData.status || 'in_stock'}
-                onChange={handleInputChange}
-              >
-                <option value="in_stock">In Stock</option>
-                <option value="rented">Rented</option>
-                <option value="unavailable">Unavailable</option>
-                <option value="maintenance">Maintenance</option>
-                <option value="retired">Retired</option>
-              </Form.Select>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Recommended Capacity</Form.Label>
+                <Form.Control
+                  type="number"
+                  name="capacity.recommended"
+                  value={formData.capacity?.recommended || ''}
+                  onChange={handleInputChange}
+                  className=" border-secondary "
+                />
+              </Form.Group>
             </Col>
           </Row>
 
-          {/* Pricing Form - Now properly integrated */}
-          <PricingForm formData={formData} setFormData={setFormData} />
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Opening Time *</Form.Label>
+                <Form.Control
+                  type="time"
+                  name="operationalHours.opening"
+                  value={formData.operationalHours?.opening || ''}
+                  onChange={handleInputChange}
+                  className=" border-secondary "
+                  isInvalid={!!errors['operationalHours.opening']}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors['operationalHours.opening']}
+                </Form.Control.Feedback>
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Closing Time *</Form.Label>
+                <Form.Control
+                  type="time"
+                  name="operationalHours.closing"
+                  value={formData.operationalHours?.closing || ''}
+                  onChange={handleInputChange}
+                  className=" border-secondary "
+                  isInvalid={!!errors['operationalHours.closing']}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors['operationalHours.closing']}
+                </Form.Control.Feedback>
+              </Form.Group>
+            </Col>
+          </Row>
 
-          {/* Specifications */}
-          <div className="mb-3">
-            <Form.Label>Specifications</Form.Label>
-            <Row className="mb-2 gap-2">
-              <Col md={4}>
-                <Form.Control
-                  type="text"
-                  className="border-secondary"
-                  placeholder="Key"
-                  value={specKey}
-                  onChange={e => setSpecKey(e.target.value)}
-                />
-              </Col>
-              <Col md={4}>
-                <Form.Control
-                  type="text"
-                  className="border-secondary"
-                  placeholder="Value"
-                  value={specValue}
-                  onChange={e => setSpecValue(e.target.value)}
-                />
-              </Col>
-              <Col md={2}>
-                <Button
-                  className="d-flex"
-                  variant="primary"
-                  onClick={addSpecification}
+          <Row>
+            <PricingForm formData={formData} setFormData={setFormData} />
+          </Row>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Amenities</Form.Label>
+            <InputGroup className="mb-2">
+              <Form.Control
+                type="text"
+                placeholder="Add amenity"
+                value={newAmenity}
+                onChange={e => setNewAmenity(e.target.value)}
+                className=" border-secondary "
+                onKeyPress={e =>
+                  e.key === 'Enter' && (e.preventDefault(), addAmenity())
+                }
+              />
+              <Button
+                variant="outline-primary"
+                onClick={addAmenity}
+                disabled={!newAmenity.trim()}
+              >
+                <FontAwesomeIcon icon={faPlus} />
+              </Button>
+            </InputGroup>
+            <div>
+              {formData.amenities?.map((amenity, index) => (
+                <Badge
+                  key={index}
+                  bg="secondary"
+                  className="me-2 mb-2 p-2"
+                  style={{ cursor: 'pointer' }}
                 >
-                  <FontAwesomeIcon icon={faPlus} className="me-2" />
-                  Add
-                </Button>
-              </Col>
-            </Row>
-            <div className="d-flex flex-wrap gap-2">
-              {formData.specifications &&
-                (() => {
-                  const specs =
-                    formData.specifications instanceof Map
-                      ? Array.from(formData.specifications.entries())
-                      : Object.entries(formData.specifications);
+                  {amenity}
+                  <FontAwesomeIcon
+                    icon={faTimes}
+                    className="ms-2"
+                    onClick={() => removeAmenity(index)}
+                  />
+                </Badge>
+              ))}
+            </div>
+          </Form.Group>
 
-                  return specs.map(([key, value]) => (
-                    <Badge
-                      key={key}
-                      bg="secondary"
-                      className="d-flex align-items-center gap-2"
-                    >
-                      {key}: {String(value)}
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="p-0"
-                        onClick={() => removeSpecification(key)}
-                      >
-                        ×
-                      </Button>
-                    </Badge>
-                  ));
-                })()}
-            </div>
-            <div className="mt-4">
-              <Form.Check type="checkbox" className="mb-0">
-                <Form.Check.Input
-                  id="tax"
-                  checked={formData.isTaxable}
-                  onChange={e =>
-                    setFormData(prev => ({
-                      ...prev,
-                      isTaxable: Boolean(e.target.checked)
-                    }))
-                  }
-                  defaultChecked
-                />
-                <Form.Check.Label htmlFor="tax" className="mb-0">
-                  Tax Item
-                </Form.Check.Label>
-              </Form.Check>
-            </div>
-          </div>
-        </Modal.Body>
-        <Modal.Footer className="border-secondary">
-          <Button variant="secondary" onClick={onHide}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit">
-            Save Changes
-          </Button>
-        </Modal.Footer>
-      </Form>
+          <Form.Group className="mb-3">
+            <Form.Check
+              type="checkbox"
+              name="isActive"
+              label="Active"
+              checked={formData.isActive || false}
+              onChange={handleCheckboxChange}
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Check
+              type="checkbox"
+              name="isTaxable"
+              label="Tax Facility"
+              checked={formData.isTaxable || false}
+              onChange={handleCheckboxChange}
+            />
+          </Form.Group>
+
+          {Object.keys(errors).length > 0 && (
+            <Alert variant="danger">
+              Please correct the errors above before submitting.
+            </Alert>
+          )}
+        </Form>
+      </Modal.Body>
+      <Modal.Footer className=" border-secondary">
+        <Button variant="secondary" onClick={onHide}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={handleSubmit}>
+          {isEdit ? 'Update' : 'Create'} Facility
+        </Button>
+      </Modal.Footer>
     </Modal>
   );
 };
 
-export default EditInventoryModal;
+export default FacilityModal;

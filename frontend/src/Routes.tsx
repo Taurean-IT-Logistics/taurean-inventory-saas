@@ -28,6 +28,9 @@ import AuthenticatedLayout from 'components/providers/AuthenticatedProvider';
 import AdminLayout from 'components/providers/AdminLayout';
 import RentDetailPage from 'pages/customer/RentalDetailPage';
 import PaymentCallback from 'pages/customer/PaymentCallback';
+import TaxManagement from 'pages/admin/TaxManagement';
+import CreateTax from 'pages/admin/CreateTax';
+import FacilityManagement from 'pages/admin/FacilityManagement';
 
 const withAuth = (element: React.ReactNode) => (
   <AuthenticatedLayout>{element}</AuthenticatedLayout>
@@ -72,10 +75,13 @@ const adminRoutes: RouteObject = {
         { path: 'dashboard', element: <AdminDashboard /> },
         { path: 'create-facility', element: <CreateFacility /> },
         { path: 'create-inventory-item', element: <CreateInventory /> },
+        { path: 'create-tax', element: <CreateTax /> },
+        { path: 'facilities', element: <FacilityManagement /> },
         { path: 'transactions', element: <TransactionManagement /> },
         { path: 'users', element: <UserManagement /> },
         { path: 'alerts', element: <SystemAlerts /> },
         { path: 'inventory', element: <InventoryManagement /> },
+        { path: 'tax', element: <TaxManagement /> },
         { path: 'create-alert', element: <CreateAlert /> },
         { path: 'bookings', element: <BookingDashboard /> }
       ]

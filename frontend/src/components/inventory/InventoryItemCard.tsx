@@ -48,7 +48,8 @@ const InventoryItemCard = ({
   };
 
   const isAvailable = item.status === 'in_stock' && (item.quantity || 0) > 0;
-  const price = item.purchaseInfo?.purchasePrice || 0;
+  const price =
+    item.pricing.find(p => p.isDefault || p.unit === 'day').amount || 0;
 
   useEffect(() => {
     if (mainImage) {
@@ -110,7 +111,10 @@ const InventoryItemCard = ({
               {item.description || 'No description available'}
             </Card.Text>
             <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="fw-bold">{currencyFormat(price)}/day</span>
+              <span className="fw-bold">
+                {currencyFormat(price)}/
+                {item.pricing.find(p => p.isDefault || p.unit === 'day').unit}
+              </span>
               <Badge bg="secondary">{item.category || 'Uncategorized'}</Badge>
             </div>
             <div className="text-muted small">

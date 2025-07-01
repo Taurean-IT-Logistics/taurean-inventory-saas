@@ -20,8 +20,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useWishlist } from 'hooks/useWishlist';
 import RentDetailSkeleton from 'components/inventory/RentailDetailLoader';
-import { InventoryItem } from 'types';
-import { getResourceUrl } from 'controllers';
+import { InventoryItem, Tax } from 'types';
+import { getResourceUrl, TaxController } from 'controllers';
 import { InventoryItemController, TransactionController } from 'controllers';
 import { currencyFormat } from 'helpers/utils';
 import {
@@ -54,6 +54,7 @@ const RentDetailPage = () => {
   const [endDate, setEndDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taxes, setTaxes] = useState<Tax[]>([]);
 
   const { addToWishlist, isInWishlist } = useWishlist();
 
@@ -77,9 +78,16 @@ const RentDetailPage = () => {
       if (!id) return;
       try {
         setIsLoading(true);
-        const res = await InventoryItemController.getItemById(id);
+        const [res, taxData] = await Promise.all([
+          InventoryItemController.getItemById(id),
+          TaxController.getAllTaxes(accessToken)
+        ]);
         if (res?.data) {
           setItem(res.data);
+        }
+
+        if (taxData.success) {
+          setTaxes(taxData.data);
         }
       } catch (error) {
         console.error('Failed to fetch item:', error);
@@ -127,8 +135,24 @@ const RentDetailPage = () => {
   };
 
   const isAvailable = item.status === 'in_stock' && item.quantity > 0;
-  const price = item.purchaseInfo.purchasePrice || 0;
-  const totalPrice = price * quantity * rentalDays;
+  const normalized = (str: string) =>
+    str.trim().replace(/\s/g, '').toLowerCase();
+
+  const serviceFeeRate = item.isTaxable
+    ? taxes.find(t => normalized(t.name).includes('servicefee'))?.rate || 0
+    : 0;
+
+  const taxRate = item.isTaxable
+    ? taxes.find(t => !normalized(t.name).includes('servicefee'))?.rate || 0
+    : 0;
+
+  const price =
+    item.pricing.find(p => p.isDefault || p.unit === 'day')?.amount || 0;
+
+  const subtotal = price * quantity * rentalDays;
+  const serviceFee = Math.round(subtotal * (serviceFeeRate / 100));
+  const tax = Math.round((subtotal + serviceFee) * (taxRate / 100));
+  const totalPrice = subtotal + serviceFee + tax;
 
   const handleAddToWishlist = () => {
     addToWishlist({
@@ -340,7 +364,24 @@ const RentDetailPage = () => {
                       </div>
                     </div>
                   )}
-
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <span>Subtotal:</span>
+                    <span className="text-primary h4 mb-0">
+                      {currencyFormat(subtotal)}
+                    </span>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <span>Service Fee:</span>
+                    <span className="text-primary h4 mb-0">
+                      {currencyFormat(serviceFee)}
+                    </span>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <span>Tax:</span>
+                    <span className="text-primary h4 mb-0">
+                      {currencyFormat(tax)}
+                    </span>
+                  </div>
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <span>Total Cost:</span>
                     <span className="text-primary h4 mb-0">

@@ -32,14 +32,15 @@ import {
   Container
 } from 'react-bootstrap';
 import { currencyFormat } from 'helpers/utils';
-import { Booking, Facility } from 'types';
+import { Booking, Facility, Tax } from 'types';
 import BookingPageLoader from 'booking/BookingPageLoader';
 import { showToast } from 'components/toaster/toaster';
 import {
   BookingController,
   FacilityController,
   getResourceUrl,
-  TransactionController
+  TransactionController,
+  TaxController
 } from 'controllers';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
@@ -745,6 +746,7 @@ const BookingPage = () => {
 
   const accessToken = tokens.accessToken;
   const { facilityId } = useParams<{ facilityId: string }>();
+  const [taxes, setTaxes] = useState<Tax[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -781,15 +783,26 @@ const BookingPage = () => {
   useEffect(() => {
     async function fetchFacility() {
       try {
-        const facilityData = await FacilityController.getFacilityById(
-          facilityId!
-        );
+        const [facilityData, taxData] = await Promise.all([
+          FacilityController.getFacilityById(facilityId!),
+          TaxController.getAllTaxes(accessToken)
+        ]);
 
         if (facilityData.success) {
           setIsLoading(false);
           setFacility(facilityData.data);
         } else {
           setIsLoading(false);
+        }
+
+        if (taxData.success) {
+          setTaxes(
+            taxData.data.filter(
+              (b: Tax) => b.appliesTo === 'facility' || b.appliesTo === 'both'
+            )
+          );
+        } else {
+          setTaxes([]);
         }
       } catch (error) {
         setIsLoading(false);
@@ -811,10 +824,22 @@ const BookingPage = () => {
   }, [facility, formData.duration]);
 
   const calculatePricing = (basePrice: number, duration: number) => {
+    const normalized = (str: string) =>
+      str.trim().replace(/\s/g, '').toLowerCase();
+
+    const serviceFeeRate = facility.isTaxable
+      ? taxes.find(t => normalized(t.name).includes('servicefee'))?.rate || 0
+      : 0;
+
+    const taxRate = facility.isTaxable
+      ? taxes.find(t => !normalized(t.name).includes('servicefee'))?.rate || 0
+      : 0;
+
     const subtotal = basePrice * duration;
-    const serviceFee = Math.round(subtotal * 0.08);
-    const tax = Math.round((subtotal + serviceFee) * 0.02);
+    const serviceFee = Math.round(subtotal * (serviceFeeRate / 100));
+    const tax = Math.round((subtotal + serviceFee) * (taxRate / 100));
     const total = subtotal + serviceFee + tax;
+
     setPricing({
       basePrice,
       duration,

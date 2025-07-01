@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Container, Row, Col, Button, Alert, Spinner } from 'react-bootstrap';
 import { Facility } from 'types';
-import FacilityFormHeader from 'components/facilites/FacilityFormHeader';
-import FacilityProgressSteps from 'components/facilites/FacilityProgressSteps';
-import BasicInfoStep from 'components/facilites/BasicInfoStep';
-import DetailsAmenitiesStep from 'components/facilites/DetailsAmenitiesStep';
-import AvailabilityPricingStep from 'components/facilites/AvailabilityPricingStep';
+import FacilityFormHeader from 'components/facilities/FacilityFormHeader';
+import FacilityProgressSteps from 'components/facilities/FacilityProgressSteps';
+import BasicInfoStep from 'components/facilities/BasicInfoStep';
+import DetailsAmenitiesStep from 'components/facilities/DetailsAmenitiesStep';
+import AvailabilityPricingStep from 'components/facilities/AvailabilityPricingStep';
 import { FacilityController } from 'controllers';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
@@ -28,7 +28,8 @@ const CreateFacility = () => {
     pricing: [{ unit: 'hour', amount: 0, isDefault: true }],
     availability: [],
     images: [],
-    isActive: true
+    isActive: true,
+    isTaxable: true
   });
 
   const setNestedValue = (obj, path: string[], value) => {

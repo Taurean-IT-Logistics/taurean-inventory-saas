@@ -95,7 +95,8 @@ const InventoryItemDetailPage = () => {
   };
 
   const isAvailable = item.status === 'in_stock' && item.quantity > 0;
-  const price = item.purchaseInfo.purchasePrice || 0;
+  const price =
+    item.pricing.find(p => p.isDefault || p.unit === 'day').amount || 0;
   const totalPrice = price * quantity * rentalDays;
 
   const handleAddToCart = () => {
