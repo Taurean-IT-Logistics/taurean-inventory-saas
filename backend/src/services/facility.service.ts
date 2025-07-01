@@ -43,7 +43,7 @@ export async function getFacilities(
   pagination?: PaginationOptions
 ): Promise<FacilitiesResult> {
   try {
-    const queryFilter = showDeleted ? filter : { ...filter, isDeleted: false };
+    const queryFilter = showDeleted ? filter : { ...filter };
 
     if (pagination) {
       const facilities = await FacilityModel.find(queryFilter)
@@ -150,11 +150,10 @@ export async function deleteFacility(id: string): Promise<boolean> {
   try {
     const facility = await FacilityModel.findOne({
       _id: id,
-      isDeleted: false,
     }).exec();
     if (!facility) throw new Error("Facility not found");
 
-    facility.isDeleted = true;
+    facility.isDeleted = !facility.isDeleted;
 
     await facility.save();
     return true;
