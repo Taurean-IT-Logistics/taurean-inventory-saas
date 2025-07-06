@@ -26,7 +26,6 @@ import {
   faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import { SystemAlert } from 'types';
-import { mockUser } from 'data';
 import AlertStatsCards from 'components/alerts/AlertStatsCards';
 
 const SystemAlerts = () => {
@@ -119,7 +118,7 @@ const SystemAlerts = () => {
           ? {
               ...alert,
               isResolved: true,
-              resolvedBy: mockUser,
+              resolvedBy: null,
               resolvedAt: new Date()
             }
           : alert
