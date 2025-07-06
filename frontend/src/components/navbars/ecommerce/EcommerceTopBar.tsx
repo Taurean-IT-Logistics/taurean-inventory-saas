@@ -14,7 +14,7 @@ const EcommerceTopbar = () => {
   const { totalItems: wishlistItems } = useWishlist();
 
   return (
-    <div className="container-fluid px-7">
+    <div className="container-fluid">
       <div className="ecommerce-topbar">
         <Navbar className="px-0">
           <Row className="gx-0 gy-2 w-100 flex-between-center">

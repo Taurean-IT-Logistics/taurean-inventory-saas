@@ -6,7 +6,7 @@ const EcommerceLayout = () => {
   return (
     <div>
       <EcommerceTopbar />
-      <div className="position-relative px-6">
+      <div className="position-relative">
         <Outlet />
       </div>
       <EcommerceFooter />
