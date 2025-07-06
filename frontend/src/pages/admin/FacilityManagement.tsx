@@ -12,6 +12,7 @@ import { showToast } from 'components/toaster/toaster';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { RootState } from 'lib/store';
 import { Link } from 'react-router-dom';
+import QuickActionsSidebar from 'components/dashboard/QuickActions';
 
 const FacilityManagement = () => {
   const { tokens } = useAppSelector((state: RootState) => state.auth);
@@ -216,6 +217,12 @@ const FacilityManagement = () => {
                 />
               </Card.Body>
             </Card>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col className="mt-6">
+            <QuickActionsSidebar />
           </Col>
         </Row>
 
