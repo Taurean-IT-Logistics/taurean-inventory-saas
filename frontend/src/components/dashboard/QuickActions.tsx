@@ -74,6 +74,11 @@ const QuickActionsSidebar = () => {
       title: 'Tax management',
       to: '/admin/tax',
       icon: faCoins
+    },
+    {
+      title: 'Facility Management',
+      to: '/admin/facilities',
+      icon: faBuilding
     }
   ];
 

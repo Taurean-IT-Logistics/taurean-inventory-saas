@@ -7,10 +7,16 @@ import {
   Col,
   Alert,
   Badge,
-  InputGroup
+  InputGroup,
+  Card
 } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faPlus, faUpload } from '@fortawesome/free-solid-svg-icons';
+import {
+  faTimes,
+  faPlus,
+  faUpload,
+  faTrash
+} from '@fortawesome/free-solid-svg-icons';
 import { Facility } from 'types';
 import { getResourceUrl } from 'controllers';
 
@@ -186,7 +192,10 @@ const FacilityModal = ({
     location: { address: '' },
     amenities: [],
     pricing: [{ unit: 'hour', amount: 0, isDefault: true }],
-    isActive: true
+    isActive: true,
+    availability: [
+      { day: 'monday', startTime: '', endTime: '', isAvailable: false }
+    ]
   });
   const [newAmenity, setNewAmenity] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -325,6 +334,37 @@ const FacilityModal = ({
       onSave(formData, imageFiles, removedImageIds);
       onHide();
     }
+  };
+
+  const addAvailabilityDay = () => {
+    const newDay = {
+      day: 'monday' as const,
+      startTime: '09:00',
+      endTime: '17:00',
+      isAvailable: true
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      availability: [...(prev.availability || []), newDay]
+    }));
+  };
+
+  const updateAvailability = (index: number, field: string, value) => {
+    setFormData(prev => ({
+      ...prev,
+      availability:
+        prev.availability?.map((item, i) =>
+          i === index ? { ...item, [field]: value } : item
+        ) || []
+    }));
+  };
+
+  const removeAvailabilityDay = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      availability: prev.availability?.filter((_, i) => i !== index) || []
+    }));
   };
 
   useEffect(() => {
@@ -530,6 +570,119 @@ const FacilityModal = ({
                   {errors['operationalHours.closing']}
                 </Form.Control.Feedback>
               </Form.Group>
+            </Col>
+          </Row>
+
+          <Row>
+            <Col md={6}>
+              <Card className="mb-4 border-secondary">
+                <div className="d-flex justify-content-between align-items-center mb-3 mt-3">
+                  <Form.Label className="fw-semibold mb-0">
+                    Weekly Availability
+                  </Form.Label>
+                  <Button
+                    variant="primary"
+                    className="mx-2"
+                    size="sm"
+                    onClick={addAvailabilityDay}
+                  >
+                    <FontAwesomeIcon icon={faPlus} className="me-1" />
+                    Add Day
+                  </Button>
+                </div>
+                <div className="px-2">
+                  <div className="mb-4">
+                    {formData.availability &&
+                    formData.availability.length > 0 ? (
+                      formData.availability.map((day, index) => (
+                        <Card key={index} className="mb-2 border-secondary">
+                          <Card.Body className="py-2">
+                            <Row className="align-items-center gap-2">
+                              <Col md={3}>
+                                <Form.Select
+                                  size="sm"
+                                  value={day.day}
+                                  onChange={e =>
+                                    updateAvailability(
+                                      index,
+                                      'day',
+                                      e.target.value
+                                    )
+                                  }
+                                >
+                                  <option value="monday">Monday</option>
+                                  <option value="tuesday">Tuesday</option>
+                                  <option value="wednesday">Wednesday</option>
+                                  <option value="thursday">Thursday</option>
+                                  <option value="friday">Friday</option>
+                                  <option value="saturday">Saturday</option>
+                                  <option value="sunday">Sunday</option>
+                                </Form.Select>
+                              </Col>
+                              <Col md={3}>
+                                <Form.Control
+                                  type="time"
+                                  size="sm"
+                                  value={day.startTime}
+                                  onChange={e =>
+                                    updateAvailability(
+                                      index,
+                                      'startTime',
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </Col>
+                              <Col md={3}>
+                                <Form.Control
+                                  type="time"
+                                  size="sm"
+                                  value={day.endTime}
+                                  onChange={e =>
+                                    updateAvailability(
+                                      index,
+                                      'endTime',
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </Col>
+                              <Col md={2}>
+                                <Form.Check
+                                  type="checkbox"
+                                  label="Available"
+                                  checked={day.isAvailable}
+                                  onChange={e =>
+                                    updateAvailability(
+                                      index,
+                                      'isAvailable',
+                                      e.target.checked
+                                    )
+                                  }
+                                />
+                              </Col>
+                              <Col md={1}>
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => removeAvailabilityDay(index)}
+                                >
+                                  <FontAwesomeIcon icon={faTrash} />
+                                </Button>
+                              </Col>
+                            </Row>
+                          </Card.Body>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-center text-muted py-3">
+                        No availability schedule added yet. Click "Add Day" to
+                        get started.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
             </Col>
           </Row>
 
