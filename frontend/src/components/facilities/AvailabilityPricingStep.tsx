@@ -139,7 +139,7 @@ const AvailabilityPricingStep = ({
             </Col>
             <Col md={6}>
               <InputGroup>
-                <InputGroup.Text>$</InputGroup.Text>
+                <InputGroup.Text>₵</InputGroup.Text>
                 <Form.Control
                   type="number"
                   placeholder="Price amount"

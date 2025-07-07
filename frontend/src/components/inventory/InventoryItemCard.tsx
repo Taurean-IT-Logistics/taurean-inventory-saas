@@ -48,8 +48,7 @@ const InventoryItemCard = ({
   };
 
   const isAvailable = item.status === 'in_stock' && (item.quantity || 0) > 0;
-  const price =
-    item.pricing.find(p => p.isDefault || p.unit === 'day').amount || 0;
+  const price = item.pricing.find(p => p.isDefault || p.unit).amount || 0;
 
   useEffect(() => {
     if (mainImage) {
