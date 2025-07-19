@@ -1,5 +1,4 @@
 import { Card, Dropdown } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
 import Scrollbar from 'components/base/Scrollbar';
 import Button from 'components/base/Button';
 import classNames from 'classnames';
@@ -43,13 +42,6 @@ const NotificationDropdownMenu = ({ className }: { className?: string }) => {
             )}
           </Scrollbar>
         </Card.Body>
-        <Card.Footer className="p-0 border-top">
-          <div className="my-2 text-center fw-bold fs-10 text-body-tertiary text-opactity-85">
-            <Link to="/pages/notifications" className="fw-bolder">
-              Notification history
-            </Link>
-          </div>
-        </Card.Footer>
       </Card>
     </Dropdown.Menu>
   );
