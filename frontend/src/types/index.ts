@@ -278,6 +278,7 @@ export interface Transaction {
   booking?: Booking;
   user: User;
   account?: Account;
+  quantity?: number;
   type: string;
   category: string;
   amount: number;
@@ -303,7 +304,7 @@ export interface Transaction {
   reconciled: boolean;
   reconciledAt?: Date;
   facility?: Facility;
-  inventoryItem?: InventoryItem;
+  inventoryItem?: string;
   description?: string;
   attachments: string[];
   tags: string[];

@@ -2,16 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Container, Row, Col, Form, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faArrowLeft,
-  faShoppingCart,
-  faHeart
-} from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { InventoryItem } from 'types';
 import InventoryHeroSection from 'components/inventory/InventoryHeroSection';
 import InventoryItemCard from 'components/inventory/InventoryItemCard';
-import { useCart } from 'hooks/useCart';
-import { useWishlist } from 'hooks/useWishlist';
 import { InventoryItemController } from 'controllers';
 
 const RentalPage = () => {
@@ -21,9 +15,6 @@ const RentalPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('available');
-
-  const { addToCart } = useCart();
-  const { addToWishlist } = useWishlist();
 
   // Safe filtering with null checks
   const filteredItems = (items || []).filter(item => {
@@ -61,39 +52,6 @@ const RentalPage = () => {
     item => item && item.status === 'in_stock' && (item.quantity || 0) > 0
   );
 
-  const handleAddToCart = (item: InventoryItem) => {
-    if (!item || !item._id) {
-      return;
-    }
-
-    addToCart({
-      type: 'inventory_item',
-      itemId: item._id,
-      quantity: 1,
-      name: item.name || 'Unknown Item',
-      price:
-        item.pricing.find(p => p.isDefault || p.unit === 'day').amount || 0,
-      imageUrl:
-        item.images && item.images.length > 0 ? item.images[0].path : undefined
-    });
-  };
-
-  const handleAddToWishlist = (item: InventoryItem) => {
-    if (!item || !item._id) {
-      return;
-    }
-
-    addToWishlist({
-      type: 'inventory_item',
-      itemId: item._id,
-      name: item.name || 'Unknown Item',
-      price:
-        item.pricing.find(p => p.isDefault || p.unit === 'day').amount || 0,
-      imageUrl:
-        item.images && item.images.length > 0 ? item.images[0].path : undefined
-    });
-  };
-
   useEffect(() => {
     async function fetchItems() {
       try {
@@ -104,6 +62,8 @@ const RentalPage = () => {
 
         // Safe data extraction with proper null checks
         const rawItems = itemsData?.data;
+
+        console.log(itemsData);
         if (!Array.isArray(rawItems)) {
           throw new Error('Invalid data format received');
         }
@@ -160,23 +120,13 @@ const RentalPage = () => {
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h1 className="h3 fw-bold mb-1">Equipment Rental</h1>
-            <p className="text-muted mb-0">
-              Find and rent the equipment you need
-            </p>
+            <h1 className="h3 fw-bold mb-1">Item Rental</h1>
+            <p className="text-muted mb-0">Find and rent the item you need</p>
           </div>
           <div className="d-flex gap-2">
-            <Link to="/cart" className="btn btn-primary">
-              <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
-              Cart
-            </Link>
-            <Link to="/wishlist" className="btn btn-outline-primary">
-              <FontAwesomeIcon icon={faHeart} className="me-2" />
-              Wishlist
-            </Link>
             <Link to="/" className="btn btn-outline-secondary">
               <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
-              Back to Dashboard
+              Back to Home
             </Link>
           </div>
         </div>
@@ -187,8 +137,6 @@ const RentalPage = () => {
             items={featuredItems}
             title="Featured"
             to="rental"
-            onAddToCart={handleAddToCart}
-            onAddToWishlist={handleAddToWishlist}
           />
         )}
 
@@ -248,11 +196,7 @@ const RentalPage = () => {
           <Row className="g-3">
             {filteredItems.map(item => (
               <Col key={item._id} xs={12} sm={6} md={4} lg={3}>
-                <InventoryItemCard
-                  item={item}
-                  onAddToCart={handleAddToCart}
-                  onAddToWishlist={handleAddToWishlist}
-                />
+                <InventoryItemCard item={item} />
               </Col>
             ))}
           </Row>

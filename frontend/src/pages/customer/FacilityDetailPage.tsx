@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Container, Row, Col, Button, Card } from 'react-bootstrap';
-import Badge from 'components/base/Badge';
+import { useParams, Link, useLocation } from 'react-router-dom';
+import { Container, Row, Col, Button, Card, Form } from 'react-bootstrap';
+import Badge, { BadgeBg } from 'components/base/Badge';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCheck,
   faStar,
-  faHeart,
-  faHeart as faHeartRegular,
   faMapMarkerAlt,
   faUsers,
   faClock,
@@ -16,121 +14,84 @@ import {
   faUtensils,
   faDesktop,
   faSnowflake,
-  faChevronLeft,
-  faChevronRight,
   faCalendarAlt
 } from '@fortawesome/free-solid-svg-icons';
 import { currencyFormat } from 'helpers/utils';
 import FacilityDetailLoader from 'components/facilities/FacilityDetailLoader';
-import { Facility } from 'types';
+import { Facility, User } from 'types';
 import PageHeroSections from 'components/sliders/PageHeroSections';
 import { FacilityController } from 'controllers';
 import { showToast } from 'components/toaster/toaster';
-import { useCart } from 'hooks/useCart';
-import { useWishlist } from 'hooks/useWishlist';
 import { getResourceUrl } from 'controllers';
+import { useAppSelector } from 'hooks/useAppDispatch';
+import { RootState } from 'lib/store';
+import Swiper from 'components/base/Swiper';
+import { SwiperSlide } from 'swiper/react';
 
 interface FacilityImageGalleryProps {
   images: { path: string }[];
-  name: string;
-  currentImageIndex: number;
-  setCurrentImageIndex: (index: number) => void;
-  nextImage: () => void;
-  prevImage: () => void;
+  facility: Partial<Facility>;
 }
 
 const FacilityImageGallery = ({
   images,
-  name,
-  currentImageIndex,
-  setCurrentImageIndex,
-  nextImage,
-  prevImage
-}: FacilityImageGalleryProps) => (
-  <Row className="g-2 mb-4">
-    <Col md={8}>
-      <div
-        className="position-relative rounded-3 overflow-hidden"
-        style={{ height: '400px' }}
-      >
-        <img
-          src={
-            getResourceUrl(images[currentImageIndex]?.path) ||
-            '/placeholder.svg?height=400&width=600'
-          }
-          alt={name}
-          className="w-100 h-100 object-fit-cover"
-        />
-        {images.length > 1 && (
-          <>
-            <Button
-              variant="dark"
-              className="position-absolute top-50 start-0 translate-middle-y ms-3 rounded-circle border-0"
-              style={{ width: '40px', height: '40px', opacity: 0.75 }}
-              onClick={prevImage}
-            >
-              <FontAwesomeIcon icon={faChevronLeft} />
-            </Button>
-            <Button
-              variant="dark"
-              className="position-absolute top-50 end-0 translate-middle-y me-3 rounded-circle border-0"
-              style={{ width: '40px', height: '40px', opacity: 0.75 }}
-              onClick={nextImage}
-            >
-              <FontAwesomeIcon icon={faChevronRight} />
-            </Button>
-          </>
-        )}
-        <div className="position-absolute bottom-0 end-0 m-3">
-          <Badge bg="secondary" style={{ opacity: 0.75 }}>
-            {currentImageIndex + 1} / {images.length}
-          </Badge>
+  facility
+}: FacilityImageGalleryProps) => {
+  const [selectedImage, setSelectedImage] = useState(0);
+  const getStatusBadge = (status: boolean) => {
+    const statusConfig = {
+      true: { bg: 'success', text: 'Available' },
+      false: { bg: 'danger', text: 'Unavailable' }
+    };
+
+    const config =
+      statusConfig[String(status) as 'true' | 'false'] || statusConfig['false'];
+    return <Badge bg={config.bg as BadgeBg}>{config.text}</Badge>;
+  };
+  return (
+    <Card border="secondary" className="mb-4">
+      <Card.Body className="p-0">
+        <div className="position-relative">
+          <Card.Img
+            src={getResourceUrl(images[selectedImage]?.path || '')}
+            alt={facility.name}
+            style={{ height: '400px', objectFit: 'cover' }}
+          />
+          <div className="position-absolute top-0 start-0 p-3">
+            {getStatusBadge(facility.isActive)}
+          </div>
         </div>
-      </div>
-    </Col>
-    <Col md={4}>
-      <Row className="g-2 h-100">
-        {images.slice(1, 5).map((image: { path: string }, idx: number) => (
-          <Col xs={6} key={idx}>
-            <div
-              className="position-relative rounded-2 overflow-hidden"
-              style={{ height: '190px', cursor: 'pointer' }}
-              onClick={() => setCurrentImageIndex(idx + 1)}
-            >
-              <img
-                src={getResourceUrl(image.path) || '/placeholder.svg'}
-                alt={`${name} ${idx + 2}`}
-                className="w-100 h-100 object-fit-cover"
-              />
-              {idx === 3 && images.length > 5 && (
-                <div
-                  className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                  style={{ background: 'rgba(0,0,0,0.75)' }}
-                >
-                  <span className="text-light fw-bold">
-                    +{images.length - 4} more
-                  </span>
-                </div>
-              )}
-            </div>
-          </Col>
-        ))}
-      </Row>
-    </Col>
-  </Row>
-);
+        {images.length > 1 && (
+          <Row className="g-2 p-3">
+            {images.map((image, index) => (
+              <Col xs={3} key={index}>
+                <Card.Img
+                  src={getResourceUrl(image.path)}
+                  alt={`${facility.name} ${index + 1}`}
+                  className={`cursor-pointer ${
+                    selectedImage === index
+                      ? 'border border-primary border-2'
+                      : 'border border-secondary'
+                  }`}
+                  style={{ height: '80px', objectFit: 'cover' }}
+                  onClick={() => setSelectedImage(index)}
+                />
+              </Col>
+            ))}
+          </Row>
+        )}
+      </Card.Body>
+    </Card>
+  );
+};
 
 // --- FacilityDetails ---
 interface FacilityDetailsProps {
   facility: Facility;
-  isLiked: boolean;
-  handleHeartClick: () => void;
   hasVerifiedReviews: boolean;
 }
 const FacilityDetails = ({
   facility,
-  isLiked,
-  handleHeartClick,
   hasVerifiedReviews
 }: FacilityDetailsProps) => (
   <>
@@ -152,14 +113,6 @@ const FacilityDetails = ({
             </div>
           )}
         </div>
-      </div>
-      <div className="d-flex gap-2">
-        <Button variant="outline-secondary" onClick={handleHeartClick}>
-          <FontAwesomeIcon
-            icon={isLiked ? faHeart : faHeartRegular}
-            className={isLiked ? 'text-danger' : ''}
-          />
-        </Button>
       </div>
     </div>
     <div className="d-flex gap-2 mb-4">
@@ -270,72 +223,273 @@ const FacilityAmenities = ({ amenities }: FacilityAmenitiesProps) => (
   </div>
 );
 
+interface ReviewFormProps {
+  facility: Partial<Facility>;
+  onClose: () => void;
+  reviewsData: Review[];
+  setReviewsData: React.Dispatch<React.SetStateAction<Review[]>>;
+}
+
+const ReviewForm = ({
+  facility,
+  onClose,
+  reviewsData,
+  setReviewsData
+}: ReviewFormProps) => {
+  const { user, tokens } = useAppSelector((state: RootState) => state.auth);
+  const accessToken = tokens?.accessToken;
+
+  const location = useLocation();
+  location.state = location.state || {};
+  location.state.from = location.pathname;
+  const isUserReviewed = reviewsData.find(
+    (r: Review) => r.user.username === user?.username
+  );
+  const [comment, setComment] = useState(
+    isUserReviewed ? isUserReviewed.comment : ''
+  );
+  const [rating, setRating] = useState(
+    isUserReviewed ? isUserReviewed.rating : 5
+  );
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!rating || !comment.trim()) {
+      showToast('error', 'Rating and comment are required.');
+      return;
+    }
+
+    try {
+      const response = await FacilityController.leaveReview(
+        facility._id,
+        accessToken,
+        {
+          rating,
+          comment
+        }
+      );
+
+      if (response.success) {
+        // Update reviewsData immutably so UI updates
+        setReviewsData(prev => [
+          ...prev.filter(r => r.user.username !== user.username),
+          {
+            user: { ...user },
+            rating,
+            comment
+          }
+        ]);
+        showToast('success', 'Review submitted successfully!');
+      }
+      onClose();
+    } catch (error) {
+      showToast('error', error.message);
+    }
+  };
+  return (
+    <Card className="border-secondary shadow">
+      <Card.Body className="p-4">
+        <h5 className="fw-semibold mb-3">Leave a Review</h5>
+        <Form onSubmit={handleSubmit}>
+          {/* Form fields for review submission */}
+          <div className="mb-3">
+            <div>
+              {[1, 2, 3, 4, 5].map(star => (
+                <FontAwesomeIcon
+                  key={star}
+                  icon={faStar}
+                  className={`me-1 ${
+                    star <= rating ? 'text-warning' : 'text-secondary'
+                  }`}
+                  style={{
+                    cursor: 'pointer',
+                    fontSize: '1.5rem'
+                  }}
+                  onClick={() => setRating(star)}
+                  data-testid={`star-${star}`}
+                />
+              ))}
+              <p className="text-muted small mt-1">{rating} out of 5 stars</p>
+            </div>
+          </div>
+          <div className="mb-3">
+            <Form.Label htmlFor="comment" className="form-label">
+              Comment
+            </Form.Label>
+            <Form.Control
+              as="textarea"
+              id="comment"
+              value={comment}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setComment(e.target.value)
+              }
+            ></Form.Control>
+          </div>
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-100 mb-2"
+            onClick={handleSubmit}
+          >
+            Submit Review
+          </Button>
+          <Button variant="secondary" onClick={onClose} className="w-100">
+            Cancel
+          </Button>
+        </Form>
+      </Card.Body>
+    </Card>
+  );
+};
+
 // --- FacilityReviews ---
 interface Review {
-  user: { name: string };
+  user: Partial<User>;
   rating: number;
   comment: string;
   isVerified?: boolean;
 }
 
 interface FacilityReviewsProps {
-  facility: {
-    rating: { average: number; totalReviews: number };
+  reviews: {
     reviews: Review[];
+    pagination: {
+      currentPage: number;
+      itemsPerPage: number;
+      totalItems: number;
+      totalPages: number;
+    };
   };
+  facility: Partial<Facility>;
 }
 
-const FacilityReviews = ({ facility }: FacilityReviewsProps) => (
-  <div className="mb-5">
-    <div className="d-flex align-items-center mb-4">
-      <FontAwesomeIcon icon={faStar} className="text-warning me-2" />
-      <h3 className="h4 fw-semibold mb-0">
-        {facility.rating.average} · {facility.rating.totalReviews} reviews
-      </h3>
-    </div>
-    <Row>
-      {facility.reviews.slice(0, 2).map((review: Review, idx: number) => (
-        <Col md={6} className="mb-4" key={idx}>
-          <Card className="border-secondary bg-opacity-50">
-            <Card.Body>
-              <div className="d-flex align-items-center mb-2">
-                <div
-                  className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3"
-                  style={{ width: '40px', height: '40px' }}
-                >
-                  <span className="text-light fw-bold">
-                    {review.user.name.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <div className="fw-semibold">{review.user.name}</div>
-                  <div className="d-flex align-items-center">
-                    {[...Array(5)].map((_, i) => (
-                      <FontAwesomeIcon
-                        key={i}
-                        icon={faStar}
-                        className={
-                          i < review.rating ? 'text-warning' : 'text-secondary'
-                        }
-                        size="sm"
-                      />
-                    ))}
+const FacilityReviews = ({ reviews, facility }: FacilityReviewsProps) => {
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const toggleReviewForm = () => setShowReviewForm(!showReviewForm);
+  const { user, tokens } = useAppSelector((state: RootState) => state.auth);
+  const [reviewsData, setReviewsData] = useState(reviews.reviews);
+  console.log('Reviews Data:', reviewsData);
+
+  useEffect(() => {
+    setReviewsData(reviews.reviews);
+  }, [reviews.reviews]);
+  return (
+    <div className="mb-5">
+      <div className="d-flex align-items-center mb-4">
+        <FontAwesomeIcon icon={faStar} className="text-warning me-2" />
+        <h3 className="h4 fw-semibold mb-0">
+          {facility.rating.average} · {facility.rating.totalReviews} reviews
+        </h3>
+      </div>
+      <Row>
+        <Swiper
+          slidesPerView={1}
+          direction="horizontal"
+          className="mb-4 px-1"
+          navigationPosition={{ top: '25%' }}
+          breakpoints={{
+            0: {
+              slidesPerView: 1,
+              spaceBetween: 16
+            },
+            450: {
+              slidesPerView: 1,
+              spaceBetween: 16
+            },
+            768: {
+              slidesPerView: 2,
+              spaceBetween: 20
+            },
+            1200: {
+              slidesPerView: 3,
+              spaceBetween: 16
+            },
+            1540: {
+              slidesPerView: 4,
+              spaceBetween: 16
+            }
+          }}
+        >
+          {reviewsData.map((review: Review, idx: number) => (
+            <SwiperSlide key={idx}>
+              <Card className="border-secondary bg-opacity-50">
+                <Card.Body>
+                  <div className="d-flex align-items-center mb-2">
+                    <div
+                      className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3"
+                      style={{ width: '40px', height: '40px' }}
+                    >
+                      <span className="text-light fw-bold">
+                        {review.user.name.charAt(0)}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="fw-semibold">{review.user?.name}</div>
+                      <div className="d-flex align-items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <FontAwesomeIcon
+                            key={i}
+                            icon={faStar}
+                            className={
+                              i < review.rating
+                                ? 'text-warning'
+                                : 'text-secondary'
+                            }
+                            size="sm"
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <p className="text-muted mb-0">{review.comment}</p>
-            </Card.Body>
-          </Card>
+                  <p className="text-muted mb-0">{review.comment}</p>
+                </Card.Body>
+              </Card>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+
+        <Col>
+          {user && tokens ? (
+            !showReviewForm && (
+              <Button
+                variant="primary"
+                onClick={toggleReviewForm}
+                className="w-100"
+              >
+                {reviewsData.find(
+                  (r: Review) => r.user.username === user.username
+                )
+                  ? 'Edit Your Review'
+                  : 'Leave a Review'}
+              </Button>
+            )
+          ) : (
+            <Button
+              variant="outline-primary"
+              as={Link}
+              to="/sign-in"
+              className="w-100"
+            >
+              Sign in to Leave a Review
+            </Button>
+          )}
         </Col>
-      ))}
-    </Row>
-    {facility.reviews.length > 2 && (
-      <Button variant="outline-primary">
-        Show all {facility.rating.totalReviews} reviews
-      </Button>
-    )}
-  </div>
-);
+      </Row>
+      {showReviewForm && (
+        <Row className="justify-content-center mt-3">
+          <Col>
+            <ReviewForm
+              facility={facility}
+              reviewsData={reviewsData}
+              onClose={toggleReviewForm}
+              setReviewsData={setReviewsData}
+            />
+          </Col>
+        </Row>
+      )}
+    </div>
+  );
+};
 
 // --- FacilityBookingCard ---
 interface Pricing {
@@ -380,7 +534,6 @@ const FacilityBookingCard = ({
         >
           Book Now
         </Link>
-        <Button variant="outline-primary">Check Availability</Button>
       </div>
       <div className="text-center">
         <small className="text-muted">You won't be charged yet</small>
@@ -422,66 +575,34 @@ const FacilityContactCard = () => (
 // --- Main Page ---
 const FacilityDetailPage = () => {
   const { facilityId } = useParams<{ facilityId: string }>();
-  const [isLiked, setIsLiked] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [facility, setFacility] = useState<Facility>();
   const [similarFacilities, setSimilarFacilities] = useState<Facility[]>();
-
-  const { addToCart } = useCart();
-  const { addToWishlist } = useWishlist();
-
-  const handleAddToCartFacility = (facility: Facility) => {
-    const defaultPricing =
-      facility.pricing.find(p => p.isDefault) || facility.pricing[0];
-    const mainImage =
-      facility.images && facility.images.length > 0
-        ? facility.images[0].path
-        : undefined;
-
-    addToCart({
-      type: 'facility',
-      itemId: facility._id || '',
-      quantity: 1,
-      name: facility.name,
-      price: defaultPricing?.amount || 0,
-      imageUrl: mainImage
-    });
-  };
-
-  const handleAddToWishlistFacility = (facility: Facility) => {
-    const defaultPricing =
-      facility.pricing.find(p => p.isDefault) || facility.pricing[0];
-    const mainImage =
-      facility.images && facility.images.length > 0
-        ? facility.images[0].path
-        : undefined;
-
-    addToWishlist({
-      type: 'facility',
-      itemId: facility._id || '',
-      name: facility.name,
-      price: defaultPricing?.amount || 0,
-      imageUrl: mainImage
-    });
-  };
+  const [reviews, setReviews] = useState();
 
   useEffect(() => {
     async function fetchFacility() {
       try {
-        const [facilityData, similarFacilitiesData] = await Promise.all([
-          FacilityController.getFacilityById(facilityId!),
-          FacilityController.getAllFacilites()
-        ]);
+        const [facilityData, similarFacilitiesData, reviewsData] =
+          await Promise.all([
+            FacilityController.getFacilityById(facilityId!),
+            FacilityController.getAllFacilites(),
+            FacilityController.getReviews(facilityId!)
+          ]);
 
-        if (facilityData.success && similarFacilitiesData.success) {
+        if (
+          facilityData.success &&
+          similarFacilitiesData.success &&
+          reviewsData.success
+        ) {
           setIsLoading(false);
           setFacility(facilityData.data);
+          setReviews(reviewsData.data as any);
+          console.log('Reviews:', reviewsData.data);
           const filteredFacilites = (
             similarFacilitiesData.data.facilities as Facility[]
           ).filter(facility => facility.name != facilityData.data.name);
           setSimilarFacilities(filteredFacilites);
-          console.log(similarFacilities);
         } else {
           setIsLoading(false);
         }
@@ -515,38 +636,21 @@ const FacilityDetailPage = () => {
     (review: Review) => review.isVerified
   );
 
-  const handleHeartClick = () => setIsLiked(!isLiked);
-
-  const nextImage = () =>
-    setCurrentImageIndex(prev =>
-      prev === facility.images.length - 1 ? 0 : prev + 1
-    );
-  const prevImage = () =>
-    setCurrentImageIndex(prev =>
-      prev === 0 ? facility.images.length - 1 : prev - 1
-    );
-
   return (
     <div className="pt-6">
       <Container fluid>
-        <FacilityImageGallery
-          images={facility.images}
-          name={facility.name}
-          currentImageIndex={currentImageIndex}
-          setCurrentImageIndex={setCurrentImageIndex}
-          nextImage={nextImage}
-          prevImage={prevImage}
-        />
         <Row>
           <Col lg={8}>
+            <FacilityImageGallery
+              images={facility.images}
+              facility={facility}
+            />
             <FacilityDetails
               facility={facility}
-              isLiked={isLiked}
-              handleHeartClick={handleHeartClick}
               hasVerifiedReviews={hasVerifiedReviews}
             />
             <FacilityAmenities amenities={facility.amenities} />
-            <FacilityReviews facility={facility} />
+            <FacilityReviews facility={facility} reviews={reviews} />
           </Col>
           <Col lg={4}>
             <div style={{ position: 'sticky', top: 20 }}>
@@ -563,8 +667,6 @@ const FacilityDetailPage = () => {
         <div className="mb-6 mt-12">
           <PageHeroSections
             to="facilites"
-            onAddToCart={handleAddToCartFacility}
-            onAddToWishlist={handleAddToWishlistFacility}
             title={similarFacilities ? 'Similar spaces you might like' : ''}
             facilities={similarFacilities!}
           />

@@ -11,16 +11,12 @@ interface InventoryHeroSectionProps {
   items: InventoryItem[];
   title: string;
   to: string;
-  onAddToCart: (item: InventoryItem) => void;
-  onAddToWishlist: (item: InventoryItem) => void;
 }
 
 const InventoryHeroSection = ({
   items,
   title,
-  to,
-  onAddToCart,
-  onAddToWishlist
+  to
 }: InventoryHeroSectionProps) => {
   return (
     <>
@@ -66,11 +62,7 @@ const InventoryHeroSection = ({
       >
         {items.map(item => (
           <SwiperSlide key={item._id}>
-            <InventoryItemCard
-              item={item}
-              onAddToCart={onAddToCart}
-              onAddToWishlist={onAddToWishlist}
-            />
+            <InventoryItemCard item={item} />
           </SwiperSlide>
         ))}
       </Swiper>

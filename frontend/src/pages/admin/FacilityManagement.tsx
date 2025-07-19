@@ -1,7 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faBuilding } from '@fortawesome/free-solid-svg-icons';
+import {
+  faPlus,
+  faBuilding,
+  faArrowLeft
+} from '@fortawesome/free-solid-svg-icons';
 import { Facility } from 'types';
 import FacilityStatsCards from 'components/facilities/FacilityStatsCard';
 import FacilityTable from 'components/facilities/FacilityTable';
@@ -13,12 +17,14 @@ import { useAppSelector } from 'hooks/useAppDispatch';
 import { RootState } from 'lib/store';
 import { Link } from 'react-router-dom';
 import QuickActionsSidebar from 'components/dashboard/QuickActions';
+import ReviewModal from 'components/facilities/ReviewModal';
 
 const FacilityManagement = () => {
   const { tokens } = useAppSelector((state: RootState) => state.auth);
   const accessToken = tokens.accessToken;
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState<Facility | null>(
     null
   );
@@ -141,6 +147,34 @@ const FacilityManagement = () => {
     showAlert('success', 'Facility status updated successfully!');
   };
 
+  const handleReviews = (facility: Facility) => {
+    if (facility) {
+      setSelectedFacility(facility);
+      setShowReviewModal(true);
+      // Clear any existing alerts
+      setAlert(null);
+    }
+  };
+
+  // const handleReviewsUpdate = async () => {
+  //   try {
+  //     if (selectedFacility) {
+  //       // If your facility has review count or average rating fields
+  //       const updatedFacility = await FacilityController.getFacilityById(
+  //         selectedFacility._id
+  //       );
+  //       setFacilities(prev =>
+  //         prev.map(f =>
+  //           f._id === selectedFacility._id ? updatedFacility.data : f
+  //         )
+  //       );
+  //     }
+  //   } catch (error) {
+  //     showAlert('danger', 'Failed to refresh reviews');
+  //     showToast('error', 'Failed to refresh reviews');
+  //   }
+  // };
+
   const handleClearFilters = () => {
     setSearchTerm('');
     setStatusFilter('');
@@ -160,15 +194,26 @@ const FacilityManagement = () => {
                 </h1>
                 <p className="text-muted mb-0">Manage your rental facilities</p>
               </div>
-              <Button
-                variant="primary"
-                as={Link}
-                to="/admin/create-facility"
-                className="d-flex align-items-center"
-              >
-                <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Create Facility
-              </Button>
+              <div className="d-flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  as={Link}
+                  to="/admin/create-facility"
+                  className="d-flex align-items-center"
+                >
+                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  Create Facility
+                </Button>
+                <Button
+                  variant="border-secondary border"
+                  as={Link}
+                  to="/admin"
+                  className="d-flex align-items-center"
+                >
+                  <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+                  Back to Dashboard
+                </Button>
+              </div>
             </div>
           </Col>
         </Row>
@@ -210,6 +255,7 @@ const FacilityManagement = () => {
 
                 {/* Table */}
                 <FacilityTable
+                  onViewReviews={handleReviews}
                   facilities={filteredFacilities}
                   onEdit={handleEditFacility}
                   onDelete={handleDeleteFacility}
@@ -233,6 +279,11 @@ const FacilityManagement = () => {
           facility={selectedFacility}
           onSave={handleSaveFacility}
           isEdit={isEdit}
+        />
+        <ReviewModal
+          show={showReviewModal}
+          onHide={() => setShowReviewModal(false)}
+          facility={selectedFacility}
         />
       </Container>
     </div>

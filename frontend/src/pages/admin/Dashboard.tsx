@@ -13,6 +13,7 @@ import {
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
 import BookingCalendar from 'components/booking/BookingCalendar';
+import { showToast } from 'components/toaster/toaster';
 
 const Dashboard = () => {
   const { tokens } = useAppSelector(
@@ -30,59 +31,113 @@ const Dashboard = () => {
     activeBookings: 0
   });
 
-  useEffect(() => {
-    async function fetchData() {
-      const [
-        transactionData,
-        facilitiesData,
-        usersData,
-        inventoryData,
-        stockData,
-        bookingsData
-      ] = await Promise.all([
-        TransactionController.getAllTransactions(accessToken),
-        FacilityController.getAllFacilites(),
-        UserController.getAllusers(accessToken),
-        InventoryItemController.getAllInventoryItems(),
-        InventoryItemController.getLowStockItems(accessToken),
-        BookingController.getAllBookings(accessToken)
-      ]);
+  async function fetchData() {
+    const [
+      transactionData,
+      facilitiesData,
+      usersData,
+      inventoryData,
+      stockData,
+      bookingsData
+    ] = await Promise.all([
+      TransactionController.getAllTransactions(accessToken),
+      FacilityController.getAllFacilites(),
+      UserController.getAllusers(accessToken),
+      InventoryItemController.getAllInventoryItems(),
+      InventoryItemController.getLowStockItems(accessToken),
+      BookingController.getAllBookings(accessToken)
+    ]);
 
-      if (
-        transactionData &&
-        facilitiesData &&
-        usersData &&
-        inventoryData &&
-        stockData &&
-        bookingsData
-      ) {
-        setIsLoading(false);
-        const metricsData = {
-          totalInventory: inventoryData.data.length,
-          totalFacilities: facilitiesData.data.facilities.length,
-          totalUsers: (usersData.data as any).users.length,
-          activeBookings: (bookingsData.data as Booking[]).length
-        };
+    if (
+      transactionData &&
+      facilitiesData &&
+      usersData &&
+      inventoryData &&
+      stockData &&
+      bookingsData
+    ) {
+      setIsLoading(false);
+      const metricsData = {
+        totalInventory: inventoryData.data.length,
+        totalFacilities: facilitiesData.data.facilities.length,
+        totalUsers: (usersData.data as any).users.length,
+        activeBookings: (bookingsData.data as Booking[]).length
+      };
 
-        setBookings(bookingsData.data as Booking[]);
-        setFacilites(facilitiesData.data.facilities as Facility[]);
+      setBookings(bookingsData.data as Booking[]);
+      setFacilites(facilitiesData.data.facilities as Facility[]);
 
-        setMetrics(metricsData);
-      } else {
-        setIsLoading(false);
-        const metricsData = {
-          totalInventory: 0,
-          totalFacilities: 0,
-          totalUsers: 0,
-          activeBookings: 0
-        };
+      setMetrics(metricsData);
+    } else {
+      setIsLoading(false);
+      const metricsData = {
+        totalInventory: 0,
+        totalFacilities: 0,
+        totalUsers: 0,
+        activeBookings: 0
+      };
 
-        setMetrics(metricsData);
-      }
+      setMetrics(metricsData);
     }
+  }
 
+  useEffect(() => {
     fetchData();
   }, []);
+
+  const handleDeleteBooking = async (bookingId: string) => {
+    try {
+      const response = await BookingController.deleteBooking(
+        bookingId,
+        accessToken
+      );
+
+      if (response.success) {
+        showToast('success', 'Booking created successfully');
+      }
+    } catch (error) {
+      showToast('error', error.message || 'Failed to delete booking');
+    }
+  };
+
+  const handleUpdateBooking = async (booking: Partial<Booking>) => {
+    try {
+      const response = await BookingController.updateBooking(
+        booking._id,
+        booking,
+        accessToken
+      );
+
+      if (response.success) {
+        showToast('success', 'Booking updated successfully');
+      }
+    } catch (error) {
+      showToast('error', error.message || 'Failed to delete booking');
+    }
+  };
+
+  const handleCreateBooking = async (booking: Partial<Booking>) => {
+    try {
+      if (booking.facility) {
+        booking.facility = booking.facility._id as any;
+      }
+
+      if (booking.user) {
+        booking.user = booking.user._id as any;
+      }
+
+      const response = await BookingController.bookFacility(
+        booking,
+        accessToken
+      );
+
+      if (response.success) {
+        showToast('success', 'Booking created successfully');
+      }
+    } catch (error) {
+      showToast('error', error.message || 'Failed to delete booking');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -113,7 +168,14 @@ const Dashboard = () => {
         <DashboardMetrics metrics={metrics} />
         <Row>
           <Col lg={8} className="mb-4">
-            <BookingCalendar facilities={facilities} bookings={bookings} />
+            <BookingCalendar
+              onRefresh={fetchData}
+              facilities={facilities}
+              bookings={bookings}
+              onUpdateBooking={handleUpdateBooking}
+              onDeleteBooking={handleDeleteBooking}
+              onCreateBooking={handleCreateBooking}
+            />
           </Col>
           <Col lg={4}>
             <QuickActionsSidebar />

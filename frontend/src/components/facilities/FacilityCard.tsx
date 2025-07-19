@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Badge, Button, Image, Stack } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import {
-  faCheck,
-  faStar,
-  faHeart as faHeartSolid,
-  faShoppingCart,
-  faEye
-} from '@fortawesome/free-solid-svg-icons';
-import { faHeart as faHeartRegular } from '@fortawesome/free-regular-svg-icons';
+import { faCheck, faStar, faEye } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { Facility } from 'types';
 import { currencyFormat } from 'helpers/utils';
@@ -19,44 +12,6 @@ interface FacilityCardProps {
   onAddToCart?: (facility: Facility) => void;
   onAddToWishlist?: (facility: Facility) => void;
 }
-
-// Heart Button Component
-const HeartButton: React.FC<{
-  isLiked: boolean;
-  onClick: (e: React.MouseEvent) => void;
-}> = ({ isLiked, onClick }) => (
-  <Button
-    variant="light"
-    onClick={onClick}
-    className="position-absolute top-0 end-0 m-2 rounded-circle d-flex align-items-center justify-content-center p-0"
-    style={{
-      width: 36,
-      height: 36,
-      background: 'rgba(255,255,255,0.95)',
-      border: '1px solid rgba(0,0,0,0.1)',
-      backdropFilter: 'blur(8px)',
-      zIndex: 10,
-      transition: 'all 0.2s ease',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-    }}
-    onMouseEnter={e => {
-      (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)';
-      (e.currentTarget as HTMLButtonElement).style.boxShadow =
-        '0 4px 12px rgba(0,0,0,0.15)';
-    }}
-    onMouseLeave={e => {
-      (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-      (e.currentTarget as HTMLButtonElement).style.boxShadow =
-        '0 2px 8px rgba(0,0,0,0.1)';
-    }}
-  >
-    <FontAwesomeIcon
-      icon={isLiked ? faHeartSolid : faHeartRegular}
-      className={isLiked ? 'text-danger' : 'text-dark'}
-      style={{ fontSize: 16 }}
-    />
-  </Button>
-);
 
 // Image Dots Component
 const ImageDots: React.FC<{ count: number }> = ({ count }) => (
@@ -137,11 +92,7 @@ const Rating: React.FC<{ average: number; totalReviews: number }> = ({
   ) : null;
 
 // Main FacilityCard Component
-const FacilityCard = ({
-  facility,
-  onAddToCart,
-  onAddToWishlist
-}: FacilityCardProps) => {
+const FacilityCard = ({ facility }: FacilityCardProps) => {
   const mainImage =
     facility.images && facility.images.length > 0
       ? facility.images[0].path
@@ -157,26 +108,6 @@ const FacilityCard = ({
     facility.pricing.find(p => p.isDefault) || facility.pricing[0];
 
   const hasVerifiedReviews = facility.reviews.some(review => review.isVerified);
-
-  const [isLiked, setIsLiked] = useState(false);
-
-  const handleHeartClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsLiked(liked => !liked);
-    if (onAddToWishlist) {
-      onAddToWishlist(facility);
-    }
-  };
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onAddToCart) {
-      onAddToCart(facility);
-    }
-  };
-
   const isAvailable = facility.isActive;
 
   return (
@@ -185,7 +116,7 @@ const FacilityCard = ({
       style={{ textDecoration: 'none', display: 'block' }}
     >
       <Card
-        className="shadow-sm h-100 overflow-hidden"
+        className="shadow-sm h-100 overflow-hidden border border-secondary box-shadow"
         style={{ minWidth: 280, borderRadius: 12, border: 'none' }}
       >
         <div className="position-relative" style={{ height: 220 }}>
@@ -200,7 +131,7 @@ const FacilityCard = ({
             }}
             fluid
           />
-          <HeartButton isLiked={isLiked} onClick={handleHeartClick} />
+
           {facility.images.length > 1 && (
             <ImageDots count={facility.images.length} />
           )}
@@ -266,27 +197,16 @@ const FacilityCard = ({
           </div>
 
           <div className="d-flex gap-2">
-            {onAddToCart && (
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={!isAvailable}
-                onClick={handleAddToCart}
-                style={{ minWidth: '100px' }}
-              >
-                <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
-                {isAvailable ? 'Add to Cart' : 'Unavailable'}
-              </Button>
-            )}
             <Button
               as={Link}
               to={`/facility/${facility._id}`}
-              variant={onAddToCart ? 'outline-secondary' : 'primary'}
+              variant={'primary'}
               size="sm"
+              disabled={!isAvailable}
               className="flex-fill"
             >
               <FontAwesomeIcon icon={faEye} className="me-1" />
-              {onAddToCart ? 'View Details' : 'Book Now'}
+              {isAvailable ? 'Book Now' : 'Unavailable'}
             </Button>
           </div>
         </Card.Body>

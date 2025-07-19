@@ -8,7 +8,8 @@ import {
   faStar,
   faMapMarkerAlt,
   faClock,
-  faTrashRestore
+  faTrashRestore,
+  faComment
 } from '@fortawesome/free-solid-svg-icons';
 import { Facility } from 'types';
 import SimplePaginatedList from 'booking/PaginatedComponent';
@@ -18,13 +19,15 @@ interface FacilityTableProps {
   onEdit: (facility: Facility) => void;
   onDelete: (facilityId: string) => void;
   onToggleStatus: (facilityId: string) => void;
+  onViewReviews: (facility: Facility) => void;
 }
 
 const FacilityTable = ({
   facilities,
   onEdit,
   onDelete,
-  onToggleStatus
+  onToggleStatus,
+  onViewReviews
 }: FacilityTableProps) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -140,6 +143,10 @@ const FacilityTable = ({
             <Dropdown.Item onClick={() => onToggleStatus(facility._id)}>
               <FontAwesomeIcon icon={faEye} className="me-2" />
               {facility.isActive ? 'Deactivate' : 'Activate'}
+            </Dropdown.Item>
+            <Dropdown.Item onClick={() => onViewReviews(facility)}>
+              <FontAwesomeIcon icon={faComment} className="me-2" />
+              View Reviews
             </Dropdown.Item>
             <Dropdown.Divider />
             <Dropdown.Item
