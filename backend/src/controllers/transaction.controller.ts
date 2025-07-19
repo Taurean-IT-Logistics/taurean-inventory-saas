@@ -12,7 +12,11 @@ import {
   sendNotFound,
   sendValidationError,
 } from "../utils";
-import { BookingDocument, TransactionDocument } from "../models";
+import {
+  BookingDocument,
+  InventoryItemModel,
+  TransactionDocument,
+} from "../models";
 import { Transaction } from "../types";
 import { isValidObjectId } from "mongoose";
 
@@ -107,6 +111,24 @@ const initializePaymentController = async (
       reconciled: false,
       ...paymentData,
     };
+
+    if (paymentData.inventoryItem) {
+      const item = await InventoryItemModel.findByIdAndUpdate(
+        paymentData.inventoryItem,
+        {
+          $inc: { quantity: -Math.abs(paymentData.quantity) },
+        },
+        { new: true }
+      );
+
+      if (item?.quantity == 0) {
+        await InventoryItemModel.findByIdAndUpdate(paymentData.inventoryItem, {
+          status: "unavailable",
+        });
+      }
+
+      transactionData.inventoryItem = paymentData.inventoryItem;
+    }
 
     const transaction = await TransactionService.createTransaction(
       transactionData

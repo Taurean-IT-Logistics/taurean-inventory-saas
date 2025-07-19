@@ -12,13 +12,11 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
-  faHeart,
   faCalendar,
   faInfo,
   faClock,
   faCreditCard
 } from '@fortawesome/free-solid-svg-icons';
-import { useWishlist } from 'hooks/useWishlist';
 import RentDetailSkeleton from 'components/inventory/RentailDetailLoader';
 import { InventoryItem, Tax } from 'types';
 import { getResourceUrl, TaxController } from 'controllers';
@@ -55,8 +53,6 @@ const RentDetailPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taxes, setTaxes] = useState<Tax[]>([]);
-
-  const { addToWishlist, isInWishlist } = useWishlist();
 
   useEffect(() => {
     if (startDate && endDate) {
@@ -154,17 +150,6 @@ const RentDetailPage = () => {
   const tax = Math.round((subtotal + serviceFee) * (taxRate / 100));
   const totalPrice = subtotal + serviceFee + tax;
 
-  const handleAddToWishlist = () => {
-    addToWishlist({
-      type: 'inventory_item',
-      itemId: item._id || '',
-      name: item.name,
-      price: price,
-      imageUrl:
-        item.images && item.images.length > 0 ? item.images[0].path : undefined
-    });
-  };
-
   const handleTransaction = async () => {
     if (!user || !accessToken) return;
 
@@ -174,6 +159,8 @@ const RentDetailPage = () => {
       const transactionData = {
         email: user.email,
         amount: totalPrice,
+        quantity: quantity,
+        inventoryItem: item._id || '',
         category: 'inventory_item',
         description: `Rental for ${item.name} (${item._id}) from ${startDate} to ${endDate}`
       };
@@ -210,10 +197,6 @@ const RentDetailPage = () => {
           <Link to="/rental" className="btn btn-outline-secondary">
             <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
             Back to Rental
-          </Link>
-          <Link to="/wishlist" className="btn btn-primary">
-            <FontAwesomeIcon icon={faHeart} className="me-2" />
-            View Wishlist
           </Link>
         </div>
 
@@ -261,17 +244,9 @@ const RentDetailPage = () => {
                   <h1 className="mb-2">{item.name}</h1>
                   <div className="d-flex align-items-center gap-2">
                     <Badge bg="secondary">{item.category}</Badge>
-                    <span className="text-muted">SKU: {item.sku || 'N/A'}</span>
+                    <span className="text-info">SKU: {item.sku || 'N/A'}</span>
                   </div>
                 </div>
-                <Button
-                  variant={
-                    isInWishlist(item._id || '') ? 'danger' : 'outline-light'
-                  }
-                  onClick={handleAddToWishlist}
-                >
-                  <FontAwesomeIcon icon={faHeart} />
-                </Button>
               </div>
 
               <div className="mb-4">
@@ -323,21 +298,24 @@ const RentDetailPage = () => {
                     <Col md={6}>
                       <Form.Group>
                         <Form.Label>Quantity</Form.Label>
-                        <Form.Select
+                        <Form.Control
+                          type="number"
                           value={quantity}
-                          onChange={e => setQuantity(Number(e.target.value))}
+                          onChange={e => {
+                            const val = Math.max(
+                              1,
+                              Math.min(
+                                Number(e.target.value),
+                                item.quantity || 1
+                              )
+                            );
+                            setQuantity(val);
+                          }}
                           disabled={!isAvailable}
                           className="border-secondary"
-                        >
-                          {Array.from(
-                            { length: Math.min(item.quantity, 10) },
-                            (_, i) => (
-                              <option key={i + 1} value={i + 1}>
-                                {i + 1} {i === 0 ? 'item' : 'items'}
-                              </option>
-                            )
-                          )}
-                        </Form.Select>
+                          min={1}
+                          max={item.quantity || 1}
+                        />
                       </Form.Group>
                     </Col>
                     <Col md={6}>
@@ -425,8 +403,8 @@ const RentDetailPage = () => {
                       <div className="text-muted small">Status</div>
                       <div>{getStatusBadge(item.status)}</div>
                     </Col>
-                    <Col md={6} className="mb-3">
-                      <div className="text-muted small">SKU</div>
+                    <Col md={6} className="mb-3 text-info">
+                      <div className="text-info small">SKU</div>
                       <div>{item.sku || 'N/A'}</div>
                     </Col>
                     {item.purchaseInfo.purchaseDate && (

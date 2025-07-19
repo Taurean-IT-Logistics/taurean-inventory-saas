@@ -149,53 +149,79 @@ const updateFacility = async (
   removedImageIds?: string[]
 ) => {
   try {
+    // Filter out read-only/database fields
+    const filteredData = {
+      ...(data.name && { name: data.name }),
+      ...(data.description && { description: data.description }),
+      ...(data.location && { location: data.location }),
+      ...(data.capacity && { capacity: data.capacity }),
+      ...(data.operationalHours && { operationalHours: data.operationalHours }),
+      ...(data.amenities && { amenities: data.amenities }),
+      ...(data.pricing && { pricing: data.pricing }),
+      ...(data.availability && { availability: data.availability }),
+      ...(data.terms && { terms: data.terms }),
+      ...(data.isTaxable !== undefined && { isTaxable: data.isTaxable }),
+      ...(data.isActive !== undefined && { isActive: data.isActive })
+    };
+
     const formData = new FormData();
 
-    if (data.name) formData.append('name', data.name);
-    if (data.description) formData.append('description', data.description);
-    if (data.location?.address)
-      formData.append('location[address]', data.location.address);
-    if (data.location?.coordinates?.latitude !== undefined)
+    // Only append fields that exist in filteredData
+    if (filteredData.name) formData.append('name', filteredData.name);
+    if (filteredData.description)
+      formData.append('description', filteredData.description);
+
+    if (filteredData.location?.address)
+      formData.append('location[address]', filteredData.location.address);
+    if (filteredData.location?.coordinates?.latitude !== undefined)
       formData.append(
         'location[coordinates][latitude]',
-        data.location.coordinates.latitude.toString()
+        filteredData.location.coordinates.latitude.toString()
       );
-    if (data.location?.coordinates?.longitude !== undefined)
+    if (filteredData.location?.coordinates?.longitude !== undefined)
       formData.append(
         'location[coordinates][longitude]',
-        data.location.coordinates.longitude.toString()
+        filteredData.location.coordinates.longitude.toString()
       );
 
-    if (data.capacity?.maximum !== undefined)
-      formData.append('capacity[maximum]', data.capacity.maximum.toString());
-    if (data.capacity?.recommended !== undefined)
+    if (filteredData.capacity?.maximum !== undefined)
+      formData.append(
+        'capacity[maximum]',
+        filteredData.capacity.maximum.toString()
+      );
+    if (filteredData.capacity?.recommended !== undefined)
       formData.append(
         'capacity[recommended]',
-        data.capacity.recommended.toString()
+        filteredData.capacity.recommended.toString()
       );
 
-    if (data.operationalHours?.opening)
+    if (filteredData.operationalHours?.opening)
       formData.append(
         'operationalHours[opening]',
-        data.operationalHours.opening
+        filteredData.operationalHours.opening
       );
-    if (data.operationalHours?.closing)
+    if (filteredData.operationalHours?.closing)
       formData.append(
         'operationalHours[closing]',
-        data.operationalHours.closing
+        filteredData.operationalHours.closing
       );
 
-    if (data.amenities && Array.isArray(data.amenities)) {
-      data.amenities.forEach(amenity => formData.append('amenities', amenity));
+    if (filteredData.amenities && Array.isArray(filteredData.amenities)) {
+      filteredData.amenities.forEach(amenity =>
+        formData.append('amenities', amenity)
+      );
     }
 
-    if (data.terms) formData.append('terms', data.terms);
-    if (data.isTaxable)
-      formData.append('isTaxable', data.isTaxable ? 'true' : 'false');
+    if (filteredData.terms) formData.append('terms', filteredData.terms);
+    if (filteredData.isTaxable !== undefined)
+      formData.append('isTaxable', filteredData.isTaxable ? 'true' : 'false');
 
-    // ✅ Add pricing
-    if (data.pricing && Array.isArray(data.pricing)) {
-      data.pricing.forEach((price, index) => {
+    if (filteredData.isActive !== undefined)
+      formData.append('isActive', filteredData.isActive ? 'true' : 'false');
+
+    // Add pricing
+    if (filteredData.pricing && Array.isArray(filteredData.pricing)) {
+      filteredData.pricing.forEach((price, index) => {
         if (price.unit) formData.append(`pricing[${index}][unit]`, price.unit);
         if (price.amount !== undefined)
           formData.append(`pricing[${index}][amount]`, price.amount.toString());
@@ -206,9 +232,9 @@ const updateFacility = async (
       });
     }
 
-    // ✅ Add availability
-    if (data.availability && Array.isArray(data.availability)) {
-      data.availability.forEach((slot, index) => {
+    // Add availability
+    if (filteredData.availability && Array.isArray(filteredData.availability)) {
+      filteredData.availability.forEach((slot, index) => {
         if (slot.day) formData.append(`availability[${index}][day]`, slot.day);
         if (slot.startTime)
           formData.append(`availability[${index}][startTime]`, slot.startTime);
@@ -272,10 +298,68 @@ const deleteFacility = async (id: string, accessToken: string) => {
     }
   }
 };
+
+const leaveReview = async (
+  id: string,
+  accessToken: string,
+  body: {
+    rating: number;
+    comment: string;
+  }
+) => {
+  try {
+    const response = await apiClient.post<APIResponse<Facility>>(
+      `/facilities/${id}/review`,
+      body,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
+interface GetReviewParams {
+  page?: number;
+  limit?: number;
+}
+
+const getReviews = async (id: string, params?: GetReviewParams) => {
+  try {
+    const response = await apiClient.get<APIResponse<Facility>>(
+      `/facilities/${id}/reviews`,
+      {
+        params: {
+          ...(params?.page && { page: params.page }),
+          ...(params?.limit && { limit: params.limit })
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Something went wrong');
+    } else {
+      console.error('Unexpected error:', (error as Error).message);
+      throw error;
+    }
+  }
+};
+
 export {
   createFacility,
   getAllFacilites,
   getFacilityById,
   updateFacility,
-  deleteFacility
+  deleteFacility,
+  leaveReview,
+  getReviews
 };

@@ -71,7 +71,7 @@ const InventoryTable = ({
               <td>
                 <div>
                   <div className="fw-semibold">{item.name}</div>
-                  <small className="text-muted">{item.sku}</small>
+                  <small className="text-info">{item.sku}</small>
                   {item.description && (
                     <div className="text-muted small mt-1">
                       {item.description}

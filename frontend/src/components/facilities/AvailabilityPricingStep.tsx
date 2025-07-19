@@ -1,23 +1,50 @@
-import { Card, Form, Row, Col, Button, InputGroup } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
+import React from 'react';
+import { Card, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import { Facility } from 'types';
 
 interface AvailabilityPricingStepProps {
   formData: Partial<Facility>;
   setFormData: React.Dispatch<React.SetStateAction<Partial<Facility>>>;
-  addAvailabilityDay: () => void;
   updateAvailability: (index: number, field: string, value: any) => void;
-  removeAvailabilityDay: (index: number) => void;
 }
+
+const DAYS = [
+  { value: 'monday', label: 'Monday' },
+  { value: 'tuesday', label: 'Tuesday' },
+  { value: 'wednesday', label: 'Wednesday' },
+  { value: 'thursday', label: 'Thursday' },
+  { value: 'friday', label: 'Friday' },
+  { value: 'saturday', label: 'Saturday' },
+  { value: 'sunday', label: 'Sunday' }
+];
 
 const AvailabilityPricingStep = ({
   formData,
   setFormData,
-  addAvailabilityDay,
-  updateAvailability,
-  removeAvailabilityDay
+  updateAvailability
 }: AvailabilityPricingStepProps) => {
+  React.useEffect(() => {
+    if (!formData.availability || formData.availability.length !== 7) {
+      setFormData((prev: Partial<Facility>) => ({
+        ...prev,
+        availability: DAYS.map((d, i) => ({
+          day: d.value as
+            | 'monday'
+            | 'tuesday'
+            | 'wednesday'
+            | 'thursday'
+            | 'friday'
+            | 'saturday'
+            | 'sunday',
+          startTime: prev.availability?.[i]?.startTime || '08:00',
+          endTime: prev.availability?.[i]?.endTime || '17:00',
+          isAvailable: prev.availability?.[i]?.isAvailable ?? true
+        }))
+      }));
+    }
+    // eslint-disable-next-line
+  }, []);
+
   return (
     <Card className="mb-4">
       <Card.Header>
@@ -25,36 +52,21 @@ const AvailabilityPricingStep = ({
       </Card.Header>
       <Card.Body>
         <div className="mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <Form.Label className="fw-semibold mb-0">
-              Weekly Availability
-            </Form.Label>
-            <Button variant="primary" size="sm" onClick={addAvailabilityDay}>
-              <FontAwesomeIcon icon={faPlus} className="me-1" />
-              Add Day
-            </Button>
-          </div>
-
-          {formData.availability && formData.availability.length > 0 ? (
+          <Form.Label className="fw-semibold mb-3">
+            Weekly Availability
+          </Form.Label>
+          {formData.availability && formData.availability.length === 7 ? (
             formData.availability.map((day, index) => (
-              <Card key={index} className="mb-2">
+              <Card key={day.day} className="mb-2">
                 <Card.Body className="py-2">
                   <Row className="align-items-center">
                     <Col md={3}>
-                      <Form.Select
-                        size="sm"
-                        value={day.day}
-                        onChange={e =>
-                          updateAvailability(index, 'day', e.target.value)
-                        }
-                      >
-                        <option value="monday">Monday</option>
-                        <option value="tuesday">Tuesday</option>
-                        <option value="wednesday">Wednesday</option>
-                        <option value="thursday">Thursday</option>
-                        <option value="friday">Friday</option>
-                        <option value="saturday">Saturday</option>
-                        <option value="sunday">Sunday</option>
+                      <Form.Select size="sm" value={day.day} disabled>
+                        {DAYS.map(d => (
+                          <option key={d.value} value={d.value}>
+                            {d.label}
+                          </option>
+                        ))}
                       </Form.Select>
                     </Col>
                     <Col md={3}>
@@ -77,7 +89,7 @@ const AvailabilityPricingStep = ({
                         }
                       />
                     </Col>
-                    <Col md={2}>
+                    <Col md={3}>
                       <Form.Check
                         type="checkbox"
                         label="Available"
@@ -91,23 +103,13 @@ const AvailabilityPricingStep = ({
                         }
                       />
                     </Col>
-                    <Col md={1}>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => removeAvailabilityDay(index)}
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </Button>
-                    </Col>
                   </Row>
                 </Card.Body>
               </Card>
             ))
           ) : (
             <div className="text-center text-muted py-3">
-              No availability schedule added yet. Click "Add Day" to get
-              started.
+              Loading weekly availability...
             </div>
           )}
         </div>
@@ -115,11 +117,11 @@ const AvailabilityPricingStep = ({
         <div className="mb-4">
           <Form.Label className="fw-semibold">Pricing *</Form.Label>
           <Row>
-            <Col md={6} className="mb-3">
+            <Col md={6}>
               <Form.Select
                 value={formData.pricing?.[0]?.unit || 'hour'}
                 onChange={e =>
-                  setFormData(prev => ({
+                  setFormData((prev: Partial<Facility>) => ({
                     ...prev,
                     pricing: [
                       {
@@ -139,7 +141,7 @@ const AvailabilityPricingStep = ({
             </Col>
             <Col md={6}>
               <InputGroup>
-                <InputGroup.Text>₵</InputGroup.Text>
+                <InputGroup.Text>$</InputGroup.Text>
                 <Form.Control
                   type="number"
                   placeholder="Price amount"
@@ -147,7 +149,7 @@ const AvailabilityPricingStep = ({
                   min="0"
                   value={formData.pricing?.[0]?.amount || ''}
                   onChange={e =>
-                    setFormData(prev => ({
+                    setFormData((prev: Partial<Facility>) => ({
                       ...prev,
                       pricing: [
                         {
@@ -163,12 +165,12 @@ const AvailabilityPricingStep = ({
               </InputGroup>
             </Col>
             <Col md={6} className="mt-4">
-              <Form.Check type="checkbox" className="mb-0">
+              <Form.Check>
                 <Form.Check.Input
                   id="tax"
                   checked={formData.isTaxable}
                   onChange={e =>
-                    setFormData(prev => ({
+                    setFormData((prev: Partial<Facility>) => ({
                       ...prev,
                       isTaxable: Boolean(e.target.checked)
                     }))

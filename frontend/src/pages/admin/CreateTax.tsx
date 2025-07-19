@@ -109,30 +109,33 @@ const CreateTax = () => {
     <div className="min-vh-100  ">
       <Container fluid className="py-4">
         {/* Header */}
+
         <Row className="mb-4">
           <Col>
-            <div className="d-flex align-items-center mb-3">
-              <Button
-                as={Link}
-                to="/admin/tax"
-                variant="outline-secondary"
-                className="me-3"
-              >
-                <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
-                Back to Tax Management
-              </Button>
-            </div>
-            <div className="d-flex align-items-center">
-              <FontAwesomeIcon
-                icon={faPercent}
-                size="2x"
-                className="text-primary me-3"
-              />
-              <div>
-                <h1 className="h3  mb-1">Create New Tax</h1>
-                <p className="text-muted mb-0">
-                  Configure a new tax rate for your system
-                </p>
+            <div className="d-flex justify-content-between align-items-center">
+              <div className="d-flex align-items-center">
+                <FontAwesomeIcon
+                  icon={faPercent}
+                  size="2x"
+                  className="text-primary me-3"
+                />
+                <div>
+                  <h1 className="h3  mb-1">Create New Tax</h1>
+                  <p className="text-muted mb-0">
+                    Configure a new tax rate for your system
+                  </p>
+                </div>
+              </div>
+              <div className="d-flex items-center gap-2">
+                <Button
+                  variant="border-secondary border"
+                  as={Link}
+                  to="/admin"
+                  className="d-flex align-items-center"
+                >
+                  <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+                  Back to Dashboard
+                </Button>
               </div>
             </div>
           </Col>
@@ -152,8 +155,8 @@ const CreateTax = () => {
         )}
 
         {/* Create Tax Form */}
-        <Row className="justify-content-center">
-          <Col xl={8}>
+        <Row>
+          <Col>
             <Card className=" border-secondary">
               <Card.Header className=" border-secondary">
                 <h5 className=" mb-0">Tax Configuration</h5>

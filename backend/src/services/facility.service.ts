@@ -219,38 +219,56 @@ export async function leaveReview(
   comment: string
 ): Promise<FacilityDocument> {
   try {
-    const facility = await FacilityModel.findOne({
-      _id: facilityId,
-      isDeleted: false,
-    }).exec();
-    if (!facility) throw new Error("Facility not found");
+    // First try to update existing review
+    const updatedFacility = await FacilityModel.findOneAndUpdate(
+      {
+        _id: facilityId,
+        isDeleted: false,
+        "reviews.user": userId,
+      },
+      {
+        $set: {
+          "reviews.$.rating": rating,
+          "reviews.$.comment": comment,
+          "reviews.$.updatedAt": new Date(),
+          "reviews.$isVerified": false,
+        },
+      },
+      { new: true }
+    ).exec();
 
-    const existingReviewIndex = facility.reviews.findIndex(
-      (r: any) => r.user.toString() === userId
-    );
-
-    if (existingReviewIndex !== -1) {
-      // Update existing review
-      facility.reviews[existingReviewIndex] = {
-        ...facility.reviews[existingReviewIndex],
-        rating,
-        comment,
-        updatedAt: new Date(),
-      };
-    } else {
-      // Add new review
-      const review = {
-        user: userId,
-        rating,
-        comment,
-        createdAt: new Date(),
-      } as any;
-      facility.reviews.push(review);
+    if (updatedFacility) {
+      return updatedFacility;
     }
 
-    await facility.save();
-    return facility;
+    // If no existing review found, add new one
+    const facilityWithNewReview = await FacilityModel.findOneAndUpdate(
+      {
+        _id: facilityId,
+        isDeleted: false,
+      },
+      {
+        $push: {
+          reviews: {
+            user: new Types.ObjectId(userId),
+            rating,
+            comment,
+            isVerified: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
+      },
+      { new: true }
+    ).exec();
+
+    if (!facilityWithNewReview) {
+      throw new Error("Facility not found");
+    }
+
+    return facilityWithNewReview;
   } catch (error) {
+    console.error("Error leaving review:", error);
     throw new Error("Error leaving review");
   }
 }
@@ -262,25 +280,86 @@ export async function getFacilityReviews(
   pagination: PaginationOptions
 ): Promise<ReviewsResult> {
   try {
-    const facility = await FacilityModel.findOne({
-      _id: facilityId,
-      isDeleted: false,
-    })
-      .populate("reviews.user", "name email") // Populate user details
-      .exec();
+    // First, let's debug what we have
+    const facilityCheck = await FacilityModel.findById(facilityId);
+    if (!facilityCheck) {
+      throw new Error("Facility not found");
+    }
+    const result = await FacilityModel.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(facilityId),
+        },
+      },
+      {
+        $unwind: "$reviews",
+      },
+      // Add debugging stage
+      {
+        $addFields: {
+          "reviews.userIdCheck": "$reviews.user",
+        },
+      },
+      {
+        $lookup: {
+          from: "users", // Try "users" first, might need to be different
+          localField: "reviews.user",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      // Add debugging to see lookup result
+      {
+        $addFields: {
+          "reviews.lookupResult": "$userDetails",
+          "reviews.user": {
+            $cond: {
+              if: { $gt: [{ $size: "$userDetails" }, 0] },
+              then: { $arrayElemAt: ["$userDetails", 0] },
+              else: "$reviews.user", // Keep original if lookup fails
+            },
+          },
+        },
+      },
+      {
+        $sort: {
+          "reviews.createdAt": -1,
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          reviews: {
+            $push: "$reviews",
+          },
+          total: {
+            $sum: 1,
+          },
+        },
+      },
+      {
+        $project: {
+          reviews: {
+            $slice: ["$reviews", pagination.skip, pagination.limit],
+          },
+          total: 1,
+        },
+      },
+    ]);
 
-    if (!facility) throw new Error("Facility not found");
+    if (!result || result.length === 0) {
+      return {
+        reviews: [],
+        total: 0,
+      };
+    }
 
-    const total = facility.reviews.length;
-    const reviews = facility.reviews
-      .slice(pagination.skip, pagination.skip + pagination.limit)
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-
-    return { reviews, total };
+    return {
+      reviews: result[0].reviews || [],
+      total: result[0].total || 0,
+    };
   } catch (error) {
+    console.error("Error fetching facility reviews:", error);
     throw new Error("Error fetching facility reviews");
   }
 }

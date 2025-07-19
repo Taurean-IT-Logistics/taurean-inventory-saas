@@ -2,26 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Button, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faHeart,
-  faShoppingCart,
-  faEye
-} from '@fortawesome/free-solid-svg-icons';
+import { faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import { InventoryItem } from 'types';
 import { currencyFormat } from 'helpers/utils';
 import { getResourceUrl } from 'controllers';
 
 interface InventoryItemCardProps {
   item: InventoryItem;
-  onAddToCart: (item: InventoryItem) => void;
-  onAddToWishlist: (item: InventoryItem) => void;
 }
 
-const InventoryItemCard = ({
-  item,
-  onAddToCart,
-  onAddToWishlist
-}: InventoryItemCardProps) => {
+const InventoryItemCard = ({ item }: InventoryItemCardProps) => {
   // Early return if item is null, undefined, or doesn't have required properties
   if (!item || !item._id || !item.name) {
     return null;
@@ -56,24 +46,6 @@ const InventoryItemCard = ({
     }
   }, [mainImage]);
 
-  // Handle click events to prevent navigation when clicking action buttons
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onAddToCart(item);
-  };
-
-  const handleAddToWishlist = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onAddToWishlist(item);
-  };
-
-  const handleViewDetails = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
   return (
     <Link
       to={`/item/${item._id}`}
@@ -90,16 +62,6 @@ const InventoryItemCard = ({
           />
           <div className="position-absolute top-0 start-0 p-2">
             {getStatusBadge(item.status || 'unavailable')}
-          </div>
-          <div className="position-absolute top-0 end-0 p-2">
-            <Button
-              variant="outline-light"
-              size="sm"
-              className="rounded-circle"
-              onClick={handleAddToWishlist}
-            >
-              <FontAwesomeIcon icon={faHeart} />
-            </Button>
           </div>
         </div>
 
@@ -118,28 +80,32 @@ const InventoryItemCard = ({
             </div>
             <div className="text-muted small">
               <div>Quantity: {item.quantity || 0}</div>
-              <div>SKU: {item.sku || 'N/A'}</div>
+              <div className="text-info">SKU: {item.sku || 'N/A'}</div>
             </div>
           </div>
 
           <div className="d-flex gap-2 mt-3">
-            <Button
-              variant="primary"
-              size="sm"
-              className="flex-fill"
-              disabled={!isAvailable}
-              onClick={handleAddToCart}
-            >
-              <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
-              {isAvailable ? 'Add to Cart' : 'Unavailable'}
-            </Button>
-            <Link
-              to={`/inventory/${item._id}`}
-              className="btn btn-outline-secondary btn-sm"
-              onClick={handleViewDetails}
-            >
-              <FontAwesomeIcon icon={faEye} />
-            </Link>
+            {isAvailable ? (
+              <Button
+                variant="primary"
+                size="sm"
+                className="flex-fill"
+                as={Link}
+                to={`/item/${item._id}`}
+              >
+                <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
+                Rent Item
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-fill"
+                disabled
+              >
+                Unavailable
+              </Button>
+            )}
           </div>
         </Card.Body>
       </Card>
