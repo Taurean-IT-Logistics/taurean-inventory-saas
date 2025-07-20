@@ -27,6 +27,7 @@ import { useAppSelector } from 'hooks/useAppDispatch';
 import { RootState } from 'lib/store';
 import Swiper from 'components/base/Swiper';
 import { SwiperSlide } from 'swiper/react';
+import { format, parse } from 'date-fns';
 
 interface FacilityImageGalleryProps {
   images: { path: string }[];
@@ -93,100 +94,112 @@ interface FacilityDetailsProps {
 const FacilityDetails = ({
   facility,
   hasVerifiedReviews
-}: FacilityDetailsProps) => (
-  <>
-    <div className="d-flex justify-content-between align-items-start mb-4">
-      <div>
-        <h1 className="display-6 fw-bold mb-2">{facility.name}</h1>
-        <div className="d-flex align-items-center gap-3 text-muted">
-          <div className="d-flex align-items-center">
-            <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" />
-            <span>{facility.location.address}</span>
-          </div>
-          {facility.rating && (
+}: FacilityDetailsProps) => {
+  const amPm = (time: string) => {
+    const parsedTime = parse(time, 'HH:mm', new Date());
+    return format(parsedTime, 'h:mm a');
+  };
+  return (
+    <>
+      <div className="d-flex justify-content-between align-items-start mb-4">
+        <div>
+          <h1 className="display-6 fw-bold mb-2">{facility.name}</h1>
+          <div className="d-flex align-items-center gap-3 text-muted">
             <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faStar} className="text-warning me-1" />
-              <span className="fw-semibold">{facility.rating.average}</span>
-              <span className="ms-1 text-muted">
-                ({facility.rating.totalReviews} reviews)
-              </span>
+              <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" />
+              <span>{facility.location.address}</span>
             </div>
-          )}
+            {facility.rating && (
+              <div className="d-flex align-items-center">
+                <FontAwesomeIcon icon={faStar} className="text-warning me-1" />
+                <span className="fw-semibold">{facility.rating.average}</span>
+                <span className="ms-1 text-muted">
+                  ({facility.rating.totalReviews} reviews)
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-    <div className="d-flex gap-2 mb-4">
-      {hasVerifiedReviews && (
-        <Badge bg="success" className="d-flex align-items-center">
-          <FontAwesomeIcon icon={faCheck} className="me-1" />
-          Verified
-        </Badge>
-      )}
-      {facility.isActive ? (
-        <Badge bg="primary">Available</Badge>
-      ) : (
-        <Badge bg="warning">Currently Unavailable</Badge>
-      )}
-    </div>
-    <div className="mb-5">
-      <h3 className="h4 fw-semibold mb-3">About this space</h3>
-      <p className="text-muted lh-lg">{facility.description}</p>
-      {facility.terms && (
-        <div className="mt-3">
-          <h5 className="fw-semibold mb-2">Terms & Conditions</h5>
-          <p className="text-muted small">{facility.terms}</p>
-        </div>
-      )}
-    </div>
-    <Row className="mb-5">
-      <Col md={4} className="mb-3">
-        <div className="d-flex align-items-center">
-          <FontAwesomeIcon icon={faUsers} className="text-primary me-3 fs-4" />
-          <div>
-            <div className="fw-semibold">Capacity</div>
-            <div className="text-muted small">
-              Up to {facility.capacity.maximum} guests
-            </div>
-            <div className="text-muted small">
-              Recommended: {facility.capacity.recommended}
+      <div className="d-flex gap-2 mb-4">
+        {hasVerifiedReviews && (
+          <Badge bg="success" className="d-flex align-items-center">
+            <FontAwesomeIcon icon={faCheck} className="me-1" />
+            Verified
+          </Badge>
+        )}
+        {facility.isActive ? (
+          <Badge bg="primary">Available</Badge>
+        ) : (
+          <Badge bg="warning">Currently Unavailable</Badge>
+        )}
+      </div>
+      <div className="mb-5">
+        <h3 className="h4 fw-semibold mb-3">About this space</h3>
+        <p className="text-muted lh-lg">{facility.description}</p>
+        {facility.terms && (
+          <div className="mt-3">
+            <h5 className="fw-semibold mb-2">Terms & Conditions</h5>
+            <p className="text-muted small">{facility.terms}</p>
+          </div>
+        )}
+      </div>
+      <Row className="mb-5">
+        <Col md={4} className="mb-3">
+          <div className="d-flex align-items-center">
+            <FontAwesomeIcon
+              icon={faUsers}
+              className="text-primary me-3 fs-4"
+            />
+            <div>
+              <div className="fw-semibold">Capacity</div>
+              <div className="text-muted small">
+                Up to {facility.capacity.maximum} guests
+              </div>
+              <div className="text-muted small">
+                Recommended: {facility.capacity.recommended}
+              </div>
             </div>
           </div>
-        </div>
-      </Col>
-      <Col md={4} className="mb-3">
-        <div className="d-flex align-items-center">
-          <FontAwesomeIcon icon={faClock} className="text-primary me-3 fs-4" />
-          <div>
-            <div className="fw-semibold">Operating Hours</div>
-            <div className="text-muted small">
-              {facility.operationalHours.opening} -{' '}
-              {facility.operationalHours.closing}
+        </Col>
+        <Col md={4} className="mb-3">
+          <div className="d-flex align-items-center">
+            <FontAwesomeIcon
+              icon={faClock}
+              className="text-primary me-3 fs-4"
+            />
+            <div>
+              <div className="fw-semibold">Operating Hours</div>
+              <div className="text-muted small">
+                {amPm(facility.operationalHours.opening)} -{' '}
+                {amPm(facility.operationalHours.closing)}
+              </div>
             </div>
           </div>
-        </div>
-      </Col>
-      <Col md={4} className="mb-3">
-        <div className="d-flex align-items-center">
-          <FontAwesomeIcon
-            icon={faCalendarAlt}
-            className="text-primary me-3 fs-4"
-          />
-          <div>
-            <div className="fw-semibold">Availability</div>
-            <div className="text-muted small">
-              {
-                facility.availability.filter(
-                  (a: { isAvailable: boolean }) => a.isAvailable
-                ).length
-              }{' '}
-              days/week
+        </Col>
+        <Col md={4} className="mb-3">
+          <div className="d-flex align-items-center">
+            <FontAwesomeIcon
+              icon={faCalendarAlt}
+              className="text-primary me-3 fs-4"
+            />
+            <div>
+              <div className="fw-semibold">Availability</div>
+              <div className="text-muted small">
+                {
+                  facility.availability.filter(
+                    (a: { isAvailable: boolean }) => a.isAvailable
+                  ).length
+                }{' '}
+                days/week
+              </div>
             </div>
           </div>
-        </div>
-      </Col>
-    </Row>
-  </>
-);
+        </Col>
+      </Row>
+    </>
+  );
+};
 
 // --- FacilityAmenities ---
 const getAmenityIcon = (amenity: string) => {

@@ -44,6 +44,7 @@ import {
 } from 'controllers';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
+import { format, parse } from 'date-fns';
 
 interface PaymentResponse {
   payment: {
@@ -63,7 +64,7 @@ interface BookingFormData {
     phone: string;
     company?: string;
   };
-  specialRequests: string;
+  notes: string;
   agreeToTerms: boolean;
 }
 
@@ -348,11 +349,11 @@ const BookingFormStep = ({
           <Form.Control
             as="textarea"
             rows={3}
-            value={formData.specialRequests}
+            value={formData.notes}
             onChange={e =>
               setFormData(prev => ({
                 ...prev,
-                specialRequests: e.target.value
+                notes: e.target.value
               }))
             }
             placeholder="Any special requirements or requests..."
@@ -587,150 +588,156 @@ const ReviewConfirmationStep = ({
   onEdit: () => void;
   onSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
-}) => (
-  <Card className="mb-4 border-secondary shadow">
-    <Card.Header className="border-secondary d-flex justify-content-between align-items-center">
-      <h5 className="mb-0">
-        <FontAwesomeIcon icon={faCheck} className="me-2 text-primary" />
-        Review Your Booking
-      </h5>
-      <Button variant="outline-primary" size="sm" onClick={onEdit}>
-        <FontAwesomeIcon icon={faEdit} className="me-2" />
-        Edit Details
-      </Button>
-    </Card.Header>
-    <Card.Body className="p-4">
-      {/* Booking Details */}
-      <div className="mb-4">
-        <h6 className="text-primary mb-3">Booking Details</h6>
-        <Row>
-          <Col md={6}>
-            <div className="mb-3">
-              <strong className="text-muted small">DATE & TIME</strong>
-              <div className="fw-semibold">
-                {new Date(formData.selectedDate).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </div>
-              <div className="text-muted">
-                {formData.selectedTime} - {formData.endTime}
-              </div>
-            </div>
-          </Col>
-          <Col md={6}>
-            <div className="mb-3">
-              <strong className="text-muted small">DURATION & GUESTS</strong>
-              <div className="fw-semibold">
-                {formData.duration} hour
-                {Number.parseInt(formData.duration) > 1 ? 's' : ''}
-              </div>
-              <div className="text-muted">
-                {formData.guests} guest{formData.guests > 1 ? 's' : ''}
-              </div>
-            </div>
-          </Col>
-        </Row>
-      </div>
-
-      {/* Customer Information */}
-      <div className="mb-4">
-        <h6 className="text-primary mb-3">Customer Information</h6>
-        <Row>
-          <Col md={6}>
-            <div className="mb-3">
-              <strong className="text-muted small">CONTACT PERSON</strong>
-              <div className="fw-semibold">{formData.customerInfo.name}</div>
-              <div className="text-muted">{formData.customerInfo.email}</div>
-              <div className="text-muted">{formData.customerInfo.phone}</div>
-            </div>
-          </Col>
-          {formData.customerInfo.company && (
+}) => {
+  const amPm = (time: string) => {
+    const parsedTime = parse(time, 'HH:mm', new Date());
+    return format(parsedTime, 'h:mm a');
+  };
+  return (
+    <Card className="mb-4 border-secondary shadow">
+      <Card.Header className="border-secondary d-flex justify-content-between align-items-center">
+        <h5 className="mb-0">
+          <FontAwesomeIcon icon={faCheck} className="me-2 text-primary" />
+          Review Your Booking
+        </h5>
+        <Button variant="outline-primary" size="sm" onClick={onEdit}>
+          <FontAwesomeIcon icon={faEdit} className="me-2" />
+          Edit Details
+        </Button>
+      </Card.Header>
+      <Card.Body className="p-4">
+        {/* Booking Details */}
+        <div className="mb-4">
+          <h6 className="text-primary mb-3">Booking Details</h6>
+          <Row>
             <Col md={6}>
               <div className="mb-3">
-                <strong className="text-muted small">ORGANIZATION</strong>
+                <strong className="text-muted small">DATE & TIME</strong>
                 <div className="fw-semibold">
-                  {formData.customerInfo.company}
+                  {new Date(formData.selectedDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </div>
+                <div className="text-muted">
+                  {amPm(formData.selectedTime)} - {amPm(formData.endTime)}
                 </div>
               </div>
             </Col>
-          )}
-        </Row>
-      </div>
+            <Col md={6}>
+              <div className="mb-3">
+                <strong className="text-muted small">DURATION & GUESTS</strong>
+                <div className="fw-semibold">
+                  {formData.duration} hour
+                  {Number.parseInt(formData.duration) > 1 ? 's' : ''}
+                </div>
+                <div className="text-muted">
+                  {formData.guests} guest{formData.guests > 1 ? 's' : ''}
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </div>
 
-      {/* Special Requests */}
-      {formData.specialRequests && (
+        {/* Customer Information */}
         <div className="mb-4">
-          <h6 className="text-primary mb-3">Special Requests</h6>
-          <div className="p-3 bg-light rounded">
-            <p className="mb-0">{formData.specialRequests}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Summary */}
-      <div className="mb-4">
-        <h6 className="text-primary mb-3">Payment Summary</h6>
-        <div className="p-3 border rounded">
-          <div className="d-flex justify-content-between mb-2">
-            <span>
-              Base Price ({formData.duration} hour
-              {Number.parseInt(formData.duration) > 1 ? 's' : ''})
-            </span>
-            <span>{currencyFormat(pricing.subtotal)}</span>
-          </div>
-          <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Service Fee</span>
-            <span>{currencyFormat(pricing.serviceFee)}</span>
-          </div>
-          <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Tax</span>
-            <span>{currencyFormat(pricing.tax)}</span>
-          </div>
-          <hr />
-          <div className="d-flex justify-content-between fw-bold h5">
-            <span>Total Amount</span>
-            <span className="text-primary">
-              {currencyFormat(pricing.total)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Button */}
-      <Form onSubmit={onSubmit}>
-        <div className="d-grid">
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            className="fw-semibold"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />
-                Processing Payment...
-              </>
-            ) : (
-              <>
-                <FontAwesomeIcon icon={faCreditCard} className="me-2" />
-                Proceed to Pay - {currencyFormat(pricing.total)}
-              </>
+          <h6 className="text-primary mb-3">Customer Information</h6>
+          <Row>
+            <Col md={6}>
+              <div className="mb-3">
+                <strong className="text-muted small">CONTACT PERSON</strong>
+                <div className="fw-semibold">{formData.customerInfo.name}</div>
+                <div className="text-muted">{formData.customerInfo.email}</div>
+                <div className="text-muted">{formData.customerInfo.phone}</div>
+              </div>
+            </Col>
+            {formData.customerInfo.company && (
+              <Col md={6}>
+                <div className="mb-3">
+                  <strong className="text-muted small">ORGANIZATION</strong>
+                  <div className="fw-semibold">
+                    {formData.customerInfo.company}
+                  </div>
+                </div>
+              </Col>
             )}
-          </Button>
+          </Row>
         </div>
-        <div className="text-center mt-3">
-          <small className="text-muted">
-            You will be redirected to Paystack for secure payment processing
-          </small>
+
+        {/* Special Requests */}
+        {formData.notes && (
+          <div className="mb-4">
+            <h6 className="text-primary mb-3">Special Requests</h6>
+            <div className="p-3 bg-light rounded">
+              <p className="mb-0">{formData.notes}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Summary */}
+        <div className="mb-4">
+          <h6 className="text-primary mb-3">Payment Summary</h6>
+          <div className="p-3 border rounded">
+            <div className="d-flex justify-content-between mb-2">
+              <span>
+                Base Price ({formData.duration} hour
+                {Number.parseInt(formData.duration) > 1 ? 's' : ''})
+              </span>
+              <span>{currencyFormat(pricing.subtotal)}</span>
+            </div>
+            <div className="d-flex justify-content-between mb-2">
+              <span className="text-muted">Service Fee</span>
+              <span>{currencyFormat(pricing.serviceFee)}</span>
+            </div>
+            <div className="d-flex justify-content-between mb-2">
+              <span className="text-muted">Tax</span>
+              <span>{currencyFormat(pricing.tax)}</span>
+            </div>
+            <hr />
+            <div className="d-flex justify-content-between fw-bold h5">
+              <span>Total Amount</span>
+              <span className="text-primary">
+                {currencyFormat(pricing.total)}
+              </span>
+            </div>
+          </div>
         </div>
-      </Form>
-    </Card.Body>
-  </Card>
-);
+
+        {/* Payment Button */}
+        <Form onSubmit={onSubmit}>
+          <div className="d-grid">
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="fw-semibold"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Processing Payment...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faCreditCard} className="me-2" />
+                  Proceed to Pay - {currencyFormat(pricing.total)}
+                </>
+              )}
+            </Button>
+          </div>
+          <div className="text-center mt-3">
+            <small className="text-muted">
+              You will be redirected to Paystack for secure payment processing
+            </small>
+          </div>
+        </Form>
+      </Card.Body>
+    </Card>
+  );
+};
 
 const BookingPage = () => {
   const { tokens, user } = useAppSelector(
@@ -760,7 +767,7 @@ const BookingPage = () => {
       phone: '',
       company: ''
     },
-    specialRequests: '',
+    notes: '',
     agreeToTerms: false
   });
 
@@ -970,6 +977,7 @@ const BookingPage = () => {
         duration: formData.duration,
         status: 'pending' as const,
         paymentStatus: 'pending' as const,
+        notes: formData.notes,
         totalPrice: pricing.total
       };
 

@@ -59,7 +59,7 @@ const AvailabilityPricingStep = ({
             formData.availability.map((day, index) => (
               <Card key={day.day} className="mb-2">
                 <Card.Body className="py-2">
-                  <Row className="align-items-center">
+                  <Row className="align-items-center gap-2">
                     <Col md={3}>
                       <Form.Select size="sm" value={day.day} disabled>
                         {DAYS.map(d => (
@@ -116,7 +116,7 @@ const AvailabilityPricingStep = ({
 
         <div className="mb-4">
           <Form.Label className="fw-semibold">Pricing *</Form.Label>
-          <Row>
+          <Row className="gap-2">
             <Col md={6}>
               <Form.Select
                 value={formData.pricing?.[0]?.unit || 'hour'}
@@ -141,7 +141,7 @@ const AvailabilityPricingStep = ({
             </Col>
             <Col md={6}>
               <InputGroup>
-                <InputGroup.Text>$</InputGroup.Text>
+                <InputGroup.Text>₵</InputGroup.Text>
                 <Form.Control
                   type="number"
                   placeholder="Price amount"

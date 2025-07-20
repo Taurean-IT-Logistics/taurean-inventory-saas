@@ -491,18 +491,24 @@ const BookingCalendar = ({
                   {selectedBooking.facility?.name || 'Unknown Facility'}
                 </h5>
                 <div className="d-flex gap-2">
-                  <Badge bg={getStatusBadgeVariant(selectedBooking.status)}>
-                    {selectedBooking.status}
-                  </Badge>
-                  <Badge
-                    bg={
-                      selectedBooking.paymentStatus === 'completed'
-                        ? 'success'
-                        : 'warning'
-                    }
-                  >
-                    {selectedBooking.paymentStatus}
-                  </Badge>
+                  <div className="d-flex flex-column gap-1">
+                    <small className="fw-bold"> Booking Status</small>
+                    <Badge bg={getStatusBadgeVariant(selectedBooking.status)}>
+                      {selectedBooking.status}
+                    </Badge>
+                  </div>
+                  <div className="d-flex flex-column gap-1">
+                    <small className="fw-bold">Payment Status</small>
+                    <Badge
+                      bg={
+                        selectedBooking.paymentStatus === 'completed'
+                          ? 'success'
+                          : 'warning'
+                      }
+                    >
+                      {selectedBooking.paymentStatus}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
@@ -791,7 +797,7 @@ const BookingCalendar = ({
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Status</Form.Label>
+                  <Form.Label>Booking Status</Form.Label>
                   <Form.Select
                     value={formData.status || 'pending'}
                     onChange={e =>
