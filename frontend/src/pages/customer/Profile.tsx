@@ -453,7 +453,7 @@ const EditDetailsModal = ({
 const Profile = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { user, tokens } = useAppSelector((state: RootState) => state.auth);
-  const accessToken = tokens.accessToken;
+  const accessToken = tokens?.accessToken;
   const userData = user as User;
   const [userDetails, setUserDetails] = useState<User | undefined>(userData);
   const dispatch = useAppDispatch();

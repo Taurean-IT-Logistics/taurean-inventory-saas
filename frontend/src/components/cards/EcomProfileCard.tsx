@@ -15,16 +15,18 @@ const EcomProfileCard = ({ user }: ProfileCardProps) => {
           <Row className="align-items-center g-3 g-sm-5 text-center text-sm-start">
             <Col xs={12} sm="auto">
               <Avatar size="5xl" variant="name">
-                {user.name.split(' ')[0][0]}
+                {user?.name.split(' ')[0][0]}
               </Avatar>
             </Col>
             <Col xs={12} sm="auto" className="flex-1">
-              <h3>{user.name}</h3>
+              <h3>{user?.name}</h3>
               <p className="text-body-secondary">
                 Joined{' '}
-                {formatDistanceToNow(new Date(user.createdAt), {
-                  addSuffix: true
-                })}
+                {user?.createdAt
+                  ? formatDistanceToNow(new Date(user?.createdAt), {
+                      addSuffix: true
+                    })
+                  : 'N/A'}
               </p>
             </Col>
           </Row>
@@ -33,13 +35,13 @@ const EcomProfileCard = ({ user }: ProfileCardProps) => {
           <div>
             <h6 className="mb-2 text-body-secondary">Total Spent</h6>
             <h4 className="fs-7 text-body-highlight mb-0">
-              {user.loyaltyProfile.totalSpent}
+              {user?.loyaltyProfile.totalSpent}
             </h4>
           </div>
           <div className="text-end">
             <h6 className="mb-2 text-body-secondary">Total Bookings</h6>
             <h4 className="fs-7 text-body-highlight mb-0">
-              {user.loyaltyProfile.totalBookings}
+              {user?.loyaltyProfile.totalBookings}
             </h4>
           </div>
         </div>

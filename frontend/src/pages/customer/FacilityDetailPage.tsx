@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Card, Form } from 'react-bootstrap';
 import Badge, { BadgeBg } from 'components/base/Badge';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -241,20 +241,19 @@ interface ReviewFormProps {
   onClose: () => void;
   reviewsData: Review[];
   setReviewsData: React.Dispatch<React.SetStateAction<Review[]>>;
+  setFacility: React.Dispatch<React.SetStateAction<Partial<Facility>>>;
 }
 
 const ReviewForm = ({
   facility,
   onClose,
   reviewsData,
-  setReviewsData
+  setReviewsData,
+  setFacility
 }: ReviewFormProps) => {
   const { user, tokens } = useAppSelector((state: RootState) => state.auth);
   const accessToken = tokens?.accessToken;
 
-  const location = useLocation();
-  location.state = location.state || {};
-  location.state.from = location.pathname;
   const isUserReviewed = reviewsData.find(
     (r: Review) => r.user.username === user?.username
   );
@@ -292,6 +291,7 @@ const ReviewForm = ({
             comment
           }
         ]);
+        setFacility(response.data as Facility);
         showToast('success', 'Review submitted successfully!');
       }
       onClose();
@@ -374,14 +374,26 @@ interface FacilityReviewsProps {
     };
   };
   facility: Partial<Facility>;
+  setFacility: React.Dispatch<React.SetStateAction<Partial<Facility>>>;
 }
 
-const FacilityReviews = ({ reviews, facility }: FacilityReviewsProps) => {
+const FacilityReviews = ({
+  reviews,
+  facility,
+  setFacility
+}: FacilityReviewsProps) => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const toggleReviewForm = () => setShowReviewForm(!showReviewForm);
   const { user, tokens } = useAppSelector((state: RootState) => state.auth);
   const [reviewsData, setReviewsData] = useState(reviews.reviews);
-  console.log('Reviews Data:', reviewsData);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const redirectToLogin = () => {
+    navigate('/sign-in', {
+      state: { from: location.pathname }
+    });
+  };
 
   useEffect(() => {
     setReviewsData(reviews.reviews);
@@ -479,8 +491,7 @@ const FacilityReviews = ({ reviews, facility }: FacilityReviewsProps) => {
           ) : (
             <Button
               variant="outline-primary"
-              as={Link}
-              to="/sign-in"
+              onClick={redirectToLogin}
               className="w-100"
             >
               Sign in to Leave a Review
@@ -496,6 +507,7 @@ const FacilityReviews = ({ reviews, facility }: FacilityReviewsProps) => {
               reviewsData={reviewsData}
               onClose={toggleReviewForm}
               setReviewsData={setReviewsData}
+              setFacility={setFacility}
             />
           </Col>
         </Row>
@@ -611,7 +623,6 @@ const FacilityDetailPage = () => {
           setIsLoading(false);
           setFacility(facilityData.data);
           setReviews(reviewsData.data as any);
-          console.log('Reviews:', reviewsData.data);
           const filteredFacilites = (
             similarFacilitiesData.data.facilities as Facility[]
           ).filter(facility => facility.name != facilityData.data.name);
@@ -663,7 +674,11 @@ const FacilityDetailPage = () => {
               hasVerifiedReviews={hasVerifiedReviews}
             />
             <FacilityAmenities amenities={facility.amenities} />
-            <FacilityReviews facility={facility} reviews={reviews} />
+            <FacilityReviews
+              facility={facility}
+              setFacility={setFacility}
+              reviews={reviews}
+            />
           </Col>
           <Col lg={4}>
             <div style={{ position: 'sticky', top: 20 }}>
