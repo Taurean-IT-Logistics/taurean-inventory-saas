@@ -70,7 +70,7 @@
   --phoenix-info-bg-subtle: #C7EBFF;
   --phoenix-warning-bg-subtle: #FFEFCA;
   --phoenix-danger-bg-subtle: #FFE0DB;
-  --phoenix-light-bg-subtle: #f7f9fb;
+  --phoenix-light-bg-subtle: rgb(247, 248.5, 250.5);
   --phoenix-dark-bg-subtle: #9fa6bc;
   --phoenix-primary-border-subtle: #85A9FF;
   --phoenix-secondary-border-subtle: #cbd0dd;
@@ -112,7 +112,7 @@
   --phoenix-link-hover-decoration: underline;
   --phoenix-code-color: #D6630A;
   --phoenix-highlight-color: #31374a;
-  --phoenix-highlight-bg: #fff3cd;
+  --phoenix-highlight-bg: rgb(255, 242.6, 205.4);
   --phoenix-border-width: 1px;
   --phoenix-border-style: solid;
   --phoenix-border-color: #cbd0dd;
@@ -168,7 +168,7 @@
   --phoenix-warning-bg-subtle: #262527;
   --phoenix-danger-bg-subtle: #241F25;
   --phoenix-light-bg-subtle: #3e465b;
-  --phoenix-dark-bg-subtle: #1f232e;
+  --phoenix-dark-bg-subtle: rgb(31, 35, 45.5);
   --phoenix-primary-border-subtle: #303B5A;
   --phoenix-secondary-border-subtle: #3D414C;
   --phoenix-success-border-subtle: #354739;
@@ -184,7 +184,7 @@
   --phoenix-link-hover-color-rgb: 133, 169, 255;
   --phoenix-code-color: #d63384;
   --phoenix-highlight-color: #9fa6bc;
-  --phoenix-highlight-bg: #664d03;
+  --phoenix-highlight-bg: rgb(102, 77.2, 2.8);
   --phoenix-border-color: #373e53;
   --phoenix-border-color-translucent: rgba(55, 62, 83, 0.78);
   --phoenix-form-valid-color: #25b003;
@@ -290,7 +290,7 @@
   --phoenix-border-color-translucent-rgb: 203, 208, 221;
   --phoenix-input-group-addon-bg-global: #eff2f6;
   --phoenix-dropdown-link-color-global: #525b75;
-  --phoenix-dropdown-link-hover-color-global: #292e3b;
+  --phoenix-dropdown-link-hover-color-global: rgb(41, 45.5, 58.5);
   --phoenix-nav-vertical-color-global: #141824;
   /* -------------------------------------------------------------------------- */
   /*                                Scrollbar                                   */
@@ -616,11 +616,11 @@
   --phoenix-btn-border-color: rgba(56, 116, 255, 0.14);
   --phoenix-btn-hover-color: #85A9FF;
   --phoenix-btn-hover-bg: rgba(56, 116, 255, 0.2);
-  --phoenix-btn-hover-border-color: rgba(175, 199, 255, 0.226);
+  --phoenix-btn-hover-border-color: rgba(174.6346153846, 198.8653846154, 255, 0.226);
   --phoenix-btn-focus-shadow-rgb: 110, 153, 255;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: rgba(209, 223, 255, 0.312);
-  --phoenix-btn-active-border-color: rgba(175, 199, 255, 0.226);
+  --phoenix-btn-active-bg: rgba(208.9504132231, 222.8347107438, 255, 0.312);
+  --phoenix-btn-active-border-color: rgba(174.6346153846, 198.8653846154, 255, 0.226);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
   --phoenix-btn-disabled-bg: rgba(56, 116, 255, 0.14);
@@ -632,11 +632,11 @@
   --phoenix-btn-border-color: rgba(49, 55, 74, 0.5);
   --phoenix-btn-hover-color: #cbd0dd;
   --phoenix-btn-hover-bg: rgba(49, 55, 74, 0.8);
-  --phoenix-btn-hover-border-color: rgba(101, 105, 119, 0.55);
+  --phoenix-btn-hover-border-color: rgba(100.5, 105, 119.25, 0.55);
   --phoenix-btn-focus-shadow-rgb: 102, 108, 125;
   --phoenix-btn-active-color: #fff;
-  --phoenix-btn-active-bg: rgba(137, 141, 152, 0.6);
-  --phoenix-btn-active-border-color: rgba(101, 105, 119, 0.55);
+  --phoenix-btn-active-bg: rgba(137.2857142857, 140.7142857143, 151.5714285714, 0.6);
+  --phoenix-btn-active-border-color: rgba(100.5, 105, 119.25, 0.55);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
   --phoenix-btn-disabled-bg: rgba(49, 55, 74, 0.5);
@@ -648,11 +648,11 @@
   --phoenix-btn-border-color: rgba(37, 176, 3, 0.14);
   --phoenix-btn-hover-color: #90D67F;
   --phoenix-btn-hover-bg: rgba(37, 176, 3, 0.2);
-  --phoenix-btn-hover-border-color: rgba(167, 223, 153, 0.226);
+  --phoenix-btn-hover-border-color: rgba(166.9615384615, 223.0961538462, 153.2307692308, 0.226);
   --phoenix-btn-focus-shadow-rgb: 112, 203, 90;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: rgba(205, 237, 197, 0.312);
-  --phoenix-btn-active-border-color: rgba(167, 223, 153, 0.226);
+  --phoenix-btn-active-bg: rgba(204.5537190083, 236.7190082645, 196.6859504132, 0.312);
+  --phoenix-btn-active-border-color: rgba(166.9615384615, 223.0961538462, 153.2307692308, 0.226);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
   --phoenix-btn-disabled-bg: rgba(37, 176, 3, 0.14);
@@ -664,11 +664,11 @@
   --phoenix-btn-border-color: rgba(0, 151, 235, 0.14);
   --phoenix-btn-hover-color: #60C6FF;
   --phoenix-btn-hover-bg: rgba(0, 151, 235, 0.2);
-  --phoenix-btn-hover-border-color: rgba(152, 213, 247, 0.226);
+  --phoenix-btn-hover-border-color: rgba(152.0192307692, 213, 246.9230769231, 0.226);
   --phoenix-btn-focus-shadow-rgb: 67, 184, 249;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: rgba(196, 231, 250, 0.312);
-  --phoenix-btn-active-border-color: rgba(152, 213, 247, 0.226);
+  --phoenix-btn-active-bg: rgba(195.9917355372, 230.9338842975, 250.3719008264, 0.312);
+  --phoenix-btn-active-border-color: rgba(152.0192307692, 213, 246.9230769231, 0.226);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
   --phoenix-btn-disabled-bg: rgba(0, 151, 235, 0.14);
@@ -680,11 +680,11 @@
   --phoenix-btn-border-color: rgba(229, 120, 11, 0.14);
   --phoenix-btn-hover-color: #FFCC85;
   --phoenix-btn-hover-bg: rgba(229, 120, 11, 0.2);
-  --phoenix-btn-hover-border-color: rgba(245, 200, 156, 0.226);
+  --phoenix-btn-hover-border-color: rgba(244.5, 200.4807692308, 156.4615384615, 0.226);
   --phoenix-btn-focus-shadow-rgb: 247, 179, 97;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: rgba(249, 224, 199, 0.312);
-  --phoenix-btn-active-border-color: rgba(245, 200, 156, 0.226);
+  --phoenix-btn-active-bg: rgba(248.9834710744, 223.7603305785, 198.5371900826, 0.312);
+  --phoenix-btn-active-border-color: rgba(244.5, 200.4807692308, 156.4615384615, 0.226);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
   --phoenix-btn-disabled-bg: rgba(229, 120, 11, 0.14);
@@ -696,11 +696,11 @@
   --phoenix-btn-border-color: rgba(236, 31, 0, 0.14);
   --phoenix-btn-hover-color: #F48270;
   --phoenix-btn-hover-bg: rgba(236, 31, 0, 0.2);
-  --phoenix-btn-hover-border-color: rgba(247, 165, 152, 0.226);
+  --phoenix-btn-hover-border-color: rgba(247.3269230769, 164.5384615385, 152.0192307692, 0.226);
   --phoenix-btn-focus-shadow-rgb: 242, 100, 79;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: rgba(251, 203, 196, 0.312);
-  --phoenix-btn-active-border-color: rgba(247, 165, 152, 0.226);
+  --phoenix-btn-active-bg: rgba(250.6033057851, 203.1652892562, 195.9917355372, 0.312);
+  --phoenix-btn-active-border-color: rgba(247.3269230769, 164.5384615385, 152.0192307692, 0.226);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
   --phoenix-btn-disabled-bg: rgba(236, 31, 0, 0.14);
@@ -738,70 +738,70 @@
   --phoenix-offcanvas-bg: #141824;
 }
 [data-bs-theme=dark] .table-primary {
-  --phoenix-table-bg: #0b1733;
+  --phoenix-table-bg: rgb(11.2, 23.2, 51);
   --phoenix-table-color: #fff;
-  --phoenix-table-hover-bg: #477eff;
+  --phoenix-table-hover-bg: rgb(70.925, 126.425, 255);
   --phoenix-table-hover-color: #fff;
-  --phoenix-table-striped-bg: #427bff;
+  --phoenix-table-striped-bg: rgb(65.95, 122.95, 255);
   --phoenix-table-striped-color: #fff;
-  --phoenix-table-active-bg: #4c82ff;
+  --phoenix-table-active-bg: rgb(75.9, 129.9, 255);
   --phoenix-table-active-color: #fff;
-  --phoenix-table-border-color: rgba(96, 144, 255, 0.05);
+  --phoenix-table-border-color: rgba(95.8, 143.8, 255, 0.05);
 }
 [data-bs-theme=dark] .table-secondary {
-  --phoenix-table-bg: #0a0b0f;
+  --phoenix-table-bg: rgb(9.8, 11, 14.8);
   --phoenix-table-color: #fff;
-  --phoenix-table-hover-bg: #404658;
+  --phoenix-table-hover-bg: rgb(64.45, 70, 87.575);
   --phoenix-table-hover-color: #fff;
-  --phoenix-table-striped-bg: #3b4153;
+  --phoenix-table-striped-bg: rgb(59.3, 65, 83.05);
   --phoenix-table-striped-color: #fff;
-  --phoenix-table-active-bg: #464b5c;
+  --phoenix-table-active-bg: rgb(69.6, 75, 92.1);
   --phoenix-table-active-color: #fff;
-  --phoenix-table-border-color: rgba(90, 95, 110, 0.05);
+  --phoenix-table-border-color: rgba(90.2, 95, 110.2, 0.05);
 }
 [data-bs-theme=dark] .table-success {
-  --phoenix-table-bg: #072301;
+  --phoenix-table-bg: rgb(7.4, 35.2, 0.6);
   --phoenix-table-color: #fff;
-  --phoenix-table-hover-bg: #35b616;
+  --phoenix-table-hover-bg: rgb(53.35, 181.925, 21.9);
   --phoenix-table-hover-color: #fff;
-  --phoenix-table-striped-bg: #30b410;
+  --phoenix-table-striped-bg: rgb(47.9, 179.95, 15.6);
   --phoenix-table-striped-color: #fff;
-  --phoenix-table-active-bg: #3bb81c;
+  --phoenix-table-active-bg: rgb(58.8, 183.9, 28.2);
   --phoenix-table-active-color: #fff;
-  --phoenix-table-border-color: rgba(81, 192, 53, 0.05);
+  --phoenix-table-border-color: rgba(80.6, 191.8, 53.4, 0.05);
 }
 [data-bs-theme=dark] .table-info {
-  --phoenix-table-bg: #001e2f;
+  --phoenix-table-bg: rgb(0, 30.2, 47);
   --phoenix-table-color: #fff;
-  --phoenix-table-hover-bg: #139fed;
+  --phoenix-table-hover-bg: rgb(19.125, 158.8, 236.5);
   --phoenix-table-hover-color: #fff;
-  --phoenix-table-striped-bg: #0d9cec;
+  --phoenix-table-striped-bg: rgb(12.75, 156.2, 236);
   --phoenix-table-striped-color: #fff;
-  --phoenix-table-active-bg: #1aa1ed;
+  --phoenix-table-active-bg: rgb(25.5, 161.4, 237);
   --phoenix-table-active-color: #fff;
-  --phoenix-table-border-color: rgba(51, 172, 239, 0.05);
+  --phoenix-table-border-color: rgba(51, 171.8, 239, 0.05);
 }
 [data-bs-theme=dark] .table-warning {
-  --phoenix-table-bg: #2e1802;
+  --phoenix-table-bg: rgb(45.8, 24, 2.2);
   --phoenix-table-color: #fff;
-  --phoenix-table-hover-bg: #e7821d;
+  --phoenix-table-hover-bg: rgb(230.95, 130.125, 29.3);
   --phoenix-table-hover-color: #fff;
-  --phoenix-table-striped-bg: #e67f17;
+  --phoenix-table-striped-bg: rgb(230.3, 126.75, 23.2);
   --phoenix-table-striped-color: #fff;
-  --phoenix-table-active-bg: #e88623;
+  --phoenix-table-active-bg: rgb(231.6, 133.5, 35.4);
   --phoenix-table-active-color: #fff;
-  --phoenix-table-border-color: rgba(234, 147, 60, 0.05);
+  --phoenix-table-border-color: rgba(234.2, 147, 59.8, 0.05);
 }
 [data-bs-theme=dark] .table-danger {
-  --phoenix-table-bg: #2f0600;
+  --phoenix-table-bg: rgb(47.2, 6.2, 0);
   --phoenix-table-color: #fff;
-  --phoenix-table-hover-bg: #ed3013;
+  --phoenix-table-hover-bg: rgb(237.425, 47.8, 19.125);
   --phoenix-table-hover-color: #fff;
-  --phoenix-table-striped-bg: #ed2a0d;
+  --phoenix-table-striped-bg: rgb(236.95, 42.2, 12.75);
   --phoenix-table-striped-color: #fff;
-  --phoenix-table-active-bg: #ee351a;
+  --phoenix-table-active-bg: rgb(237.9, 53.4, 25.5);
   --phoenix-table-active-color: #fff;
-  --phoenix-table-border-color: rgba(240, 76, 51, 0.05);
+  --phoenix-table-border-color: rgba(239.8, 75.8, 51, 0.05);
 }
 [data-bs-theme=dark] .table-light {
   --phoenix-table-bg: #eff2f6;
@@ -3117,13 +3117,13 @@ progress {
 
 .table-primary {
   --phoenix-table-color: #000000;
-  --phoenix-table-bg: #d7e3ff;
-  --phoenix-table-border-color: #acb6cc;
-  --phoenix-table-striped-bg: #ccd8f2;
+  --phoenix-table-bg: rgb(215.2, 227.2, 255);
+  --phoenix-table-border-color: rgb(172.16, 181.76, 204);
+  --phoenix-table-striped-bg: rgb(204.44, 215.84, 242.25);
   --phoenix-table-striped-color: #000000;
-  --phoenix-table-active-bg: #c2cce6;
+  --phoenix-table-active-bg: rgb(193.68, 204.48, 229.5);
   --phoenix-table-active-color: #000000;
-  --phoenix-table-hover-bg: #c7d2ec;
+  --phoenix-table-hover-bg: rgb(199.06, 210.16, 235.875);
   --phoenix-table-hover-color: #000000;
   color: var(--phoenix-table-color);
   border-color: var(--phoenix-table-border-color);
@@ -3131,13 +3131,13 @@ progress {
 
 .table-secondary {
   --phoenix-table-color: #000000;
-  --phoenix-table-bg: #d6d7db;
-  --phoenix-table-border-color: #abacaf;
-  --phoenix-table-striped-bg: #cbccd0;
+  --phoenix-table-bg: rgb(213.8, 215, 218.8);
+  --phoenix-table-border-color: rgb(171.04, 172, 175.04);
+  --phoenix-table-striped-bg: rgb(203.11, 204.25, 207.86);
   --phoenix-table-striped-color: #000000;
-  --phoenix-table-active-bg: #c1c2c5;
+  --phoenix-table-active-bg: rgb(192.42, 193.5, 196.92);
   --phoenix-table-active-color: #000000;
-  --phoenix-table-hover-bg: #c6c7cb;
+  --phoenix-table-hover-bg: rgb(197.765, 198.875, 202.39);
   --phoenix-table-hover-color: #000000;
   color: var(--phoenix-table-color);
   border-color: var(--phoenix-table-border-color);
@@ -3145,13 +3145,13 @@ progress {
 
 .table-success {
   --phoenix-table-color: #000000;
-  --phoenix-table-bg: #d3efcd;
-  --phoenix-table-border-color: #a9bfa4;
-  --phoenix-table-striped-bg: #c8e3c3;
+  --phoenix-table-bg: rgb(211.4, 239.2, 204.6);
+  --phoenix-table-border-color: rgb(169.12, 191.36, 163.68);
+  --phoenix-table-striped-bg: rgb(200.83, 227.24, 194.37);
   --phoenix-table-striped-color: #000000;
-  --phoenix-table-active-bg: #bed7b9;
+  --phoenix-table-active-bg: rgb(190.26, 215.28, 184.14);
   --phoenix-table-active-color: #000000;
-  --phoenix-table-hover-bg: #c3ddbe;
+  --phoenix-table-hover-bg: rgb(195.545, 221.26, 189.255);
   --phoenix-table-hover-color: #000000;
   color: var(--phoenix-table-color);
   border-color: var(--phoenix-table-border-color);
@@ -3159,13 +3159,13 @@ progress {
 
 .table-info {
   --phoenix-table-color: #000000;
-  --phoenix-table-bg: #cceafb;
-  --phoenix-table-border-color: #a3bbc9;
-  --phoenix-table-striped-bg: #c2deee;
+  --phoenix-table-bg: rgb(204, 234.2, 251);
+  --phoenix-table-border-color: rgb(163.2, 187.36, 200.8);
+  --phoenix-table-striped-bg: rgb(193.8, 222.49, 238.45);
   --phoenix-table-striped-color: #000000;
-  --phoenix-table-active-bg: #b8d3e2;
+  --phoenix-table-active-bg: rgb(183.6, 210.78, 225.9);
   --phoenix-table-active-color: #000000;
-  --phoenix-table-hover-bg: #bdd8e8;
+  --phoenix-table-hover-bg: rgb(188.7, 216.635, 232.175);
   --phoenix-table-hover-color: #000000;
   color: var(--phoenix-table-color);
   border-color: var(--phoenix-table-border-color);
@@ -3173,13 +3173,13 @@ progress {
 
 .table-warning {
   --phoenix-table-color: #000000;
-  --phoenix-table-bg: #fae4ce;
-  --phoenix-table-border-color: #c8b6a5;
-  --phoenix-table-striped-bg: #eed9c4;
+  --phoenix-table-bg: rgb(249.8, 228, 206.2);
+  --phoenix-table-border-color: rgb(199.84, 182.4, 164.96);
+  --phoenix-table-striped-bg: rgb(237.31, 216.6, 195.89);
   --phoenix-table-striped-color: #000000;
-  --phoenix-table-active-bg: #e1cdb9;
+  --phoenix-table-active-bg: rgb(224.82, 205.2, 185.58);
   --phoenix-table-active-color: #000000;
-  --phoenix-table-hover-bg: #e7d3bf;
+  --phoenix-table-hover-bg: rgb(231.065, 210.9, 190.735);
   --phoenix-table-hover-color: #000000;
   color: var(--phoenix-table-color);
   border-color: var(--phoenix-table-border-color);
@@ -3187,13 +3187,13 @@ progress {
 
 .table-danger {
   --phoenix-table-color: #000000;
-  --phoenix-table-bg: #fbd2cc;
-  --phoenix-table-border-color: #c9a8a3;
-  --phoenix-table-striped-bg: #eec8c2;
+  --phoenix-table-bg: rgb(251.2, 210.2, 204);
+  --phoenix-table-border-color: rgb(200.96, 168.16, 163.2);
+  --phoenix-table-striped-bg: rgb(238.64, 199.69, 193.8);
   --phoenix-table-striped-color: #000000;
-  --phoenix-table-active-bg: #e2bdb8;
+  --phoenix-table-active-bg: rgb(226.08, 189.18, 183.6);
   --phoenix-table-active-color: #000000;
-  --phoenix-table-hover-bg: #e8c2bd;
+  --phoenix-table-hover-bg: rgb(232.36, 194.435, 188.7);
   --phoenix-table-hover-color: #000000;
   color: var(--phoenix-table-color);
   border-color: var(--phoenix-table-border-color);
@@ -3202,12 +3202,12 @@ progress {
 .table-light {
   --phoenix-table-color: #000000;
   --phoenix-table-bg: #eff2f6;
-  --phoenix-table-border-color: #bfc2c5;
-  --phoenix-table-striped-bg: #e3e6ea;
+  --phoenix-table-border-color: rgb(191.2, 193.6, 196.8);
+  --phoenix-table-striped-bg: rgb(227.05, 229.9, 233.7);
   --phoenix-table-striped-color: #000000;
-  --phoenix-table-active-bg: #d7dadd;
+  --phoenix-table-active-bg: rgb(215.1, 217.8, 221.4);
   --phoenix-table-active-color: #000000;
-  --phoenix-table-hover-bg: #dde0e4;
+  --phoenix-table-hover-bg: rgb(221.075, 223.85, 227.55);
   --phoenix-table-hover-color: #000000;
   color: var(--phoenix-table-color);
   border-color: var(--phoenix-table-border-color);
@@ -3216,12 +3216,12 @@ progress {
 .table-dark {
   --phoenix-table-color: #fff;
   --phoenix-table-bg: #141824;
-  --phoenix-table-border-color: #434650;
-  --phoenix-table-striped-bg: #20242f;
+  --phoenix-table-border-color: rgb(67, 70.2, 79.8);
+  --phoenix-table-striped-bg: rgb(31.75, 35.55, 46.95);
   --phoenix-table-striped-color: #fff;
-  --phoenix-table-active-bg: #2c2f3a;
+  --phoenix-table-active-bg: rgb(43.5, 47.1, 57.9);
   --phoenix-table-active-color: #fff;
-  --phoenix-table-hover-bg: #262934;
+  --phoenix-table-hover-bg: rgb(37.625, 41.325, 52.425);
   --phoenix-table-hover-color: #fff;
   color: var(--phoenix-table-color);
   border-color: var(--phoenix-table-border-color);
@@ -3682,7 +3682,7 @@ textarea.form-control-lg {
   }
 }
 .form-range::-webkit-slider-thumb:active {
-  background-color: #c3d5ff;
+  background-color: rgb(195.3, 213.3, 255);
 }
 .form-range::-webkit-slider-runnable-track {
   width: 100%;
@@ -3710,7 +3710,7 @@ textarea.form-control-lg {
   }
 }
 .form-range::-moz-range-thumb:active {
-  background-color: #c3d5ff;
+  background-color: rgb(195.3, 213.3, 255);
 }
 .form-range::-moz-range-track {
   width: 100%;
@@ -5443,24 +5443,24 @@ textarea.form-control-lg {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
   }
-  .card-group > .card:not(:last-child) .card-img-top,
-  .card-group > .card:not(:last-child) .card-header {
+  .card-group > .card:not(:last-child) > .card-img-top,
+  .card-group > .card:not(:last-child) > .card-header {
     border-top-left-radius: 0;
   }
-  .card-group > .card:not(:last-child) .card-img-bottom,
-  .card-group > .card:not(:last-child) .card-footer {
+  .card-group > .card:not(:last-child) > .card-img-bottom,
+  .card-group > .card:not(:last-child) > .card-footer {
     border-bottom-left-radius: 0;
   }
   .card-group > .card:not(:first-child) {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
   }
-  .card-group > .card:not(:first-child) .card-img-top,
-  .card-group > .card:not(:first-child) .card-header {
+  .card-group > .card:not(:first-child) > .card-img-top,
+  .card-group > .card:not(:first-child) > .card-header {
     border-top-right-radius: 0;
   }
-  .card-group > .card:not(:first-child) .card-img-bottom,
-  .card-group > .card:not(:first-child) .card-footer {
+  .card-group > .card:not(:first-child) > .card-img-bottom,
+  .card-group > .card:not(:first-child) > .card-footer {
     border-bottom-right-radius: 0;
   }
 }
@@ -7941,6 +7941,10 @@ textarea.form-control-lg {
 .visually-hidden:not(caption),
 .visually-hidden-focusable:not(:focus):not(:focus-within):not(caption) {
   position: absolute !important;
+}
+.visually-hidden *,
+.visually-hidden-focusable:not(:focus):not(:focus-within) * {
+  overflow: hidden !important;
 }
 
 .stretched-link::after {
@@ -20911,7 +20915,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-hover-border-color: rgba(0, 0, 0, 0.2);
   --phoenix-btn-focus-shadow-rgb: 255, 255, 255;
   --phoenix-btn-active-color: #fff;
-  --phoenix-btn-active-bg: #2d5dcc;
+  --phoenix-btn-active-bg: rgb(44.8, 92.8, 204);
   --phoenix-btn-active-border-color: rgba(0, 0, 0, 0.25);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
@@ -20928,7 +20932,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-hover-border-color: rgba(0, 0, 0, 0.2);
   --phoenix-btn-focus-shadow-rgb: 255, 255, 255;
   --phoenix-btn-active-color: #fff;
-  --phoenix-btn-active-bg: #272c3b;
+  --phoenix-btn-active-bg: rgb(39.2, 44, 59.2);
   --phoenix-btn-active-border-color: rgba(0, 0, 0, 0.25);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
@@ -20945,7 +20949,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-hover-border-color: rgba(0, 0, 0, 0.2);
   --phoenix-btn-focus-shadow-rgb: 255, 255, 255;
   --phoenix-btn-active-color: #fff;
-  --phoenix-btn-active-bg: #1e8d02;
+  --phoenix-btn-active-bg: rgb(29.6, 140.8, 2.4);
   --phoenix-btn-active-border-color: rgba(0, 0, 0, 0.25);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
@@ -20962,7 +20966,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-hover-border-color: rgba(0, 0, 0, 0.2);
   --phoenix-btn-focus-shadow-rgb: 255, 255, 255;
   --phoenix-btn-active-color: #fff;
-  --phoenix-btn-active-bg: #0079bc;
+  --phoenix-btn-active-bg: rgb(0, 120.8, 188);
   --phoenix-btn-active-border-color: rgba(0, 0, 0, 0.25);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
@@ -20979,7 +20983,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-hover-border-color: rgba(0, 0, 0, 0.2);
   --phoenix-btn-focus-shadow-rgb: 255, 255, 255;
   --phoenix-btn-active-color: #fff;
-  --phoenix-btn-active-bg: #b76009;
+  --phoenix-btn-active-bg: rgb(183.2, 96, 8.8);
   --phoenix-btn-active-border-color: rgba(0, 0, 0, 0.25);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
@@ -20996,7 +21000,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-hover-border-color: rgba(0, 0, 0, 0.2);
   --phoenix-btn-focus-shadow-rgb: 255, 255, 255;
   --phoenix-btn-active-color: #fff;
-  --phoenix-btn-active-bg: #bd1900;
+  --phoenix-btn-active-bg: rgb(188.8, 24.8, 0);
   --phoenix-btn-active-border-color: rgba(0, 0, 0, 0.25);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #fff;
@@ -21208,11 +21212,11 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #E5EDFF;
   --phoenix-btn-hover-color: #003CC7;
   --phoenix-btn-hover-bg: var(--phoenix-primary-lighter);
-  --phoenix-btn-hover-border-color: #e8efff;
+  --phoenix-btn-hover-border-color: rgb(231.6, 238.8, 255);
   --phoenix-btn-focus-shadow-rgb: 195, 210, 247;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: #eaf1ff;
-  --phoenix-btn-active-border-color: #e8efff;
+  --phoenix-btn-active-bg: rgb(234.2, 240.6, 255);
+  --phoenix-btn-active-border-color: rgb(231.6, 238.8, 255);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #000000;
   --phoenix-btn-disabled-bg: #E5EDFF;
@@ -21225,11 +21229,11 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #eff2f6;
   --phoenix-btn-hover-color: #525b75;
   --phoenix-btn-hover-bg: var(--phoenix-secondary-lighter);
-  --phoenix-btn-hover-border-color: #f1f3f7;
+  --phoenix-btn-hover-border-color: rgb(240.6, 243.3, 246.9);
   --phoenix-btn-focus-shadow-rgb: 215, 219, 227;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: #f2f5f8;
-  --phoenix-btn-active-border-color: #f1f3f7;
+  --phoenix-btn-active-bg: rgb(242.2, 244.6, 247.8);
+  --phoenix-btn-active-border-color: rgb(240.6, 243.3, 246.9);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #000000;
   --phoenix-btn-disabled-bg: #eff2f6;
@@ -21242,11 +21246,11 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #D9FBD0;
   --phoenix-btn-hover-color: #1C6C09;
   --phoenix-btn-hover-bg: var(--phoenix-success-lighter);
-  --phoenix-btn-hover-border-color: #ddfbd5;
+  --phoenix-btn-hover-border-color: rgb(220.8, 251.4, 212.7);
   --phoenix-btn-focus-shadow-rgb: 189, 230, 178;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: #e1fcd9;
-  --phoenix-btn-active-border-color: #ddfbd5;
+  --phoenix-btn-active-bg: rgb(224.6, 251.8, 217.4);
+  --phoenix-btn-active-border-color: rgb(220.8, 251.4, 212.7);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #000000;
   --phoenix-btn-disabled-bg: #D9FBD0;
@@ -21259,11 +21263,11 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #C7EBFF;
   --phoenix-btn-hover-color: #005585;
   --phoenix-btn-hover-bg: var(--phoenix-info-lighter);
-  --phoenix-btn-hover-border-color: #cdedff;
+  --phoenix-btn-hover-border-color: rgb(204.6, 237, 255);
   --phoenix-btn-focus-shadow-rgb: 169, 213, 237;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: #d2efff;
-  --phoenix-btn-active-border-color: #cdedff;
+  --phoenix-btn-active-bg: rgb(210.2, 239, 255);
+  --phoenix-btn-active-border-color: rgb(204.6, 237, 255);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #000000;
   --phoenix-btn-disabled-bg: #C7EBFF;
@@ -21276,11 +21280,11 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #FFEFCA;
   --phoenix-btn-hover-color: #BC3803;
   --phoenix-btn-hover-bg: var(--phoenix-warning-lighter);
-  --phoenix-btn-hover-border-color: #fff1cf;
+  --phoenix-btn-hover-border-color: rgb(255, 240.6, 207.3);
   --phoenix-btn-focus-shadow-rgb: 245, 212, 172;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: #fff2d5;
-  --phoenix-btn-active-border-color: #fff1cf;
+  --phoenix-btn-active-bg: rgb(255, 242.2, 212.6);
+  --phoenix-btn-active-border-color: rgb(255, 240.6, 207.3);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #000000;
   --phoenix-btn-disabled-bg: #FFEFCA;
@@ -21293,11 +21297,11 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #FFE0DB;
   --phoenix-btn-hover-color: #B81800;
   --phoenix-btn-hover-bg: var(--phoenix-danger-lighter);
-  --phoenix-btn-hover-border-color: #ffe3df;
+  --phoenix-btn-hover-border-color: rgb(255, 227.1, 222.6);
   --phoenix-btn-focus-shadow-rgb: 244, 194, 186;
   --phoenix-btn-active-color: #000000;
-  --phoenix-btn-active-bg: #ffe6e2;
-  --phoenix-btn-active-border-color: #ffe3df;
+  --phoenix-btn-active-bg: rgb(255, 230.2, 226.2);
+  --phoenix-btn-active-border-color: rgb(255, 227.1, 222.6);
   --phoenix-btn-active-shadow: initial;
   --phoenix-btn-disabled-color: #000000;
   --phoenix-btn-disabled-bg: #FFE0DB;
@@ -21310,7 +21314,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #e3e6ed;
   --phoenix-btn-hover-color: #004DFF;
   --phoenix-btn-hover-bg: #e3e6ed;
-  --phoenix-btn-hover-border-color: #e6e9ef;
+  --phoenix-btn-hover-border-color: rgb(229.8, 232.5, 238.8);
   --phoenix-btn-focus-shadow-rgb: 201, 213, 240;
   --phoenix-btn-active-color: #3874ff;
   --phoenix-btn-active-bg: #e3e6ed;
@@ -21328,7 +21332,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #e3e6ed;
   --phoenix-btn-hover-color: #222834;
   --phoenix-btn-hover-bg: #e3e6ed;
-  --phoenix-btn-hover-border-color: #e6e9ef;
+  --phoenix-btn-hover-border-color: rgb(229.8, 232.5, 238.8);
   --phoenix-btn-focus-shadow-rgb: 200, 204, 213;
   --phoenix-btn-active-color: #31374a;
   --phoenix-btn-active-bg: #e3e6ed;
@@ -21345,7 +21349,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #e3e6ed;
   --phoenix-btn-hover-color: #23890B;
   --phoenix-btn-hover-bg: #e3e6ed;
-  --phoenix-btn-hover-border-color: #e6e9ef;
+  --phoenix-btn-hover-border-color: rgb(229.8, 232.5, 238.8);
   --phoenix-btn-focus-shadow-rgb: 199, 222, 202;
   --phoenix-btn-active-color: #25b003;
   --phoenix-btn-active-bg: #e3e6ed;
@@ -21362,7 +21366,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #e3e6ed;
   --phoenix-btn-hover-color: #0080C7;
   --phoenix-btn-hover-bg: #e3e6ed;
-  --phoenix-btn-hover-border-color: #e6e9ef;
+  --phoenix-btn-hover-border-color: rgb(229.8, 232.5, 238.8);
   --phoenix-btn-focus-shadow-rgb: 193, 218, 237;
   --phoenix-btn-active-color: #0097eb;
   --phoenix-btn-active-bg: #e3e6ed;
@@ -21379,7 +21383,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #e3e6ed;
   --phoenix-btn-hover-color: #D6630A;
   --phoenix-btn-hover-bg: #e3e6ed;
-  --phoenix-btn-hover-border-color: #e6e9ef;
+  --phoenix-btn-hover-border-color: rgb(229.8, 232.5, 238.8);
   --phoenix-btn-focus-shadow-rgb: 227, 214, 203;
   --phoenix-btn-active-color: #E5780B;
   --phoenix-btn-active-bg: #e3e6ed;
@@ -21396,7 +21400,7 @@ fieldset:disabled .mapbox-container .mapbox-control-btn .zoomOut,
   --phoenix-btn-border-color: #e3e6ed;
   --phoenix-btn-hover-color: #CC1B00;
   --phoenix-btn-hover-bg: #e3e6ed;
-  --phoenix-btn-hover-border-color: #e6e9ef;
+  --phoenix-btn-hover-border-color: rgb(229.8, 232.5, 238.8);
   --phoenix-btn-focus-shadow-rgb: 228, 200, 201;
   --phoenix-btn-active-color: #EC1F00;
   --phoenix-btn-active-bg: #e3e6ed;
@@ -23790,7 +23794,7 @@ html[dir=rtl] .picmo__picker.picmo__picker .picmo__searchAccessory {
   color: var(--phoenix-white);
 }
 .fc .fc-day-today:not(.fc-popover) .fc-daygrid-day-number:hover, .fc .fc-day-today:not(.fc-popover) .fc-daygrid-day-number:focus {
-  background-color: #0550ff !important;
+  background-color: rgb(5, 80.3768844221, 255) !important;
 }
 .fc.fc-direction-rtl .fc-daygrid-event.fc-event-start, .fc.fc-direction-rtl .fc-daygrid-event.fc-event-end, .fc.fc-direction-ltr .fc-daygrid-event.fc-event-start, .fc.fc-direction-ltr .fc-daygrid-event.fc-event-end {
   margin-right: 0;
