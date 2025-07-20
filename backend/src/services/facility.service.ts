@@ -34,6 +34,45 @@ interface ReviewsResult {
   total: number;
 }
 
+const updateRatings = async (
+  facilityId: string
+): Promise<FacilityDocument | null> => {
+  try {
+    const facility = await FacilityModel.findById(facilityId);
+
+    if (!facility) {
+      return null;
+    }
+
+    const reviews = facility.reviews;
+    const totalReviews = reviews.length;
+
+    let averageRating = 0;
+    if (totalReviews > 0) {
+      const totalRating = reviews.reduce(
+        (sum, review) => sum + review.rating,
+        0
+      );
+      averageRating = Math.round((totalRating / totalReviews) * 10) / 10;
+    }
+
+    const updatedFacility = await FacilityModel.findByIdAndUpdate(
+      facilityId,
+      {
+        $set: {
+          "rating.average": averageRating,
+          "rating.totalReviews": totalReviews,
+        },
+      },
+      { new: true }
+    );
+
+    return updatedFacility;
+  } catch (error) {
+    throw error;
+  }
+};
+
 // Get all facilities with optional filters excluding deleted by default.
 // If showDeleted is true, includes deleted facilities (for admin/staff).
 // Now supports pagination
@@ -73,7 +112,14 @@ export async function getFacilityById(
     const queryFilter = showDeleted
       ? { _id: id }
       : { _id: id, isDeleted: false };
-    return await FacilityModel.findOne(queryFilter).exec();
+    const facility = await FacilityModel.findOne(queryFilter).exec();
+
+    if (facility) {
+      const updatedFacility = await updateRatings(id);
+      return updatedFacility;
+    }
+
+    return facility;
   } catch (error) {
     throw new Error("Error fetching facility");
   }
@@ -231,14 +277,15 @@ export async function leaveReview(
           "reviews.$.rating": rating,
           "reviews.$.comment": comment,
           "reviews.$.updatedAt": new Date(),
-          "reviews.$isVerified": false,
+          "reviews.$.isVerified": false,
         },
       },
       { new: true }
     ).exec();
 
     if (updatedFacility) {
-      return updatedFacility;
+      const facilityWithUpdatedRatings = await updateRatings(facilityId);
+      return facilityWithUpdatedRatings!; // Non-null assertion since we know facility exists
     }
 
     // If no existing review found, add new one
@@ -266,7 +313,8 @@ export async function leaveReview(
       throw new Error("Facility not found");
     }
 
-    return facilityWithNewReview;
+    const finalFacility = await updateRatings(facilityId);
+    return finalFacility!; // Non-null assertion since we know facility exists
   } catch (error) {
     console.error("Error leaving review:", error);
     throw new Error("Error leaving review");

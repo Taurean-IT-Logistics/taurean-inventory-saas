@@ -949,7 +949,7 @@ const InvoicePage = () => {
   const { tokens } = useAppSelector(
     (state: StateManagement.RootState) => state.auth
   );
-  const accessToken = tokens.accessToken;
+  const accessToken = tokens?.accessToken;
   const { reference } = useParams<{ reference: string }>();
 
   // State management
@@ -985,7 +985,7 @@ const InvoicePage = () => {
           showToast('info', 'Loading all transaction details...');
 
           const data =
-            await TransactionController.getAllTransactions(accessToken);
+            await TransactionController.getAllUserTransactions(accessToken);
 
           console.log(data);
 
