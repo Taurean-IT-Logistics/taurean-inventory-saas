@@ -11,17 +11,9 @@ interface PageHeroSectionProps {
   facilities: Facility[];
   title: string;
   to: string;
-  onAddToCart: (item: Facility) => void;
-  onAddToWishlist: (item: Facility) => void;
 }
 
-const PageHeroSections = ({
-  facilities,
-  title,
-  to,
-  onAddToCart,
-  onAddToWishlist
-}: PageHeroSectionProps) => {
+const PageHeroSections = ({ facilities, title, to }: PageHeroSectionProps) => {
   return (
     <>
       <div className="d-flex flex-between-center mb-3">
@@ -65,11 +57,7 @@ const PageHeroSections = ({
       >
         {facilities.map(facility => (
           <SwiperSlide key={facility._id}>
-            <FacilityCard
-              onAddToCart={onAddToCart}
-              onAddToWishlist={onAddToWishlist}
-              facility={facility}
-            />
+            <FacilityCard facility={facility} />
           </SwiperSlide>
         ))}
       </Swiper>

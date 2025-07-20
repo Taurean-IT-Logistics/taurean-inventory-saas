@@ -172,21 +172,41 @@ const updateItem = async (
   removedImageIds?: string[]
 ) => {
   try {
+    // Filter out read-only/database fields
+    const filteredData = {
+      ...(data.name && { name: data.name }),
+      ...(data.description && { description: data.description }),
+      ...(data.sku && { sku: data.sku }),
+      ...(data.quantity !== undefined && { quantity: data.quantity }),
+      ...(data.status && { status: data.status }),
+      ...(data.associatedFacility && {
+        associatedFacility: data.associatedFacility
+      }),
+      ...(data.category && { category: data.category }),
+      ...(data.pricing && { pricing: data.pricing }),
+      ...(data.purchaseInfo && { purchaseInfo: data.purchaseInfo }),
+      ...(data.alerts && { alerts: data.alerts }),
+      ...(data.isTaxable !== undefined && { isTaxable: data.isTaxable }),
+      ...(data.specifications && { specifications: data.specifications })
+    };
+
     const formData = new FormData();
 
-    // Add regular form fields
-    if (data.name) formData.append('name', data.name);
-    if (data.description) formData.append('description', data.description);
-    if (data.sku) formData.append('sku', data.sku);
-    if (data.quantity !== undefined)
-      formData.append('quantity', data.quantity.toString());
-    if (data.status) formData.append('status', data.status);
-    if (data.associatedFacility)
-      formData.append('associatedFacility', data.associatedFacility);
-    if (data.category) formData.append('category', data.category);
+    // Add regular form fields - only from filteredData
+    if (filteredData.name) formData.append('name', filteredData.name);
+    if (filteredData.description)
+      formData.append('description', filteredData.description);
+    if (filteredData.sku) formData.append('sku', filteredData.sku);
+    if (filteredData.quantity !== undefined)
+      formData.append('quantity', filteredData.quantity.toString());
+    if (filteredData.status) formData.append('status', filteredData.status);
+    if (filteredData.associatedFacility)
+      formData.append('associatedFacility', filteredData.associatedFacility);
+    if (filteredData.category)
+      formData.append('category', filteredData.category);
 
-    if (data.pricing && Array.isArray(data.pricing)) {
-      data.pricing.forEach((priceItem, index) => {
+    if (filteredData.pricing && Array.isArray(filteredData.pricing)) {
+      filteredData.pricing.forEach((priceItem, index) => {
         if (priceItem.unit) {
           formData.append(`pricing[${index}][unit]`, priceItem.unit);
         }
@@ -205,9 +225,9 @@ const updateItem = async (
       });
     }
 
-    if (data.purchaseInfo) {
+    if (filteredData.purchaseInfo) {
       const { purchaseDate, purchasePrice, supplier, warrantyExpiry } =
-        data.purchaseInfo;
+        filteredData.purchaseInfo;
 
       if (purchaseDate)
         formData.append('purchaseInfo[purchaseDate]', purchaseDate.toString());
@@ -224,20 +244,23 @@ const updateItem = async (
         );
     }
 
-    if (data.alerts) {
-      Object.entries(data.alerts).forEach(([key, value]) => {
+    if (filteredData.alerts) {
+      Object.entries(filteredData.alerts).forEach(([key, value]) => {
         if (value !== undefined) {
           formData.append(`alerts[${key}]`, String(value));
         }
       });
     }
 
-    if (data.isTaxable)
-      formData.append('isTaxable', data.isTaxable ? 'true' : 'false');
+    if (filteredData.isTaxable !== undefined)
+      formData.append('isTaxable', filteredData.isTaxable ? 'true' : 'false');
 
-    if (data.specifications && data.specifications instanceof Map) {
+    if (
+      filteredData.specifications &&
+      filteredData.specifications instanceof Map
+    ) {
       const plainObject: Record<string, unknown> = {};
-      data.specifications.forEach((value, key) => {
+      filteredData.specifications.forEach((value, key) => {
         plainObject[key] = value;
       });
       formData.append('specifications', JSON.stringify(plainObject));

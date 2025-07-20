@@ -207,6 +207,14 @@ const TaxManagement = () => {
               </div>
               <div className="d-flex items-center gap-2">
                 <Button
+                  variant="primary"
+                  onClick={handleCreateTax}
+                  className="d-flex align-items-center"
+                >
+                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  Create Tax
+                </Button>
+                <Button
                   variant="border-secondary border"
                   as={Link}
                   to="/admin"
@@ -214,14 +222,6 @@ const TaxManagement = () => {
                 >
                   <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
                   Back to Dashboard
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={handleCreateTax}
-                  className="d-flex align-items-center"
-                >
-                  <FontAwesomeIcon icon={faPlus} className="me-2" />
-                  Create Tax
                 </Button>
               </div>
             </div>

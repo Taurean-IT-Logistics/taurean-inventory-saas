@@ -6,6 +6,7 @@ const CompanyInfo = {
   phone: '+233 (0) 302 123 456',
   email: 'billing@taureanlogistics.com',
   website: 'www.taurean-inventory-saas.com',
+  support: 'support@taurenlogistics.com',
   logo: Logo
 };
 

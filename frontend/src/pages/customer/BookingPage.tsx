@@ -275,16 +275,9 @@ const BookingFormStep = ({
                 <Form.Control
                   type="text"
                   value={formData.customerInfo.name}
-                  onChange={e =>
-                    setFormData(prev => ({
-                      ...prev,
-                      customerInfo: {
-                        ...prev.customerInfo,
-                        name: e.target.value
-                      }
-                    }))
-                  }
-                  required
+                  readOnly
+                  disabled
+                  className="text-secondary"
                 />
               </Form.Group>
             </Col>
@@ -1050,7 +1043,7 @@ const BookingPage = () => {
       <div className="mb-4">
         <Button
           as={Link}
-          to={`/facilities/${facility._id}`}
+          to={`/facility/${facility._id}`}
           variant="outline"
           className="d-flex align-items-center"
         >

@@ -11,7 +11,7 @@ import BookingCalendar from 'components/booking/BookingCalendar';
 import QuickActionsSidebar from 'components/dashboard/QuickActions';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faBoxes,
+  faArrowLeft,
   faCalendar,
   faCalendarAlt,
   faChartBar,
@@ -430,9 +430,10 @@ const BookingDashboard = () => {
             <FontAwesomeIcon icon={faPlus} className="me-2" />
             New Facility
           </Link>
-          <Link to="/admin/inventory" className="btn btn-outline-primary">
-            <FontAwesomeIcon icon={faBoxes} className="me-2" />
-            Inventory
+
+          <Link to="/admin" className="btn btn-outline-secondary">
+            <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+            Back to Dashboard
           </Link>
         </div>
       </div>

@@ -111,20 +111,6 @@ const CreateFacility = () => {
     }));
   };
 
-  const addAvailabilityDay = () => {
-    const newDay = {
-      day: 'monday' as const,
-      startTime: '09:00',
-      endTime: '17:00',
-      isAvailable: true
-    };
-
-    setFormData(prev => ({
-      ...prev,
-      availability: [...(prev.availability || []), newDay]
-    }));
-  };
-
   const updateAvailability = (index: number, field: string, value) => {
     setFormData(prev => ({
       ...prev,
@@ -132,13 +118,6 @@ const CreateFacility = () => {
         prev.availability?.map((item, i) =>
           i === index ? { ...item, [field]: value } : item
         ) || []
-    }));
-  };
-
-  const removeAvailabilityDay = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      availability: prev.availability?.filter((_, i) => i !== index) || []
     }));
   };
 
@@ -232,9 +211,7 @@ const CreateFacility = () => {
                 <AvailabilityPricingStep
                   formData={formData}
                   setFormData={setFormData}
-                  addAvailabilityDay={addAvailabilityDay}
                   updateAvailability={updateAvailability}
-                  removeAvailabilityDay={removeAvailabilityDay}
                 />
               )}
 

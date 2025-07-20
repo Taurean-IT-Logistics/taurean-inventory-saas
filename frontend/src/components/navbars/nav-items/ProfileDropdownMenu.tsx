@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Button, Card, Dropdown, Nav } from 'react-bootstrap';
 import FeatherIcon from 'feather-icons-react';
 import { Link } from 'react-router-dom';
-import Scrollbar from 'components/base/Scrollbar';
 import classNames from 'classnames';
 import { useAppSelector, useAppDispatch } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
@@ -39,25 +38,34 @@ const ProfileDropdownMenu = ({ className }: { className?: string }) => {
               </Avatar>
               <h6 className="text-body-emphasis">{user?.name}</h6>
             </div>
-            <div style={{ height: '10rem' }}>
-              <Scrollbar>
-                <Nav className="nav flex-column mb-2 pb-1">
-                  {navItems.map(item => (
-                    <Nav.Item key={item.label}>
-                      <Nav.Link href={item.link} className="px-3">
-                        <FeatherIcon
-                          icon={item.icon}
-                          size={16}
-                          className="me-2 text-body"
-                        />
-                        <span className="text-body-highlight">
-                          {item.label}
-                        </span>
-                      </Nav.Link>
-                    </Nav.Item>
-                  ))}
-                </Nav>
-              </Scrollbar>
+            <div style={{ height: '10rem' }} className="mb-3">
+              <Nav className="nav flex-column pb-1">
+                {navItems.map(item => (
+                  <Nav.Item key={item.label}>
+                    <Nav.Link href={item.link} className="px-3">
+                      <FeatherIcon
+                        icon={item.icon}
+                        size={16}
+                        className="me-2 text-body"
+                      />
+                      <span className="text-body-highlight">{item.label}</span>
+                    </Nav.Link>
+                  </Nav.Item>
+                ))}
+
+                {(user.role === 'admin' || user.role === 'staff') && (
+                  <Nav.Item>
+                    <Nav.Link as={Link} to="/admin" className="px-3">
+                      <FeatherIcon
+                        icon="settings"
+                        size={16}
+                        className="me-2 text-body"
+                      />
+                      <span className="text-body-highlight">Admin Panel</span>
+                    </Nav.Link>
+                  </Nav.Item>
+                )}
+              </Nav>
             </div>
           </Card.Body>
           <Card.Footer className="p-0 border-top border-translucent">
@@ -97,6 +105,9 @@ const ProfileDropdownMenu = ({ className }: { className?: string }) => {
             </Link>
             <Link to="/sign-up" className="btn btn-outline-primary">
               Sign Up
+            </Link>
+            <Link to="/admin" className="btn btn-outline-primary">
+              Dashboard
             </Link>
           </div>
         </Card>
