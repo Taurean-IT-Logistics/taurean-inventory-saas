@@ -25,6 +25,8 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import CompanyInfo from 'data';
 import Logo from 'components/common/Logo';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -34,6 +36,8 @@ interface TransactionTableProps {
 
 interface InvoiceTemplateRef {
   print: () => void;
+  exportToPDF: (isDownload: boolean) => void;
+  getDomElement: () => HTMLDivElement | null;
 }
 
 interface InvoiceTemplateProps {
@@ -44,9 +48,23 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
   ({ transaction }, ref) => {
     const invoiceRef = useRef<HTMLDivElement>(null);
 
-    const printInvoice = () => {
+    const printInvoice = async (isDownload = false) => {
       if (!invoiceRef.current) return;
 
+      if (isDownload) {
+        try {
+          await generatePDFFromCanvas();
+        } catch (error) {
+          console.error('Error generating PDF:', error);
+          // Fallback to print dialog
+          printInvoiceDialog();
+        }
+      } else {
+        printInvoiceDialog();
+      }
+    };
+
+    const printInvoiceDialog = () => {
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         const linkElements = document.querySelectorAll(
@@ -68,210 +86,239 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
 
         // Comprehensive print styles
         const printStyles = `
-          <style>
-            * {
-              box-sizing: border-box;
-            }
-            
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-              margin: 0; 
-              padding: 15px; 
-              background: white;
-              color: #212529;
-              line-height: 1.4;
-              font-size: 14px;
-            }
-            
-            .invoice-container { 
-              max-width: 800px; 
-              margin: 0 auto; 
-              padding: 0;
-              page-break-inside: avoid;
-            }
-            
-            .card {
-              border: 1px solid #dee2e6 !important;
-              border-radius: 0.375rem;
-              box-shadow: none !important;
-            }
-            
-            .card-body {
-              padding: 1.5rem !important;
-            }
-            
-            .border-primary {
-              border-color: #0d6efd !important;
-            }
-            
-            .bg-primary {
-              background-color: #0d6efd !important;
-              color: white !important;
-            }
-            
-            .bg-success {
-              background-color: #198754 !important;
-              color: white !important;
-            }
-            
-            .text-primary {
-              color: #0d6efd !important;
-            }
-            
-            .text-danger {
-              color: #dc3545 !important;
-            }
-            
-            .text-muted {
-              color: #6c757d !important;
-            }
-            
-            .text-white {
-              color: white !important;
-            }
-            
-            .text-dark {
-              color: #212529 !important;
-            }
-            
-            .fw-bold {
-              font-weight: 700 !important;
-            }
-            
-            .d-flex {
-              display: flex !important;
-            }
-            
-            .justify-content-between {
-              justify-content: space-between !important;
-            }
-            
-            .align-items-start {
-              align-items: flex-start !important;
-            }
-            
-            .text-end {
-              text-align: right !important;
-            }
-            
-            .text-center {
-              text-align: center !important;
-            }
-            
-            .text-capitalize {
-              text-transform: capitalize !important;
-            }
-            
-            .rounded {
-              border-radius: 0.375rem !important;
-            }
-            
-            .border-top {
-              border-top: 1px solid #dee2e6 !important;
-            }
-            
-            .border-bottom {
-              border-bottom: 1px solid #dee2e6 !important;
-            }
-            
-            .border {
-              border: 1px solid #dee2e6 !important;
-            }
-            
-            .border-3 {
-              border-width: 3px !important;
-            }
-            
-            .mb-1 { margin-bottom: 0.25rem !important; }
-            .mb-2 { margin-bottom: 0.5rem !important; }
-            .mb-3 { margin-bottom: 1rem !important; }
-            .mb-4 { margin-bottom: 1.5rem !important; }
-            .mb-5 { margin-bottom: 3rem !important; }
-            .mt-2 { margin-top: 0.5rem !important; }
-            .mt-3 { margin-top: 1rem !important; }
-            .pt-2 { padding-top: 0.5rem !important; }
-            .pt-3 { padding-top: 1rem !important; }
-            .pt-4 { padding-top: 1.5rem !important; }
-            .pb-3 { padding-bottom: 1rem !important; }
-            .pb-4 { padding-bottom: 1.5rem !important; }
-            .p-3 { padding: 1rem !important; }
-            .p-4 { padding: 1.5rem !important; }
-            
-            .h2 { font-size: 2rem; margin-bottom: 0.5rem; }
-            .h4 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-            .h5 { font-size: 1.25rem; margin-bottom: 0.5rem; }
-            .h6 { font-size: 1rem; margin-bottom: 0.5rem; }
-            
-            .row {
-              display: flex;
-              flex-wrap: wrap;
-              margin-right: -0.75rem;
-              margin-left: -0.75rem;
-            }
-            
-            .col-md-6 {
-              flex: 0 0 auto;
-              width: 50%;
-              padding-right: 0.75rem;
-              padding-left: 0.75rem;
-            }
-            
-            .d-block {
-              display: block !important;
-            }
-            
-            .font-monospace {
-              font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
-            }
-            
-            .opacity-75 {
-              opacity: 0.75 !important;
-            }
-            
-            .me-2 {
-              margin-right: 0.5rem !important;
-            }
-            
-            @media print {
-              body { 
-                margin: 0; 
-                padding: 10px; 
-                -webkit-print-color-adjust: exact;
-                color-adjust: exact;
+            <style>
+              * {
+                box-sizing: border-box;
               }
+              
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                margin: 0; 
+                padding: 15px; 
+                background: white;
+                color: #212529;
+                line-height: 1.4;
+                font-size: 14px;
+              }
+              
               .invoice-container { 
-                box-shadow: none; 
+                max-width: 800px; 
+                margin: 0 auto; 
+                padding: 0;
                 page-break-inside: avoid;
               }
-            }
-          </style>
-        `;
+              
+              .no-print { 
+                display: none !important; 
+              }
+              
+              .card {
+                border: 1px solid #dee2e6 !important;
+                border-radius: 0.375rem;
+                box-shadow: none !important;
+              }
+              
+              .card-body {
+                padding: 1.5rem !important;
+              }
+              
+              .border-primary {
+                border-color: #0d6efd !important;
+              }
+              
+              .bg-primary {
+                background-color: #0d6efd !important;
+                color: white !important;
+              }
+              
+              .bg-success {
+                background-color: #198754 !important;
+                color: white !important;
+              }
+              
+              .text-primary {
+                color: #0d6efd !important;
+              }
+              
+              .text-danger {
+                color: #dc3545 !important;
+              }
+              
+              .text-muted {
+                color: #6c757d !important;
+              }
+              
+              .fw-bold {
+                font-weight: 700 !important;
+              }
+              
+              .d-flex {
+                display: flex !important;
+              }
+              
+              .justify-content-between {
+                justify-content: space-between !important;
+              }
+              
+              .align-items-start {
+                align-items: flex-start !important;
+              }
+              
+              .text-end {
+                text-align: right !important;
+              }
+              
+              .text-center {
+                text-align: center !important;
+              }
+              
+              .text-capitalize {
+                text-transform: capitalize !important;
+              }
+              
+              .rounded {
+                border-radius: 0.375rem !important;
+              }
+              
+              .border-top {
+                border-top: 1px solid #dee2e6 !important;
+              }
+              
+              .border-bottom {
+                border-bottom: 1px solid #dee2e6 !important;
+              }
+              
+              .border-3 {
+                border-width: 3px !important;
+              }
+              
+              .mb-1 { margin-bottom: 0.25rem !important; }
+              .mb-2 { margin-bottom: 0.5rem !important; }
+              .mb-3 { margin-bottom: 1rem !important; }
+              .mb-4 { margin-bottom: 1.5rem !important; }
+              .mb-5 { margin-bottom: 3rem !important; }
+              .mt-3 { margin-top: 1rem !important; }
+              .pt-3 { padding-top: 1rem !important; }
+              .pt-4 { padding-top: 1.5rem !important; }
+              .pb-4 { padding-bottom: 1.5rem !important; }
+              .p-3 { padding: 1rem !important; }
+              .p-4 { padding: 1.5rem !important; }
+              
+              .h2 { font-size: 2rem; }
+              .h4 { font-size: 1.5rem; }
+              .h5 { font-size: 1.25rem; }
+              .display-3 { font-size: 4.5rem; }
+              .display-4 { font-size: 3.5rem; }
+              
+              .row {
+                display: flex;
+                flex-wrap: wrap;
+                margin-right: -0.75rem;
+                margin-left: -0.75rem;
+              }
+              
+              .col-md-6 {
+                flex: 0 0 auto;
+                width: 50%;
+                padding-right: 0.75rem;
+                padding-left: 0.75rem;
+              }
+              
+              .d-block {
+                display: block !important;
+              }
+              
+              .font-monospace {
+                font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+              }
+              
+              .opacity-75 {
+                opacity: 0.75 !important;
+              }
+              
+              @media print {
+                body { 
+                  margin: 0; 
+                  padding: 10px; 
+                  -webkit-print-color-adjust: exact;
+                  color-adjust: exact;
+                }
+                .invoice-container { 
+                  box-shadow: none; 
+                  page-break-inside: avoid;
+                }
+              }
+            </style>
+          `;
 
         printWindow.document.write(`
-          <html>
-            <head>
-              <title>Invoice ${transaction.ref}</title>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-              ${linkTags}
-              ${inlineStyles}
-              ${printStyles}
-            </head>
-            <body>
-              <div class="invoice-container">
-                ${invoiceRef.current?.innerHTML || ''}
-              </div>
-            </body>
-          </html>
-        `);
+            <html>
+              <head>
+                <title>Invoice ${transaction.ref}</title>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                ${linkTags}
+                ${inlineStyles}
+                ${printStyles}
+              </head>
+              <body>
+                <div class="invoice-container">
+                  ${invoiceRef.current?.innerHTML || ''}
+                </div>
+              </body>
+            </html>
+          `);
+
         printWindow.document.close();
         printWindow.print();
       }
     };
 
-    // Expose the print method to parent components
+    const generatePDFFromCanvas = async () => {
+      const element = invoiceRef.current;
+      if (!element) return;
+
+      try {
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          onclone: clonedDoc => {
+            const noPrintElements = clonedDoc.querySelectorAll('.no-print');
+            noPrintElements.forEach(el => {
+              (el as HTMLElement).style.display = 'none';
+            });
+          }
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95); // ✅ switch to JPEG
+        console.log('Image Data:', imgData.slice(0, 50)); // Debug
+
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight); // ✅ use JPEG
+        pdf.save(`Invoice_${transaction.ref}.pdf`);
+      } catch (error) {
+        console.error('PDF generation error:', error);
+        throw error;
+      }
+    };
+
+    const exportPDF = async () => {
+      try {
+        await generatePDFFromCanvas();
+      } catch (error) {
+        console.error('Error exporting PDF:', error);
+        await printInvoice(false); // Fallback to print dialog
+      }
+    };
+
     useImperativeHandle(ref, () => ({
-      print: printInvoice
+      print: printInvoice,
+      exportToPDF: exportPDF,
+      getDomElement: () => invoiceRef.current
     }));
 
     return (
@@ -660,18 +707,251 @@ const TransactionTable = ({
     }
   };
 
+  const printReportDialog = () => {
+    if (!reportRef.current) return;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
+      let linkTags = '';
+      linkElements.forEach(link => {
+        linkTags += link.outerHTML + '\n';
+      });
+
+      const styleElements = document.querySelectorAll('style');
+      let inlineStyles = '';
+      styleElements.forEach(style => {
+        inlineStyles += style.outerHTML + '\n';
+      });
+
+      const printStyles = `
+        <style>
+          * {
+            box-sizing: border-box;
+          }
+          
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0; 
+            padding: 15px; 
+            background: white;
+            color: #212529;
+            line-height: 1.4;
+            font-size: 14px;
+          }
+          
+          .report-container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 0;
+          }
+          
+          .no-print { 
+            display: none !important; 
+          }
+          
+          .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+          }
+          
+          .table th,
+          .table td {
+            padding: 0.5rem;
+            vertical-align: top;
+            border-top: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+          }
+          
+          .table thead th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+          }
+          
+          .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(0, 0, 0, 0.05);
+          }
+          
+          .badge {
+            display: inline-block;
+            padding: 0.35em 0.65em;
+            font-size: 0.75em;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.25rem;
+          }
+
+          .d-flex {display: flex}
+          .items-center {align-items: center}
+          .justify-content-between {justify-content: space-between}
+          
+          .badge.bg-success { background-color: #198754 !important; }
+          .badge.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
+          .badge.bg-primary { background-color: #0d6efd !important; }
+          .badge.bg-info { background-color: #0dcaf0 !important; color: #000 !important; }
+          .badge.bg-secondary { background-color: #6c757d !important; }
+          
+          .fw-bold { font-weight: 700 !important; }
+          .text-muted { color: #6c757d !important; }
+          .text-center { text-align: center !important; }
+          .text-end { text-align: right !important; }
+          
+          .h3 { font-size: 1.75rem; }
+          .h5 { font-size: 1.25rem; }
+          
+          .mb-1 { margin-bottom: 0.25rem !important; }
+          .mb-2 { margin-bottom: 0.5rem !important; }
+          .mb-3 { margin-bottom: 1rem !important; }
+          .mb-4 { margin-bottom: 1.5rem !important; }
+          .mt-4 { margin-top: 1.5rem !important; }
+          .pt-3 { padding-top: 1rem !important; }
+          .pb-3 { padding-bottom: 1rem !important; }
+          
+          .border-top { border-top: 1px solid #dee2e6 !important; }
+          
+          .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+          }
+          
+          .stat-card {
+            padding: 1rem;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+          }
+          
+          @media print {
+            body { 
+              margin: 0; 
+              padding: 10px; 
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+            }
+            .report-container { 
+              box-shadow: none; 
+            }
+            
+            /* Prevent page breaks within summary stats */
+            .summary-stats {
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+            
+            /* Prevent page breaks within individual stat cards */
+            .stat-card {
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+            
+            /* Keep table header with table body */
+            .table { 
+              page-break-inside: avoid; 
+            }
+            
+            /* Keep table header with first few rows */
+            .table thead {
+              page-break-after: avoid;
+            }
+            
+            /* Prevent orphaned table rows */
+            .table tbody tr {
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+            
+            /* Keep summary stats and table together on same page */
+            .summary-stats,
+            .table {
+              page-break-before: avoid;
+            }
+            
+            /* Ensure the whole report content stays together when possible */
+            .report-container > * {
+              page-break-before: avoid;
+            }
+          }
+        </style>
+      `;
+
+      printWindow.document.write(`
+      <html>
+        <head>
+          <title>Transaction Report - ${new Date().toLocaleDateString()}</title>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          ${linkTags}
+          ${inlineStyles}
+          ${printStyles}
+        </head>
+        <body>
+          <div class="report-container">
+            ${reportRef.current?.innerHTML || ''}
+          </div>
+        </body>
+      </html>
+    `);
+
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const generatePDFReportFromCanvas = async () => {
+    const element = reportRef.current;
+    if (!element) return;
+
+    const canvas = await html2canvas(element, {
+      scale: 1.5,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      logging: false,
+      onclone: clonedDoc => {
+        clonedDoc.querySelectorAll('.no-print').forEach(el => {
+          if ((el as HTMLElement).style) {
+            (el as HTMLElement).style.display = 'none';
+          }
+        });
+      }
+    });
+
+    const imgWidth = 210; // A4
+    const pageHeight = 295;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.7);
+    const pdf = new jsPDF('portrait', 'mm', 'a4');
+
+    let position = 0;
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    pdf.save(`Transaction_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   const exportToPDF = async () => {
     setIsExporting(true);
     try {
-      // For a real implementation, you would use html2canvas and jsPDF
-      // const html2canvas = (await import('html2canvas')).default;
-      // const jsPDF = (await import('jspdf')).default;
-
-      // For now, we'll use the print method
-      printReport();
+      await generatePDFReportFromCanvas();
     } catch (error) {
       console.error('Error exporting PDF:', error);
-      printReport();
+      printReportDialog();
     } finally {
       setIsExporting(false);
     }
@@ -679,7 +959,7 @@ const TransactionTable = ({
 
   const handlePrintInvoice = () => {
     if (invoiceRef.current) {
-      invoiceRef.current.print();
+      invoiceRef.current.exportToPDF(true);
     }
   };
 

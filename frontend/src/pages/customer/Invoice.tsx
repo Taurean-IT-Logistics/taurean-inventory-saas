@@ -26,6 +26,8 @@ import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
 import { showToast } from 'components/toaster/toaster';
 import CompanyInfo from 'data';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import Logo from 'components/common/Logo';
 
 const TransactionsTable = ({
@@ -545,9 +547,24 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  const printInvoice = () => {
+  const printInvoice = async (isDownload = false) => {
     if (!invoiceRef.current) return;
 
+    if (isDownload) {
+      // Direct PDF download using html2canvas + jsPDF
+      try {
+        await generatePDFFromCanvas();
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        // Fallback to print dialog
+        printInvoiceDialog();
+      }
+    } else {
+      printInvoiceDialog();
+    }
+  };
+
+  const printInvoiceDialog = () => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
@@ -749,19 +766,71 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
           </body>
         </html>
       `);
+
       printWindow.document.close();
       printWindow.print();
     }
   };
 
-  const exportToPDF = async () => {
+  const generatePDFFromCanvas = async () => {
+    const element = invoiceRef.current;
+    if (!element) return;
+
+    // Create canvas from HTML element
+    const canvas = await html2canvas(element, {
+      scale: 1.5,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      logging: false,
+
+      onclone: clonedDoc => {
+        // Hide any no-print elements in the cloned document
+        const noPrintElements = clonedDoc.querySelectorAll('.no-print');
+        noPrintElements.forEach(el => {
+          if ((el as HTMLElement).style) {
+            (el as HTMLElement).style.display = 'none';
+          }
+        });
+      }
+    });
+
+    // Calculate PDF dimensions
+    const imgWidth = 210; // A4 width in mm
+    const pageHeight = 295; // A4 height in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.7);
+
+    // Create PDF using jsPDF
+    const pdf = new jsPDF('portrait', 'mm', 'a4');
+
+    let position = 0;
+
+    // Add image to PDF (handle multiple pages if needed)
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    // Download the PDF
+    pdf.save(`Invoice_${transaction.ref}.pdf`);
+  };
+
+  const exportToPDF = async (isDownload = false) => {
     setIsExporting(true);
 
     try {
-      printInvoice();
+      await printInvoice(isDownload);
     } catch (error) {
       console.error('Error exporting PDF:', error);
-      printInvoice();
+      await printInvoice(false); // Fallback to print dialog
     } finally {
       setIsExporting(false);
     }
@@ -773,7 +842,7 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
       <div className="d-flex justify-content-end gap-2 mb-4 no-print">
         <Button
           variant="outline-primary"
-          onClick={printInvoice}
+          onClick={() => printInvoice()}
           disabled={isExporting}
         >
           <FontAwesomeIcon icon={faPrint} className="me-2" />
@@ -781,7 +850,7 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
         </Button>
         <Button
           variant="outline-success"
-          onClick={exportToPDF}
+          onClick={() => exportToPDF(true)}
           disabled={isExporting}
         >
           {isExporting ? (
