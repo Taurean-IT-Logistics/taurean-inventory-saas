@@ -56,7 +56,6 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
           await generatePDFFromCanvas();
         } catch (error) {
           console.error('Error generating PDF:', error);
-          // Fallback to print dialog
           printInvoiceDialog();
         }
       } else {
@@ -76,7 +75,6 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
           linkTags += link.outerHTML + '\n';
         });
 
-        // Get inline styles
         const styleElements = document.querySelectorAll('style');
         let inlineStyles = '';
 
@@ -84,7 +82,6 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
           inlineStyles += style.outerHTML + '\n';
         });
 
-        // Comprehensive print styles
         const printStyles = `
             <style>
               * {
@@ -276,30 +273,97 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
 
     const generatePDFFromCanvas = async () => {
       const element = invoiceRef.current;
-      if (!element) return;
+      if (!element) {
+        throw new Error('Invoice element not found');
+      }
 
       try {
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        invoiceRef.current.style.display = 'block';
+
+        if (element.offsetWidth === 0 || element.offsetHeight === 0) {
+          throw new Error(
+            'Element has no dimensions - it might be hidden or not rendered'
+          );
+        }
+
+        console.log(
+          'Element dimensions:',
+          element.offsetWidth,
+          'x',
+          element.offsetHeight
+        );
+
+        const originalDisplay = element.style.display;
+        element.style.display = 'block';
+        element.style.visibility = 'visible';
+        element.style.opacity = '1';
+
         const canvas = await html2canvas(element, {
           scale: 2,
           useCORS: true,
+          allowTaint: true,
           backgroundColor: '#ffffff',
+          width: element.scrollWidth,
+          height: element.scrollHeight,
           onclone: clonedDoc => {
             const noPrintElements = clonedDoc.querySelectorAll('.no-print');
             noPrintElements.forEach(el => {
               (el as HTMLElement).style.display = 'none';
             });
+
+            const clonedElement =
+              clonedDoc.querySelector('[data-invoice-ref]') ||
+              clonedDoc.body.firstElementChild;
+            if (clonedElement) {
+              (clonedElement as HTMLElement).style.display = 'block';
+              (clonedElement as HTMLElement).style.visibility = 'visible';
+              (clonedElement as HTMLElement).style.opacity = '1';
+            }
           }
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.95); // ✅ switch to JPEG
-        console.log('Image Data:', imgData.slice(0, 50)); // Debug
+        element.style.display = originalDisplay;
+
+        console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+
+        if (canvas.width === 0 || canvas.height === 0) {
+          throw new Error('Canvas has invalid dimensions');
+        }
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+        if (!imgData || imgData === 'data:,' || imgData.length < 100) {
+          throw new Error('Failed to generate image data from canvas');
+        }
+
+        console.log(
+          'Image data generated successfully, length:',
+          imgData.length
+        );
 
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210;
+        const pdfWidth = 210;
+        const pdfHeight = 297;
+
+        const imgWidth = pdfWidth;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight); // ✅ use JPEG
+        if (!isFinite(imgHeight) || imgHeight <= 0) {
+          throw new Error('Invalid image dimensions calculated');
+        }
+
+        if (imgHeight > pdfHeight) {
+          const scaledWidth = (canvas.width * pdfHeight) / canvas.height;
+          pdf.addImage(imgData, 'JPEG', 0, 0, scaledWidth, pdfHeight);
+        } else {
+          pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+        }
+
         pdf.save(`Invoice_${transaction.ref}.pdf`);
+        invoiceRef.current.style.display = 'none';
+        console.log('PDF generated successfully');
       } catch (error) {
         console.error('PDF generation error:', error);
         throw error;
@@ -311,7 +375,7 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
         await generatePDFFromCanvas();
       } catch (error) {
         console.error('Error exporting PDF:', error);
-        await printInvoice(false); // Fallback to print dialog
+        await printInvoice(false);
       }
     };
 
@@ -322,9 +386,13 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
     }));
 
     return (
-      <Card className="border-0 shadow" style={{ display: 'none' }}>
-        <Card.Body className="p-4" ref={invoiceRef}>
-          {/* Header - Compact */}
+      <Card className="border-0 shadow">
+        <Card.Body
+          className="p-4"
+          ref={invoiceRef}
+          data-invoice-ref="true"
+          style={{ display: 'none' }}
+        >
           <div className="d-flex justify-content-between align-items-start mb-4 pb-3 border-bottom border-primary border-3">
             <div style={{ flex: 1 }}>
               <Logo className="mb-3" />
@@ -348,11 +416,8 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
             </div>
           </div>
 
-          {/* Main Content - Two Column Layout */}
           <div className="row mb-4">
-            {/* Left Column - Bill To & Transaction Details */}
             <div className="col-md-6">
-              {/* Bill To Section - Compact */}
               <div className="mb-4">
                 <h5 className="text-primary mb-2">Bill To:</h5>
                 <div className="fw-bold mb-1">{transaction.user.name}</div>
@@ -362,7 +427,6 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
                 </div>
               </div>
 
-              {/* Transaction Details - Compact */}
               <div className="border border-primary rounded p-3 mb-4">
                 <h5 className="text-primary mb-3">
                   <FontAwesomeIcon
@@ -414,9 +478,7 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
               </div>
             </div>
 
-            {/* Right Column - Amount & Status */}
             <div className="col-md-6">
-              {/* Amount Section - Compact */}
               <div className="bg-primary p-4 rounded text-center mb-4">
                 <div className="h5 mb-2 opacity-75">Total Amount</div>
                 <div className="h2 text-white fw-bold">
@@ -424,7 +486,6 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
                 </div>
               </div>
 
-              {/* Payment Status */}
               <div className="bg-success text-white p-3 rounded text-center mb-4">
                 <FontAwesomeIcon
                   icon={faCheckCircle}
@@ -436,7 +497,6 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
                 </strong>
               </div>
 
-              {/* Additional Info */}
               <div className="border rounded p-3">
                 <h6 className="mb-2">Payment Information</h6>
                 <div className="text-muted" style={{ fontSize: '0.875rem' }}>
@@ -456,7 +516,6 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
             </div>
           </div>
 
-          {/* Footer - Compact */}
           <div className="text-center border-top pt-3">
             <h5 className="text-dark mb-2">Thank you for your business!</h5>
             <div className="text-muted" style={{ fontSize: '0.875rem' }}>
@@ -481,8 +540,17 @@ const TransactionTable = ({
   onReconcile
 }: TransactionTableProps) => {
   const reportRef = useRef<HTMLDivElement>(null);
-  const invoiceRef = useRef<InvoiceTemplateRef>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [invoiceRefs] = useState(
+    new Map<string, React.RefObject<InvoiceTemplateRef>>()
+  );
+
+  const getInvoiceRef = (transactionRef: string) => {
+    if (!invoiceRefs.has(transactionRef)) {
+      invoiceRefs.set(transactionRef, React.createRef<InvoiceTemplateRef>());
+    }
+    return invoiceRefs.get(transactionRef)!;
+  };
 
   const getStatusBadge = (reconciled: boolean) =>
     reconciled ? (
@@ -511,7 +579,6 @@ const TransactionTable = ({
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
-      // Get Bootstrap CSS and other linked stylesheets
       const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
       let linkTags = '';
 
@@ -519,7 +586,6 @@ const TransactionTable = ({
         linkTags += link.outerHTML + '\n';
       });
 
-      // Get inline styles
       const styleElements = document.querySelectorAll('style');
       let inlineStyles = '';
 
@@ -527,7 +593,6 @@ const TransactionTable = ({
         inlineStyles += style.outerHTML + '\n';
       });
 
-      // Print-specific styles
       const printStyles = `
         <style>
           * {
@@ -643,41 +708,34 @@ const TransactionTable = ({
               box-shadow: none; 
             }
             
-            /* Prevent page breaks within summary stats */
             .summary-stats {
               page-break-inside: avoid;
               break-inside: avoid;
             }
             
-            /* Prevent page breaks within individual stat cards */
             .stat-card {
               page-break-inside: avoid;
               break-inside: avoid;
             }
             
-            /* Keep table header with table body */
             .table { 
               page-break-inside: avoid; 
             }
             
-            /* Keep table header with first few rows */
             .table thead {
               page-break-after: avoid;
             }
             
-            /* Prevent orphaned table rows */
             .table tbody tr {
               page-break-inside: avoid;
               break-inside: avoid;
             }
             
-            /* Keep summary stats and table together on same page */
             .summary-stats,
             .table {
               page-break-before: avoid;
             }
             
-            /* Ensure the whole report content stays together when possible */
             .report-container > * {
               page-break-before: avoid;
             }
@@ -707,25 +765,11 @@ const TransactionTable = ({
     }
   };
 
-  const printReportDialog = () => {
-    if (!reportRef.current) return;
+  const generatePDFReportFromCanvas = async () => {
+    const element = reportRef.current;
+    if (!element) return;
 
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
-      let linkTags = '';
-      linkElements.forEach(link => {
-        linkTags += link.outerHTML + '\n';
-      });
-
-      const styleElements = document.querySelectorAll('style');
-      let inlineStyles = '';
-      styleElements.forEach(style => {
-        inlineStyles += style.outerHTML + '\n';
-      });
-
-      const printStyles = `
-        <style>
+    const printStyles = `
           * {
             box-sizing: border-box;
           }
@@ -839,91 +883,64 @@ const TransactionTable = ({
               box-shadow: none; 
             }
             
-            /* Prevent page breaks within summary stats */
             .summary-stats {
               page-break-inside: avoid;
               break-inside: avoid;
             }
             
-            /* Prevent page breaks within individual stat cards */
             .stat-card {
               page-break-inside: avoid;
               break-inside: avoid;
             }
             
-            /* Keep table header with table body */
             .table { 
               page-break-inside: avoid; 
             }
             
-            /* Keep table header with first few rows */
             .table thead {
               page-break-after: avoid;
             }
             
-            /* Prevent orphaned table rows */
             .table tbody tr {
               page-break-inside: avoid;
               break-inside: avoid;
             }
             
-            /* Keep summary stats and table together on same page */
             .summary-stats,
             .table {
               page-break-before: avoid;
             }
             
-            /* Ensure the whole report content stays together when possible */
             .report-container > * {
               page-break-before: avoid;
             }
           }
-        </style>
       `;
 
-      printWindow.document.write(`
-      <html>
-        <head>
-          <title>Transaction Report - ${new Date().toLocaleDateString()}</title>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          ${linkTags}
-          ${inlineStyles}
-          ${printStyles}
-        </head>
-        <body>
-          <div class="report-container">
-            ${reportRef.current?.innerHTML || ''}
-          </div>
-        </body>
-      </html>
-    `);
+    const style = document.createElement('style');
+    style.innerHTML = `
+    ${printStyles}
+  `;
+    document.head.appendChild(style);
 
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
-
-  const generatePDFReportFromCanvas = async () => {
-    const element = reportRef.current;
-    if (!element) return;
+    element.style.display = 'block';
 
     const canvas = await html2canvas(element, {
       scale: 1.5,
       useCORS: true,
-      allowTaint: false,
       backgroundColor: '#ffffff',
-      logging: false,
       onclone: clonedDoc => {
         clonedDoc.querySelectorAll('.no-print').forEach(el => {
-          if ((el as HTMLElement).style) {
-            (el as HTMLElement).style.display = 'none';
-          }
+          (el as HTMLElement).style.display = 'none';
         });
+        const styleClone = clonedDoc.createElement('style');
+        styleClone.innerHTML = printStyles;
+        clonedDoc.head.appendChild(styleClone);
       }
     });
 
-    const imgWidth = 210; // A4
+    // Generate PDF
+    const imgWidth = 210;
     const pageHeight = 295;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     let heightLeft = imgHeight;
@@ -935,7 +952,7 @@ const TransactionTable = ({
     pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
     heightLeft -= pageHeight;
 
-    while (heightLeft >= 0) {
+    while (heightLeft > 0) {
       position = heightLeft - imgHeight;
       pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
@@ -943,6 +960,10 @@ const TransactionTable = ({
     }
 
     pdf.save(`Transaction_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+
+    // Clean up
+    document.head.removeChild(style);
+    element.style.display = 'none';
   };
 
   const exportToPDF = async () => {
@@ -951,13 +972,14 @@ const TransactionTable = ({
       await generatePDFReportFromCanvas();
     } catch (error) {
       console.error('Error exporting PDF:', error);
-      printReportDialog();
+      printReport();
     } finally {
       setIsExporting(false);
     }
   };
 
-  const handlePrintInvoice = () => {
+  const handlePrintInvoice = (transaction: Transaction) => {
+    const invoiceRef = getInvoiceRef(transaction.ref || '');
     if (invoiceRef.current) {
       invoiceRef.current.exportToPDF(true);
     }
@@ -1027,7 +1049,6 @@ const TransactionTable = ({
     );
   };
 
-  // Calculate summary statistics
   const totalAmount = transactions.reduce((sum, txn) => sum + txn.amount, 0);
   const reconciledAmount = transactions
     .filter(txn => txn.reconciled)
@@ -1100,85 +1121,88 @@ const TransactionTable = ({
               </tr>
             }
             renderRow={(txn, index) => (
-              <>
-                <tr key={index}>
-                  <td>
-                    <div>
-                      <div className="fw-semibold">{txn.ref}</div>
-                      <small className="text-muted">{txn.description}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <div>
-                      <div>{txn.user.name}</div>
-                      <small className="text-muted">{txn.user.email}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <Badge bg="secondary">{txn.type}</Badge>
-                  </td>
-                  <td>
-                    <span className="fw-bold">
-                      {currencyFormat(txn.amount)}
-                    </span>
-                  </td>
-                  <td>{getMethodBadge(txn.method)}</td>
-                  <td>{getStatusBadge(txn.reconciled)}</td>
-                  <td>
-                    <span className="text-muted">
-                      {new Date(txn.createdAt).toLocaleDateString()}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="d-flex gap-1">
+              <tr key={index}>
+                <td>
+                  <div>
+                    <div className="fw-semibold">{txn.ref}</div>
+                    <small className="text-muted">{txn.description}</small>
+                  </div>
+                </td>
+                <td>
+                  <div>
+                    <div>{txn.user.name}</div>
+                    <small className="text-muted">{txn.user.email}</small>
+                  </div>
+                </td>
+                <td>
+                  <Badge bg="secondary">{txn.type}</Badge>
+                </td>
+                <td>
+                  <span className="fw-bold">{currencyFormat(txn.amount)}</span>
+                </td>
+                <td>{getMethodBadge(txn.method)}</td>
+                <td>{getStatusBadge(txn.reconciled)}</td>
+                <td>
+                  <span className="text-muted">
+                    {new Date(txn.createdAt).toLocaleDateString()}
+                  </span>
+                </td>
+                <td>
+                  <div className="d-flex gap-1">
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => onView(txn)}
+                      title="View Details"
+                    >
+                      <FontAwesomeIcon icon={faEye} />
+                    </Button>
+                    {!txn.reconciled && (
                       <Button
-                        variant="outline-primary"
+                        variant="outline-success"
                         size="sm"
-                        onClick={() => onView(txn)}
-                        title="View Details"
+                        onClick={() => onReconcile(txn.ref || '')}
+                        title="Reconcile"
                       >
-                        <FontAwesomeIcon icon={faEye} />
+                        <FontAwesomeIcon icon={faCheck} />
                       </Button>
-                      {!txn.reconciled && (
-                        <Button
-                          variant="outline-success"
-                          size="sm"
-                          onClick={() => onReconcile(txn.ref || '')}
-                          title="Reconcile"
-                        >
-                          <FontAwesomeIcon icon={faCheck} />
-                        </Button>
-                      )}
-                      {txn.reconciled && (
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => onReconcile(txn.ref || '')}
-                          title="Unreconcile"
-                        >
-                          <FontAwesomeIcon icon={faExclamationTriangle} />
-                        </Button>
-                      )}
+                    )}
+                    {txn.reconciled && (
                       <Button
-                        variant="outline-secondary"
+                        variant="outline-danger"
                         size="sm"
-                        onClick={handlePrintInvoice}
+                        onClick={() => onReconcile(txn.ref || '')}
+                        title="Unreconcile"
                       >
-                        <FontAwesomeIcon icon={faPrint} />
+                        <FontAwesomeIcon icon={faExclamationTriangle} />
                       </Button>
-                    </div>
-                  </td>
-                </tr>
-                <InvoiceTemplate ref={invoiceRef} transaction={txn} />
-              </>
+                    )}
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => handlePrintInvoice(txn)}
+                    >
+                      <FontAwesomeIcon icon={faPrint} />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
             )}
           />
         </Card.Body>
       </Card>
 
+      {transactions.map(txn => (
+        <InvoiceTemplate
+          key={txn.ref}
+          ref={getInvoiceRef(txn.ref || '')}
+          transaction={txn}
+        />
+      ))}
+
       {/* Hidden Report Template for Printing */}
-      <div style={{ display: 'none' }}>
-        <div ref={reportRef}>
+      <div>
+        <div ref={reportRef} style={{ display: 'none' }}>
           <div className="text-center mb-4 d-flex items-center justify-content-between">
             <Logo />
             <h3 className="fw-bold">Transaction Report</h3>
@@ -1189,7 +1213,7 @@ const TransactionTable = ({
           </div>
 
           {/* Summary Statistics */}
-          <div className="summary-stats">
+          <div className="summary-stats mb-2">
             <div className="stat-card">
               <h5 className="text-center mb-2">Total Transactions</h5>
               <div className="text-center fw-bold h3">
