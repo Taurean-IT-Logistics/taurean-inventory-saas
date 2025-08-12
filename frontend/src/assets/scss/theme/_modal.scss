@@ -1,0 +1,24 @@
+.modal-title {
+  font-size: map-get($font-sizes, 7);
+  color: var(--#{$prefix}secondary-color);
+}
+
+@include media-breakpoint-up(md) {
+  .modal-md {
+    --#{$prefix}modal-width: 768px;
+  }
+}
+
+.modal-open {
+  .navbar-toggler {
+    margin-right: 0.6125rem !important;
+  }
+}
+
+.modal-53w {
+  max-width: 53.313rem;
+}
+
+.modal-38w {
+  max-width: 38.75rem;
+}
