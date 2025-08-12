@@ -21,9 +21,11 @@ import {
   resourceRoutes,
   taxRoutes,
 } from "./routes";
+import { initSocket } from "./realtime/socket";
 
 const app: express.Application = express();
 const server = createServer(app);
+initSocket(server);
 
 app.use(compression());
 app.use(helmet());

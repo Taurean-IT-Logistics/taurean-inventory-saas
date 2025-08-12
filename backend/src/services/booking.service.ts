@@ -8,7 +8,13 @@ const createBooking = async (
 ): Promise<BookingDocument> => {
   try {
     const booking = new BookingModel(bookingData);
-    return await booking.save();
+    const saved = await booking.save();
+    try {
+      const { emitEvent } = await import("../realtime/socket");
+      const { Events } = await import("../realtime/events");
+      emitEvent(Events.BookingCreated, { id: saved._id, booking: saved });
+    } catch {}
+    return saved;
   } catch (error) {
     throw new Error("Error creating booking");
   }
@@ -69,9 +75,17 @@ const updateBooking = async (
     const filter = showDeleted
       ? { _id: bookingId }
       : { _id: bookingId, isDeleted: false };
-    return await BookingModel.findOneAndUpdate(filter, updateData, {
+    const updated = await BookingModel.findOneAndUpdate(filter, updateData, {
       new: true,
     });
+    if (updated) {
+      try {
+        const { emitEvent } = await import("../realtime/socket");
+        const { Events } = await import("../realtime/events");
+        emitEvent(Events.BookingUpdated, { id: updated._id, booking: updated });
+      } catch {}
+    }
+    return updated;
   } catch (error) {
     throw new Error("Error updating booking");
   }

@@ -8,7 +8,13 @@ const createTransaction = async (
 ): Promise<TransactionDocument> => {
   try {
     const newTransaction = new TransactionModel(transactionData);
-    return await newTransaction.save();
+    const saved = await newTransaction.save();
+    try {
+      const { emitEvent } = await import("../realtime/socket");
+      const { Events } = await import("../realtime/events");
+      emitEvent(Events.TransactionCreated, { id: saved._id, transaction: saved });
+    } catch {}
+    return saved;
   } catch (error) {
     throw new Error("Error creating transaction");
   }
@@ -82,7 +88,7 @@ const updateTransaction = async (
       throw new Error("Invalid ID format");
     }
     const filter = showDeleted ? { _id: id } : { _id: id, isDeleted: false };
-    return await TransactionModel.findOneAndUpdate(filter, updateData, {
+    const updated = await TransactionModel.findOneAndUpdate(filter, updateData, {
       new: true,
     })
       .populate("user")
@@ -90,6 +96,14 @@ const updateTransaction = async (
       .populate("account")
       .populate("facility")
       .populate("approvedBy");
+    if (updated) {
+      try {
+        const { emitEvent } = await import("../realtime/socket");
+        const { Events } = await import("../realtime/events");
+        emitEvent(Events.TransactionUpdated, { id: updated._id, transaction: updated });
+      } catch {}
+    }
+    return updated;
   } catch (error) {
     throw new Error("Error updating transaction");
   }
