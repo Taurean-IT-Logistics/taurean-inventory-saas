@@ -2,11 +2,38 @@ import { BookingDocument, BookingModel } from "../models";
 import { Types } from "mongoose";
 import { Booking } from "../types";
 
+function hasOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
+  return aStart < bEnd && bStart < aEnd;
+}
+
+async function assertNoFacilityConflicts(facilityId: string, start: Date, end: Date, excludeId?: string) {
+  const filter: any = {
+    facility: new Types.ObjectId(facilityId),
+    status: { $in: ["pending", "confirmed"] },
+  };
+  if (excludeId && Types.ObjectId.isValid(excludeId)) {
+    filter._id = { $ne: new Types.ObjectId(excludeId) };
+  }
+  const candidates = await BookingModel.find(filter).select("startDate endDate");
+  for (const c of candidates) {
+    if (hasOverlap(start, end, c.startDate as any, c.endDate as any)) {
+      throw new Error("Booking conflict: overlapping time for this facility");
+    }
+  }
+}
+
 // Create a new booking
 const createBooking = async (
   bookingData: Booking
 ): Promise<BookingDocument> => {
   try {
+    if (!bookingData.startDate || !bookingData.endDate) {
+      throw new Error("Start and end dates are required");
+    }
+    if (new Date(bookingData.startDate) >= new Date(bookingData.endDate)) {
+      throw new Error("End date must be after start date");
+    }
+    await assertNoFacilityConflicts((bookingData as any).facility, new Date(bookingData.startDate), new Date(bookingData.endDate));
     const booking = new BookingModel(bookingData);
     const saved = await booking.save();
     try {
@@ -16,7 +43,7 @@ const createBooking = async (
     } catch {}
     return saved;
   } catch (error) {
-    throw new Error("Error creating booking");
+    throw new Error((error as Error).message || "Error creating booking");
   }
 };
 
@@ -72,6 +99,18 @@ const updateBooking = async (
     if (!Types.ObjectId.isValid(bookingId)) {
       throw new Error("Invalid booking ID");
     }
+    if (updateData.startDate && updateData.endDate) {
+      if (new Date(updateData.startDate) >= new Date(updateData.endDate)) {
+        throw new Error("End date must be after start date");
+      }
+    }
+    const current = await BookingModel.findById(bookingId);
+    if (current) {
+      const facility = (updateData as any).facility?.toString?.() || current.facility?.toString?.();
+      const start = new Date((updateData.startDate as any) || (current.startDate as any));
+      const end = new Date((updateData.endDate as any) || (current.endDate as any));
+      await assertNoFacilityConflicts(facility, start, end, bookingId);
+    }
     const filter = showDeleted
       ? { _id: bookingId }
       : { _id: bookingId, isDeleted: false };
@@ -87,7 +126,7 @@ const updateBooking = async (
     }
     return updated;
   } catch (error) {
-    throw new Error("Error updating booking");
+    throw new Error((error as Error).message || "Error updating booking");
   }
 };
 

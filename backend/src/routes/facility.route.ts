@@ -7,6 +7,7 @@ import {
   fileFilter,
 } from "../middlewares";
 import multer from "multer";
+import { BookingModel } from "../models";
 
 const uploadConfig = {
   storage,
@@ -26,6 +27,20 @@ router.get("/", FacilityController.getFacilities);
 router.get("/:id", FacilityController.getFacilityById);
 
 router.get("/:id/reviews", FacilityController.getFacilityReviews);
+
+// Public calendar of booked slots
+router.get("/:id/calendar", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const now = new Date();
+    const bookings = await BookingModel.find({ facility: id, status: { $in: ["pending", "confirmed"] }, endDate: { $gte: now } })
+      .select("startDate endDate status")
+      .sort({ startDate: 1 });
+    res.json({ success: true, message: "Facility calendar", data: { bookings } });
+  } catch (e: any) {
+    res.status(500).json({ success: false, message: "Failed to fetch calendar", errors: e.message });
+  }
+});
 
 router.use(AuthMiddleware);
 

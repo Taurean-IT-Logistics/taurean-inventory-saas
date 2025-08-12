@@ -250,6 +250,13 @@ export interface InventoryItem {
     user: User;
     notes?: string;
   }[];
+  returns?: {
+    date: Date;
+    returnedBy?: User;
+    condition?: "good" | "fair" | "damaged";
+    quantity?: number;
+    notes?: string;
+  }[];
   maintenanceSchedule: {
     scheduledDate: Date;
     type: "cleaning" | "repair" | "inspection" | "calibration";

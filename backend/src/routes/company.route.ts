@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { CompanyModel, CompanyRoleModel } from "../models";
 import { sendSuccess, sendError } from "../utils";
 import { AuthMiddleware, AuthorizeRoles } from "../middlewares/auth.middleware";
+import * as CompanyController from "../controllers/company.controller";
 
 const router = Router();
 
@@ -33,5 +34,12 @@ router.post("/onboard", async (req: Request, res: Response) => {
     return sendError(res, "Onboarding failed", e.message);
   }
 });
+
+// Public pricing
+router.get("/pricing", CompanyController.pricing);
+
+// Super admin: activate and renew subscriptions
+router.post("/subscription/activate", AuthMiddleware, CompanyController.activateSubscription);
+router.post("/subscription/renew", AuthMiddleware, CompanyController.renewSubscription);
 
 export default router;

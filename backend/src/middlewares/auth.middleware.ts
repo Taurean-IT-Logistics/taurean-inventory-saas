@@ -57,7 +57,10 @@ export function RequireActiveCompany() {
       if (!company || company.isActive !== true) {
         return sendUnauthorized(res, "Company inactive or not found");
       }
-      // Subscription enforcement placeholder: check expiration when implemented
+      const sub = (company as any).subscription;
+      if (!sub || !sub.expiresAt || new Date(sub.expiresAt) < new Date()) {
+        return sendUnauthorized(res, "Subscription expired or missing");
+      }
       return next();
     } catch (e: any) {
       return sendError(res, "Company access check failed", e.message);

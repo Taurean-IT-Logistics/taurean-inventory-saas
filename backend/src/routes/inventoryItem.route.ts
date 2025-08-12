@@ -53,6 +53,14 @@ router.put(
   InventoryItemController.updateInventoryItem
 );
 
+// Return an inventory item - admin and staff
+router.post(
+  "/:id/return",
+  AuthMiddleware,
+  AuthorizeRoles("admin", "staff"),
+  InventoryItemController.returnInventoryItem
+);
+
 // Soft delete inventory item by ID - admin only
 router.delete(
   "/:id",
