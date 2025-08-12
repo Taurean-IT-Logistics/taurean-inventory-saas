@@ -8,6 +8,8 @@ import { Star, Heart, Share, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
+import type { Metadata } from "next"
+import { CartAPI } from "@/lib/api"
 
 export default function RentalDetailPage({ params }: { params: { id: string } }) {
   const [isFavorited, setIsFavorited] = useState(false)
@@ -46,6 +48,10 @@ export default function RentalDetailPage({ params }: { params: { id: string } })
       reviewCount: 156,
       responseTime: "within an hour",
     },
+  }
+
+  const addToCart = async () => {
+    await CartAPI.add({ id: params.id, type: "inventory" })
   }
 
   return (
@@ -155,6 +161,13 @@ export default function RentalDetailPage({ params }: { params: { id: string } })
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="flex gap-3 mt-4">
+          <Button onClick={addToCart}>Add to Cart</Button>
+          <Link href="/cart">
+            <Button variant="outline">Go to Cart</Button>
+          </Link>
         </div>
       </main>
 

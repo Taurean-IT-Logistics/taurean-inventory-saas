@@ -5,6 +5,8 @@ import { Heart, Share, Star, Wifi, Car, Tv, Snowflake, Users, MessageCircle, Shi
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
+import { CartAPI, FacilitiesAPI } from "@/lib/api"
+import { useQuery } from "@tanstack/react-query"
 
 export default function FacilityDetailPage({ params }: { params: { id: string } }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -104,12 +106,19 @@ export default function FacilityDetailPage({ params }: { params: { id: string } 
     },
   }
 
+  const { data: calendar } = useQuery({ queryKey: ["facility-calendar", params.id], queryFn: () => FacilitiesAPI.calendar(params.id) })
+  const calBookings = (calendar?.bookings || calendar?.data?.bookings || []) as Array<{ startDate: string; endDate: string }>
+
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % facility.images.length)
   }
 
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + facility.images.length) % facility.images.length)
+  }
+
+  const addToCart = async () => {
+    await CartAPI.add({ id: params.id, type: "facility" })
   }
 
   return (
@@ -407,11 +416,12 @@ export default function FacilityDetailPage({ params }: { params: { id: string } 
                   </div>
                 </div>
 
-                <Link href={`/facility/${facility.id}/book`}>
-                  <Button className="w-full bg-[#ff385c] hover:bg-[#e31c5f] text-white py-3 text-base font-medium mb-4">
-                    Reserve
-                  </Button>
-                </Link>
+                <div className="flex gap-3">
+                  <Button onClick={addToCart}>Add to Cart</Button>
+                  <Link href={`/facility/${params.id}/book`}>
+                    <Button>Book now</Button>
+                  </Link>
+                </div>
 
                 <p className="text-center text-gray-500 text-sm mb-6">You won't be charged yet</p>
 

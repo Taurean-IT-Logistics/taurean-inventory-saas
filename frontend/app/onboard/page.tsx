@@ -5,6 +5,7 @@ import { CompaniesAPI } from "@/lib/api"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { PhoneInput } from "@/components/ui/phone-input"
 
 export default function OnboardPage() {
   const [form, setForm] = useState({
@@ -13,7 +14,7 @@ export default function OnboardPage() {
     registrationDocs: "",
     location: "",
     contactEmail: "",
-    contactPhone: "",
+    contactPhone: "+233 ",
     invoiceFormat: "auto",
     currency: "GHS",
   })
@@ -27,7 +28,7 @@ export default function OnboardPage() {
     try {
       await CompaniesAPI.onboard(form)
       setMessage("Company onboarded. Our team will reach out.")
-      setForm({ name: "", logoUrl: "", registrationDocs: "", location: "", contactEmail: "", contactPhone: "", invoiceFormat: "auto", currency: "GHS" })
+      setForm({ name: "", logoUrl: "", registrationDocs: "", location: "", contactEmail: "", contactPhone: "+233 ", invoiceFormat: "auto", currency: "GHS" })
     } catch (e: any) {
       setMessage(e.message || "Failed to onboard")
     } finally {
@@ -62,8 +63,8 @@ export default function OnboardPage() {
           <Input id="contactEmail" type="email" value={form.contactEmail} onChange={(e) => update("contactEmail", e.target.value)} />
         </div>
         <div>
-          <Label htmlFor="contactPhone">Contact Phone</Label>
-          <Input id="contactPhone" value={form.contactPhone} onChange={(e) => update("contactPhone", e.target.value)} />
+          <Label>Contact Phone</Label>
+          <PhoneInput value={form.contactPhone} onChange={(v) => update("contactPhone", v)} />
         </div>
         <div>
           <Label htmlFor="invoiceFormat">Preferred Invoice Format</Label>
