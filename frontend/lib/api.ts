@@ -47,7 +47,6 @@ export async function apiFetch<T>(path: string, options: RequestInit & { method?
 
   let res = await fetch(url, { ...options, headers })
 
-  // Attempt refresh on 401
   if (res.status === 401 && refreshToken) {
     try {
       const newAccess = await refreshAccessToken()
@@ -93,6 +92,19 @@ export const FacilitiesAPI = {
   detail: (id: string) => apiFetch(`/facilities/${id}`, { method: "GET" }),
   reviews: (id: string) => apiFetch(`/facilities/${id}/reviews`, { method: "GET" }),
   calendar: (id: string) => apiFetch(`/facilities/${id}/calendar`, { method: "GET" }),
+  create: (payload: Record<string, any>, files?: File[]) => {
+    const form = new FormData()
+    for (const [k, v] of Object.entries(payload)) form.append(k, String(v))
+    if (files && files.length) files.forEach((f) => form.append("files", f))
+    return apiFetch(`/facilities`, { method: "POST", body: form })
+  },
+  update: (id: string, payload: Record<string, any>, files?: File[]) => {
+    const form = new FormData()
+    for (const [k, v] of Object.entries(payload)) form.append(k, String(v))
+    if (files && files.length) files.forEach((f) => form.append("files", f))
+    return apiFetch(`/facilities/${id}`, { method: "PUT", body: form })
+  },
+  remove: (id: string) => apiFetch(`/facilities/${id}`, { method: "DELETE" }),
 }
 
 // Bookings
@@ -100,4 +112,20 @@ export const BookingsAPI = {
   create: (payload: any) => apiFetch(`/bookings`, { method: "POST", body: JSON.stringify(payload) }),
   me: () => apiFetch(`/bookings/me`, { method: "GET" }),
   get: (id: string) => apiFetch(`/bookings/${id}`, { method: "GET" }),
+  listAll: () => apiFetch(`/bookings`, { method: "GET" }),
+  update: (id: string, payload: any) => apiFetch(`/bookings/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  checkIn: (id: string) => apiFetch(`/bookings/${id}/check-in`, { method: "POST" }),
+  checkOut: (id: string) => apiFetch(`/bookings/${id}/check-out`, { method: "POST" }),
+  remove: (id: string) => apiFetch(`/bookings/${id}`, { method: "DELETE" }),
+}
+
+// Users
+export const UsersAPI = {
+  list: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : ""
+    return apiFetch(`/users${qs}`, { method: "GET" })
+  },
+  update: (id: string, payload: any) => apiFetch(`/users/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  updateRole: (id: string, role: string) => apiFetch(`/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role }) }),
+  stats: () => apiFetch(`/users/statistics`, { method: "GET" }),
 }
