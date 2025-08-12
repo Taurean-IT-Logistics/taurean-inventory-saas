@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import Image from "next/image"
 import { BookingsAPI } from "@/lib/api"
+import { FacilitiesAPI } from "@/lib/api"
+import { useQuery } from "@tanstack/react-query"
 
 export default function BookingPage({ params }: { params: { id: string } }) {
   const [step, setStep] = useState(1)
@@ -45,6 +47,20 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     },
   }
 
+  const { data: calendar } = useQuery({ queryKey: ["facility-calendar", params.id], queryFn: () => FacilitiesAPI.calendar(params.id) })
+  const calBookings = (calendar?.bookings || calendar?.data?.bookings || []) as Array<{ startDate: string; endDate: string }>
+
+  const hasOverlap = () => {
+    if (!bookingData.startDate || !bookingData.endDate) return false
+    const s = new Date(bookingData.startDate).getTime()
+    const e = new Date(bookingData.endDate).getTime()
+    return calBookings.some((b) => {
+      const bs = new Date(b.startDate).getTime()
+      const be = new Date(b.endDate).getTime()
+      return Math.max(s, bs) <= Math.min(e, be)
+    })
+  }
+
   const handleInputChange = (field: string, value: string | number) => {
     setBookingData((prev) => ({ ...prev, [field]: value }))
   }
@@ -60,6 +76,10 @@ export default function BookingPage({ params }: { params: { id: string } }) {
   const submitBooking = async () => {
     setError(null)
     setSuccess(null)
+    if (hasOverlap()) {
+      setError("Selected dates overlap with existing bookings. Please choose different dates.")
+      return
+    }
     setSubmitting(true)
     try {
       await BookingsAPI.create({
