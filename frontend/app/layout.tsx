@@ -6,6 +6,7 @@ import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { HelpChatWidget } from "@/components/chat/help-chat-widget"
 import { AuthProvider } from "@/components/auth/AuthProvider"
+import { QueryProvider } from "@/components/providers/QueryProvider"
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
@@ -104,11 +105,13 @@ html {
         `}</style>
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased bg-white`}>
-        <AuthProvider>
-          {children}
-          <Toaster />
-          <HelpChatWidget />
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            {children}
+            <Toaster />
+            <HelpChatWidget />
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   )
