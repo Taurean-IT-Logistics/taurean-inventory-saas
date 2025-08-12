@@ -42,4 +42,7 @@ router.get("/pricing", CompanyController.pricing);
 router.post("/subscription/activate", AuthMiddleware, CompanyController.activateSubscription);
 router.post("/subscription/renew", AuthMiddleware, CompanyController.renewSubscription);
 
+// Super admin: update payout config (paystack subaccount, feePercent)
+router.post("/payout-config", AuthMiddleware, CompanyController.updatePayoutConfig);
+
 export default router;

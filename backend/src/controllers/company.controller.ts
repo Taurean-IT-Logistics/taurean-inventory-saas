@@ -54,3 +54,18 @@ export async function renewSubscription(req: Request, res: Response) {
     return sendError(res, "Failed to renew subscription", e.message);
   }
 }
+
+export async function updatePayoutConfig(req: Request, res: Response) {
+  try {
+    if (!(req.user as any)?.isSuperAdmin) return sendError(res, "Forbidden", null, 403);
+    const { companyId, subaccountCode, feePercent } = req.body;
+    const company = await CompanyModel.findById(companyId);
+    if (!company) return sendError(res, "Company not found", null, 404);
+    if (subaccountCode) (company as any).paystackSubaccountCode = subaccountCode;
+    if (feePercent !== undefined) (company as any).feePercent = feePercent;
+    await company.save();
+    return sendSuccess(res, "Payout config updated", { company });
+  } catch (e: any) {
+    return sendError(res, "Failed to update payout config", e.message);
+  }
+}

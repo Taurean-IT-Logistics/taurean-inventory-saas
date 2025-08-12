@@ -32,6 +32,8 @@ const CompanySchema = new Schema<CompanyDocument>(
       expiresAt: { type: Date },
       licenseKey: { type: String },
     },
+    paystackSubaccountCode: { type: String },
+    feePercent: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
