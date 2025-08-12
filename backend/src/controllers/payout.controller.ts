@@ -4,6 +4,7 @@ import { CompanyModel } from "../models/company.model";
 import { sendSuccess, sendError } from "../utils";
 import axios from "axios";
 import { CONFIG } from "../config";
+import { computeCompanyAvailable, computePlatformAvailable } from "../services/balance.service";
 
 export async function requestPayout(req: Request, res: Response) {
   try {
@@ -14,6 +15,8 @@ export async function requestPayout(req: Request, res: Response) {
     if (!company || !(company as any).paystackRecipientCode) {
       return sendError(res, "Recipient not configured", null, 400);
     }
+    const bal = await computeCompanyAvailable(companyId);
+    if (amount > bal.available) return sendError(res, "Insufficient available balance", null, 400);
     const doc = await PayoutModel.create({
       company: companyId,
       amount,
@@ -71,5 +74,25 @@ export async function processPayout(req: Request, res: Response) {
     return sendSuccess(res, "Payout processing initiated", { payout: doc });
   } catch (e: any) {
     return sendError(res, "Failed to process payout", e.message);
+  }
+}
+
+export async function companyBalance(req: Request, res: Response) {
+  try {
+    const companyId = (req.user as any)?.companyId;
+    const bal = await computeCompanyAvailable(companyId);
+    return sendSuccess(res, "Company available balance", bal);
+  } catch (e: any) {
+    return sendError(res, "Failed to compute balance", e.message);
+  }
+}
+
+export async function platformBalance(req: Request, res: Response) {
+  try {
+    if (!(req.user as any)?.isSuperAdmin) return sendError(res, "Forbidden", null, 403);
+    const bal = await computePlatformAvailable();
+    return sendSuccess(res, "Platform available balance", bal);
+  } catch (e: any) {
+    return sendError(res, "Failed to compute platform balance", e.message);
   }
 }

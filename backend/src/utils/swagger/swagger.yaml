@@ -2193,6 +2193,117 @@ paths:
       responses:
         "200": { description: OK }
 
+  /api/v1/payouts/balance:
+    get:
+      summary: Get company available balance
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: OK }
+  /api/v1/payouts/platform-balance:
+    get:
+      summary: Get platform available balance (super admin)
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: OK }
+  /api/v1/payouts/request:
+    post:
+      summary: Request a payout
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount: { type: number }
+                currency: { type: string }
+      responses:
+        "201": { description: Requested }
+  /api/v1/payouts/{id}/approve:
+    post:
+      summary: Approve payout (super admin)
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Approved }
+  /api/v1/payouts/{id}/process:
+    post:
+      summary: Process payout via Paystack (super admin)
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Processing initiated }
+
+  /api/v1/deletions/company:
+    post:
+      summary: Queue company hard deletion (30 days)
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId]
+              properties:
+                companyId: { type: string }
+                reason: { type: string }
+      responses:
+        "201": { description: Queued }
+  /api/v1/deletions/user:
+    post:
+      summary: Queue user hard deletion (30 days)
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: string }
+                reason: { type: string }
+      responses:
+        "201": { description: Queued }
+  /api/v1/deletions/{id}/cancel:
+    post:
+      summary: Cancel deletion request
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Cancelled }
+
 components:
   securitySchemes:
     bearerAuth:

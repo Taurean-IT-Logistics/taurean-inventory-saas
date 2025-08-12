@@ -4,6 +4,8 @@ import { AuthMiddleware, RequireActiveCompany } from "../middlewares/auth.middle
 
 const router = Router();
 
+router.get("/balance", AuthMiddleware, RequireActiveCompany(), PayoutController.companyBalance);
+router.get("/platform-balance", AuthMiddleware, PayoutController.platformBalance);
 router.post("/request", AuthMiddleware, RequireActiveCompany(), PayoutController.requestPayout);
 router.post("/:id/approve", AuthMiddleware, PayoutController.approvePayout);
 router.post("/:id/process", AuthMiddleware, PayoutController.processPayout);
