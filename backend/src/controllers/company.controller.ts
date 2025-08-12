@@ -11,7 +11,7 @@ const plans = [
 ];
 
 export async function pricing(req: Request, res: Response) {
-  return sendSuccess(res, "Pricing plans", { plans });
+  sendSuccess(res, "Pricing plans", { plans });
 }
 
 function generateLicenseKey(companyId: string): string {
@@ -21,51 +21,95 @@ function generateLicenseKey(companyId: string): string {
 
 export async function activateSubscription(req: Request, res: Response) {
   try {
-    if (!(req.user as any)?.isSuperAdmin) return sendError(res, "Forbidden", null, 403);
+    if (!(req.user as any)?.isSuperAdmin) {
+      sendError(res, "Forbidden", null, 403);
+      return;
+    }
+
     const { companyId, plan } = req.body;
     const company = await CompanyModel.findById(companyId);
-    if (!company) return sendError(res, "Company not found", null, 404);
+    if (!company) {
+      sendError(res, "Company not found", null, 404);
+      return;
+    }
+
     const p = plans.find((x) => x.id === plan);
-    if (!p) return sendError(res, "Invalid plan", null, 400);
-    const expiresAt = new Date(Date.now() + p.durationDays * 24 * 60 * 60 * 1000);
+    if (!p) {
+      sendError(res, "Invalid plan", null, 400);
+      return;
+    }
+
+    const expiresAt = new Date(
+      Date.now() + p.durationDays * 24 * 60 * 60 * 1000
+    );
     const licenseKey = generateLicenseKey((company as any)._id.toString());
     company.subscription = { plan: plan as any, expiresAt, licenseKey } as any;
     await company.save();
-    return sendSuccess(res, "Subscription activated", { company });
+    sendSuccess(res, "Subscription activated", { company });
   } catch (e: any) {
-    return sendError(res, "Failed to activate subscription", e.message);
+    sendError(res, "Failed to activate subscription", e.message);
   }
 }
 
 export async function renewSubscription(req: Request, res: Response) {
   try {
-    if (!(req.user as any)?.isSuperAdmin) return sendError(res, "Forbidden", null, 403);
+    if (!(req.user as any)?.isSuperAdmin) {
+      sendError(res, "Forbidden", null, 403);
+      return;
+    }
+
     const { companyId } = req.body;
     const company = await CompanyModel.findById(companyId);
-    if (!company || !company.subscription) return sendError(res, "Company or subscription not found", null, 404);
+    if (!company || !company.subscription) {
+      sendError(res, "Company or subscription not found", null, 404);
+      return;
+    }
+
     const p = plans.find((x) => x.id === (company.subscription as any).plan);
-    if (!p) return sendError(res, "Invalid plan on company", null, 400);
-    const expiresAt = new Date(Date.now() + p.durationDays * 24 * 60 * 60 * 1000);
+    if (!p) {
+      sendError(res, "Invalid plan on company", null, 400);
+      return;
+    }
+
+    const expiresAt = new Date(
+      Date.now() + p.durationDays * 24 * 60 * 60 * 1000
+    );
     const licenseKey = generateLicenseKey((company as any)._id.toString());
-    company.subscription = { plan: (company.subscription as any).plan, expiresAt, licenseKey } as any;
+    company.subscription = {
+      plan: (company.subscription as any).plan,
+      expiresAt,
+      licenseKey,
+    } as any;
     await company.save();
-    return sendSuccess(res, "Subscription renewed", { company });
+    sendSuccess(res, "Subscription renewed", { company });
   } catch (e: any) {
-    return sendError(res, "Failed to renew subscription", e.message);
+    sendError(res, "Failed to renew subscription", e.message);
   }
 }
 
 export async function updatePayoutConfig(req: Request, res: Response) {
   try {
-    if (!(req.user as any)?.isSuperAdmin) return sendError(res, "Forbidden", null, 403);
+    if (!(req.user as any)?.isSuperAdmin) {
+      sendError(res, "Forbidden", null, 403);
+      return;
+    }
+
     const { companyId, subaccountCode, feePercent } = req.body;
     const company = await CompanyModel.findById(companyId);
-    if (!company) return sendError(res, "Company not found", null, 404);
-    if (subaccountCode) (company as any).paystackSubaccountCode = subaccountCode;
-    if (feePercent !== undefined) (company as any).feePercent = feePercent;
+    if (!company) {
+      sendError(res, "Company not found", null, 404);
+      return;
+    }
+
+    if (subaccountCode) {
+      (company as any).paystackSubaccountCode = subaccountCode;
+    }
+    if (feePercent !== undefined) {
+      (company as any).feePercent = feePercent;
+    }
     await company.save();
-    return sendSuccess(res, "Payout config updated", { company });
+    sendSuccess(res, "Payout config updated", { company });
   } catch (e: any) {
-    return sendError(res, "Failed to update payout config", e.message);
+    sendError(res, "Failed to update payout config", e.message);
   }
 }

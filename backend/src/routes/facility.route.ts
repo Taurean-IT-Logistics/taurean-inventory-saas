@@ -1,13 +1,12 @@
 import { Router } from "express";
 import { FacilityController } from "../controllers";
-import {
-  AuthMiddleware,
-  storage,
-  fileFilter,
-} from "../middlewares";
+import { AuthMiddleware, storage, fileFilter } from "../middlewares";
 import multer from "multer";
 import { BookingModel } from "../models";
-import { RequireActiveCompany, RequirePermissions } from "../middlewares/auth.middleware";
+import {
+  RequireActiveCompany,
+  RequirePermissions,
+} from "../middlewares/auth.middleware";
 
 const uploadConfig = {
   storage,
@@ -33,12 +32,26 @@ router.get("/:id/calendar", async (req, res) => {
   try {
     const { id } = req.params;
     const now = new Date();
-    const bookings = await BookingModel.find({ facility: id, status: { $in: ["pending", "confirmed"] }, endDate: { $gte: now } })
+    const bookings = await BookingModel.find({
+      facility: id,
+      status: { $in: ["pending", "confirmed"] },
+      endDate: { $gte: now },
+    })
       .select("startDate endDate status")
       .sort({ startDate: 1 });
-    res.json({ success: true, message: "Facility calendar", data: { bookings } });
+    res.json({
+      success: true,
+      message: "Facility calendar",
+      data: { bookings },
+    });
   } catch (e: any) {
-    res.status(500).json({ success: false, message: "Failed to fetch calendar", errors: e.message });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to fetch calendar",
+        errors: e.message,
+      });
   }
 });
 

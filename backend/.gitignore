@@ -29,6 +29,8 @@ logs/
 *.tmp
 tmp/
 
+uploads/*
+
 
 # Optional: If using Docker
 .dockerignore

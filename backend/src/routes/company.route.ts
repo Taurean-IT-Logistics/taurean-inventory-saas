@@ -9,8 +9,21 @@ const router = Router();
 // Public onboarding
 router.post("/onboard", async (req: Request, res: Response) => {
   try {
-    const { name, logoUrl, registrationDocs, location, contactEmail, contactPhone, invoiceFormat, currency } = req.body;
-    if (!name) return sendError(res, "Company name is required", null, 400);
+    const {
+      name,
+      logoUrl,
+      registrationDocs,
+      location,
+      contactEmail,
+      contactPhone,
+      invoiceFormat,
+      currency,
+    } = req.body;
+    if (!name) {
+      sendError(res, "Company name is required", null, 400);
+      return;
+    }
+
     const company = await CompanyModel.create({
       name,
       logoUrl,
@@ -24,14 +37,44 @@ router.post("/onboard", async (req: Request, res: Response) => {
     } as any);
     // Default roles
     await CompanyRoleModel.create([
-      { company: company._id, name: "Admin", permissions: { viewInvoices: true, accessFinancials: true, viewBookings: true, viewInventory: true, createRecords: true, editRecords: true, manageUsers: true, manageFacilities: true, manageInventory: true, manageTransactions: true } },
-      { company: company._id, name: "Staff", permissions: { viewInvoices: false, accessFinancials: false, viewBookings: true, viewInventory: true, createRecords: true, editRecords: true } },
-      { company: company._id, name: "User", permissions: { viewBookings: true, viewInventory: true } },
+      {
+        company: company._id,
+        name: "Admin",
+        permissions: {
+          viewInvoices: true,
+          accessFinancials: true,
+          viewBookings: true,
+          viewInventory: true,
+          createRecords: true,
+          editRecords: true,
+          manageUsers: true,
+          manageFacilities: true,
+          manageInventory: true,
+          manageTransactions: true,
+        },
+      },
+      {
+        company: company._id,
+        name: "Staff",
+        permissions: {
+          viewInvoices: false,
+          accessFinancials: false,
+          viewBookings: true,
+          viewInventory: true,
+          createRecords: true,
+          editRecords: true,
+        },
+      },
+      {
+        company: company._id,
+        name: "User",
+        permissions: { viewBookings: true, viewInventory: true },
+      },
     ] as any);
 
-    return sendSuccess(res, "Company onboarded", { company }, 201);
+    sendSuccess(res, "Company onboarded", { company }, 201);
   } catch (e: any) {
-    return sendError(res, "Onboarding failed", e.message);
+    sendError(res, "Onboarding failed", e.message);
   }
 });
 
@@ -39,10 +82,22 @@ router.post("/onboard", async (req: Request, res: Response) => {
 router.get("/pricing", CompanyController.pricing);
 
 // Super admin: activate and renew subscriptions
-router.post("/subscription/activate", AuthMiddleware, CompanyController.activateSubscription);
-router.post("/subscription/renew", AuthMiddleware, CompanyController.renewSubscription);
+router.post(
+  "/subscription/activate",
+  AuthMiddleware,
+  CompanyController.activateSubscription
+);
+router.post(
+  "/subscription/renew",
+  AuthMiddleware,
+  CompanyController.renewSubscription
+);
 
 // Super admin: update payout config (paystack subaccount, feePercent)
-router.post("/payout-config", AuthMiddleware, CompanyController.updatePayoutConfig);
+router.post(
+  "/payout-config",
+  AuthMiddleware,
+  CompanyController.updatePayoutConfig
+);
 
 export default router;

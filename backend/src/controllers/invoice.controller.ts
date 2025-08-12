@@ -17,9 +17,9 @@ export async function create(req: Request, res: Response) {
       lines,
       taxScheduleId,
     });
-    return sendSuccess(res, "Invoice created", { invoice }, 201);
+    sendSuccess(res, "Invoice created", { invoice }, 201);
   } catch (e: any) {
-    return sendError(res, "Failed to create invoice", e.message);
+    sendError(res, "Failed to create invoice", e.message);
   }
 }
 
@@ -34,52 +34,64 @@ export async function pay(req: Request, res: Response) {
       reference,
       timestamp,
     });
-    return sendSuccess(res, "Invoice paid", result, 200);
+    sendSuccess(res, "Invoice paid", result, 200);
   } catch (e: any) {
-    return sendError(res, "Failed to pay invoice", e.message);
+    sendError(res, "Failed to pay invoice", e.message);
   }
 }
 
 export async function listCompanyInvoices(req: Request, res: Response) {
   try {
     const companyId = (req.user as any)?.companyId;
-    const docs = await InvoiceModel.find({ company: companyId }).sort({ createdAt: -1 });
-    return sendSuccess(res, "Company invoices", { invoices: docs });
+    const docs = await InvoiceModel.find({ company: companyId }).sort({
+      createdAt: -1,
+    });
+    sendSuccess(res, "Company invoices", { invoices: docs });
   } catch (e: any) {
-    return sendError(res, "Failed to list invoices", e.message);
+    sendError(res, "Failed to list invoices", e.message);
   }
 }
 
 export async function listUserInvoices(req: Request, res: Response) {
   try {
     const userId = (req.user as any)?.id;
-    const docs = await InvoiceModel.find({ customer: userId }).sort({ createdAt: -1 });
-    return sendSuccess(res, "My invoices", { invoices: docs });
+    const docs = await InvoiceModel.find({ customer: userId }).sort({
+      createdAt: -1,
+    });
+    sendSuccess(res, "My invoices", { invoices: docs });
   } catch (e: any) {
-    return sendError(res, "Failed to list invoices", e.message);
+    sendError(res, "Failed to list invoices", e.message);
   }
 }
 
 export async function listCompanyReceipts(req: Request, res: Response) {
   try {
     const companyId = (req.user as any)?.companyId;
-    const invoices = await InvoiceModel.find({ company: companyId }).select("_id");
+    const invoices = await InvoiceModel.find({ company: companyId }).select(
+      "_id"
+    );
     const ids = invoices.map((i) => i._id);
-    const docs = await ReceiptModel.find({ invoice: { $in: ids } }).sort({ createdAt: -1 });
-    return sendSuccess(res, "Company receipts", { receipts: docs });
+    const docs = await ReceiptModel.find({ invoice: { $in: ids } }).sort({
+      createdAt: -1,
+    });
+    sendSuccess(res, "Company receipts", { receipts: docs });
   } catch (e: any) {
-    return sendError(res, "Failed to list receipts", e.message);
+    sendError(res, "Failed to list receipts", e.message);
   }
 }
 
 export async function listUserReceipts(req: Request, res: Response) {
   try {
     const userId = (req.user as any)?.id;
-    const invoices = await InvoiceModel.find({ customer: userId }).select("_id");
+    const invoices = await InvoiceModel.find({ customer: userId }).select(
+      "_id"
+    );
     const ids = invoices.map((i) => i._id);
-    const docs = await ReceiptModel.find({ invoice: { $in: ids } }).sort({ createdAt: -1 });
-    return sendSuccess(res, "My receipts", { receipts: docs });
+    const docs = await ReceiptModel.find({ invoice: { $in: ids } }).sort({
+      createdAt: -1,
+    });
+    sendSuccess(res, "My receipts", { receipts: docs });
   } catch (e: any) {
-    return sendError(res, "Failed to list receipts", e.message);
+    sendError(res, "Failed to list receipts", e.message);
   }
 }
