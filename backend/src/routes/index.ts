@@ -9,6 +9,8 @@ import taxRoutes from "./tax.route";
 import companyRoutes from "./company.route";
 import invoiceRoutes from "./invoice.route";
 import taxScheduleRoutes from "./taxSchedule.route";
+import cartRoutes from "./cart.route";
+import cashflowRoutes from "./cashflow.route";
 
 export {
   userRoutes,
@@ -22,4 +24,6 @@ export {
   companyRoutes,
   invoiceRoutes,
   taxScheduleRoutes,
+  cartRoutes,
+  cashflowRoutes,
 };

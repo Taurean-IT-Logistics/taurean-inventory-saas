@@ -23,6 +23,8 @@ import {
   companyRoutes,
   invoiceRoutes,
   taxScheduleRoutes,
+  cartRoutes,
+  cashflowRoutes,
 } from "./routes";
 import { initSocket } from "./realtime/socket";
 
@@ -54,6 +56,8 @@ app.use("/api/v1/taxes", taxRoutes);
 app.use("/api/v1/companies", companyRoutes);
 app.use("/api/v1/invoices", invoiceRoutes);
 app.use("/api/v1/tax-schedules", taxScheduleRoutes);
+app.use("/api/v1/cart", cartRoutes);
+app.use("/api/v1/cashflow", cashflowRoutes);
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");
