@@ -2,12 +2,12 @@ import { Router } from "express";
 import { FacilityController } from "../controllers";
 import {
   AuthMiddleware,
-  AuthorizeRoles,
   storage,
   fileFilter,
 } from "../middlewares";
 import multer from "multer";
 import { BookingModel } from "../models";
+import { RequireActiveCompany, RequirePermissions } from "../middlewares/auth.middleware";
 
 const uploadConfig = {
   storage,
@@ -44,42 +44,45 @@ router.get("/:id/calendar", async (req, res) => {
 
 router.use(AuthMiddleware);
 
-// Public: Get facility reviews with pagination
-
-// Admin only: Create a new facility
+// Create a new facility
 router.post(
   "/",
-  AuthorizeRoles("admin"),
+  RequireActiveCompany(),
+  RequirePermissions(["manageFacilities"]),
   multer(uploadConfig).array("files"),
   FacilityController.createFacility
 );
 
-// Admin and staff: Update a facility by ID
+// Update a facility by ID
 router.put(
   "/:id",
-  AuthorizeRoles("admin", "staff"),
+  RequireActiveCompany(),
+  RequirePermissions(["manageFacilities"]),
   multer(uploadConfig).array("files"),
   FacilityController.updateFacility
 );
 
-// Admin only: Soft delete a facility
+// Soft delete a facility
 router.delete(
   "/:id",
-  AuthorizeRoles("admin"),
+  RequireActiveCompany(),
+  RequirePermissions(["manageFacilities"]),
   FacilityController.deleteFacility
 );
 
-// Admin and staff: Add availability period
+// Add availability period
 router.post(
   "/:id/availability",
-  AuthorizeRoles("admin", "staff"),
+  RequireActiveCompany(),
+  RequirePermissions(["manageFacilities"]),
   FacilityController.addAvailability
 );
 
-// Admin and staff: Remove availability period
+// Remove availability period
 router.delete(
   "/:id/availability",
-  AuthorizeRoles("admin", "staff"),
+  RequireActiveCompany(),
+  RequirePermissions(["manageFacilities"]),
   FacilityController.removeAvailability
 );
 
