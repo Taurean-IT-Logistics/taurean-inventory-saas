@@ -217,6 +217,8 @@ export interface Transaction {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
+  company?: string; // Company owning this transaction
+  isPlatformRevenue?: boolean;
 }
 
 export interface InventoryItem {
@@ -422,6 +424,22 @@ export interface Company {
     expiresAt: Date;
     licenseKey: string;
   };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Payout {
+  company?: string; // null for platform payout
+  isPlatform?: boolean;
+  amount: number;
+  currency: string;
+  recipientCode?: string;
+  status: "pending" | "approved" | "processing" | "paid" | "failed" | "rejected";
+  requestedBy: string;
+  processedBy?: string;
+  paystackTransferCode?: string;
+  paystackTransferId?: string;
+  reason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
