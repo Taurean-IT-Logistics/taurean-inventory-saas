@@ -20,6 +20,7 @@ import {
   bookingRoutes,
   resourceRoutes,
   taxRoutes,
+  companyRoutes,
 } from "./routes";
 import { initSocket } from "./realtime/socket";
 
@@ -48,6 +49,7 @@ app.use("/api/v1/transaction", transactionRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
 app.use("/api/v1/resources", resourceRoutes);
 app.use("/api/v1/taxes", taxRoutes);
+app.use("/api/v1/companies", companyRoutes);
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");

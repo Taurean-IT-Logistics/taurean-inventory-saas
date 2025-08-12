@@ -25,6 +25,8 @@ const UserSchema = new Schema<UserDocument>(
     },
     password: { type: String, required: true, minlength: 6 },
     role: { type: String, enum: ["admin", "staff", "user"], default: "user" },
+    company: { type: Schema.Types.ObjectId, ref: "Company" },
+    companyRole: { type: Schema.Types.ObjectId, ref: "CompanyRole" },
     loyaltyProfile: {
       totalBookings: { type: Number, default: 0 },
       totalSpent: { type: Number, default: 0 },
@@ -65,6 +67,8 @@ UserSchema.index({ email: 1 });
 UserSchema.index({ username: 1 });
 UserSchema.index({ phone: 1 });
 UserSchema.index({ role: 1 });
+UserSchema.index({ company: 1 });
+UserSchema.index({ companyRole: 1 });
 
 const UserModel = model<UserDocument>("User", UserSchema);
 

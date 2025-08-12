@@ -23,8 +23,11 @@ export function initSocket(server: HttpServer): Server {
           if (payload?.id) {
             socket.join(`user:${payload.id}`);
           }
+          if ((payload as any)?.companyId) {
+            socket.join(`company:${(payload as any).companyId}`);
+          }
         } catch (err) {
-          // allow anonymous connections as well; could reject with next(new Error("unauthorized"))
+          // allow anonymous connections as well
         }
       }
       next();
