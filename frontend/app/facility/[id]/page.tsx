@@ -7,6 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { CartAPI, FacilitiesAPI } from "@/lib/api"
 import { useQuery } from "@tanstack/react-query"
+import { AvailabilityCalendar } from "@/components/calendar/availability-calendar"
 
 export default function FacilityDetailPage({ params }: { params: { id: string } }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)

@@ -13,6 +13,7 @@ import Image from "next/image"
 import { BookingsAPI } from "@/lib/api"
 import { FacilitiesAPI } from "@/lib/api"
 import { useQuery } from "@tanstack/react-query"
+import { AvailabilityCalendar } from "@/components/calendar/availability-calendar"
 
 export default function BookingPage({ params }: { params: { id: string } }) {
   const [step, setStep] = useState(1)
@@ -213,7 +214,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
             )}
           </div>
 
-          {/* Summary */}
+          {/* Summary + Calendar */}
           <div className="space-y-4">
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex items-center gap-4">
@@ -229,6 +230,10 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                 <div className="flex justify-between"><span>Tax</span><span>{facility.currency}{tax}</span></div>
                 <div className="flex justify-between font-semibold"><span>Total</span><span>{facility.currency}{total}</span></div>
               </div>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h3 className="font-semibold mb-2">Availability</h3>
+              <AvailabilityCalendar booked={calBookings} onSelect={(d) => handleInputChange("startDate", d.toISOString().slice(0,10))} />
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { RequireRole } from "@/components/auth/RequireRole"
 import { useQuery } from "@tanstack/react-query"
 import { InvoicesAPI } from "@/lib/api"
+import Link from "next/link"
 
 export default function MyInvoicesPage() {
   const { data: invoicesData, isLoading: li } = useQuery({ queryKey: ["my-invoices"], queryFn: () => InvoicesAPI.listMine() })
@@ -15,10 +16,10 @@ export default function MyInvoicesPage() {
         {li ? <p>Loading invoices...</p> : (
           <div className="grid gap-3">
             {(invoicesData?.invoices || invoicesData || []).map((inv: any) => (
-              <div key={inv._id || inv.id} className="border rounded-md p-4">
+              <Link key={inv._id || inv.id} href={`/invoices/${inv._id || inv.id}`} className="border rounded-md p-4 block">
                 <div className="font-medium">{inv.reference || inv._id}</div>
                 <div className="text-sm text-slate-600">{inv.status} • {inv.currency}</div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
@@ -26,10 +27,10 @@ export default function MyInvoicesPage() {
         {lr ? <p>Loading receipts...</p> : (
           <div className="grid gap-3">
             {(receiptsData?.receipts || receiptsData || []).map((r: any) => (
-              <div key={r._id || r.id} className="border rounded-md p-4">
+              <Link key={r._id || r.id} href={`/receipts/${r._id || r.id}`} className="border rounded-md p-4 block">
                 <div className="font-medium">{r.invoice || r.invoiceId}</div>
                 <div className="text-sm text-slate-600">{r.amount} • {r.timestamp}</div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
