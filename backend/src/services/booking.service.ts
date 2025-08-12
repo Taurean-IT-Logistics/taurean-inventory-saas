@@ -1,4 +1,4 @@
-import { BookingDocument, BookingModel } from "../models";
+import { BookingDocument, BookingModel, InventoryItemModel } from "../models";
 import { Types } from "mongoose";
 import { Booking } from "../types";
 
@@ -22,6 +22,25 @@ async function assertNoFacilityConflicts(facilityId: string, start: Date, end: D
   }
 }
 
+async function adjustInventoryForItems(items: { inventoryItem: any; quantity: number }[], direction: "decrement" | "increment") {
+  if (!items || items.length === 0) return;
+  for (const it of items) {
+    if (!it?.inventoryItem || !it?.quantity) continue;
+    const id = (it.inventoryItem as any)?.toString?.() || it.inventoryItem;
+    const qty = it.quantity;
+    const doc = await InventoryItemModel.findById(id);
+    if (!doc) throw new Error("Inventory item not found");
+    let newQty = doc.quantity;
+    if (direction === "decrement") {
+      if (doc.quantity < qty) throw new Error("Insufficient inventory for booking");
+      newQty = doc.quantity - qty;
+    } else {
+      newQty = doc.quantity + qty;
+    }
+    await InventoryItemModel.findByIdAndUpdate(id, { quantity: newQty });
+  }
+}
+
 // Create a new booking
 const createBooking = async (
   bookingData: Booking
@@ -34,6 +53,7 @@ const createBooking = async (
       throw new Error("End date must be after start date");
     }
     await assertNoFacilityConflicts((bookingData as any).facility, new Date(bookingData.startDate), new Date(bookingData.endDate));
+    await adjustInventoryForItems((bookingData as any).items || [], "decrement");
     const booking = new BookingModel(bookingData);
     const saved = await booking.save();
     try {
@@ -110,6 +130,14 @@ const updateBooking = async (
       const start = new Date((updateData.startDate as any) || (current.startDate as any));
       const end = new Date((updateData.endDate as any) || (current.endDate as any));
       await assertNoFacilityConflicts(facility, start, end, bookingId);
+      // Adjust inventory if items changed
+      const newItems = (updateData as any).items;
+      if (newItems) {
+        // First revert previous items
+        await adjustInventoryForItems(((current as any).items || []) as any, "increment");
+        // Then decrement for new items
+        await adjustInventoryForItems(newItems as any, "decrement");
+      }
     }
     const filter = showDeleted
       ? { _id: bookingId }

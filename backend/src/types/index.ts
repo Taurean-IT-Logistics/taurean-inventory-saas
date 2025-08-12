@@ -148,6 +148,7 @@ export interface Booking {
     | "refunded"
     | "partial_refund";
   totalPrice: number;
+  items?: { inventoryItem: InventoryItem; quantity: number }[];
   discount?: {
     type: "percentage" | "fixed";
     value: number;
