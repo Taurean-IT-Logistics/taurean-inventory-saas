@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { AuthAPI, loadTokensFromStorage, setTokens } from "@/lib/api"
+import { useRouter } from "next/navigation"
 
 type AuthUser = {
   id: string
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     loadTokensFromStorage()
@@ -55,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("fh_refresh")
       }
       setUser(null)
+      router.push("/")
     }
   }
 

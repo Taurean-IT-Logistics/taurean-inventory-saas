@@ -2,7 +2,7 @@
 
 import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Globe, Menu, Search, Bell, User, Calendar, MapPin, Heart, Home, Settings, LogOut } from "lucide-react"
+import { Globe, Menu, Search, Bell, User, Calendar, MapPin, Heart, Home, Settings, LogOut, ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
 import { useState } from "react"
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/components/auth/AuthProvider"
+import { useQuery } from "@tanstack/react-query"
+import { CartAPI } from "@/lib/api"
 
 export function Header() {
   const pathname = usePathname()
@@ -22,6 +24,8 @@ export function Header() {
   const [showNotifications, setShowNotifications] = useState(false)
   const { scrollY } = useScroll()
   const { user, logout } = useAuth()
+  const { data: cartData } = useQuery({ queryKey: ["cart"], queryFn: () => CartAPI.list(), enabled: !!user })
+  const cartCount = (cartData?.items || cartData || []).length || 0
 
   // Mock user data
   const mockUser = user || {
@@ -44,7 +48,19 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         <Link href="/" className="font-bold text-xl">FacilityHub</Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {user && (
+            <Link href="/cart" className="relative">
+              <Button variant="ghost" size="icon">
+                <ShoppingCart className="h-5 w-5" />
+              </Button>
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
           {!user ? (
             <>
               <Link href="/auth/login">
