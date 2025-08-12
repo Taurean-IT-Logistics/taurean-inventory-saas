@@ -3,57 +3,7 @@
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import type { Facility } from "@/components/facilities/facility-card"
-
-// Mock data - replace with actual API calls
-const mockFacilities: Facility[] = [
-  {
-    id: "1",
-    name: "Conference Hall in Accra",
-    location: "Accra",
-    price: 938,
-    currency: "GHC",
-    duration: "2 hours",
-    rating: 5.0,
-    reviewCount: 12,
-    imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot%202025-08-12%20130436-4IXrmMA0JsiKTmAimGfcDfEu9Ust4u.png",
-    isGuestFavorite: true,
-  },
-  {
-    id: "2",
-    name: "Event Hall in Accra",
-    location: "Accra",
-    price: 1203,
-    currency: "GHC",
-    duration: "2 hours",
-    rating: 4.79,
-    reviewCount: 8,
-    imageUrl: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: "3",
-    name: "Meeting Room in Accra",
-    location: "Accra",
-    price: 711,
-    currency: "GHC",
-    duration: "2 hours",
-    rating: 4.79,
-    reviewCount: 15,
-    imageUrl: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: "4",
-    name: "Outdoor Space in Accra",
-    location: "Accra",
-    price: 1443,
-    currency: "GHC",
-    duration: "2 hours",
-    rating: 4.93,
-    reviewCount: 6,
-    imageUrl: "/placeholder.svg?height=200&width=300",
-    isGuestFavorite: true,
-  },
-]
+import { FacilitiesAPI } from "@/lib/api"
 
 export function useFacilities(location?: string) {
   const [facilities, setFacilities] = useState<Facility[]>([])
@@ -66,31 +16,33 @@ export function useFacilities(location?: string) {
       setIsLoading(true)
       setError(null)
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const data: any = await FacilitiesAPI.list({ location, limit: 16 })
+      const items = data.items || data.facilities || data
 
-      // Simulate occasional failures for demo
-      if (Math.random() < 0.1 && retryCount === 0) {
-        throw new Error("Network error occurred")
-      }
+      const mapped: Facility[] = (items || []).map((it: any) => ({
+        id: String(it._id || it.id),
+        name: it.name || it.title || "Facility",
+        location: it.location?.city || it.city || it.location || "",
+        price: it.price?.amount || it.price || 0,
+        currency: it.price?.currency || it.currency || "GHS",
+        duration: it.duration || it.billingPeriod || "",
+        rating: it.rating?.overall || it.rating || 0,
+        reviewCount: it.reviewsCount || it.reviewCount || 0,
+        imageUrl: it.images?.[0]?.url || it.coverImage || "/placeholder.svg?height=200&width=300",
+        isGuestFavorite: Boolean(it.isGuestFavorite),
+        isFavorite: Boolean(it.isFavorite),
+      }))
 
-      setFacilities(mockFacilities)
+      setFacilities(mapped)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to load facilities"
       setError(errorMessage)
 
       if (retryCount < 2) {
-        toast({
-          title: "Retrying...",
-          description: `Attempt ${retryCount + 2} of 3`,
-        })
-        setTimeout(() => fetchFacilities(retryCount + 1), 2000)
+        toast({ title: "Retrying...", description: `Attempt ${retryCount + 2} of 3` })
+        setTimeout(() => fetchFacilities(retryCount + 1), 1500)
       } else {
-        toast({
-          title: "Failed to load facilities",
-          description: errorMessage,
-          variant: "destructive",
-        })
+        toast({ title: "Failed to load facilities", description: errorMessage, variant: "destructive" })
       }
     } finally {
       setIsLoading(false)
@@ -98,9 +50,7 @@ export function useFacilities(location?: string) {
   }
 
   const toggleFavorite = async (facilityId: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
+    // optimistic toggle (backend integration TBD)
     setFacilities((prev) =>
       prev.map((facility) =>
         facility.id === facilityId ? { ...facility, isFavorite: !facility.isFavorite } : facility,
@@ -114,6 +64,7 @@ export function useFacilities(location?: string) {
 
   useEffect(() => {
     fetchFacilities()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location])
 
   return {
