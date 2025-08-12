@@ -90,6 +90,9 @@ export const CompaniesAPI = {
   renewSubscription: (payload: { companyId: string; plan: string; durationMonths: number }) =>
     apiFetch(`/companies/subscription/renew`, { method: "POST", body: JSON.stringify(payload) }),
   updatePayoutConfig: (payload: any) => apiFetch(`/companies/payout-config`, { method: "POST", body: JSON.stringify(payload) }),
+  listAll: () => apiFetch(`/companies`, { method: "GET" }),
+  suspend: (companyId: string) => apiFetch(`/companies/${companyId}/suspend`, { method: "POST" }),
+  activate: (companyId: string) => apiFetch(`/companies/${companyId}/activate`, { method: "POST" }),
 }
 
 // Facilities
