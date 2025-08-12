@@ -11,6 +11,8 @@ import invoiceRoutes from "./invoice.route";
 import taxScheduleRoutes from "./taxSchedule.route";
 import cartRoutes from "./cart.route";
 import cashflowRoutes from "./cashflow.route";
+import payoutRoutes from "./payout.route";
+import deletionRoutes from "./deletion.route";
 
 export {
   userRoutes,
@@ -26,4 +28,6 @@ export {
   taxScheduleRoutes,
   cartRoutes,
   cashflowRoutes,
+  payoutRoutes,
+  deletionRoutes,
 };

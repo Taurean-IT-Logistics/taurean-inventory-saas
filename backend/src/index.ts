@@ -1,11 +1,13 @@
 import { connectToMongoDB, disconnectFromMongoDB } from "./database";
 import { startServer, stopServer } from "./server";
 import { Logger } from "./utils";
+import { startDeletionWorker } from "./queues";
 
 async function initApp() {
   try {
     Logger("Initializing application...", null, "api-core", "info");
     await connectToMongoDB();
+    startDeletionWorker();
     startServer();
   } catch (error) {
     Logger("Error initializing application", null, "api-core", "error", error);

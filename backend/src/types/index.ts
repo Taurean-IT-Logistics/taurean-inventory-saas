@@ -424,6 +424,9 @@ export interface Company {
     expiresAt: Date;
     licenseKey: string;
   };
+  paystackSubaccountCode?: string;
+  paystackRecipientCode?: string;
+  feePercent?: number;
   createdAt: Date;
   updatedAt: Date;
 }

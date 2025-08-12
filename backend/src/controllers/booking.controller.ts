@@ -156,7 +156,7 @@ const checkIn = async (req: Request, res: Response): Promise<void> => {
       { $set: { status: "confirmed", checkIn: { time: new Date(), verifiedBy: (req.user as any)?.id } } },
       { new: true }
     );
-    if (!doc) return sendNotFound(res, "Booking not found");
+    if (!doc) { sendNotFound(res, "Booking not found"); return; }
     sendSuccess(res, "Checked in", doc);
   } catch (e: any) {
     sendError(res, e.message || "Failed to check in");
@@ -171,7 +171,7 @@ const checkOut = async (req: Request, res: Response): Promise<void> => {
       { $set: { status: "completed", checkOut: { time: new Date(), verifiedBy: (req.user as any)?.id, condition: req.body?.condition || "good", notes: req.body?.notes } } },
       { new: true }
     );
-    if (!doc) return sendNotFound(res, "Booking not found");
+    if (!doc) { sendNotFound(res, "Booking not found"); return; }
     sendSuccess(res, "Checked out", doc);
   } catch (e: any) {
     sendError(res, e.message || "Failed to check out");
