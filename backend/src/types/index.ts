@@ -28,6 +28,7 @@ export interface User {
   updatedAt?: Date;
   company?: string; // Company ObjectId string
   companyRole?: string; // CompanyRole ObjectId string
+  isSuperAdmin?: boolean;
 }
 
 export interface TokenPayload {
@@ -35,6 +36,7 @@ export interface TokenPayload {
   email: string;
   role: string;
   companyId?: string;
+  isSuperAdmin?: boolean;
 }
 
 export interface AuthTokens {

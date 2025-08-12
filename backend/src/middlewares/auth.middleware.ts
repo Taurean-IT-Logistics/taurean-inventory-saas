@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../helpers";
-import { sendUnauthorized } from "../utils";
+import { sendUnauthorized, sendError } from "../utils";
+import { CompanyModel } from "../models";
 
 export function AuthMiddleware(
   req: Request,
@@ -32,11 +33,34 @@ export function AuthorizeRoles(...roles: string[]) {
       return;
     }
 
+    // Super admin bypass
+    if ((req.user as any).isSuperAdmin) {
+      return next();
+    }
+
     if (!roles.includes(req.user.role)) {
       sendUnauthorized(res, `Access requires one of: ${roles.join(", ")}`);
       return;
     }
 
     next();
+  };
+}
+
+export function RequireActiveCompany() {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if ((req.user as any)?.isSuperAdmin) return next();
+      const companyId = (req.user as any)?.companyId;
+      if (!companyId) return sendUnauthorized(res, "No company assigned");
+      const company = await CompanyModel.findById(companyId).lean();
+      if (!company || company.isActive !== true) {
+        return sendUnauthorized(res, "Company inactive or not found");
+      }
+      // Subscription enforcement placeholder: check expiration when implemented
+      return next();
+    } catch (e: any) {
+      return sendError(res, "Company access check failed", e.message);
+    }
   };
 }

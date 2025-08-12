@@ -7,6 +7,8 @@ import bookingRoutes from "./booking.route";
 import resourceRoutes from "./resource.route";
 import taxRoutes from "./tax.route";
 import companyRoutes from "./company.route";
+import invoiceRoutes from "./invoice.route";
+import taxScheduleRoutes from "./taxSchedule.route";
 
 export {
   userRoutes,
@@ -18,4 +20,6 @@ export {
   resourceRoutes,
   taxRoutes,
   companyRoutes,
+  invoiceRoutes,
+  taxScheduleRoutes,
 };
