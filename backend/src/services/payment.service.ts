@@ -2,17 +2,30 @@ import axios from "axios";
 import crypto from "crypto";
 import { IPaymentFormData } from "../types";
 import { CONFIG } from "../config";
+import { CompanyModel } from "../models/company.model";
 
 const PAYSTACK_SECRET_KEY = CONFIG.PAYSTACK_SECRET_KEY;
 
 if (!PAYSTACK_SECRET_KEY) {
   throw new Error("Paystack secret key is needed to initialize payments");
 }
-const initializePayment = async (form: IPaymentFormData) => {
+const initializePayment = async (form: IPaymentFormData, options?: { companyId?: string }) => {
   try {
+    const payload: any = { ...form };
+    if (options?.companyId) {
+      const company = await CompanyModel.findById(options.companyId).lean();
+      if (company && (company as any).paystackSubaccountCode) {
+        payload.subaccount = (company as any).paystackSubaccountCode;
+        const feePercent = (company as any).feePercent || 0;
+        if (feePercent > 0) {
+          // Paystack expects fee in kobo/pesewas? Here we leave default for subaccount fee; advanced split requires split API.
+          payload.bearer = "subaccount";
+        }
+      }
+    }
     const response = await axios.post(
       "https://api.paystack.co/transaction/initialize",
-      form,
+      payload,
       {
         headers: {
           Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,

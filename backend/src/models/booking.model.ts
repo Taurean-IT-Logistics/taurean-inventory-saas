@@ -10,6 +10,12 @@ const BookingSchema = new Schema<BookingDocument>(
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
     duration: { type: String, required: true },
+    items: [
+      {
+        inventoryItem: { type: Schema.Types.ObjectId, ref: "InventoryItem" },
+        quantity: { type: Number, min: 0 },
+      },
+    ],
     status: {
       type: String,
       enum: ["pending", "confirmed", "cancelled", "completed", "no_show"],

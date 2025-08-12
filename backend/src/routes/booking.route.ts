@@ -1,38 +1,18 @@
 import { Router } from "express";
 import { BookingController } from "../controllers";
 import { AuthMiddleware, AuthorizeRoles } from "../middlewares";
+import { RequireActiveCompany, RequirePermissions } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.use(AuthMiddleware);
-
-// Route to create a new booking
-router.post("/", BookingController.createBooking);
-
-// Route to get bookings for the authenticated user
-router.get("/me", BookingController.getAuthUserBookings);
-
-// Route to get all bookings for a specific user
-router.get(
-  "/user/:userId",
-  AuthorizeRoles("staff", "admin"),
-  BookingController.getBookingsByUser
-);
-
-// Route to get all bookings (admin access)
-router.get(
-  "/",
-  AuthorizeRoles("staff", "admin"),
-  BookingController.getAllBookings
-);
-
-// Route to get a booking by ID
-router.get("/:id", BookingController.getBookingById);
-
-// Route to update a booking by ID
-router.put("/:id", BookingController.updateBooking);
-
-// Route to soft delete a booking by ID (admin/staff can delete any, but user can only delete their own)
-router.delete("/:id", BookingController.deleteBooking);
+router.post("/", AuthMiddleware, RequireActiveCompany(), RequirePermissions(["createRecords"]), BookingController.createBooking);
+router.get("/me", AuthMiddleware, BookingController.getAuthUserBookings);
+router.get("/user/:userId", AuthMiddleware, RequirePermissions(["viewBookings"]), BookingController.getBookingsByUser);
+router.get("/:id", AuthMiddleware, BookingController.getBookingById);
+router.put("/:id", AuthMiddleware, RequireActiveCompany(), RequirePermissions(["editRecords"]), BookingController.updateBooking);
+router.post("/:id/check-in", AuthMiddleware, RequireActiveCompany(), RequirePermissions(["editRecords"]), BookingController.checkIn);
+router.post("/:id/check-out", AuthMiddleware, RequireActiveCompany(), RequirePermissions(["editRecords"]), BookingController.checkOut);
+router.delete("/:id", AuthMiddleware, RequireActiveCompany(), RequirePermissions(["editRecords"]), BookingController.deleteBooking);
+router.get("/", AuthMiddleware, RequirePermissions(["viewBookings"]), BookingController.getAllBookings);
 
 export default router;

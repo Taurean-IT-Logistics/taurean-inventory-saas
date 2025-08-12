@@ -8,7 +8,13 @@ const createInventoryItem = async (
 ): Promise<InventoryItemDocument> => {
   try {
     const newItem = new InventoryItemModel(itemData);
-    return await newItem.save();
+    const saved = await newItem.save();
+    try {
+      const { emitEvent } = await import("../realtime/socket");
+      const { Events } = await import("../realtime/events");
+      emitEvent(Events.InventoryCreated, { id: saved._id, item: saved });
+    } catch {}
+    return saved;
   } catch (error) {
     throw new Error("Error creating inventory item" + (error as Error).message);
   }
@@ -91,9 +97,17 @@ const updateInventoryItem = async (
       updateData.images = updatedImages;
     }
 
-    return await InventoryItemModel.findOneAndUpdate(filter, updateData, {
+    const updated = await InventoryItemModel.findOneAndUpdate(filter, updateData, {
       new: true,
     }).populate("associatedFacility");
+    if (updated) {
+      try {
+        const { emitEvent } = await import("../realtime/socket");
+        const { Events } = await import("../realtime/events");
+        emitEvent(Events.InventoryUpdated, { id: updated._id, item: updated });
+      } catch {}
+    }
+    return updated;
   } catch (error: any) {
     throw new Error(`Error updating inventory item: ${error.message}`);
   }
@@ -154,11 +168,19 @@ const deleteInventoryItem = async (
     if (!Types.ObjectId.isValid(id)) {
       throw new Error("Invalid ID format");
     }
-    return await InventoryItemModel.findOneAndUpdate(
+    const deleted = await InventoryItemModel.findOneAndUpdate(
       { _id: id, isDeleted: false },
       { isDeleted: true },
       { new: true }
     );
+    if (deleted) {
+      try {
+        const { emitEvent } = await import("../realtime/socket");
+        const { Events } = await import("../realtime/events");
+        emitEvent(Events.InventoryDeleted, { id: deleted._id });
+      } catch {}
+    }
+    return deleted;
   } catch (error) {
     throw new Error("Error deleting inventory item");
   }
@@ -232,6 +254,49 @@ const getLowStockItems = async (
   }
 };
 
+const returnItem = async (
+  id: string,
+  data: { quantity: number; condition?: string; notes?: string; userId?: string }
+): Promise<InventoryItemDocument | null> => {
+  try {
+    if (!Types.ObjectId.isValid(id)) throw new Error("Invalid ID format");
+    const current = await InventoryItemModel.findById(id);
+    if (!current) return null;
+    const newQty = (current.quantity || 0) + (data.quantity || 0);
+    const update: any = {
+      quantity: newQty,
+      status: newQty > 0 ? "in_stock" : current.status,
+      $push: {
+        returns: {
+          date: new Date(),
+          returnedBy: data.userId ? new Types.ObjectId(data.userId) : undefined,
+          condition: data.condition || "good",
+          quantity: data.quantity,
+          notes: data.notes,
+        },
+        history: {
+          date: new Date(),
+          change: data.quantity,
+          reason: "return",
+          user: data.userId ? new Types.ObjectId(data.userId) : undefined,
+          notes: data.notes,
+        },
+      },
+    };
+    const updated = await InventoryItemModel.findByIdAndUpdate(id, update, { new: true });
+    if (updated) {
+      try {
+        const { emitEvent } = await import("../realtime/socket");
+        const { Events } = await import("../realtime/events");
+        emitEvent(Events.InventoryUpdated, { id: updated._id, item: updated });
+      } catch {}
+    }
+    return updated;
+  } catch (e: any) {
+    throw new Error(e.message || "Error returning item");
+  }
+};
+
 export {
   createInventoryItem,
   getAllInventoryItems,
@@ -243,4 +308,5 @@ export {
   addMaintenanceSchedule,
   getLowStockItems,
   updateInventoryItemWithOperators,
+  returnItem,
 };

@@ -26,12 +26,17 @@ export interface User {
   isDeleted?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  company?: string; // Company ObjectId string
+  companyRole?: string; // CompanyRole ObjectId string
+  isSuperAdmin?: boolean;
 }
 
 export interface TokenPayload {
   id: string;
   email: string;
   role: string;
+  companyId?: string;
+  isSuperAdmin?: boolean;
 }
 
 export interface AuthTokens {
@@ -143,6 +148,7 @@ export interface Booking {
     | "refunded"
     | "partial_refund";
   totalPrice: number;
+  items?: { inventoryItem: InventoryItem; quantity: number }[];
   discount?: {
     type: "percentage" | "fixed";
     value: number;
@@ -211,6 +217,8 @@ export interface Transaction {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
+  company?: string; // Company owning this transaction
+  isPlatformRevenue?: boolean;
 }
 
 export interface InventoryItem {
@@ -243,6 +251,13 @@ export interface InventoryItem {
     change: number;
     reason: string;
     user: User;
+    notes?: string;
+  }[];
+  returns?: {
+    date: Date;
+    returnedBy?: User;
+    condition?: "good" | "fair" | "damaged";
+    quantity?: number;
     notes?: string;
   }[];
   maintenanceSchedule: {
@@ -387,4 +402,77 @@ export interface Tax {
   type: string;
   appliesTo: "inventory_item" | "facitlity" | "both";
   active: boolean;
+}
+
+export interface Company {
+  name: string;
+  logoUrl?: string;
+  registrationDocs?: string[];
+  location?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  invoiceFormat?: {
+    type: "auto" | "prefix" | "paystack";
+    prefix?: string; // e.g., TIL-
+    nextNumber?: number; // auto-increment counter
+    padding?: number; // e.g., 4 -> 0001
+  };
+  currency?: string; // GHS, USD, etc.
+  isActive: boolean;
+  subscription?: {
+    plan: "monthly" | "biannual" | "annual" | "triannual";
+    expiresAt: Date;
+    licenseKey: string;
+  };
+  paystackSubaccountCode?: string;
+  paystackRecipientCode?: string;
+  feePercent?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Payout {
+  company?: string; // null for platform payout
+  isPlatform?: boolean;
+  amount: number;
+  currency: string;
+  recipientCode?: string;
+  status: "pending" | "approved" | "processing" | "paid" | "failed" | "rejected";
+  requestedBy: string;
+  processedBy?: string;
+  paystackTransferCode?: string;
+  paystackTransferId?: string;
+  reason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CompanyRole {
+  company: string; // Company ObjectId string
+  name: string; // e.g., Admin, Staff, User
+  permissions: {
+    viewInvoices?: boolean;
+    accessFinancials?: boolean;
+    viewBookings?: boolean;
+    viewInventory?: boolean;
+    createRecords?: boolean;
+    editRecords?: boolean;
+    manageUsers?: boolean;
+    manageFacilities?: boolean;
+    manageInventory?: boolean;
+    manageTransactions?: boolean;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Notification {
+  company?: string;
+  user?: string;
+  type: "info" | "warning" | "success" | "error";
+  title: string;
+  message: string;
+  data?: any;
+  isRead: boolean;
+  createdAt: Date;
 }

@@ -1,16 +1,69 @@
-import { BookingDocument, BookingModel } from "../models";
+import { BookingDocument, BookingModel, InventoryItemModel } from "../models";
 import { Types } from "mongoose";
 import { Booking } from "../types";
+
+function hasOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
+  return aStart < bEnd && bStart < aEnd;
+}
+
+async function assertNoFacilityConflicts(facilityId: string, start: Date, end: Date, excludeId?: string) {
+  const filter: any = {
+    facility: new Types.ObjectId(facilityId),
+    status: { $in: ["pending", "confirmed"] },
+  };
+  if (excludeId && Types.ObjectId.isValid(excludeId)) {
+    filter._id = { $ne: new Types.ObjectId(excludeId) };
+  }
+  const candidates = await BookingModel.find(filter).select("startDate endDate");
+  for (const c of candidates) {
+    if (hasOverlap(start, end, c.startDate as any, c.endDate as any)) {
+      throw new Error("Booking conflict: overlapping time for this facility");
+    }
+  }
+}
+
+async function adjustInventoryForItems(items: { inventoryItem: any; quantity: number }[], direction: "decrement" | "increment") {
+  if (!items || items.length === 0) return;
+  for (const it of items) {
+    if (!it?.inventoryItem || !it?.quantity) continue;
+    const id = (it.inventoryItem as any)?.toString?.() || it.inventoryItem;
+    const qty = it.quantity;
+    const doc = await InventoryItemModel.findById(id);
+    if (!doc) throw new Error("Inventory item not found");
+    let newQty = doc.quantity;
+    if (direction === "decrement") {
+      if (doc.quantity < qty) throw new Error("Insufficient inventory for booking");
+      newQty = doc.quantity - qty;
+    } else {
+      newQty = doc.quantity + qty;
+    }
+    await InventoryItemModel.findByIdAndUpdate(id, { quantity: newQty });
+  }
+}
 
 // Create a new booking
 const createBooking = async (
   bookingData: Booking
 ): Promise<BookingDocument> => {
   try {
+    if (!bookingData.startDate || !bookingData.endDate) {
+      throw new Error("Start and end dates are required");
+    }
+    if (new Date(bookingData.startDate) >= new Date(bookingData.endDate)) {
+      throw new Error("End date must be after start date");
+    }
+    await assertNoFacilityConflicts((bookingData as any).facility, new Date(bookingData.startDate), new Date(bookingData.endDate));
+    await adjustInventoryForItems((bookingData as any).items || [], "decrement");
     const booking = new BookingModel(bookingData);
-    return await booking.save();
+    const saved = await booking.save();
+    try {
+      const { emitEvent } = await import("../realtime/socket");
+      const { Events } = await import("../realtime/events");
+      emitEvent(Events.BookingCreated, { id: saved._id, booking: saved });
+    } catch {}
+    return saved;
   } catch (error) {
-    throw new Error("Error creating booking");
+    throw new Error((error as Error).message || "Error creating booking");
   }
 };
 
@@ -66,14 +119,42 @@ const updateBooking = async (
     if (!Types.ObjectId.isValid(bookingId)) {
       throw new Error("Invalid booking ID");
     }
+    if (updateData.startDate && updateData.endDate) {
+      if (new Date(updateData.startDate) >= new Date(updateData.endDate)) {
+        throw new Error("End date must be after start date");
+      }
+    }
+    const current = await BookingModel.findById(bookingId);
+    if (current) {
+      const facility = (updateData as any).facility?.toString?.() || current.facility?.toString?.();
+      const start = new Date((updateData.startDate as any) || (current.startDate as any));
+      const end = new Date((updateData.endDate as any) || (current.endDate as any));
+      await assertNoFacilityConflicts(facility, start, end, bookingId);
+      // Adjust inventory if items changed
+      const newItems = (updateData as any).items;
+      if (newItems) {
+        // First revert previous items
+        await adjustInventoryForItems(((current as any).items || []) as any, "increment");
+        // Then decrement for new items
+        await adjustInventoryForItems(newItems as any, "decrement");
+      }
+    }
     const filter = showDeleted
       ? { _id: bookingId }
       : { _id: bookingId, isDeleted: false };
-    return await BookingModel.findOneAndUpdate(filter, updateData, {
+    const updated = await BookingModel.findOneAndUpdate(filter, updateData, {
       new: true,
     });
+    if (updated) {
+      try {
+        const { emitEvent } = await import("../realtime/socket");
+        const { Events } = await import("../realtime/events");
+        emitEvent(Events.BookingUpdated, { id: updated._id, booking: updated });
+      } catch {}
+    }
+    return updated;
   } catch (error) {
-    throw new Error("Error updating booking");
+    throw new Error((error as Error).message || "Error updating booking");
   }
 };
 
