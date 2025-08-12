@@ -81,6 +81,17 @@ export const AuthAPI = {
   logout: () => apiFetch(`/auth/logout`, { method: "POST" }),
 }
 
+// Companies
+export const CompaniesAPI = {
+  onboard: (payload: any) => apiFetch(`/companies/onboard`, { method: "POST", body: JSON.stringify(payload) }),
+  pricing: () => apiFetch(`/companies/pricing`, { method: "GET" }),
+  activateSubscription: (payload: { companyId: string; plan: string; durationMonths: number }) =>
+    apiFetch(`/companies/subscription/activate`, { method: "POST", body: JSON.stringify(payload) }),
+  renewSubscription: (payload: { companyId: string; plan: string; durationMonths: number }) =>
+    apiFetch(`/companies/subscription/renew`, { method: "POST", body: JSON.stringify(payload) }),
+  updatePayoutConfig: (payload: any) => apiFetch(`/companies/payout-config`, { method: "POST", body: JSON.stringify(payload) }),
+}
+
 // Facilities
 export const FacilitiesAPI = {
   list: (params?: Record<string, string | number | boolean>) => {
@@ -105,6 +116,33 @@ export const FacilitiesAPI = {
     return apiFetch(`/facilities/${id}`, { method: "PUT", body: form })
   },
   remove: (id: string) => apiFetch(`/facilities/${id}`, { method: "DELETE" }),
+  addAvailability: (id: string, payload: any) => apiFetch(`/facilities/${id}/availability`, { method: "POST", body: JSON.stringify(payload) }),
+  removeAvailability: (id: string, payload: any) => apiFetch(`/facilities/${id}/availability`, { method: "DELETE", body: JSON.stringify(payload) }),
+}
+
+// Inventory Items
+export const InventoryAPI = {
+  list: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : ""
+    return apiFetch(`/inventory-items${qs}`, { method: "GET" })
+  },
+  lowStock: () => apiFetch(`/inventory-items/low-stock`, { method: "GET" }),
+  create: (payload: Record<string, any>, files?: File[]) => {
+    const form = new FormData()
+    for (const [k, v] of Object.entries(payload)) form.append(k, String(v))
+    if (files && files.length) files.forEach((f) => form.append("files", f))
+    return apiFetch(`/inventory-items`, { method: "POST", body: form })
+  },
+  update: (id: string, payload: Record<string, any>, files?: File[]) => {
+    const form = new FormData()
+    for (const [k, v] of Object.entries(payload)) form.append(k, String(v))
+    if (files && files.length) files.forEach((f) => form.append("files", f))
+    return apiFetch(`/inventory-items/${id}`, { method: "PUT", body: form })
+  },
+  remove: (id: string) => apiFetch(`/inventory-items/${id}`, { method: "DELETE" }),
+  restore: (id: string) => apiFetch(`/inventory-items/${id}/restore`, { method: "POST" }),
+  returnItem: (id: string, payload: any) => apiFetch(`/inventory-items/${id}/return`, { method: "POST", body: JSON.stringify(payload) }),
+  addMaintenance: (id: string, payload: any) => apiFetch(`/inventory-items/${id}/maintenance`, { method: "POST", body: JSON.stringify(payload) }),
 }
 
 // Bookings
@@ -128,4 +166,55 @@ export const UsersAPI = {
   update: (id: string, payload: any) => apiFetch(`/users/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   updateRole: (id: string, role: string) => apiFetch(`/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role }) }),
   stats: () => apiFetch(`/users/statistics`, { method: "GET" }),
+}
+
+// Cart
+export const CartAPI = {
+  list: () => apiFetch(`/cart`, { method: "GET" }),
+  add: (item: { id: string; type: "facility" | "inventory"; quantity?: number }) =>
+    apiFetch(`/cart/add`, { method: "POST", body: JSON.stringify(item) }),
+  remove: (item: { id: string; type: "facility" | "inventory" }) =>
+    apiFetch(`/cart/remove`, { method: "POST", body: JSON.stringify(item) }),
+  clear: () => apiFetch(`/cart/clear`, { method: "POST" }),
+  checkout: () => apiFetch(`/cart/checkout`, { method: "POST" }),
+}
+
+// Invoices
+export const InvoicesAPI = {
+  create: (payload: any) => apiFetch(`/invoices`, { method: "POST", body: JSON.stringify(payload) }),
+  pay: (id: string, payload: any) => apiFetch(`/invoices/${id}/pay`, { method: "POST", body: JSON.stringify(payload) }),
+  listCompany: () => apiFetch(`/invoices/company`, { method: "GET" }),
+  listMine: () => apiFetch(`/invoices/me`, { method: "GET" }),
+  receiptsCompany: () => apiFetch(`/invoices/company/receipts`, { method: "GET" }),
+  receiptsMine: () => apiFetch(`/invoices/me/receipts`, { method: "GET" }),
+}
+
+// Tax Schedules
+export const TaxSchedulesAPI = {
+  list: () => apiFetch(`/tax-schedules`, { method: "GET" }),
+  create: (payload: any) => apiFetch(`/tax-schedules`, { method: "POST", body: JSON.stringify(payload) }),
+  update: (id: string, payload: any) => apiFetch(`/tax-schedules/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  remove: (id: string) => apiFetch(`/tax-schedules/${id}`, { method: "DELETE" }),
+}
+
+// Taxes
+export const TaxesAPI = {
+  list: () => apiFetch(`/taxes`, { method: "GET" }),
+  create: (payload: any) => apiFetch(`/taxes`, { method: "POST", body: JSON.stringify(payload) }),
+  update: (id: string, payload: any) => apiFetch(`/taxes/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  remove: (id: string) => apiFetch(`/taxes/${id}`, { method: "DELETE" }),
+}
+
+// Transactions
+export const TransactionsAPI = {
+  listCompany: () => apiFetch(`/transaction`, { method: "GET" }),
+  initializePayment: (payload: any) => apiFetch(`/transaction/initialize`, { method: "POST", body: JSON.stringify(payload) }),
+  verifyByReference: (reference: string) => apiFetch(`/transaction/verify/${reference}`, { method: "GET" }),
+  detailsByReference: (reference: string) => apiFetch(`/transaction/details/${reference}`, { method: "GET" }),
+}
+
+// Cashflow
+export const CashflowAPI = {
+  summary: () => apiFetch(`/cashflow/summary`, { method: "GET" }),
+  anomalies: () => apiFetch(`/cashflow/anomalies`, { method: "GET" }),
 }
