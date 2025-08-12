@@ -3,7 +3,14 @@ import { DeletionRequestModel } from "../models/deletionRequest.model";
 import { sendSuccess, sendError } from "../utils";
 import { CONFIG } from "../config";
 import { enqueueDeletion } from "../queues";
-import { UserModel, CompanyModel, BookingModel, InventoryItemModel, TransactionModel, NotificationModel } from "../models";
+import {
+  UserModel,
+  CompanyModel,
+  BookingModel,
+  InventoryItemModel,
+  TransactionModel,
+  NotificationModel,
+} from "../models";
 
 export async function queueDeletion(req: Request, res: Response) {
   try {
@@ -17,24 +24,27 @@ export async function queueDeletion(req: Request, res: Response) {
       executeAfter,
       reason,
     } as any);
-    return sendSuccess(res, "Deletion queued", { request: doc }, 201);
+    sendSuccess(res, "Deletion queued", { request: doc }, 201);
   } catch (e: any) {
-    return sendError(res, "Failed to queue deletion", e.message);
+    sendError(res, "Failed to queue deletion", e.message);
   }
 }
 
 export async function list(req: Request, res: Response) {
   try {
     const docs = await DeletionRequestModel.find().sort({ executeAfter: 1 });
-    return sendSuccess(res, "Deletion requests", { requests: docs });
+    sendSuccess(res, "Deletion requests", { requests: docs });
   } catch (e: any) {
-    return sendError(res, "Failed to list deletion requests", e.message);
+    sendError(res, "Failed to list deletion requests", e.message);
   }
 }
 
 export async function processDueDeletions() {
   const now = new Date();
-  const due = await DeletionRequestModel.find({ status: "queued", executeAfter: { $lte: now } });
+  const due = await DeletionRequestModel.find({
+    status: "queued",
+    executeAfter: { $lte: now },
+  });
   for (const req of due) {
     try {
       if ((req as any).scope === "user" && (req as any).user) {
@@ -63,9 +73,14 @@ export async function processDueDeletions() {
 
 export async function queueCompanyDeletion(req: Request, res: Response) {
   try {
-    if (!(req.user as any)?.isSuperAdmin) return sendError(res, "Forbidden", null, 403);
+    if (!(req.user as any)?.isSuperAdmin) {
+      sendError(res, "Forbidden", null, 403);
+      return;
+    }
     const { companyId, reason } = req.body;
-    const executeAfter = new Date(Date.now() + CONFIG.HARD_DELETE_DELAY_DAYS * 24 * 60 * 60 * 1000);
+    const executeAfter = new Date(
+      Date.now() + CONFIG.HARD_DELETE_DELAY_DAYS * 24 * 60 * 60 * 1000
+    );
     const doc = await DeletionRequestModel.create({
       scope: "company",
       company: companyId,
@@ -75,16 +90,18 @@ export async function queueCompanyDeletion(req: Request, res: Response) {
       reason,
     } as any);
     await enqueueDeletion((doc as any)._id.toString(), executeAfter);
-    return sendSuccess(res, "Company deletion queued", { request: doc }, 201);
+    sendSuccess(res, "Company deletion queued", { request: doc }, 201);
   } catch (e: any) {
-    return sendError(res, "Failed to queue deletion", e.message);
+    sendError(res, "Failed to queue deletion", e.message);
   }
 }
 
 export async function queueUserDeletion(req: Request, res: Response) {
   try {
     const { userId, reason } = req.body;
-    const executeAfter = new Date(Date.now() + CONFIG.HARD_DELETE_DELAY_DAYS * 24 * 60 * 60 * 1000);
+    const executeAfter = new Date(
+      Date.now() + CONFIG.HARD_DELETE_DELAY_DAYS * 24 * 60 * 60 * 1000
+    );
     const doc = await DeletionRequestModel.create({
       scope: "user",
       user: userId,
@@ -94,19 +111,26 @@ export async function queueUserDeletion(req: Request, res: Response) {
       reason,
     } as any);
     await enqueueDeletion((doc as any)._id.toString(), executeAfter);
-    return sendSuccess(res, "User deletion queued", { request: doc }, 201);
+    sendSuccess(res, "User deletion queued", { request: doc }, 201);
   } catch (e: any) {
-    return sendError(res, "Failed to queue deletion", e.message);
+    sendError(res, "Failed to queue deletion", e.message);
   }
 }
 
 export async function cancelDeletion(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const doc = await DeletionRequestModel.findByIdAndUpdate(id, { status: "cancelled" }, { new: true });
-    if (!doc) return sendError(res, "Request not found", null, 404);
-    return sendSuccess(res, "Deletion cancelled", { request: doc });
+    const doc = await DeletionRequestModel.findByIdAndUpdate(
+      id,
+      { status: "cancelled" },
+      { new: true }
+    );
+    if (!doc) {
+      sendError(res, "Request not found", null, 404);
+      return;
+    }
+    sendSuccess(res, "Deletion cancelled", { request: doc });
   } catch (e: any) {
-    return sendError(res, "Failed to cancel deletion", e.message);
+    sendError(res, "Failed to cancel deletion", e.message);
   }
 }
