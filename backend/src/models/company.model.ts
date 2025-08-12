@@ -33,7 +33,8 @@ const CompanySchema = new Schema<CompanyDocument>(
       licenseKey: { type: String },
     },
     paystackSubaccountCode: { type: String },
-    feePercent: { type: Number, default: 0 },
+    feePercent: { type: Number, default: 5 },
+    paystackRecipientCode: { type: String },
   },
   { timestamps: true }
 );
