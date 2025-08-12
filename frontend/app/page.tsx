@@ -10,6 +10,54 @@ import { Footer } from "@/components/layout/footer"
 import { useFacilities } from "@/hooks/use-facilities"
 import { useState } from "react"
 
+export default function FacilityRentalPlatform() {
+  const [searchLocation, setSearchLocation] = useState<string>("")
+  const { facilities, isLoading, error, retry, toggleFavorite } = useFacilities(searchLocation)
+  const [rentals] = useState(mockRentals)
+
+  const popularFacilities = facilities.slice(0, 8)
+  const weekendFacilities = facilities.slice(8, 16)
+
+  const handleRentalFavoriteToggle = async (rentalId: string) => {
+    console.log("Toggle favorite for rental:", rentalId)
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-48 py-8 space-y-16">
+        <FacilityGrid
+          title="Popular facilities in Accra"
+          facilities={popularFacilities}
+          isLoading={isLoading}
+          error={error}
+          onRetry={retry}
+          onFavoriteToggle={toggleFavorite}
+        />
+
+      	<FacilityGrid
+          title="Available in East Legon this weekend"
+          facilities={weekendFacilities}
+          isLoading={isLoading}
+          error={error}
+          onRetry={retry}
+          onFavoriteToggle={toggleFavorite}
+        />
+
+        <RentalGrid title="Popular equipment rentals" rentals={rentals} onFavoriteToggle={handleRentalFavoriteToggle} />
+
+        <TopHosts />
+
+        <CityInspiration />
+      </main>
+
+      <HostBanner />
+      <Footer />
+    </div>
+  )
+}
+
 const mockRentals = [
   {
     id: "1",
@@ -40,51 +88,3 @@ const mockRentals = [
     isFavorite: true,
   },
 ]
-
-export default function FacilityRentalPlatform() {
-  const [searchLocation, setSearchLocation] = useState<string>("")
-  const { facilities, isLoading, error, retry, toggleFavorite } = useFacilities(searchLocation)
-  const [rentals] = useState(mockRentals)
-
-  const popularFacilities = facilities.slice(0, 8)
-  const weekendFacilities = facilities.slice(8, 16)
-
-  const handleRentalFavoriteToggle = async (rentalId: string) => {
-    console.log("Toggle favorite for rental:", rentalId)
-  }
-
-  return (
-    <div className="min-h-screen bg-white">
-      <Header />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-48 py-8 space-y-16">
-        <FacilityGrid
-          title="Popular facilities in Accra"
-          facilities={popularFacilities}
-          isLoading={isLoading}
-          error={error}
-          onRetry={retry}
-          onFavoriteToggle={toggleFavorite}
-        />
-
-        <FacilityGrid
-          title="Available in East Legon this weekend"
-          facilities={weekendFacilities}
-          isLoading={isLoading}
-          error={error}
-          onRetry={retry}
-          onFavoriteToggle={toggleFavorite}
-        />
-
-        <RentalGrid title="Popular equipment rentals" rentals={rentals} onFavoriteToggle={handleRentalFavoriteToggle} />
-
-        <TopHosts />
-
-        <CityInspiration />
-      </main>
-
-      <HostBanner />
-      <Footer />
-    </div>
-  )
-}
