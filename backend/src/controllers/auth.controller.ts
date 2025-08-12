@@ -63,6 +63,8 @@ const register = async (req: Request, res: Response): Promise<void> => {
       id: user._id!.toString(),
       email: user.email,
       role: user.role,
+      companyId: (user as any).company?.toString?.(),
+      isSuperAdmin: (user as any).isSuperAdmin === true,
     };
 
     const accessToken = await generateAuthToken(tokenPayload);
@@ -142,6 +144,8 @@ const login = async (req: Request, res: Response): Promise<void> => {
       id: user._id!.toString(),
       email: user.email,
       role: user.role,
+      companyId: (user as any).company?.toString?.(),
+      isSuperAdmin: (user as any).isSuperAdmin === true,
     };
 
     const accessToken = await generateAuthToken(tokenPayload);
@@ -205,6 +209,8 @@ const refreshToken = async (req: Request, res: Response): Promise<void> => {
       id: user._id!.toString(),
       email: user.email,
       role: user.role,
+      companyId: (user as any).company?.toString?.(),
+      isSuperAdmin: (user as any).isSuperAdmin === true,
     };
 
     const accessToken = await generateAuthToken(tokenPayload);

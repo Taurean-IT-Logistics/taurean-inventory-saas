@@ -20,10 +20,19 @@ import {
   bookingRoutes,
   resourceRoutes,
   taxRoutes,
+  companyRoutes,
+  invoiceRoutes,
+  taxScheduleRoutes,
+  cartRoutes,
+  cashflowRoutes,
+  payoutRoutes,
+  deletionRoutes,
 } from "./routes";
+import { initSocket } from "./realtime/socket";
 
 const app: express.Application = express();
 const server = createServer(app);
+initSocket(server);
 
 app.use(compression());
 app.use(helmet());
@@ -46,6 +55,13 @@ app.use("/api/v1/transaction", transactionRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
 app.use("/api/v1/resources", resourceRoutes);
 app.use("/api/v1/taxes", taxRoutes);
+app.use("/api/v1/companies", companyRoutes);
+app.use("/api/v1/invoices", invoiceRoutes);
+app.use("/api/v1/tax-schedules", taxScheduleRoutes);
+app.use("/api/v1/cart", cartRoutes);
+app.use("/api/v1/cashflow", cashflowRoutes);
+app.use("/api/v1/payouts", payoutRoutes);
+app.use("/api/v1/deletions", deletionRoutes);
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");

@@ -16,8 +16,7 @@ env.txt
 
 # Build output
 dist/               
-.vscode/  
-uploads/*            
+.vscode/              
 
 # Testing
 coverage/             # Code coverage reports
@@ -29,6 +28,8 @@ logs/
 *.log
 *.tmp
 tmp/
+
+uploads/*
 
 
 # Optional: If using Docker

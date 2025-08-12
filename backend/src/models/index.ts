@@ -13,3 +13,6 @@ export {
 export { SystemAlertModel, SystemAlertDocument } from "./systemAlert.model";
 export { TransactionModel, TransactionDocument } from "./transaction.model";
 export { TaxModel, TaxDocument } from "./tax.model";
+export { CompanyModel, CompanyDocument } from "./company.model";
+export { CompanyRoleModel, CompanyRoleDocument } from "./companyRole.model";
+export { NotificationModel, NotificationDocument } from "./notification.model";

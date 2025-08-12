@@ -16,6 +16,15 @@ const CONFIG = {
   EMAIL_TOKEN_SECRET: process.env.EMAIL_TOKEN_SECRET,
   EMAIL_TOKEN_EXPIRATION: process.env.EMAIL_TOKEN_EXPIRATION,
   PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
+  REDIS_URL:
+    process.env.REDIS_URL ||
+    "redis://:l5B6sKuMdrKkJ3EKhTTrxVkPVLiAkLPK@redis-12366.c11.us-east-1-2.ec2.redns.redis-cloud.com:12366",
+  KAFKA_BROKERS: (process.env.KAFKA_BROKERS || "").split(",").filter(Boolean),
+  KAFKA_CLIENT_ID: process.env.KAFKA_CLIENT_ID || "taurean-backend",
+  HARD_DELETE_DELAY_DAYS: parseInt(
+    process.env.HARD_DELETE_DELAY_DAYS || "30",
+    10
+  ),
 };
 
 const STATUS_CODES = {

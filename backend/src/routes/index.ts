@@ -6,6 +6,13 @@ import transactionRoutes from "./transaction.route";
 import bookingRoutes from "./booking.route";
 import resourceRoutes from "./resource.route";
 import taxRoutes from "./tax.route";
+import companyRoutes from "./company.route";
+import invoiceRoutes from "./invoice.route";
+import taxScheduleRoutes from "./taxSchedule.route";
+import cartRoutes from "./cart.route";
+import cashflowRoutes from "./cashflow.route";
+import payoutRoutes from "./payout.route";
+import deletionRoutes from "./deletion.route";
 
 export {
   userRoutes,
@@ -16,4 +23,11 @@ export {
   bookingRoutes,
   resourceRoutes,
   taxRoutes,
+  companyRoutes,
+  invoiceRoutes,
+  taxScheduleRoutes,
+  cartRoutes,
+  cashflowRoutes,
+  payoutRoutes,
+  deletionRoutes,
 };

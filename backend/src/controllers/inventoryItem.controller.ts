@@ -6,6 +6,7 @@ import {
   sendNotFound,
   sendValidationError,
 } from "../utils";
+import { Types } from "mongoose";
 
 interface MulterFile {
   path?: string;
@@ -281,4 +282,34 @@ export const getLowStockItems = async (
   } catch (error: any) {
     sendError(res, "Failed to fetch low stock items", error.message);
   }
+};
+
+export const returnInventoryItem = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id;
+    const { quantity, condition, notes } = req.body;
+    if (!Types.ObjectId.isValid(id)) { sendError(res, "Invalid ID", null, 400); return; }
+    if (typeof quantity !== "number" || quantity <= 0) { sendError(res, "Quantity must be > 0", null, 400); return; }
+    const updated = await InventoryItemService.returnItem(id, {
+      quantity,
+      condition,
+      notes,
+      userId: (req.user as any)?.id,
+    });
+    if (!updated) { sendNotFound(res, "Inventory item not found"); return; }
+    sendSuccess(res, "Item returned", updated);
+  } catch (e: any) {
+    sendError(res, e.message || "Failed to return item");
+  }
+};
+
+export default {
+  getAllInventoryItems,
+  getInventoryItemById,
+  createInventoryItem,
+  updateInventoryItem,
+  deleteInventoryItem,
+  restoreInventoryItem,
+  addMaintenanceSchedule,
+  getLowStockItems,
 };

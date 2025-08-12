@@ -48,6 +48,8 @@ const TransactionSchema = new Schema<TransactionDocument>(
     attachments: [{ type: String }],
     tags: [{ type: String, trim: true }],
     isDeleted: { type: Boolean, default: false },
+    company: { type: Schema.Types.ObjectId, ref: "Company" },
+    isPlatformRevenue: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -58,6 +60,8 @@ TransactionSchema.index({ user: 1, createdAt: -1 });
 TransactionSchema.index({ facility: 1, createdAt: -1 });
 TransactionSchema.index({ reconciled: 1 });
 TransactionSchema.index({ method: 1 });
+TransactionSchema.index({ company: 1, createdAt: -1 });
+TransactionSchema.index({ isPlatformRevenue: 1 });
 
 const TransactionModel: Model<TransactionDocument> = model(
   "Transaction",

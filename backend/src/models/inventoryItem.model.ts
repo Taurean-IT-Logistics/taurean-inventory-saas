@@ -1,7 +1,9 @@
 import { Schema, model, Model, Document } from "mongoose";
 import { InventoryItem } from "../types";
 
-interface InventoryItemDocument extends Document, InventoryItem {}
+interface InventoryItemDocument extends Document, InventoryItem {
+  returns?: any[];
+}
 
 const InventoryItemSchema = new Schema<InventoryItemDocument>(
   {
@@ -47,6 +49,16 @@ const InventoryItemSchema = new Schema<InventoryItemDocument>(
         change: { type: Number, required: true },
         reason: { type: String, required: true, trim: true },
         user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        notes: { type: String, trim: true },
+      },
+    ],
+    // Returns log for return workflow
+    returns: [
+      {
+        date: { type: Date, default: Date.now },
+        returnedBy: { type: Schema.Types.ObjectId, ref: "User" },
+        condition: { type: String, enum: ["good", "fair", "damaged"], default: "good" },
+        quantity: { type: Number, min: 0 },
         notes: { type: String, trim: true },
       },
     ],

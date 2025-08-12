@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../helpers";
-import { sendUnauthorized } from "../utils";
+import { sendUnauthorized, sendError } from "../utils";
+import { CompanyModel, CompanyRoleModel, UserModel } from "../models";
 
 export function AuthMiddleware(
   req: Request,
@@ -32,11 +33,82 @@ export function AuthorizeRoles(...roles: string[]) {
       return;
     }
 
+    // Super admin bypass
+    if ((req.user as any).isSuperAdmin) {
+      return next();
+    }
+
     if (!roles.includes(req.user.role)) {
       sendUnauthorized(res, `Access requires one of: ${roles.join(", ")}`);
       return;
     }
 
     next();
+  };
+}
+
+export function RequireActiveCompany() {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if ((req.user as any)?.isSuperAdmin) {
+        return next();
+      }
+      const companyId = (req.user as any)?.companyId;
+      if (!companyId) {
+        sendUnauthorized(res, "No company assigned");
+        return;
+      }
+      const company = await CompanyModel.findById(companyId).lean();
+      if (!company || company.isActive !== true) {
+        sendUnauthorized(res, "Company inactive or not found");
+        return;
+      }
+      const sub = (company as any).subscription;
+      if (!sub || !sub.expiresAt || new Date(sub.expiresAt) < new Date()) {
+        sendUnauthorized(res, "Subscription expired or missing");
+        return;
+      }
+      return next();
+    } catch (e: any) {
+      sendError(res, "Company access check failed", e.message);
+      return;
+    }
+  };
+}
+
+export function RequirePermissions(required: (keyof any)[]) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if ((req.user as any)?.isSuperAdmin) return next();
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        sendUnauthorized(res, "Authentication required");
+        return;
+      }
+      const user = await UserModel.findById(userId)
+        .select("companyRole")
+        .lean();
+      if (!user || !(user as any).companyRole) {
+        sendUnauthorized(res, "No company role assigned");
+        return;
+      }
+      const role = await CompanyRoleModel.findById(
+        (user as any).companyRole
+      ).lean();
+      if (!role) {
+        sendUnauthorized(res, "Role not found");
+        return;
+      }
+      const perms = (role as any).permissions || {};
+      const ok = required.every((p) => perms[p] === true);
+      if (!ok) {
+        sendUnauthorized(res, "Insufficient permissions");
+        return;
+      }
+      return next();
+    } catch (e: any) {
+      sendError(res, "Permission check failed", e.message);
+      return;
+    }
   };
 }

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { BookingService, UserService } from "../services";
 import { sendSuccess, sendError, sendNotFound } from "../utils";
+import { BookingModel } from "../models";
 
 const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -147,6 +148,36 @@ const getAuthUserBookings = async (
   }
 };
 
+const checkIn = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const doc = await BookingModel.findByIdAndUpdate(
+      id,
+      { $set: { status: "confirmed", checkIn: { time: new Date(), verifiedBy: (req.user as any)?.id } } },
+      { new: true }
+    );
+    if (!doc) { sendNotFound(res, "Booking not found"); return; }
+    sendSuccess(res, "Checked in", doc);
+  } catch (e: any) {
+    sendError(res, e.message || "Failed to check in");
+  }
+};
+
+const checkOut = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const doc = await BookingModel.findByIdAndUpdate(
+      id,
+      { $set: { status: "completed", checkOut: { time: new Date(), verifiedBy: (req.user as any)?.id, condition: req.body?.condition || "good", notes: req.body?.notes } } },
+      { new: true }
+    );
+    if (!doc) { sendNotFound(res, "Booking not found"); return; }
+    sendSuccess(res, "Checked out", doc);
+  } catch (e: any) {
+    sendError(res, e.message || "Failed to check out");
+  }
+};
+
 export {
   createBooking,
   getBookingById,
@@ -155,4 +186,6 @@ export {
   deleteBooking,
   getAllBookings,
   getAuthUserBookings,
+  checkIn,
+  checkOut,
 };
