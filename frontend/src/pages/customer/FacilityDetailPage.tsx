@@ -48,39 +48,38 @@ const FacilityImageGallery = ({
     return <Badge bg={config.bg as BadgeBg}>{config.text}</Badge>;
   };
   return (
-    <Card border="secondary" className="mb-4">
-      <Card.Body className="p-0">
-        <div className="position-relative">
-          <Card.Img
+    <div className="card mb-6">
+      <div className="p-0">
+        <div className="relative">
+          <img
             src={getResourceUrl(images[selectedImage]?.path || '')}
             alt={facility.name}
-            style={{ height: '400px', objectFit: 'cover' }}
+            className="w-full h-96 object-cover rounded-t-lg"
           />
-          <div className="position-absolute top-0 start-0 p-3">
+          <div className="absolute top-0 left-0 p-3">
             {getStatusBadge(facility.isActive)}
           </div>
         </div>
         {images.length > 1 && (
-          <Row className="g-2 p-3">
+          <div className="grid grid-cols-4 gap-2 p-3">
             {images.map((image, index) => (
-              <Col xs={3} key={index}>
-                <Card.Img
+              <div key={index}>
+                <img
                   src={getResourceUrl(image.path)}
                   alt={`${facility.name} ${index + 1}`}
-                  className={`cursor-pointer ${
+                  className={`w-full h-20 object-cover rounded cursor-pointer transition-all ${
                     selectedImage === index
-                      ? 'border border-primary border-2'
-                      : 'border border-secondary'
+                      ? 'border-2 border-primary-500'
+                      : 'border border-gray-300 hover:border-gray-400'
                   }`}
-                  style={{ height: '80px', objectFit: 'cover' }}
                   onClick={() => setSelectedImage(index)}
                 />
-              </Col>
+              </div>
             ))}
-          </Row>
+          </div>
         )}
-      </Card.Body>
-    </Card>
+      </div>
+    </div>
   );
 };
 
@@ -142,50 +141,44 @@ const FacilityDetails = ({
           </div>
         )}
       </div>
-      <Row className="mb-5">
-        <Col md={4} className="mb-3">
-          <div className="d-flex align-items-center">
-            <Users className="w-6 h-6 text-blue-600 mr-3" />
-            <div>
-              <div className="fw-semibold">Capacity</div>
-              <div className="text-muted small">
-                Up to {facility.capacity.maximum} guests
-              </div>
-              <div className="text-muted small">
-                Recommended: {facility.capacity.recommended}
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="flex items-center">
+          <Users className="w-6 h-6 text-primary-600 mr-3" />
+          <div>
+            <div className="font-semibold">Capacity</div>
+            <div className="text-gray-600 dark:text-gray-400 text-sm">
+              Up to {facility.capacity.maximum} guests
+            </div>
+            <div className="text-gray-600 dark:text-gray-400 text-sm">
+              Recommended: {facility.capacity.recommended}
             </div>
           </div>
-        </Col>
-        <Col md={4} className="mb-3">
-          <div className="d-flex align-items-center">
-            <Clock className="w-6 h-6 text-blue-600 mr-3" />
-            <div>
-              <div className="fw-semibold">Operating Hours</div>
-              <div className="text-muted small">
-                {amPm(facility.operationalHours.opening)} -{' '}
-                {amPm(facility.operationalHours.closing)}
-              </div>
+        </div>
+        <div className="flex items-center">
+          <Clock className="w-6 h-6 text-primary-600 mr-3" />
+          <div>
+            <div className="font-semibold">Operating Hours</div>
+            <div className="text-gray-600 dark:text-gray-400 text-sm">
+              {amPm(facility.operationalHours.opening)} -{' '}
+              {amPm(facility.operationalHours.closing)}
             </div>
           </div>
-        </Col>
-        <Col md={4} className="mb-3">
-          <div className="d-flex align-items-center">
-            <Calendar className="w-6 h-6 text-blue-600 mr-3" />
-            <div>
-              <div className="fw-semibold">Availability</div>
-              <div className="text-muted small">
-                {
-                  facility.availability.filter(
-                    (a: { isAvailable: boolean }) => a.isAvailable
-                  ).length
-                }{' '}
-                days/week
-              </div>
+        </div>
+        <div className="flex items-center">
+          <Calendar className="w-6 h-6 text-primary-600 mr-3" />
+          <div>
+            <div className="font-semibold">Availability</div>
+            <div className="text-gray-600 dark:text-gray-400 text-sm">
+              {
+                facility.availability.filter(
+                  (a: { isAvailable: boolean }) => a.isAvailable
+                ).length
+              }{' '}
+              days/week
             </div>
           </div>
-        </Col>
-      </Row>
+        </div>
+      </div>
     </>
   );
 };
@@ -209,19 +202,17 @@ interface FacilityAmenitiesProps {
 const FacilityAmenities = ({ amenities }: FacilityAmenitiesProps) => (
   <div className="mb-5">
     <h3 className="h4 fw-semibold mb-3">What this place offers</h3>
-    <Row>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {amenities.map((amenity: string, idx: number) => (
-        <Col md={6} className="mb-3" key={idx}>
-          <div className="d-flex align-items-center">
-            {(() => {
-              const IconComponent = getAmenityIcon(amenity);
-              return <IconComponent className="w-5 h-5 text-blue-600 mr-3" />;
-            })()}
-            <span>{amenity}</span>
-          </div>
-        </Col>
+        <div className="flex items-center" key={idx}>
+          {(() => {
+            const IconComponent = getAmenityIcon(amenity);
+            return <IconComponent className="w-5 h-5 text-primary-600 mr-3" />;
+          })()}
+          <span className="text-gray-900 dark:text-gray-100">{amenity}</span>
+        </div>
       ))}
-    </Row>
+    </div>
   </div>
 );
 

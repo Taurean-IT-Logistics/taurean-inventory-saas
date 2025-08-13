@@ -1,5 +1,3 @@
-import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { faHourglassHalf } from '@fortawesome/free-regular-svg-icons';
 import {
   Icon,
   UilChartPie,
@@ -8,11 +6,12 @@ import {
   UilFilesLandscapesAlt,
   UilPuzzlePiece
 } from '@iconscout/react-unicons';
+import { Clock } from 'lucide-react';
 
 export interface Route {
   name: string;
-  icon?: IconProp | string | string[];
-  iconSet?: 'font-awesome' | 'feather' | 'unicons';
+  icon?: React.ComponentType<any> | string | string[];
+  iconSet?: 'lucide' | 'unicons';
   pages?: Route[];
   path?: string;
   pathName?: string;
@@ -675,8 +674,8 @@ export const routes: RouteItems[] = [
       },
       {
         name: 'coming-soon',
-        iconSet: 'font-awesome',
-        icon: faHourglassHalf,
+                  iconSet: 'lucide',
+        icon: Clock,
         path: '/pages/coming-soon',
         pathName: 'coming-soon',
         active: true
