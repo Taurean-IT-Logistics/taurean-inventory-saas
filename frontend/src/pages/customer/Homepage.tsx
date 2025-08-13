@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Col, Container, Row, Spinner } from 'react-bootstrap';
+import { Loader2 } from 'lucide-react';
 import {
   BookingStatsSection,
   ContactTeamSection,
@@ -57,71 +57,65 @@ const Homepage = () => {
   }, []);
 
   return (
-    <div className="pt-5 mb-9">
+    <div className="pt-20 mb-36">
       <section className="py-0">
-        <Container fluid>
+        <div className="container mx-auto px-4 max-w-7xl">
           {loading ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" variant="primary" />
+            <div className="text-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-primary-600 mx-auto" />
             </div>
           ) : (
             <>
               {/* Banner */}
-              <Row className="mb-5">
-                <Col className="text-center">
+              <div className="mb-20">
+                <div className="text-center">
                   <Carousel autoPlay={true}>
                     <HolidayBookingSection />
                     <BookingStatsSection />
                     <ContactTeamSection />
                     <SpecialDealsSection />
                   </Carousel>
-                </Col>
-              </Row>
+                </div>
+              </div>
 
               {/* Top Facilities Today */}
-              <Row className="mb-5">
-                <Col>
-                  <PageHeroSections
-                    to="facilities"
-                    title="Top Facilities Today"
-                    facilities={facilities}
-                  />
-                </Col>
-              </Row>
+              <div className="mb-20">
+                <PageHeroSections
+                  to="facilities"
+                  title="Top Facilities Today"
+                  facilities={facilities}
+                />
+              </div>
 
               {/* Top Booked Facilities */}
-              <Row className="mb-5">
-                <Col>
-                  <PageHeroSections
-                    to="facilities"
-                    title="Top Booked Facilities"
-                    facilities={facilities}
-                  />
-                </Col>
-              </Row>
+              <div className="mb-20">
+                <PageHeroSections
+                  to="facilities"
+                  title="Top Booked Facilities"
+                  facilities={facilities}
+                />
+              </div>
 
               {/* Top Inventory Items */}
-              <Row className="mb-5">
-                <Col>
-                  <InventoryHeroSection
-                    to="rental"
-                    title="Top Items"
-                    items={inventoryItems}
-                  />
-                </Col>
-              </Row>
+              <div className="mb-20">
+                <InventoryHeroSection
+                  to="rental"
+                  title="Top Items"
+                  items={inventoryItems}
+                />
+              </div>
 
               {/* Become Member CTA */}
               {!user && (
-                <Row className="mb-5">
-                  <Col className="text-center">
+                <div className="mb-20">
+                  <div className="text-center">
                     <EcomBecomeMember />
-                  </Col>
-                </Row>
+                  </div>
+                </div>
               )}
             </>
           )}
-        </Container>
+        </div>
       </section>
     </div>
   );

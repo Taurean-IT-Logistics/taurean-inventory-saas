@@ -1,21 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Button, Card, Form } from 'react-bootstrap';
 import Badge, { BadgeBg } from 'components/base/Badge';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faCheck,
-  faStar,
-  faMapMarkerAlt,
-  faUsers,
-  faClock,
-  faWifi,
-  faParking,
-  faUtensils,
-  faDesktop,
-  faSnowflake,
-  faCalendarAlt
-} from '@fortawesome/free-solid-svg-icons';
+  Check,
+  Star,
+  MapPin,
+  Users,
+  Clock,
+  Wifi,
+  Car,
+  Utensils,
+  Monitor,
+  Snowflake,
+  Calendar
+} from 'lucide-react';
 import { currencyFormat } from 'helpers/utils';
 import FacilityDetailLoader from 'components/facilities/FacilityDetailLoader';
 import { Facility, User } from 'types';
@@ -106,12 +104,12 @@ const FacilityDetails = ({
           <h1 className="display-6 fw-bold mb-2">{facility.name}</h1>
           <div className="d-flex align-items-center gap-3 text-muted">
             <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" />
+              <MapPin className="w-4 h-4 mr-2" />
               <span>{facility.location.address}</span>
             </div>
             {facility.rating && (
               <div className="d-flex align-items-center">
-                <FontAwesomeIcon icon={faStar} className="text-warning me-1" />
+                <Star className="w-4 h-4 text-yellow-500 mr-1 fill-current" />
                 <span className="fw-semibold">{facility.rating.average}</span>
                 <span className="ms-1 text-muted">
                   ({facility.rating.totalReviews} reviews)
@@ -124,7 +122,7 @@ const FacilityDetails = ({
       <div className="d-flex gap-2 mb-4">
         {hasVerifiedReviews && (
           <Badge bg="success" className="d-flex align-items-center">
-            <FontAwesomeIcon icon={faCheck} className="me-1" />
+            <Check className="w-4 h-4 mr-1" />
             Verified
           </Badge>
         )}
@@ -147,10 +145,7 @@ const FacilityDetails = ({
       <Row className="mb-5">
         <Col md={4} className="mb-3">
           <div className="d-flex align-items-center">
-            <FontAwesomeIcon
-              icon={faUsers}
-              className="text-primary me-3 fs-4"
-            />
+            <Users className="w-6 h-6 text-blue-600 mr-3" />
             <div>
               <div className="fw-semibold">Capacity</div>
               <div className="text-muted small">
@@ -164,10 +159,7 @@ const FacilityDetails = ({
         </Col>
         <Col md={4} className="mb-3">
           <div className="d-flex align-items-center">
-            <FontAwesomeIcon
-              icon={faClock}
-              className="text-primary me-3 fs-4"
-            />
+            <Clock className="w-6 h-6 text-blue-600 mr-3" />
             <div>
               <div className="fw-semibold">Operating Hours</div>
               <div className="text-muted small">
@@ -179,10 +171,7 @@ const FacilityDetails = ({
         </Col>
         <Col md={4} className="mb-3">
           <div className="d-flex align-items-center">
-            <FontAwesomeIcon
-              icon={faCalendarAlt}
-              className="text-primary me-3 fs-4"
-            />
+            <Calendar className="w-6 h-6 text-blue-600 mr-3" />
             <div>
               <div className="fw-semibold">Availability</div>
               <div className="text-muted small">
@@ -204,15 +193,15 @@ const FacilityDetails = ({
 // --- FacilityAmenities ---
 const getAmenityIcon = (amenity: string) => {
   const amenityLower = amenity.toLowerCase();
-  if (amenityLower.includes('wifi')) return faWifi;
-  if (amenityLower.includes('parking')) return faParking;
+  if (amenityLower.includes('wifi')) return Wifi;
+  if (amenityLower.includes('parking')) return Car;
   if (amenityLower.includes('coffee') || amenityLower.includes('catering'))
-    return faUtensils;
+    return Utensils;
   if (amenityLower.includes('projector') || amenityLower.includes('video'))
-    return faDesktop;
+    return Monitor;
   if (amenityLower.includes('air') || amenityLower.includes('climate'))
-    return faSnowflake;
-  return faCheck;
+    return Snowflake;
+  return Check;
 };
 interface FacilityAmenitiesProps {
   amenities: string[];
@@ -224,10 +213,10 @@ const FacilityAmenities = ({ amenities }: FacilityAmenitiesProps) => (
       {amenities.map((amenity: string, idx: number) => (
         <Col md={6} className="mb-3" key={idx}>
           <div className="d-flex align-items-center">
-            <FontAwesomeIcon
-              icon={getAmenityIcon(amenity)}
-              className="text-primary me-3"
-            />
+            {(() => {
+              const IconComponent = getAmenityIcon(amenity);
+              return <IconComponent className="w-5 h-5 text-blue-600 mr-3" />;
+            })()}
             <span>{amenity}</span>
           </div>
         </Col>
@@ -308,16 +297,11 @@ const ReviewForm = ({
           <div className="mb-3">
             <div>
               {[1, 2, 3, 4, 5].map(star => (
-                <FontAwesomeIcon
+                <Star
                   key={star}
-                  icon={faStar}
-                  className={`me-1 ${
-                    star <= rating ? 'text-warning' : 'text-secondary'
+                  className={`w-6 h-6 mr-1 cursor-pointer ${
+                    star <= rating ? 'text-yellow-500 fill-current' : 'text-gray-400'
                   }`}
-                  style={{
-                    cursor: 'pointer',
-                    fontSize: '1.5rem'
-                  }}
                   onClick={() => setRating(star)}
                   data-testid={`star-${star}`}
                 />
@@ -401,7 +385,7 @@ const FacilityReviews = ({
   return (
     <div className="mb-5">
       <div className="d-flex align-items-center mb-4">
-        <FontAwesomeIcon icon={faStar} className="text-warning me-2" />
+        <Star className="w-5 h-5 text-yellow-500 mr-2 fill-current" />
         <h3 className="h4 fw-semibold mb-0">
           {facility.rating.average} · {facility.rating.totalReviews} reviews
         </h3>
@@ -452,15 +436,13 @@ const FacilityReviews = ({
                       <div className="fw-semibold">{review.user?.name}</div>
                       <div className="d-flex align-items-center">
                         {[...Array(5)].map((_, i) => (
-                          <FontAwesomeIcon
+                          <Star
                             key={i}
-                            icon={faStar}
-                            className={
+                            className={`w-4 h-4 ${
                               i < review.rating
-                                ? 'text-warning'
-                                : 'text-secondary'
-                            }
-                            size="sm"
+                                ? 'text-yellow-500 fill-current'
+                                : 'text-gray-400'
+                            }`}
                           />
                         ))}
                       </div>
