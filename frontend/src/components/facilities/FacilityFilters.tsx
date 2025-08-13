@@ -1,6 +1,6 @@
-import { Row, Col, Form, InputGroup, Button } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faFilter } from '@fortawesome/free-solid-svg-icons';
+import { Row, Col, Form, InputGroup, Button } from 'components/ui';
+import {  } from '';
+import { Search, Filter } from 'lucide-react';
 
 interface FacilityFiltersProps {
   searchTerm: string;
@@ -22,7 +22,7 @@ const FacilityFilters = ({
       <Col md={6} className="mb-3">
         <InputGroup>
           <InputGroup.Text className="border-secondary">
-            <FontAwesomeIcon icon={faSearch} />
+            < icon={Search} />
           </InputGroup.Text>
           <Form.Control
             type="text"
@@ -50,7 +50,7 @@ const FacilityFilters = ({
           onClick={onClearFilters}
           className="w-100"
         >
-          <FontAwesomeIcon icon={faFilter} className="me-2" />
+          < icon={Filter} className="me-2" />
           Clear
         </Button>
       </Col>

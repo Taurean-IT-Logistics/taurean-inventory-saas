@@ -1,9 +1,9 @@
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import classNames from 'classnames';
 import Button from 'components/base/Button';
 import React from 'react';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { OverlayTrigger, Tooltip } from 'components/ui';
 
 const TooltipIconButton = ({
   title,
@@ -20,7 +20,7 @@ const TooltipIconButton = ({
     >
       <div>
         <Button className="p-0 text-body-quaternary text-body-tertiary-hover">
-          <FontAwesomeIcon icon={icon} className={classNames(iconClass)} />
+          < icon={icon} className={classNames(iconClass)} />
         </Button>
       </div>
     </OverlayTrigger>

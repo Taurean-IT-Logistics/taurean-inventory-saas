@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Col, Dropdown, Nav, Navbar, Row } from 'react-bootstrap';
+import { Col, Dropdown, Nav, Navbar, Row } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 import Logo from 'components/common/Logo';
 import NotificationDropdownMenu from '../nav-items/NotificationDropdownMenu';
@@ -20,7 +20,7 @@ const EcommerceTopbar = () => {
             </Col>
             <Col xs="auto" className="order-md-1">
               <Nav as="ul" className="navbar-nav-icons flex-row me-n2">
-                <Nav.Item as="li" className="d-flex align-items-center">
+                <Nav.Item as="li" className="flex align-items-center">
                   <ThemeToggler />
                 </Nav.Item>
 

@@ -1,13 +1,13 @@
-import { Col, Row, Stack } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Col, Row, Stack } from 'components/ui';
+import {  } from '';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import {
   faCircle,
   faPause,
   faSquare,
-  faStar,
+  Star,
   faXmark
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 
 type StatType = {
   id: number | string;
@@ -20,7 +20,7 @@ type StatType = {
 const stats: StatType[] = [
   {
     id: 1,
-    icon: faStar,
+    icon: Star,
     title: '57 new orders',
     subTitle: 'Awating processing',
     color: 'success'
@@ -43,7 +43,7 @@ const stats: StatType[] = [
 
 const EcomStats = () => {
   return (
-    <Row className="align-items-center g-4">
+    <Row className="items-center g-4">
       {stats.map(stat => (
         <Col xs={12} md="auto" key={stat.id}>
           <Stat stat={stat} />
@@ -55,25 +55,25 @@ const EcomStats = () => {
 
 const Stat = ({ stat }: { stat: StatType }) => {
   return (
-    <Stack direction="horizontal" className="align-items-center">
+    <Stack direction="horizontal" className="items-center">
       {/* <img src={stat.icon} alt="" height={46} width={46} /> */}
       <span
         className="fa-layers"
         style={{ minHeight: '46px', minWidth: '46px' }}
       >
-        <FontAwesomeIcon
+        <
           icon={faSquare}
           size="2x"
           className={`text-${stat.color}-light dark__text-opacity-50`}
           transform="down-4 rotate--10 left-4"
         />
-        <FontAwesomeIcon
+        <
           icon={faCircle}
           size="2x"
           className={`text-stats-circle-${stat.color} fa-layers-circle`}
           transform="up-4 right-3 grow-2"
         />
-        <FontAwesomeIcon
+        <
           icon={stat.icon}
           size="1x"
           className={`text-${stat.color}`}

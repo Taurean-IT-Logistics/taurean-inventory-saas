@@ -1,6 +1,6 @@
 import Badge from 'components/base/Badge';
 import { numberFormat } from 'helpers/utils';
-import { ProgressBar } from 'react-bootstrap';
+import { ProgressBar } from 'components/ui';
 
 interface HotelCompareRatingRowProps {
   title: string;
@@ -18,7 +18,7 @@ const HotelCompareRatingRow = ({
       </td>
       {ratingValues.map((value, index) => (
         <td className="px-3 border-end border-translucent" key={index}>
-          <div className="d-flex align-items-center gap-2">
+          <div className="flex align-items-center gap-2">
             <Badge bg="primary" className="fs-8">
               {numberFormat(value, 'standard', {
                 minimumFractionDigits: 1

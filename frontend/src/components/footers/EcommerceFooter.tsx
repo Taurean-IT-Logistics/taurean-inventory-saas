@@ -1,34 +1,33 @@
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Col, Row, Container } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Col, Row, Container } from 'components/ui';
+import Link from 'next/link';
 import {
-  faDribbble,
-  faFacebookF,
-  faGithub,
-  faInstagram,
-  faTwitter
-} from '@fortawesome/free-brands-svg-icons';
+  Github,
+  Twitter,
+  Instagram,
+  Dribbble,
+  Facebook
+} from 'lucide-react';
 
 const EcommerceFooter = () => {
   return (
-    <footer className="py-5 border-top border-top-secondary">
+    <footer className="py-8 border-top border-top-secondary">
       <Container fluid>
-        <Row className="align-items-center">
+        <Row className="items-center">
           <Col lg={6} className="mb-3 mb-lg-0">
             <ul className="list-inline text-center text-lg-start mb-0">
               <li className="list-inline-item me-4">
-                <a href="#" className="text-muted text-decoration-none small">
+                <a href="#" className="text-gray-600 dark:text-gray-400 text-decoration-none small">
                   Terms & Conditions
                 </a>
               </li>
               <li className="list-inline-item me-4">
-                <a href="#" className="text-muted text-decoration-none small">
+                <a href="#" className="text-gray-600 dark:text-gray-400 text-decoration-none small">
                   Privacy Policy
                 </a>
               </li>
               <li className="list-inline-item">
-                <a href="#" className="text-muted text-decoration-none small">
+                <a href="#" className="text-gray-600 dark:text-gray-400 text-decoration-none small">
                   Cookies
                 </a>
               </li>
@@ -45,7 +44,7 @@ const EcommerceFooter = () => {
                   rel="noreferrer"
                   style={{ fontSize: '1.2rem' }}
                 >
-                  <FontAwesomeIcon icon={faFacebookF} />
+                  < icon={faFacebookF} />
                   <span className="visually-hidden">Facebook</span>
                 </Link>
               </li>
@@ -57,7 +56,7 @@ const EcommerceFooter = () => {
                   rel="noreferrer"
                   style={{ fontSize: '1.2rem' }}
                 >
-                  <FontAwesomeIcon icon={faInstagram} />
+                  < icon={faInstagram} />
                   <span className="visually-hidden">Instagram</span>
                 </Link>
               </li>
@@ -69,7 +68,7 @@ const EcommerceFooter = () => {
                   rel="noreferrer"
                   style={{ fontSize: '1.2rem' }}
                 >
-                  <FontAwesomeIcon icon={faTwitter} />
+                  < icon={faTwitter} />
                   <span className="visually-hidden">Twitter</span>
                 </Link>
               </li>
@@ -81,7 +80,7 @@ const EcommerceFooter = () => {
                   rel="noreferrer"
                   style={{ fontSize: '1.2rem' }}
                 >
-                  <FontAwesomeIcon icon={faGithub} />
+                  < icon={faGithub} />
                   <span className="visually-hidden">GitHub</span>
                 </Link>
               </li>
@@ -93,7 +92,7 @@ const EcommerceFooter = () => {
                   rel="noreferrer"
                   style={{ fontSize: '1.2rem' }}
                 >
-                  <FontAwesomeIcon icon={faDribbble} />
+                  < icon={faDribbble} />
                   <span className="visually-hidden">Dribbble</span>
                 </Link>
               </li>

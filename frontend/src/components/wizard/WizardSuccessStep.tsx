@@ -1,5 +1,5 @@
 import Button from 'components/base/Button';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import illus38 from 'assets/img/spot-illustrations/38.webp';
 import illusDark38 from 'assets/img/spot-illustrations/dark_38.webp';
 import { useWizardFormContext } from 'providers/WizardFormProvider';

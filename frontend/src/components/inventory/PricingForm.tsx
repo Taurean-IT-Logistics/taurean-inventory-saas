@@ -1,5 +1,5 @@
 import { InventoryItem } from 'types';
-import { Form } from 'react-bootstrap';
+import { Form } from 'components/ui';
 
 interface PricingFormProps {
   formData: Partial<InventoryItem>;
@@ -65,11 +65,11 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
       </div>
       <div className="card-body">
         {pricing.length === 0 ? (
-          <p className="text-muted mb-0">No pricing information added yet.</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-0">No pricing information added yet.</p>
         ) : (
           pricing.map((price, index) => (
             <div key={index} className="border rounded p-3 mb-3">
-              <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="flex justify-content-between align-items-center mb-3">
                 <h6 className="mb-0">Pricing Option {index + 1}</h6>
                 {pricing.length > 1 && (
                   <button

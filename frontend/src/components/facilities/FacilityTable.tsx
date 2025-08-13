@@ -1,16 +1,16 @@
-import { Badge, Dropdown } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Badge, Dropdown } from 'components/ui';
+import {  } from '';
 import {
   faEdit,
   faTrash,
   faEye,
   faEllipsisV,
-  faStar,
-  faMapMarkerAlt,
-  faClock,
+  Star,
+  MapPin,
+  Clock,
   faTrashRestore,
   faComment
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { Facility } from 'types';
 import SimplePaginatedList from 'booking/PaginatedComponent';
 
@@ -65,7 +65,7 @@ const FacilityTable = ({
         <div>
           <strong>{facility.name}</strong>
           {facility.description && (
-            <div className="text-muted small">
+            <div className="text-gray-600 dark:text-gray-400 small">
               {facility.description.length > 50
                 ? `${facility.description.substring(0, 50)}...`
                 : facility.description}
@@ -74,8 +74,8 @@ const FacilityTable = ({
         </div>
       </td>
       <td>
-        <div className="d-flex align-items-center">
-          <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2 text-muted" />
+        <div className="flex align-items-center">
+          < icon={MapPin} className="me-2 text-muted" />
           <span>{facility.location?.address || 'Not specified'}</span>
         </div>
       </td>
@@ -83,15 +83,15 @@ const FacilityTable = ({
         <div>
           <strong>{facility.capacity?.maximum || 0}</strong> max
           {facility.capacity?.recommended && (
-            <div className="text-muted small">
+            <div className="text-gray-600 dark:text-gray-400 small">
               {facility.capacity.recommended} recommended
             </div>
           )}
         </div>
       </td>
       <td>
-        <div className="d-flex align-items-center">
-          <FontAwesomeIcon icon={faClock} className="me-2 text-muted" />
+        <div className="flex align-items-center">
+          < icon={Clock} className="me-2 text-muted" />
           <span>
             {facility.operationalHours?.opening || '--'} -{' '}
             {facility.operationalHours?.closing || '--'}
@@ -102,19 +102,19 @@ const FacilityTable = ({
         {facility.pricing && facility.pricing.length > 0 ? (
           <div>
             <strong>{formatCurrency(facility.pricing[0].amount)}</strong>
-            <div className="text-muted small">
+            <div className="text-gray-600 dark:text-gray-400 small">
               per {facility.pricing[0].unit}
             </div>
           </div>
         ) : (
-          <span className="text-muted">Not set</span>
+          <span className="text-gray-600 dark:text-gray-400">Not set</span>
         )}
       </td>
       <td>
-        <div className="d-flex align-items-center">
-          <FontAwesomeIcon icon={faStar} className="me-1 text-warning" />
+        <div className="flex align-items-center">
+          < icon={Star} className="me-1 text-warning" />
           <span>{facility.rating?.average?.toFixed(1) || '0.0'}</span>
-          <small className="text-muted ms-1">
+          <small className="text-gray-600 dark:text-gray-400 ms-1">
             ({facility.rating?.totalReviews || 0})
           </small>
         </div>
@@ -133,19 +133,19 @@ const FacilityTable = ({
             size="sm"
             className="border-0"
           >
-            <FontAwesomeIcon icon={faEllipsisV} />
+            < icon={faEllipsisV} />
           </Dropdown.Toggle>
           <Dropdown.Menu className="border-secondary">
             <Dropdown.Item onClick={() => onEdit(facility)}>
-              <FontAwesomeIcon icon={faEdit} className="me-2" />
+              < icon={faEdit} className="me-2" />
               Edit
             </Dropdown.Item>
             <Dropdown.Item onClick={() => onToggleStatus(facility._id)}>
-              <FontAwesomeIcon icon={faEye} className="me-2" />
+              < icon={faEye} className="me-2" />
               {facility.isActive ? 'Deactivate' : 'Activate'}
             </Dropdown.Item>
             <Dropdown.Item onClick={() => onViewReviews(facility)}>
-              <FontAwesomeIcon icon={faComment} className="me-2" />
+              < icon={faComment} className="me-2" />
               View Reviews
             </Dropdown.Item>
             <Dropdown.Divider />
@@ -153,7 +153,7 @@ const FacilityTable = ({
               className={`text-${!facility.isDeleted ? 'danger' : 'success'}`}
               onClick={() => onDelete(facility._id)}
             >
-              <FontAwesomeIcon
+              <
                 icon={!facility.isDeleted ? faTrash : faTrashRestore}
                 className="me-2"
               />

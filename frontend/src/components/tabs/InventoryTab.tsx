@@ -1,13 +1,13 @@
 import { CSSProperties } from 'react';
-import { Col, Form, Nav, Row, Tab } from 'react-bootstrap';
+import { Col, Form, Nav, Row, Tab } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 import Button from 'components/base/Button';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import Badge from 'components/base/Badge';
 import { Link } from 'react-router-dom';
 import ReactSelect from 'components/base/ReactSelect';
 import classNames from 'classnames';
-import { faCheck, faRotate } from '@fortawesome/free-solid-svg-icons';
+import { Check, faRotate } from 'lucide-react';
 
 type NavItemType = {
   label: string;
@@ -104,10 +104,10 @@ const InventoryTab = () => {
               </Row>
             </Tab.Pane>
             <Tab.Pane eventKey="restock" className="h-100">
-              <div className="d-flex flex-column h-100">
+              <div className="flex flex-column h-100">
                 <h5 className="mb-3 text-body-highlight">Add to Stock</h5>
                 <div className="flex-1 mb-4">
-                  <div className="d-flex gap-3">
+                  <div className="flex gap-3">
                     <Form.Control
                       type="number"
                       placeholder="Quantity"
@@ -117,7 +117,7 @@ const InventoryTab = () => {
                     <Button
                       variant="primary"
                       type="button"
-                      startIcon={<FontAwesomeIcon icon={faCheck} />}
+                      startIcon={< icon={Check} />}
                       className="text-nowrap"
                     >
                       Confirm
@@ -139,7 +139,7 @@ const InventoryTab = () => {
                       <td className="text-body-tertiary fw-semibold py-1">
                         $1,090
                         <Button className="p-0 ms-1" type="button">
-                          <FontAwesomeIcon
+                          <
                             icon={faRotate}
                             className="text-body"
                             style={
@@ -179,7 +179,7 @@ const InventoryTab = () => {
             </Tab.Pane>
 
             <Tab.Pane eventKey="shipping" className="h-100">
-              <div className="d-flex flex-column h-100">
+              <div className="flex flex-column h-100">
                 <h5 className="mb-3 text-body-highlight">Shipping Type</h5>
                 <div className="flex-1">
                   <div className="mb-4">
@@ -219,7 +219,7 @@ const InventoryTab = () => {
                 </div>
                 <p className="fs-9 fw-semibold mb-0">
                   See our{' '}
-                  <a className="fw-bold" href="#!">
+                  <a className="font-bold" href="#!">
                     Delivery terms and conditions{' '}
                   </a>
                   for details.

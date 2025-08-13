@@ -8,7 +8,7 @@ import {
 } from 'react-dropzone';
 import Button from './Button';
 import imageIcon from 'assets/img/icons/image-icon.png';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import {
   Dispatch,
   PropsWithChildren,
@@ -22,7 +22,7 @@ import AttachmentPreview, {
 } from 'components/common/AttachmentPreview';
 import { convertFileToAttachment } from 'helpers/utils';
 import ImageAttachmentPreview from 'components/common/ImageAttachmentPreview';
-import { faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { faTrashAlt } from 'lucide-react';
 
 interface DropzoneProps {
   className?: string;
@@ -129,13 +129,13 @@ const Dropzone = ({
             <AttachmentPreview attachment={file} />
 
             <button className="btn p-0" onClick={() => handleRemoveFile(index)}>
-              <FontAwesomeIcon icon={faTrashAlt} className="fs-0" />
+              < icon={faTrashAlt} className="fs-0" />
             </button>
           </div>
         ))}
 
       {imageOnly && !noPreview && files.length > 0 && (
-        <div className="d-flex flex-wrap gap-2 mt-3">
+        <div className="flex flex-wrap gap-2 mt-3">
           {files.map((file, index) => (
             <ImageAttachmentPreview
               key={file.name}

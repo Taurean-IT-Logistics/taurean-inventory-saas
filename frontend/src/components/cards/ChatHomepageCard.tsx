@@ -1,4 +1,4 @@
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 import chatIllustration from 'assets/img/spot-illustrations/chat.webp';
 import chatDarkIllustration from 'assets/img/spot-illustrations/dark_chat.webp';
 import Scrollbar from 'components/base/Scrollbar';

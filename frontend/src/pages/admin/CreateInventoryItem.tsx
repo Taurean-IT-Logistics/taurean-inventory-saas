@@ -6,8 +6,8 @@ import PurchaseInfoForm from 'components/inventory/PurchaseInfoForm';
 import SpecificationsForm from 'components/inventory/SpecificationsForm';
 import ActionsSidebar from 'components/inventory/ActionSidebar';
 import ImageUploadForm from 'components/inventory/ImageUploadForm';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faArrowLeft } from 'lucide-react';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
 import { showToast } from 'components/toaster/toaster';
@@ -157,15 +157,15 @@ const CreateInventory = () => {
     <div className="min-vh-100">
       <div className="container-fluid py-4">
         {/* Header */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="h3 fw-bold mb-1">Add New Inventory Item</h1>
-            <p className="text-muted mb-0">
+            <p className="text-gray-600 dark:text-gray-400 mb-0">
               Add a new item to your inventory system
             </p>
           </div>
           <Link to="/admin/inventory" className="btn btn-outline-secondary">
-            <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+            < icon={faArrowLeft} className="me-2" />
             Back to Inventory
           </Link>
         </div>

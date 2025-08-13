@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import Button from 'components/base/Button';
 import { PropsWithChildren } from 'react';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { OverlayTrigger, Tooltip } from 'components/ui';
 
 const ToggleViewButton = ({
   active,

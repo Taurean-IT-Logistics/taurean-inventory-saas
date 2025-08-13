@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { faKey, faUser } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faKey, faUser } from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
-import { Col, Form, Row, Spinner } from 'react-bootstrap';
+import { Col, Form, Row, Spinner } from 'components/ui';
 import { UserController } from 'controllers';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch } from 'hooks/useAppDispatch';
@@ -92,7 +92,7 @@ const SignInForm = () => {
             placeholder="name@example.com"
             required
           />
-          <FontAwesomeIcon icon={faUser} className="text-body fs-9 form-icon" />
+          < icon={faUser} className="text-body fs-9 form-icon" />
         </div>
       </Form.Group>
 
@@ -108,7 +108,7 @@ const SignInForm = () => {
             placeholder="Password"
             required
           />
-          <FontAwesomeIcon icon={faKey} className="text-body fs-9 form-icon" />
+          < icon={faKey} className="text-body fs-9 form-icon" />
         </div>
       </Form.Group>
 
@@ -137,7 +137,7 @@ const SignInForm = () => {
       </Button>
 
       <div className="text-center mt-3">
-        <span className="text-muted me-1">Don't have an account?</span>
+        <span className="text-gray-600 dark:text-gray-400 me-1">Don't have an account?</span>
         <Link to="/sign-up" className="fs-9 fw-bold">
           Create one
         </Link>

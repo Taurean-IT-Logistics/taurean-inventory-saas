@@ -1,9 +1,9 @@
 import {
   faReply,
-  faThumbsDown,
-  faThumbsUp
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+  Grid3X3umbsDown,
+  Grid3X3umbsUp
+} from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import Button from 'components/base/Button';
 import Lightbox from 'components/base/LightBox';
@@ -20,8 +20,8 @@ const ProductReview = ({ review }: { review: ProductReviewType }) => {
   const { lightboxProps, openLightbox } = useLightbox(review.images || []);
   return (
     <RevealDropdownTrigger className="mb-4 hover-actions-trigger">
-      <div className="d-flex justify-content-between mb-2">
-        <div className="d-flex align-items-center">
+      <div className="flex justify-content-between mb-2">
+        <div className="flex align-items-center">
           <Rating readonly initialValue={review.star} />
           <h5 className="mb-0 ms-2 line-clamp-1">
             <span className="text-body-secondary me-1">by</span>
@@ -43,7 +43,7 @@ const ProductReview = ({ review }: { review: ProductReviewType }) => {
       </p>
       <Lightbox {...lightboxProps} />
       {review.images && (
-        <div className="d-flex gap-2 flex-wrap mb-2">
+        <div className="flex gap-2 flex-wrap mb-2">
           {review.images.map((image, index) => (
             <Link to="#!" key={image}>
               <img
@@ -60,8 +60,8 @@ const ProductReview = ({ review }: { review: ProductReviewType }) => {
       )}
 
       {review.reply && (
-        <div className="d-flex">
-          <FontAwesomeIcon
+        <div className="flex">
+          <
             icon={faReply}
             className="me-2"
             transform="rotate-180"
@@ -79,10 +79,10 @@ const ProductReview = ({ review }: { review: ProductReviewType }) => {
       )}
       <div className="hover-actions top-0">
         <Button className="me-2" variant="phoenix-secondary" size="sm">
-          <FontAwesomeIcon icon={faThumbsUp} />
+          < icon={Grid3X3umbsUp} />
         </Button>
         <Button className="me-1" variant="phoenix-secondary" size="sm">
-          <FontAwesomeIcon icon={faThumbsDown} />
+          < icon={Grid3X3umbsDown} />
         </Button>
       </div>
     </RevealDropdownTrigger>

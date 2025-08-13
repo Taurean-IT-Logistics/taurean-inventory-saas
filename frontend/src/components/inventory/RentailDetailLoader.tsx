@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Row, Col, Card, Placeholder } from 'react-bootstrap';
+import { Container, Row, Col, Card, Placeholder } from 'components/ui';
 
 const RentBookingFormSkeleton = () => (
   <Card border="secondary" className="mb-4">
@@ -71,7 +71,7 @@ const RentBookingFormSkeleton = () => (
           <Placeholder xs={8} bg="secondary" style={{ height: '1rem' }} />
         </div>
 
-        <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="flex justify-content-between align-items-center mb-3">
           <Placeholder xs={4} bg="secondary" style={{ height: '1rem' }} />
           <Placeholder xs={3} bg="secondary" style={{ height: '1.5rem' }} />
         </div>
@@ -90,7 +90,7 @@ const RentDetailSkeleton = () => {
     <div style={{ minHeight: '100vh' }}>
       <Container fluid className="py-4">
         {/* Navigation */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <Placeholder as="div" animation="glow">
             <Placeholder
               xs={8}
@@ -121,7 +121,7 @@ const RentDetailSkeleton = () => {
                       borderTopRightRadius: '.5rem'
                     }}
                   />
-                  <div className="d-flex gap-2 p-3">
+                  <div className="flex gap-2 p-3">
                     {Array.from({ length: 4 }).map((_, index) => (
                       <Placeholder
                         key={index}
@@ -143,7 +143,7 @@ const RentDetailSkeleton = () => {
             {/* Item Details Skeleton */}
             <div className="mb-4">
               <Placeholder as="div" animation="glow">
-                <div className="d-flex justify-content-between align-items-start mb-3">
+                <div className="flex justify-content-between align-items-start mb-3">
                   <div>
                     <Placeholder
                       xs={8}
@@ -151,7 +151,7 @@ const RentDetailSkeleton = () => {
                       className="mb-2"
                       style={{ height: '2rem' }}
                     />
-                    <div className="d-flex gap-2">
+                    <div className="flex gap-2">
                       <Placeholder
                         xs={4}
                         bg="secondary"

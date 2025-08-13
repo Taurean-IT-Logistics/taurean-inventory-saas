@@ -60,8 +60,8 @@ const SimplePaginatedList = <T,>({
     }
 
     return (
-      <div className="d-flex justify-content-between align-items-center mt-3">
-        <div className="text-muted small">
+      <div className="flex justify-content-between align-items-center mt-3">
+        <div className="text-gray-600 dark:text-gray-400 small">
           Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
           {Math.min(currentPage * itemsPerPage, data.length)} of {data.length}{' '}
           entries
@@ -101,7 +101,7 @@ const SimplePaginatedList = <T,>({
     <div className={className}>
       {data.length === 0 ? (
         <div className="text-center py-4">
-          <p className="text-muted">{emptyMessage}</p>
+          <p className="text-gray-600 dark:text-gray-400">{emptyMessage}</p>
         </div>
       ) : (
         <>

@@ -1,5 +1,5 @@
 import DatePicker from 'components/base/DatePicker';
-import { Col, FloatingLabel, Form } from 'react-bootstrap';
+import { Col, FloatingLabel, Form } from 'components/ui';
 
 const EventsSchedule = () => {
   return (

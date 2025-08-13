@@ -1,9 +1,9 @@
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'components/ui';
 import { Fragment, useState } from 'react';
 import { Route, RouteItems } from 'sitemap';
 import { capitalize } from 'helpers/utils';
 import { Link, useLocation } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import FeatherIcon from 'feather-icons-react';
 import { UilAngleRight } from '@iconscout/react-unicons';
 import classNames from 'classnames';
@@ -117,7 +117,7 @@ const TopNavDropdownItem = ({ page }: { page: Route }) => {
           {page.icon && (
             <>
               {page.iconSet === 'font-awesome' ? (
-                <FontAwesomeIcon
+                <
                   icon={page.icon as IconProp}
                   className="fs-8 ms-1 me-2"
                 />

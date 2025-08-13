@@ -1,7 +1,7 @@
 import Avatar from 'components/base/Avatar';
 import { useWizardFormContext } from 'providers/WizardFormProvider';
 import { useState } from 'react';
-import { Col, Form, Row } from 'react-bootstrap';
+import { Col, Form, Row } from 'components/ui';
 import avatarPlaceholder from 'assets/img/team/avatar.webp';
 import AvatarDropzone from 'components/common/AvatarDropzone';
 import DatePicker from 'components/base/DatePicker';

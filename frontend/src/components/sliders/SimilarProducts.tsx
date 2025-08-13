@@ -7,7 +7,7 @@ import Button from 'components/base/Button';
 const SimilarProducts = ({ products }: { products: Product[] }) => {
   return (
     <>
-      <div className="d-flex flex-between-center mb-3">
+      <div className="flex flex-between-center mb-3">
         <div>
           <h3>Similar Products</h3>
           <p className="mb-0 text-body-tertiary fw-semibold">

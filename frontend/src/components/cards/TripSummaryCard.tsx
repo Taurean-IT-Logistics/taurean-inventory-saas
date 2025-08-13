@@ -1,8 +1,8 @@
 import React from 'react';
 import { SelectedTrip } from 'data/travel-agency/customer/trip';
-import { Card } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendar, faClock, faUser } from '@fortawesome/free-solid-svg-icons';
+import { Card } from 'components/ui';
+import {  } from '';
+import { faCalendar, Clock, faUser } from 'lucide-react';
 import { numberFormat } from 'helpers/utils';
 
 interface TripSummaryCardProps {
@@ -20,36 +20,36 @@ const TripSummaryCard = ({ selectedTrip }: TripSummaryCardProps) => {
         />
         <h3 className="mb-4 mt-5">{selectedTrip.title}</h3>
         <h5 className="fw-normal mb-3">
-          <FontAwesomeIcon
+          <
             icon={faCalendar}
             className="text-body-quaternary me-2"
           />
           {selectedTrip.date}
         </h5>
         <h5 className="fw-normal mb-3">
-          <FontAwesomeIcon
+          <
             icon={faUser}
             className="text-body-quaternary me-2"
           />
           {selectedTrip.people}
         </h5>
         <h5 className="fw-normal mb-3">
-          <FontAwesomeIcon
-            icon={faClock}
+          <
+            icon={Clock}
             className="text-body-quaternary me-2"
           />
           Pickup time: <span className="ms-3">{selectedTrip.pickupTime}</span>
         </h5>
         <h5 className="fw-normal mb-5">
-          <FontAwesomeIcon
-            icon={faClock}
+          <
+            icon={Clock}
             className="text-body-quaternary me-2"
           />
           Drop off time:{' '}
           <span className="ms-2">{selectedTrip.dropOffTime}</span>
         </h5>
         <div className="p-3 rounded-2 bg-body-highlight">
-          <div className="d-flex flex-between-center mb-2">
+          <div className="flex flex-between-center mb-2">
             <h5 className="mb-0 fw-normal">Booking Fee</h5>
             <h5 className="mb-0 fw-normal">
               USD{' '}
@@ -58,7 +58,7 @@ const TripSummaryCard = ({ selectedTrip }: TripSummaryCardProps) => {
               })}
             </h5>
           </div>
-          <div className="d-flex flex-between-center mb-3">
+          <div className="flex flex-between-center mb-3">
             <h5 className="mb-0 fw-normal">Subtotal</h5>
             <h5 className="mb-0 fw-normal">
               USD{' '}
@@ -67,7 +67,7 @@ const TripSummaryCard = ({ selectedTrip }: TripSummaryCardProps) => {
               })}
             </h5>
           </div>
-          <div className="d-flex flex-between-center">
+          <div className="flex flex-between-center">
             <h4 className="mb-0">Total</h4>
             <h4 className="mb-0">
               USD{' '}

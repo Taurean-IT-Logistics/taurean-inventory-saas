@@ -1,10 +1,10 @@
 import React from 'react';
 import bgIllustrations from 'assets/img/spot-illustrations/interations.png';
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 import Button from 'components/base/Button';
 import { Link } from 'react-router-dom';
-import { faLink } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faLink } from 'lucide-react';
+import {  } from '';
 
 export const IntegrationsCard = () => {
   return (
@@ -31,7 +31,7 @@ export const IntegrationsCard = () => {
             size="sm"
             as={Link}
             to={`#!`}
-            startIcon={<FontAwesomeIcon icon={faLink} className="me-1" />}
+            startIcon={< icon={faLink} className="me-1" />}
           >
             Connect Now
           </Button>

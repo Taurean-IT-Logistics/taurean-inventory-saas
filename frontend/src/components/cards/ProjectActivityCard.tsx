@@ -1,7 +1,7 @@
 import ActivityTimeline from 'components/timelines/ActivityTimeline';
 import { activityTimelineData } from 'data/project-management/activityTimelineData';
 import React from 'react';
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 
 const ProjectActivityCard = () => {
   return (

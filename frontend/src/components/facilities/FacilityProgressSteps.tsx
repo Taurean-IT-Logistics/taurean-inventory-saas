@@ -1,4 +1,4 @@
-import { Card, Row, Col } from 'react-bootstrap';
+import { Card, Row, Col } from 'components/ui';
 
 interface FacilityProgressStepsProps {
   currentStep: number;

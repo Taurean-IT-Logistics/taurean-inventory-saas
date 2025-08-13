@@ -1,4 +1,4 @@
-import { Navbar } from 'react-bootstrap';
+import { Navbar } from 'components/ui';
 import NavbarBrand from '../nav-items/NavbarBrand';
 import DropdownSearchBox from 'components/common/DropdownSearchBox';
 import SearchResult from 'components/common/SearchResult';
@@ -19,7 +19,7 @@ const NavbarDual = () => {
       data-navbar-appearance={navbarTopAppearance === 'darker' ? 'darker' : ''}
     >
       <div className="w-100">
-        <div className="d-flex flex-between-center dual-nav-first-layer">
+        <div className="flex flex-between-center dual-nav-first-layer">
           <NavbarBrand />
           <DropdownSearchBox
             className="navbar-top-search-box"

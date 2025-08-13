@@ -1,19 +1,19 @@
 import { Link } from 'react-router-dom';
-import { Button } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { Button } from 'components/ui';
+import {  } from '';
+import { faArrowLeft } from 'lucide-react';
 
 const FacilityFormHeader = () => {
   return (
-    <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="flex justify-content-between align-items-center mb-4">
       <div>
         <h1 className="h3 fw-bold mb-1">Create New Facility</h1>
-        <p className="text-muted mb-0">
+        <p className="text-gray-600 dark:text-gray-400 mb-0">
           Add a new facility to your booking system
         </p>
       </div>
       <Button as={Link} to="/admin/dashboard" variant="outline-secondary">
-        <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+        < icon={faArrowLeft} className="me-2" />
         Back to Dashboard
       </Button>
     </div>

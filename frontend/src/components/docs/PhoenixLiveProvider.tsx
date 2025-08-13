@@ -1,5 +1,5 @@
 import React, { PropsWithChildren } from 'react';
-import * as ReactBootstrap from 'react-bootstrap';
+import * as ReactBootstrap from 'components/ui';
 import { LiveProvider } from 'react-live';
 import { defaultProps } from 'prism-react-renderer';
 import { transformTSCode } from 'helpers/utils';

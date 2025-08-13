@@ -1,11 +1,11 @@
-import { Col, Form, Row } from 'react-bootstrap';
+import { Col, Form, Row } from 'components/ui';
 import bgLeft32 from 'assets/img/bg/bg-left-32.png';
 import bgRight32 from 'assets/img/bg/bg-right-32.png';
 import spotIllustration40 from 'assets/img/spot-illustrations/42.png';
 import spotIllustrationDark40 from 'assets/img/spot-illustrations/dark_42.png';
 import Button from 'components/base/Button';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faChevronRight } from 'lucide-react';
 
 const TravelCta = () => {
   return (
@@ -47,7 +47,7 @@ const TravelCta = () => {
                 <p className="mb-4 text-body-tertiary">
                   Subscribe to our newsletter to stay updated.
                 </p>
-                <Form className="d-flex justify-content-center">
+                <Form className="flex justify-content-center">
                   <Form.Control
                     className="me-3"
                     id="ctaEmail"
@@ -55,11 +55,11 @@ const TravelCta = () => {
                   />
                   <Button
                     variant="primary"
-                    className="d-flex align-items-center"
+                    className="flex align-items-center"
                     type="submit"
                   >
                     Subscribe
-                    <FontAwesomeIcon
+                    <
                       icon={faChevronRight}
                       className="ms-2 fs-9"
                     />

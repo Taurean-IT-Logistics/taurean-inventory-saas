@@ -6,7 +6,7 @@ import React, {
   useState
 } from 'react';
 import SearchBox, { SearchBoxProps } from './SearchBox';
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'components/ui';
 
 interface DropdownSearchBoxProps extends SearchBoxProps {
   className?: string;

@@ -1,4 +1,4 @@
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import { StatType } from 'data/crm/stats';
 import classNames from 'classnames';
 import Unicon from 'components/base/Unicon';

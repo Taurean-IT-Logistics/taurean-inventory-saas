@@ -1,5 +1,5 @@
 import Avatar from 'components/base/Avatar';
-import { Dropdown, Modal, Nav } from 'react-bootstrap';
+import { Dropdown, Modal, Nav } from 'components/ui';
 import ProfileDropdownMenu from './ProfileDropdownMenu';
 import { useAppContext } from 'providers/AppProvider';
 import FeatherIcon from 'feather-icons-react';

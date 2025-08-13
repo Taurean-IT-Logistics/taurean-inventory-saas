@@ -1,12 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Button, Badge } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Button, Badge } from 'components/ui';
+import {  } from '';
 import {
   faChevronLeft,
   faChevronRight,
   faPlay,
   faPause
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 
 type CarouselProps = {
   orientation?: 'horizontal' | 'vertical';
@@ -160,7 +160,7 @@ const Carousel: React.FC<CarouselProps> = ({
             }}
             aria-label="Previous slide"
           >
-            <FontAwesomeIcon
+            <
               icon={faChevronLeft}
               className={`text-dark ${
                 orientation === 'vertical' ? 'rotate-90' : ''
@@ -205,7 +205,7 @@ const Carousel: React.FC<CarouselProps> = ({
             }}
             aria-label="Next slide"
           >
-            <FontAwesomeIcon
+            <
               icon={faChevronRight}
               className={`text-dark ${
                 orientation === 'vertical' ? 'rotate-90' : ''
@@ -243,7 +243,7 @@ const Carousel: React.FC<CarouselProps> = ({
           }}
           aria-label={isPlaying ? 'Pause slideshow' : 'Play slideshow'}
         >
-          <FontAwesomeIcon
+          <
             icon={isPlaying ? faPause : faPlay}
             className="text-white"
             style={{ fontSize: '0.75rem' }}

@@ -1,11 +1,11 @@
-import { faClock } from '@fortawesome/free-regular-svg-icons';
+import { Clock } from '@fortawesome/free-regular-svg-icons';
 import {
   faArrowRight,
-  faFilter,
+  Filter,
   faPlane,
   faTemperature0
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'lucide-react';
+import {  } from '';
 import { ColumnDef } from '@tanstack/react-table';
 import AdvanceTable from 'components/base/AdvanceTable';
 import Badge from 'components/base/Badge';
@@ -14,7 +14,7 @@ import SearchBox from 'components/common/SearchBox';
 import useAdvanceTable from 'hooks/useAdvanceTable';
 import AdvanceTableProvider from 'providers/AdvanceTableProvider';
 import React, { ChangeEvent } from 'react';
-import { Col, ProgressBar, Row } from 'react-bootstrap';
+import { Col, ProgressBar, Row } from 'components/ui';
 import { Link } from 'react-router-dom';
 import FeatherIcon from 'feather-icons-react';
 import RevealDropdown from 'components/base/RevealDropdown';
@@ -30,7 +30,7 @@ const columns: ColumnDef<FlightInterface>[] = [
     cell: ({ row: { original } }) => {
       const { flightNo } = original;
       return (
-        <Link to="#!" className="fw-bold">
+        <Link to="#!" className="font-bold">
           {flightNo}
         </Link>
       );
@@ -48,7 +48,7 @@ const columns: ColumnDef<FlightInterface>[] = [
     cell: ({ row: { original } }) => {
       const { vendor } = original;
       return (
-        <Link to="#!" className="d-flex align-items-center gap-2">
+        <Link to="#!" className="flex align-items-center gap-2">
           <img src={vendor.image} alt="" width={32} />
           <h6 className="mb-0 text-primary fw-semibold text-nowrap">
             {vendor.name}
@@ -70,8 +70,8 @@ const columns: ColumnDef<FlightInterface>[] = [
     cell: ({ row: { original } }) => {
       const { weather } = original;
       return (
-        <div className="d-flex align-items-center">
-          <FontAwesomeIcon
+        <div className="flex align-items-center">
+          <
             icon={faTemperature0}
             className={`me-2 text-${
               weather.temperature > 25 ? 'danger' : 'info'
@@ -80,7 +80,7 @@ const columns: ColumnDef<FlightInterface>[] = [
           <p className="mb-0 text-body-tertiary me-3">
             {weather.temperature}°C
           </p>
-          <FontAwesomeIcon
+          <
             icon={weather.icon}
             className={`me-2 ${weather.color}`}
           />
@@ -102,10 +102,10 @@ const columns: ColumnDef<FlightInterface>[] = [
     cell: ({ row: { original } }) => {
       const { route } = original;
       return (
-        <div className="d-flex align-items-center gap-2">
+        <div className="flex align-items-center gap-2">
           <img src={route.from.flag} alt="" width={16} />
           <p className="mb-0 fw-semibold text-bold">{route.from.airport}</p>
-          <FontAwesomeIcon
+          <
             icon={faArrowRight}
             className="text-body-tertiary mx-1"
           />
@@ -129,7 +129,7 @@ const columns: ColumnDef<FlightInterface>[] = [
       const { destination, status } = original;
       return (
         <>
-          <div className="position-relative">
+          <div className="relative">
             <ProgressBar
               style={{ height: 2 }}
               className="overflow-visible align-middle"
@@ -141,7 +141,7 @@ const columns: ColumnDef<FlightInterface>[] = [
                 variant="info-light"
               />
             </ProgressBar>
-            <FontAwesomeIcon
+            <
               className={classNames(
                 'text-info plane-icon position-absolute top-50 translate-middle-y',
                 {
@@ -153,7 +153,7 @@ const columns: ColumnDef<FlightInterface>[] = [
             />
           </div>
 
-          <div className="d-flex justify-content-between mt-2">
+          <div className="flex justify-content-between mt-2">
             <p
               className={` mb-0 fs-10 ${
                 status.label === 'Cancelled'
@@ -214,11 +214,11 @@ const columns: ColumnDef<FlightInterface>[] = [
       const { time } = original;
       return (
         <>
-          <div className="d-flex justify-content-end align-items-center gap-2 mb-2">
-            <FontAwesomeIcon icon={faClock} className="text-body" />
+          <div className="flex justify-content-end align-items-center gap-2 mb-2">
+            < icon={Clock} className="text-body" />
             <span className="text-body fw-semibold">{time.time}</span>
           </div>
-          <div className="d-flex justify-content-end gap-2">
+          <div className="flex justify-content-end gap-2">
             <FeatherIcon icon="calendar" style={{ width: 16, height: 16 }} />
             <span className="text-body fw-semibold">{time.date}</span>
           </div>
@@ -276,15 +276,15 @@ const TravelFlightTable = () => {
             <h3 className="mb-0">Flights</h3>
             <p className="mb-0">Recent flights booked by us</p>
           </div>
-          <div className="d-flex align-items-center">
+          <div className="flex align-items-center">
             <SearchBox
               placeholder="Search by Flight no."
               className="ms-xl-6 w-100"
               onChange={handleSearchInputChange}
             />
             <Button variant="phoenix-secondary" className="px-3 ms-2 me-3">
-              <FontAwesomeIcon
-                icon={faFilter}
+              <
+                icon={Filter}
                 transform="down-2"
                 className="text-body-secondary"
               />
@@ -292,8 +292,8 @@ const TravelFlightTable = () => {
           </div>
         </Col>
         <Col xs="auto" className="flex-1">
-          <div className="d-flex flex-between-center justify-content-xl-end">
-            <div className="d-flex align-items-center">
+          <div className="flex flex-between-center justify-content-xl-end">
+            <div className="flex align-items-center">
               <FlightsTableHeader viewAllBtnClass="ms-auto" navBtn />
             </div>
           </div>

@@ -1,6 +1,6 @@
 import Badge, { BadgeBg } from 'components/base/Badge';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faPlus } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 
@@ -30,7 +30,7 @@ const TravelStats = ({
         <div className="mt-4 mt-md-0">
           <h3 className="text-body-highlight mb-2"> {amount}</h3>
           <Badge variant="phoenix" bg={badgeBg} className="fs-10 me-2">
-            <FontAwesomeIcon icon={badgeIcon} className="me-1" />
+            < icon={badgeIcon} className="me-1" />
             {badgeLabel}
           </Badge>
           <span className="fs-9 text-body-secondary d-block d-sm-inline mt-1">

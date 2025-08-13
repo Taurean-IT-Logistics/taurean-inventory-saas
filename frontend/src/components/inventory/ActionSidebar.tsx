@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Card, Button, Spinner } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { Card, Button, Spinner } from 'components/ui';
+import {  } from '';
+import { faSave, faTimes } from 'lucide-react';
 import { InventoryItem } from 'types';
 
 interface ActionsSidebarProps {
@@ -30,7 +30,7 @@ const ActionsSidebar = ({
               </>
             ) : (
               <>
-                <FontAwesomeIcon icon={faSave} className="me-2" />
+                < icon={faSave} className="me-2" />
                 Create Item
               </>
             )}
@@ -42,7 +42,7 @@ const ActionsSidebar = ({
             variant="outline-secondary"
             disabled={isLoading}
           >
-            <FontAwesomeIcon icon={faTimes} className="me-2" />
+            < icon={faTimes} className="me-2" />
             Cancel
           </Button>
         </div>

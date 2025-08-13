@@ -1,7 +1,7 @@
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import Badge, { BadgeBg } from 'components/base/Badge';
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 
 interface CrmStatCardProps {
   icon: IconProp;
@@ -27,14 +27,14 @@ const CrmStatCard = ({
   return (
     <Card className="h-100">
       <Card.Body>
-        <div className="d-flex d-sm-block justify-content-between">
+        <div className="flex d-sm-block justify-content-between">
           <div className="border-bottom-sm mb-sm-4">
-            <div className="d-flex align-items-center">
+            <div className="flex align-items-center">
               <div
                 className={`d-flex align-items-center icon-wrapper-sm shadow-${color}-100`}
                 style={{ transform: 'rotate(-7.45deg)' }}
               >
-                <FontAwesomeIcon
+                <
                   icon={icon}
                   className={`text-${color} fs-7 z-1 ms-2`}
                 />
@@ -45,7 +45,7 @@ const CrmStatCard = ({
               {value} <span className="fs-8 text-body lh-lg">{title}</span>
             </p>
           </div>
-          <div className="d-flex flex-column justify-content-center flex-between-end d-sm-block text-end text-sm-start">
+          <div className="flex flex-column justify-content-center flex-between-end d-sm-block text-end text-sm-start">
             <Badge variant="phoenix" bg={badgeBg} className="fs-10 mb-2">
               {badgeLabel}
             </Badge>

@@ -1,9 +1,9 @@
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { faCheck } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Check } from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import { useWizardFormContext } from 'providers/WizardFormProvider';
-import { Nav } from 'react-bootstrap';
+import { Nav } from 'components/ui';
 
 interface WizardNavItemProps {
   icon: IconProp;
@@ -36,12 +36,12 @@ const WizardNavItem = ({
         >
           <span className="nav-item-circle-parent">
             <span className="nav-item-circle">
-              <FontAwesomeIcon
+              <
                 icon={icon}
                 className={`${isHorizontal ? 'nav-item-icon' : null}`}
               />
               {isHorizontal && (
-                <FontAwesomeIcon className="check-icon" icon={faCheck} />
+                < className="check-icon" icon={Check} />
               )}
             </span>
           </span>

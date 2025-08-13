@@ -1,27 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Button,
-  Form,
-  InputGroup,
-  Stack,
-  Alert
-} from 'react-bootstrap';
-import {
-  faSearch,
-  faFilter,
-  faMapMarkerAlt,
-  faUsers,
-  faStar,
-  faTh,
-  faList,
-  faChevronDown,
-  faExclamationTriangle
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+  Search,
+  Filter,
+  MapPin,
+  Users,
+  Star,
+  Grid3X3,
+  List,
+  ChevronDown,
+  AlertTriangle
+} from 'lucide-react';
 import { showToast } from 'components/toaster/toaster';
 import FacilitiesLoader from 'components/facilities/FacilitiesLoader';
 import FacilityCard from 'components/facilities/FacilityCard';
@@ -381,11 +369,11 @@ function FacilitiesPage() {
   if (error) {
     return (
       <Container fluid className="py-4">
-        <Row className="justify-content-center">
+        <Row className="justify-center">
           <Col md={8}>
             <Alert variant="danger" className="text-center">
-              <FontAwesomeIcon
-                icon={faExclamationTriangle}
+              <
+                icon={AlertTriangle}
                 size="3x"
                 className="mb-3"
               />
@@ -438,7 +426,7 @@ function FacilitiesPage() {
         clearFilters={clearFilters}
       />
       {filteredFacilities && filteredFacilities.length > 0 && (
-        <Row className="mt-5">
+        <Row className="mt-8">
           <Col className="text-center">
             <Button variant="outline-primary" size="lg">
               Load More Facilities
@@ -470,7 +458,7 @@ function Header({
         >
           <div>
             <h1 className="h2 fw-bold mb-1">All Facilities</h1>
-            <div className="text-muted mb-0">
+            <div className="text-gray-600 dark:text-gray-400 mb-0">
               Discover {filteredCount} of {totalCount} available spaces
             </div>
           </div>
@@ -480,14 +468,14 @@ function Header({
               onClick={() => setViewMode('grid')}
               aria-label="Grid view"
             >
-              <FontAwesomeIcon icon={faTh} />
+              < icon={Grid3X3} />
             </Button>
             <Button
               variant={viewMode === 'list' ? 'primary' : 'outline-primary'}
               onClick={() => setViewMode('list')}
               aria-label="List view"
             >
-              <FontAwesomeIcon icon={faList} />
+              < icon={List} />
             </Button>
           </Stack>
         </Stack>
@@ -519,11 +507,11 @@ function FiltersBar({
   return (
     <Card className="border-secondary">
       <Card.Body>
-        <Row className="align-items-center">
+        <Row className="items-center">
           <Col md={4} className="mb-2">
             <InputGroup>
               <InputGroup.Text>
-                <FontAwesomeIcon icon={faSearch} />
+                < icon={Search} />
               </InputGroup.Text>
               <Form.Control
                 type="text"
@@ -574,9 +562,9 @@ function FiltersBar({
               onClick={() => setShowFilters(!showFilters)}
               aria-expanded={showFilters}
             >
-              <FontAwesomeIcon icon={faFilter} className="me-2" />
+              < icon={Filter} className="me-2" />
               Filters
-              <FontAwesomeIcon icon={faChevronDown} className="ms-2" />
+              < icon={ChevronDown} className="ms-2" />
             </Button>
           </Col>
         </Row>
@@ -608,7 +596,7 @@ function FiltersBar({
               <Col md={6} className="mb-3">
                 <Form.Label className="small">Amenities</Form.Label>
                 <div
-                  className="d-flex flex-wrap gap-2"
+                  className="flex flex-wrap gap-2"
                   style={{ maxHeight: '100px', overflowY: 'auto' }}
                 >
                   {allAmenities.slice(0, 8).map(amenity => (
@@ -658,11 +646,11 @@ function SortBar({
       direction="horizontal"
       className="justify-content-between align-items-center"
     >
-      <div className="text-muted">
+      <div className="text-gray-600 dark:text-gray-400">
         Showing {resultCount} result{resultCount !== 1 ? 's' : ''}
       </div>
       <Stack direction="horizontal" gap={2}>
-        <span className="text-muted small align-self-center me-2">
+        <span className="text-gray-600 dark:text-gray-400 small align-self-center me-2">
           Sort by:
         </span>
         <Button
@@ -710,11 +698,11 @@ function FacilitiesList({
   if (!Array.isArray(filteredFacilities) || filteredFacilities.length === 0) {
     return (
       <div className="text-center py-5">
-        <div className="text-muted mb-3">
-          <FontAwesomeIcon icon={faSearch} size="3x" />
+        <div className="text-gray-600 dark:text-gray-400 mb-3">
+          < icon={Search} size="3x" />
         </div>
         <h4 className="mb-2">No facilities found</h4>
-        <div className="text-muted mb-3">
+        <div className="text-gray-600 dark:text-gray-400 mb-3">
           Try adjusting your search criteria or filters
         </div>
         <Button variant="primary" onClick={clearFilters}>
@@ -774,7 +762,7 @@ function FacilityListItem({ facility }: { facility: Facility }) {
   return (
     <Card className="border-secondary">
       <Card.Body>
-        <Row className="align-items-center">
+        <Row className="items-center">
           <Col md={3}>
             <img
               src={facilityImage}
@@ -788,21 +776,21 @@ function FacilityListItem({ facility }: { facility: Facility }) {
             />
           </Col>
           <Col md={6}>
-            <h5 className="fw-bold mb-2">{facilityName}</h5>
+            <h5 className="font-bold mb-2">{facilityName}</h5>
             <div className="mb-2 text-muted">{facilityDescription}</div>
             <Stack direction="horizontal" gap={2} className="mb-2">
-              <FontAwesomeIcon icon={faMapMarkerAlt} className="text-primary" />
+              < icon={MapPin} className="text-primary" />
               <span className="small text-muted">{facilityAddress}</span>
             </Stack>
             <Stack direction="horizontal" gap={2} className="mb-2">
-              <FontAwesomeIcon icon={faUsers} className="text-primary" />
+              < icon={Users} className="text-primary" />
               <span className="small text-muted">
                 Up to {facilityCapacity} guests
               </span>
             </Stack>
             {facilityRating && (
               <Stack direction="horizontal" gap={1} className="mb-2">
-                <FontAwesomeIcon icon={faStar} className="text-warning" />
+                < icon={Star} className="text-warning" />
                 <span className="small">{facilityRating}</span>
                 <span className="small text-muted">
                   ({facilityReviews} reviews)
@@ -818,7 +806,7 @@ function FacilityListItem({ facility }: { facility: Facility }) {
                   : 'Contact'}
               </div>
               {defaultPricing?.unit && (
-                <small className="text-muted">per {defaultPricing.unit}</small>
+                <small className="text-gray-600 dark:text-gray-400">per {defaultPricing.unit}</small>
               )}
             </div>
             <Stack gap={2}>

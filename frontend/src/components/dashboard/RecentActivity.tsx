@@ -1,11 +1,11 @@
-import { Card, Table, Badge } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Card, Table, Badge } from 'components/ui';
+import {  } from '';
 import {
   faBox,
-  faUsers,
+  Users,
   faBell,
   faBuilding
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 
 interface ActivityItem {
   id: string;
@@ -26,7 +26,7 @@ const RecentActivity = ({ activities }: RecentActivityProps) => {
       case 'inventory':
         return faBox;
       case 'user':
-        return faUsers;
+        return Users;
       case 'alert':
         return faBell;
       case 'facility':
@@ -74,20 +74,20 @@ const RecentActivity = ({ activities }: RecentActivityProps) => {
                   <td>
                     <Badge
                       bg={getActivityColor(activity.type)}
-                      className="d-flex align-items-center"
+                      className="flex align-items-center"
                       style={{ width: 'fit-content' }}
                     >
-                      <FontAwesomeIcon
+                      <
                         icon={getActivityIcon(activity.type)}
                         className="me-1"
                       />
                       {activity.type}
                     </Badge>
                   </td>
-                  <td className="fw-semibold">{activity.action}</td>
-                  <td className="text-muted">{activity.description}</td>
+                  <td className="font-semibold">{activity.action}</td>
+                  <td className="text-gray-600 dark:text-gray-400">{activity.description}</td>
                   <td>{activity.user}</td>
-                  <td className="text-muted small">
+                  <td className="text-gray-600 dark:text-gray-400 small">
                     {activity.timestamp.toLocaleString()}
                   </td>
                 </tr>
@@ -97,7 +97,7 @@ const RecentActivity = ({ activities }: RecentActivityProps) => {
         </div>
         {activities.length === 0 && (
           <div className="text-center py-4">
-            <p className="text-muted mb-0">No recent activity</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-0">No recent activity</p>
           </div>
         )}
       </Card.Body>

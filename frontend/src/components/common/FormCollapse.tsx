@@ -1,9 +1,9 @@
-import { faAngleUp } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faAngleUp } from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import Button from 'components/base/Button';
 import { PropsWithChildren, useState } from 'react';
-import { Collapse } from 'react-bootstrap';
+import { Collapse } from 'components/ui';
 
 interface FormCollapseProps {
   title: string;
@@ -25,9 +25,9 @@ const FormCollapse = ({
           collapsed: !open
         })}
       >
-        <div className="d-flex align-items-center justify-content-between w-100">
+        <div className="flex align-items-center justify-content-between w-100">
           <div className="fs-8 text-body-highlight">{title}</div>
-          <FontAwesomeIcon
+          <
             icon={faAngleUp}
             className="toggle-icon text-body-quaternary"
           />

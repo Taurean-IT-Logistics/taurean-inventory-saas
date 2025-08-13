@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
+import { Container, Row, Col } from 'components/ui';
 import DashboardMetrics from 'components/dashboard/DashboardMetrics';
 import QuickActionsSidebar from 'components/dashboard/QuickActions';
 import { Booking, Facility } from 'types';
@@ -149,7 +149,7 @@ const Dashboard = () => {
           >
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p className="text-muted">Loading dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -160,7 +160,7 @@ const Dashboard = () => {
       <Container fluid className="py-4">
         <div className="mb-4">
           <h1 className="h3 fw-bold mb-1">Dashboard</h1>
-          <p className="text-muted mb-0">
+          <p className="text-gray-600 dark:text-gray-400 mb-0">
             Welcome to the Facility Management System
           </p>
         </div>

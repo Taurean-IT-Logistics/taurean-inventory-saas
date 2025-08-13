@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { ChevronDown } from 'lucide-react';
 import Button from 'components/base/Button';
-import { Collapse } from 'react-bootstrap';
+import { Collapse } from 'components/ui';
 import classNames from 'classnames';
 
 type ContainerSize = 'sm' | 'base' | 'large' | 'trip';
@@ -45,8 +45,8 @@ const CollapsibleContainer = ({
         onClick={() => setOpen(!open)}
       >
         <h4 className={classNames('mb-0', titleClass)}>{collapseTitle}</h4>
-        <FontAwesomeIcon
-          icon={faChevronDown}
+        <
+          icon={ChevronDown}
           className="toggle-icon text-body"
         />
       </Button>

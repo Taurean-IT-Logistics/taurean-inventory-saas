@@ -7,7 +7,7 @@ import {
   Spinner,
   Placeholder,
   Badge
-} from 'react-bootstrap';
+} from 'components/ui';
 
 const ImageGallerySkeleton: React.FC = () => (
   <Row className="g-2 mb-4">
@@ -48,7 +48,7 @@ const TitleSkeleton: React.FC = () => (
 );
 
 const BadgesSkeleton: React.FC = () => (
-  <div className="d-flex gap-2 mb-4">
+  <div className="flex gap-2 mb-4">
     {[1, 2].map((_, idx) => (
       <Placeholder as={Badge} key={idx} animation="glow" bg="secondary" pill>
         <Placeholder xs={3} style={{ height: '1.5rem' }} />
@@ -58,7 +58,7 @@ const BadgesSkeleton: React.FC = () => (
 );
 
 const DescriptionSkeleton: React.FC = () => (
-  <div className="mb-5">
+  <div className="mb-8">
     <Placeholder as="h3" animation="glow">
       <Placeholder xs={4} bg="secondary" style={{ height: '1.5rem' }} />
     </Placeholder>
@@ -75,10 +75,10 @@ const DescriptionSkeleton: React.FC = () => (
 );
 
 const KeyDetailsSkeleton: React.FC = () => (
-  <Row className="mb-5">
+  <Row className="mb-8">
     {Array.from({ length: 3 }).map((_, idx) => (
       <Col md={4} className="mb-3" key={idx}>
-        <div className="d-flex align-items-center">
+        <div className="flex align-items-center">
           <Placeholder as="div" animation="glow" className="me-3">
             <Placeholder
               bg="secondary"
@@ -103,14 +103,14 @@ const KeyDetailsSkeleton: React.FC = () => (
 );
 
 const AmenitiesSkeleton: React.FC = () => (
-  <div className="mb-5">
+  <div className="mb-8">
     <Placeholder as="h3" animation="glow">
       <Placeholder xs={5} bg="secondary" style={{ height: '1.5rem' }} />
     </Placeholder>
     <Row>
       {Array.from({ length: 6 }).map((_, idx) => (
         <Col md={6} className="mb-3" key={idx}>
-          <div className="d-flex align-items-center">
+          <div className="flex align-items-center">
             <Placeholder as="div" animation="glow" className="me-3">
               <Placeholder
                 bg="secondary"
@@ -135,7 +135,7 @@ const BookingCardSkeleton: React.FC = () => (
   <Card border="secondary">
     <Card.Body className="p-4">
       <Placeholder as="div" animation="glow">
-        <div className="d-flex align-items-baseline mb-3">
+        <div className="flex align-items-baseline mb-3">
           <Placeholder xs={4} bg="secondary" style={{ height: '2rem' }} />
           <Placeholder xs={3} bg="secondary" className="ms-2" />
         </div>
@@ -155,7 +155,7 @@ const BookingCardSkeleton: React.FC = () => (
         <hr className="border-secondary" />
         <div className="small">
           {Array.from({ length: 3 }).map((_, idx) => (
-            <div className="d-flex justify-content-between mb-2" key={idx}>
+            <div className="flex justify-content-between mb-2" key={idx}>
               <Placeholder xs={4} bg="secondary" />
               <Placeholder xs={3} bg="secondary" />
             </div>
@@ -176,7 +176,7 @@ const LoadingOverlay: React.FC = () => (
       zIndex: 1050
     }}
   >
-    <div className="d-flex flex-column align-items-center">
+    <div className="flex flex-column align-items-center">
       <Spinner
         animation="border"
         variant="primary"

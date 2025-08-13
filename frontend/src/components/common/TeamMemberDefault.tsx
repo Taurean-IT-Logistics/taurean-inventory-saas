@@ -1,6 +1,6 @@
 import { TeamMember } from 'data/users';
 import bg21 from 'assets/img/bg/bg-21.png';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 
 import {
   faFacebook,
@@ -30,13 +30,13 @@ const TeamMemberDefault = ({ member }: { member: TeamMember }) => {
       <h6 className="mb-3 fw-semibold">{member.designation}</h6>
       <div>
         <a href="#!" className="text-primary me-3">
-          <FontAwesomeIcon icon={faFacebook} />
+          < icon={faFacebook} />
         </a>
         <a href="#!" className="text-primary me-3">
-          <FontAwesomeIcon icon={faTwitter} />
+          < icon={faTwitter} />
         </a>
         <a href="#!" className="text-primary">
-          <FontAwesomeIcon icon={faLinkedinIn} />
+          < icon={faLinkedinIn} />
         </a>
       </div>
     </div>

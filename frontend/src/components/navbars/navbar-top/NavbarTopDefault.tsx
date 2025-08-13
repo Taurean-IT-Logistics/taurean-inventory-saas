@@ -1,4 +1,4 @@
-import { Navbar } from 'react-bootstrap';
+import { Navbar } from 'components/ui';
 import { useAppContext } from 'providers/AppProvider';
 import classNames from 'classnames';
 import NavbarBrand from 'components/navbars/nav-items/NavbarBrand';

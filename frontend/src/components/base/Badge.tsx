@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import { PropsWithChildren, ReactElement } from 'react';
-import { Badge as BsBadge, BadgeProps as BsBadgeProps } from 'react-bootstrap';
+import { Badge as BsBadge, BadgeProps as BsBadgeProps } from 'components/ui';
 
 export type BadgeVariant = 'phoenix' | 'default' | 'tag';
 export type BadgeBg =

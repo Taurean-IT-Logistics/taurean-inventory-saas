@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import { useAppContext } from 'providers/AppProvider';
-import { Navbar } from 'react-bootstrap';
+import { Navbar } from 'components/ui';
 import logo from 'assets/img/logo.png';
 import { useBreakpoints } from 'providers/BreakpointsProvider';
 import NavbarToggleButton from './NavbarToggleButton';
@@ -32,7 +32,7 @@ const NavbarBrand = () => {
               </span>
             </>
           ) : (
-            <div className="d-flex align-items-center">
+            <div className="flex align-items-center">
               <img src={logo} alt="phoenix" width={27} />
               <p className="logo-text ms-2 d-none d-sm-block">phoenix</p>
             </div>

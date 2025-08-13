@@ -2,7 +2,7 @@ import Button from 'components/base/Button';
 import Logo from 'components/common/Logo';
 import ThemeToggler from 'components/common/ThemeToggler';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Dropdown, Nav, Navbar } from 'react-bootstrap';
+import { Dropdown, Nav, Navbar } from 'components/ui';
 import { Link, useLocation } from 'react-router-dom';
 import FeatherIcon from 'feather-icons-react';
 import { useBreakpoints } from 'providers/BreakpointsProvider';
@@ -228,7 +228,7 @@ const NavbarMain = () => {
         >
           <Logo textClass="d-none d-sm-block" />
         </Navbar.Brand>
-        <div className="d-flex align-items-center gap-3 gap-md-4 my-2 order-lg-1">
+        <div className="flex align-items-center gap-3 gap-md-4 my-2 order-lg-1">
           <ThemeToggler />
           <Button
             to="#!"

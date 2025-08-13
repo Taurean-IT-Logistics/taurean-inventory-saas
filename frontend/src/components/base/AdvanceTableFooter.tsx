@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Col, Pagination, Row } from 'react-bootstrap';
+import { Col, Pagination, Row } from 'components/ui';
 import Button from './Button';
 import { useAdvanceTableContext } from 'providers/AdvanceTableProvider';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import classNames from 'classnames';
 import usePagination from 'hooks/usePagination';
 import {
   faAngleRight,
   faChevronLeft,
   faChevronRight
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 
 interface AdvanceTableFooterProps {
   className?: string;
@@ -57,7 +57,7 @@ const AdvanceTableFooter = ({
 
   return (
     <Row className={classNames(className, 'align-items-center py-1')}>
-      <Col className="d-flex fs-9">
+      <Col className="flex fs-9">
         <p
           className={classNames(
             tableInfo,
@@ -74,7 +74,7 @@ const AdvanceTableFooter = ({
             variant="link"
             className={classNames(viewAllBtnClass, 'p-0 fw-semibold')}
             endIcon={
-              <FontAwesomeIcon icon={faAngleRight} className="ms-1 fs-9" />
+              < icon={faAngleRight} className="ms-1 fs-9" />
             }
             onClick={() => {
               setIsAllVisible(!isAllVisible);
@@ -88,11 +88,11 @@ const AdvanceTableFooter = ({
         )}
       </Col>
       {navBtn && (
-        <Col xs="auto" className="d-flex gap-2">
+        <Col xs="auto" className="flex gap-2">
           <Button
             variant="link"
             startIcon={
-              <FontAwesomeIcon icon={faChevronLeft} className="me-2" />
+              < icon={faChevronLeft} className="me-2" />
             }
             className={classNames('px-1', {
               disabled: !getCanPreviousPage()
@@ -105,7 +105,7 @@ const AdvanceTableFooter = ({
           </Button>
           <Button
             variant="link"
-            endIcon={<FontAwesomeIcon icon={faChevronRight} className="ms-2" />}
+            endIcon={< icon={faChevronRight} className="ms-2" />}
             className={classNames('px-1', {
               disabled: !getCanNextPage()
             })}
@@ -124,7 +124,7 @@ const AdvanceTableFooter = ({
               disabled={!getCanPreviousPage()}
               onClick={() => setPageIndex(pageIndex - 1)}
             >
-              <FontAwesomeIcon icon={faChevronLeft} />
+              < icon={faChevronLeft} />
             </Pagination.Prev>
 
             {hasPrevEllipsis && (
@@ -164,7 +164,7 @@ const AdvanceTableFooter = ({
               disabled={!getCanNextPage()}
               onClick={() => setPageIndex(pageIndex + 1)}
             >
-              <FontAwesomeIcon icon={faChevronRight} />
+              < icon={faChevronRight} />
             </Pagination.Next>
           </Pagination>
         </Col>

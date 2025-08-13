@@ -1,6 +1,6 @@
-import { Card, Form, Row, Col, Button } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { Card, Form, Row, Col, Button } from 'components/ui';
+import {  } from '';
+import { Filter, faTimes } from 'lucide-react';
 
 interface TaxFiltersProps {
   filters: {
@@ -31,12 +31,12 @@ const TaxFilters = ({
   return (
     <Card className=" border-secondary mb-4">
       <Card.Header className=" border-secondary d-flex justify-content-between align-items-center">
-        <div className="d-flex align-items-center">
-          <FontAwesomeIcon icon={faFilter} className="text-primary me-2" />
+        <div className="flex align-items-center">
+          < icon={Filter} className="text-primary me-2" />
           <h6 className=" mb-0">Filters</h6>
         </div>
         <Button variant="outline-secondary" size="sm" onClick={onClearFilters}>
-          <FontAwesomeIcon icon={faTimes} className="me-1" />
+          < icon={faTimes} className="me-1" />
           Clear
         </Button>
       </Card.Header>

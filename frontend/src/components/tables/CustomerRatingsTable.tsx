@@ -23,7 +23,7 @@ const columns: ColumnDef<CustomerReview>[] = [
     cell: ({ row: { original } }) => {
       const { product } = original;
       return (
-        <Link to="#!" className="fw-semibold line-clamp-1">
+        <Link to="#!" className="font-semibold line-clamp-1">
           {product}
         </Link>
       );
@@ -51,7 +51,7 @@ const columns: ColumnDef<CustomerReview>[] = [
     cell: ({ row: { original } }) => {
       const { review } = original;
       return (
-        <p className="fw-semibold text-body-highlight mb-0 line-clamp-2">
+        <p className="font-semibold text-body-highlight mb-0 line-clamp-2">
           {review.slice(0, 134)}
           {review.length > 134 && (
             <>

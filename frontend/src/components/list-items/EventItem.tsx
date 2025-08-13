@@ -1,11 +1,11 @@
-import { faClock, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Clock, MapPin } from 'lucide-react';
+import {  } from '';
 import RevealDropdown, {
   RevealDropdownTrigger
 } from 'components/base/RevealDropdown';
 import { Event } from 'data/eventsData';
 import React from 'react';
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 interface EventItemProps {
@@ -18,7 +18,7 @@ const EventItem = ({ event }: EventItemProps) => {
       key={event.title}
       className="py-3 border-bottom border-translucent border-dashed"
     >
-      <div className="d-flex flex-between-center">
+      <div className="flex flex-between-center">
         <p className="text-warning fs-10 mb-0 fw-bold mb-1">{event.date}</p>
         <RevealDropdownTrigger>
           <RevealDropdown>
@@ -39,7 +39,7 @@ const EventItem = ({ event }: EventItemProps) => {
       </Link>
       <p className="text-body-secondary fs-9 mb-2">
         Organized by <br />{' '}
-        <Link to="#!" className="fw-bold">
+        <Link to="#!" className="font-bold">
           {event.organization}
         </Link>
       </p>
@@ -47,12 +47,12 @@ const EventItem = ({ event }: EventItemProps) => {
         {event.people} people going
       </p>
       <p className="fs-9 text-body-tertiary fw-bold mb-1">
-        <FontAwesomeIcon icon={faClock} className="text-body-secondary me-1" />
+        < icon={Clock} className="text-body-secondary me-1" />
         {event.time}
       </p>
       <p className="fs-9 text-body-tertiary fw-bold mb-0">
-        <FontAwesomeIcon
-          icon={faMapMarkerAlt}
+        <
+          icon={MapPin}
           className="text-body-secondary me-1"
         />
         {event.place}

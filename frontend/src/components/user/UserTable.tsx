@@ -1,10 +1,10 @@
-import { Card, Button, Badge } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Card, Button, Badge } from 'components/ui';
+import {  } from '';
 import {
   faEdit,
   faTrash,
   faTrashRestore
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { Transaction, User } from 'types';
 import SimplePaginatedList from 'booking/PaginatedComponent';
 
@@ -76,9 +76,9 @@ const UserTable = ({
             <tr key={index}>
               <td>
                 <div>
-                  <div className="fw-semibold">{user.name}</div>
-                  <small className="text-muted">{user.email}</small>
-                  <div className="text-muted small">@{user.username}</div>
+                  <div className="font-semibold">{user.name}</div>
+                  <small className="text-gray-600 dark:text-gray-400">{user.email}</small>
+                  <div className="text-gray-600 dark:text-gray-400 small">@{user.username}</div>
                 </div>
               </td>
               <td>{getRoleBadge(user.role)}</td>
@@ -98,13 +98,13 @@ const UserTable = ({
                 </span>
               </td>
               <td>
-                <div className="d-flex gap-2">
+                <div className="flex gap-2">
                   <Button
                     variant="outline-primary"
                     size="sm"
                     onClick={() => onEdit(user)}
                   >
-                    <FontAwesomeIcon icon={faEdit} />
+                    < icon={faEdit} />
                   </Button>
                   {!user.isDeleted && (
                     <Button
@@ -112,7 +112,7 @@ const UserTable = ({
                       size="sm"
                       onClick={() => onDelete(user._id!)}
                     >
-                      <FontAwesomeIcon icon={faTrash} />
+                      < icon={faTrash} />
                     </Button>
                   )}
                   {user.isDeleted && (
@@ -121,7 +121,7 @@ const UserTable = ({
                       size="sm"
                       onClick={() => onRestore(user._id)}
                     >
-                      <FontAwesomeIcon icon={faTrashRestore} />
+                      < icon={faTrashRestore} />
                     </Button>
                   )}
                 </div>

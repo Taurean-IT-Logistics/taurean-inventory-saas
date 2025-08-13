@@ -1,8 +1,8 @@
 import React, { CSSProperties, ChangeEvent, useState } from 'react';
 import Avatar, { Size, Status } from 'components/base/Avatar';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import classNames from 'classnames';
-import { faCamera } from '@fortawesome/free-solid-svg-icons';
+import { faCamera } from 'lucide-react';
 
 interface AvatarUploadProps {
   size: Size;
@@ -58,7 +58,7 @@ const AvatarUpload = ({
           data-bs-theme="light"
           style={{ '--phoenix-bg-opacity': 0.56 } as CSSProperties}
         >
-          <FontAwesomeIcon icon={faCamera} className="text-light w-30 h-30" />
+          < icon={faCamera} className="text-light w-30 h-30" />
         </div>
       </label>
     </div>

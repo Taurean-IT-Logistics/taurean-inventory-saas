@@ -1,5 +1,5 @@
-import { faClock } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Clock } from 'lucide-react';
+import {  } from '';
 import { ColumnDef } from '@tanstack/react-table';
 import classNames from 'classnames';
 import AdvanceTable from 'components/base/AdvanceTable';
@@ -26,7 +26,7 @@ const columns: ColumnDef<CallTableDataType>[] = [
       return (
         <Link
           to="/pages/members"
-          className="d-flex align-items-center text-body-highlight"
+          className="flex align-items-center text-body-highlight"
         >
           <Avatar src={avatar} size="m" className="me-3" status={status} />
           <h6 className="mb-0 text-body-highlight fw-bold">{name}</h6>
@@ -89,16 +89,16 @@ const columns: ColumnDef<CallTableDataType>[] = [
     header: 'last activity',
     cell: ({ row: { original } }) => {
       return (
-        <div className="d-flex align-items-center flex-1">
-          <FontAwesomeIcon
-            icon={faClock}
+        <div className="flex align-items-center flex-1">
+          <
+            icon={Clock}
             className={classNames('me-1 ', {
               'text-success': original.activity === 'Active',
               'text-body-quaternary': original.activity !== 'Active'
             })}
             transform="shrink-2 up-1"
           />
-          <span className="fw-bold fs-9 text-body">{original.activity}</span>
+          <span className="font-bold fs-9 text-body">{original.activity}</span>
         </div>
       );
     },

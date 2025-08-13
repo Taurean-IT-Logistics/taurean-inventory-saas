@@ -20,7 +20,7 @@ export const ordersTableColumns: ColumnDef<Order>[] = [
     cell: ({ row: { original } }) => {
       const { orderId } = original;
       return (
-        <Link to="#!" className="fw-semibold">
+        <Link to="#!" className="font-semibold">
           #{orderId}
         </Link>
       );

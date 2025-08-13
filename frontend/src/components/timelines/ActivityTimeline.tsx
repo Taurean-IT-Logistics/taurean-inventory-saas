@@ -1,8 +1,8 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import classNames from 'classnames';
 import Timeline from 'components/base/Timeline';
 import { ActivityTimelineData } from 'data/project-management/activityTimelineData';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 interface ActivityTimelineProps {
@@ -13,9 +13,9 @@ const ActivityTimeline = ({ data }: ActivityTimelineProps) => {
   return (
     <Timeline variant="vertical">
       {data.map((item, index) => (
-        <Timeline.Item className="position-relative" key={item.id}>
+        <Timeline.Item className="relative" key={item.id}>
           <Row className="g-md-3">
-            <Col xs={12} md="auto" className="d-flex">
+            <Col xs={12} md="auto" className="flex">
               <Timeline.OppositeContent>
                 <p className="fs-10 fw-semibold text-body-tertiary text-opacity-85 text-end">
                   {item.oppositeContent.date}
@@ -25,7 +25,7 @@ const ActivityTimeline = ({ data }: ActivityTimelineProps) => {
               </Timeline.OppositeContent>
               <Timeline.Separator className="position-md-relative">
                 <Timeline.Dot className="bg-primary-subtle">
-                  <FontAwesomeIcon
+                  <
                     icon={item.separator.icon}
                     className="text-primary-dark fs-10"
                   />
@@ -40,7 +40,7 @@ const ActivityTimeline = ({ data }: ActivityTimelineProps) => {
                 <h5 className="fs-9 lh-sm">{item.content.title}</h5>
                 <p className="fs-9">
                   by{' '}
-                  <Link className="fw-semibold" to="#!">
+                  <Link className="font-semibold" to="#!">
                     {item.content.user}
                   </Link>
                 </p>

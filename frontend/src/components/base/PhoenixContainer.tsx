@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import React, { PropsWithChildren } from 'react';
-import { Container, ContainerProps } from 'react-bootstrap';
+import { Container, ContainerProps } from 'components/ui';
 
 export interface PhoenixContainerProps extends ContainerProps {
   small?: boolean;

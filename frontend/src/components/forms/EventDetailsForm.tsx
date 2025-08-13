@@ -1,4 +1,4 @@
-import { Col, FloatingLabel, Form } from 'react-bootstrap';
+import { Col, FloatingLabel, Form } from 'components/ui';
 
 const EventDetailsForm = () => {
   return (

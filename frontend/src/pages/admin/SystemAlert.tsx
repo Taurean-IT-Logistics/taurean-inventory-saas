@@ -8,13 +8,13 @@ import {
   Row,
   Col,
   Badge
-} from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'components/ui';
+import {  } from '';
 import {
   faArrowLeft,
   faPlus,
   faInfoCircle,
-  faExclamationTriangle,
+  AlertTriangle,
   faExclamationCircle,
   faFire,
   faCalendarTimes,
@@ -23,8 +23,8 @@ import {
   faCreditCard,
   faUserTimes,
   faEye,
-  faCheck
-} from '@fortawesome/free-solid-svg-icons';
+  Check
+} from 'lucide-react';
 import { SystemAlert } from 'types';
 import AlertStatsCards from 'components/alerts/AlertStatsCards';
 
@@ -73,7 +73,7 @@ const SystemAlerts = () => {
   const getSeverityBadge = (severity: string) => {
     const severityConfig = {
       low: { bg: 'info', text: 'Low', icon: faInfoCircle },
-      medium: { bg: 'warning', text: 'Medium', icon: faExclamationTriangle },
+      medium: { bg: 'warning', text: 'Medium', icon: AlertTriangle },
       high: { bg: 'danger', text: 'High', icon: faExclamationCircle },
       critical: { bg: 'danger', text: 'Critical', icon: faFire }
     };
@@ -84,10 +84,10 @@ const SystemAlerts = () => {
     return (
       <Badge
         bg={config.bg}
-        className="d-flex align-items-center"
+        className="flex align-items-center"
         style={{ width: 'fit-content' }}
       >
-        <FontAwesomeIcon icon={config.icon} className="me-1" />
+        < icon={config.icon} className="me-1" />
         {config.text}
       </Badge>
     );
@@ -129,20 +129,20 @@ const SystemAlerts = () => {
   return (
     <div className="min-vh-100">
       <Container fluid className="py-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="h3 fw-bold mb-1">System Alerts</h1>
-            <p className="text-muted mb-0">
+            <p className="text-gray-600 dark:text-gray-400 mb-0">
               Monitor and manage system notifications
             </p>
           </div>
-          <div className="d-flex gap-2">
+          <div className="flex gap-2">
             <Link to="/admin/create-alert" className="btn btn-primary">
-              <FontAwesomeIcon icon={faPlus} className="me-2" />
+              < icon={faPlus} className="me-2" />
               Create Alert
             </Link>
             <Link to="/" className="btn btn-outline-secondary">
-              <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+              < icon={faArrowLeft} className="me-2" />
               Back to Dashboard
             </Link>
           </div>
@@ -153,7 +153,7 @@ const SystemAlerts = () => {
         {/* Filters */}
         <Card className="border-secondary mb-4">
           <Card.Body>
-            <Row className="align-items-center gap-3">
+            <Row className="items-center gap-3">
               <Col md={3}>
                 <Form.Select
                   className="border-secondary"
@@ -190,7 +190,7 @@ const SystemAlerts = () => {
                 />
               </Col>
               <Col md={3} className="text-end">
-                <span className="text-muted small">
+                <span className="text-gray-600 dark:text-gray-400 small">
                   Showing {filteredAlerts.length} alerts
                 </span>
               </Col>
@@ -208,16 +208,16 @@ const SystemAlerts = () => {
                 } ${alert.isResolved ? 'opacity-75' : ''}`}
               >
                 <Card.Body>
-                  <div className="d-flex align-items-start justify-content-between">
-                    <div className="d-flex align-items-start">
+                  <div className="flex align-items-start justify-content-between">
+                    <div className="flex align-items-start">
                       <div className="me-3">
-                        <FontAwesomeIcon
+                        <
                           icon={getTypeIcon(alert.type)}
                           className="fs-4 text-primary"
                         />
                       </div>
                       <div className="flex-grow-1">
-                        <div className="d-flex align-items-center mb-2">
+                        <div className="flex align-items-center mb-2">
                           <h6 className="mb-0 me-3">{alert.title}</h6>
                           {getSeverityBadge(alert.severity)}
                           {!alert.isRead && (
@@ -231,10 +231,10 @@ const SystemAlerts = () => {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-muted mb-2">{alert.message}</p>
-                        <div className="d-flex align-items-center text-muted small">
+                        <p className="text-gray-600 dark:text-gray-400 mb-2">{alert.message}</p>
+                        <div className="flex align-items-center text-muted small">
                           <span className="me-3">
-                            <FontAwesomeIcon
+                            <
                               icon={faInfoCircle}
                               className="me-1"
                             />
@@ -249,14 +249,14 @@ const SystemAlerts = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="d-flex gap-2">
+                    <div className="flex gap-2">
                       {!alert.isRead && (
                         <Button
                           variant="outline-info"
                           size="sm"
                           onClick={() => markAsRead(index)}
                         >
-                          <FontAwesomeIcon icon={faEye} className="me-1" />
+                          < icon={faEye} className="me-1" />
                           Mark Read
                         </Button>
                       )}
@@ -266,7 +266,7 @@ const SystemAlerts = () => {
                           size="sm"
                           onClick={() => markAsResolved(index)}
                         >
-                          <FontAwesomeIcon icon={faCheck} className="me-1" />
+                          < icon={Check} className="me-1" />
                           Resolve
                         </Button>
                       )}
@@ -280,12 +280,12 @@ const SystemAlerts = () => {
 
         {filteredAlerts.length === 0 && (
           <div className="text-center py-5">
-            <FontAwesomeIcon
+            <
               icon={faInfoCircle}
               className="fs-1 text-muted mb-3"
             />
-            <h5 className="text-muted">No alerts found</h5>
-            <p className="text-muted">All systems are running smoothly.</p>
+            <h5 className="text-gray-600 dark:text-gray-400">No alerts found</h5>
+            <p className="text-gray-600 dark:text-gray-400">All systems are running smoothly.</p>
           </div>
         )}
       </Container>

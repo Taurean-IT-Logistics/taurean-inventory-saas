@@ -5,8 +5,8 @@ import EditInventoryModal from 'components/inventory/EditInventoryModal';
 import InventoryStatsCards from 'components/inventory/InventoryStatsCard';
 import InventoryFilters from 'components/inventory/InventoryFilters';
 import InventoryTable from 'components/inventory/InventoryTable';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faPlus } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faArrowLeft, faPlus } from 'lucide-react';
 import { InventoryItemController } from 'controllers';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
@@ -132,20 +132,20 @@ const InventoryManagement = () => {
     <div className="min-vh-100">
       <div className="container-fluid py-4">
         {/* Header */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="h3 fw-bold mb-1">Inventory Management</h1>
-            <p className="text-muted mb-0">
+            <p className="text-gray-600 dark:text-gray-400 mb-0">
               Manage your facility equipment and items
             </p>
           </div>
-          <div className="d-flex gap-2">
+          <div className="flex gap-2">
             <Link to="/admin/create-inventory-item" className="btn btn-primary">
-              <FontAwesomeIcon icon={faPlus} className="me-2" />
+              < icon={faPlus} className="me-2" />
               Add New Item
             </Link>
             <Link to="/admin" className="btn btn-outline-secondary">
-              <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+              < icon={faArrowLeft} className="me-2" />
               Back to Dashboard
             </Link>
           </div>
@@ -175,8 +175,8 @@ const InventoryManagement = () => {
         {filteredItems.length === 0 && (
           <div className="text-center py-5">
             <i className="fas fa-search fs-1 text-muted mb-3"></i>
-            <h5 className="text-muted">No items found</h5>
-            <p className="text-muted">
+            <h5 className="text-gray-600 dark:text-gray-400">No items found</h5>
+            <p className="text-gray-600 dark:text-gray-400">
               Try adjusting your search criteria or add new items.
             </p>
           </div>

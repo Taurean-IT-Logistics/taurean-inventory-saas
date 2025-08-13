@@ -2,25 +2,25 @@ import type React from 'react';
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  faCalendarAlt,
-  faClock,
-  faUsers,
-  faMapMarkerAlt,
+  Calendar,
+  Clock,
+  Users,
+  MapPin,
   faArrowLeft,
-  faCheck,
+  Check,
   faCreditCard,
   faShieldAlt,
   faPlus,
   faMinus,
-  faWifi,
-  faParking,
-  faUtensils,
-  faDesktop,
-  faSnowflake,
-  faStar,
+  Wifi,
+  Car,
+  Utensils,
+  Monitor,
+  Snowflake,
+  Star,
   faEdit
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'lucide-react';
+import {  } from '';
 import Badge from 'components/base/Badge';
 import {
   Card,
@@ -30,7 +30,7 @@ import {
   Col,
   Spinner,
   Container
-} from 'react-bootstrap';
+} from 'components/ui';
 import { currencyFormat } from 'helpers/utils';
 import { Booking, Facility, Tax } from 'types';
 import BookingPageLoader from 'booking/BookingPageLoader';
@@ -79,20 +79,20 @@ interface PricingBreakdown {
 
 const getAmenityIcon = (amenity: string) => {
   const amenityLower = amenity.toLowerCase();
-  if (amenityLower.includes('wifi')) return faWifi;
-  if (amenityLower.includes('parking')) return faParking;
+  if (amenityLower.includes('wifi')) return Wifi;
+  if (amenityLower.includes('parking')) return Car;
   if (amenityLower.includes('coffee') || amenityLower.includes('catering'))
-    return faUtensils;
+    return Utensils;
   if (amenityLower.includes('projector') || amenityLower.includes('video'))
-    return faDesktop;
+    return Monitor;
   if (amenityLower.includes('air') || amenityLower.includes('climate'))
-    return faSnowflake;
-  return faCheck;
+    return Snowflake;
+  return Check;
 };
 
 // Facility Not Found
 const FacilityNotFound = () => (
-  <div className="d-flex align-items-center justify-content-center min-vh-100">
+  <div className="flex align-items-center justify-content-center min-vh-100">
     <div className="text-center">
       <h2 className="mb-3">Facility not found</h2>
       <Button as={Link} to="/" variant="primary">
@@ -125,7 +125,7 @@ const BookingFormStep = ({
   <Card className="mb-4 border-secondary shadow">
     <Card.Header className="border-secondary">
       <h5 className="mb-0">
-        <FontAwesomeIcon icon={faCalendarAlt} className="me-2 text-primary" />
+        < icon={Calendar} className="me-2 text-primary" />
         Book Your Space
       </h5>
     </Card.Header>
@@ -135,8 +135,8 @@ const BookingFormStep = ({
         <Row className="mb-4">
           <Col md={6}>
             <Form.Group>
-              <Form.Label className="fw-semibold">
-                <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+              <Form.Label className="font-semibold">
+                < icon={Calendar} className="me-2" />
                 Select Date
               </Form.Label>
               <Form.Control
@@ -150,8 +150,8 @@ const BookingFormStep = ({
           </Col>
           <Col md={6}>
             <Form.Group>
-              <Form.Label className="fw-semibold">
-                <FontAwesomeIcon icon={faClock} className="me-2" />
+              <Form.Label className="font-semibold">
+                < icon={Clock} className="me-2" />
                 Select Time
               </Form.Label>
               {isCheckingAvailability ? (
@@ -184,8 +184,8 @@ const BookingFormStep = ({
         <Row className="mb-4">
           <Col md={6}>
             <Form.Group>
-              <Form.Label className="fw-semibold">Duration (hours)</Form.Label>
-              <div className="d-flex align-items-center">
+              <Form.Label className="font-semibold">Duration (hours)</Form.Label>
+              <div className="flex align-items-center">
                 <Button
                   variant="outline-secondary"
                   size="sm"
@@ -194,7 +194,7 @@ const BookingFormStep = ({
                   }
                   disabled={parseInt(formData.duration) <= 1}
                 >
-                  <FontAwesomeIcon icon={faMinus} />
+                  < icon={faMinus} />
                 </Button>
                 <Form.Control
                   className="mx-3 fw-bold text-center"
@@ -213,25 +213,25 @@ const BookingFormStep = ({
                   }
                   disabled={parseInt(formData.duration) >= 12}
                 >
-                  <FontAwesomeIcon icon={faPlus} />
+                  < icon={faPlus} />
                 </Button>
               </div>
             </Form.Group>
           </Col>
           <Col md={6}>
             <Form.Group>
-              <Form.Label className="fw-semibold">
-                <FontAwesomeIcon icon={faUsers} className="me-2" />
+              <Form.Label className="font-semibold">
+                < icon={Users} className="me-2" />
                 Number of Guests
               </Form.Label>
-              <div className="d-flex align-items-center">
+              <div className="flex align-items-center">
                 <Button
                   variant="outline-secondary"
                   size="sm"
                   onClick={() => handleGuestsChange(formData.guests - 1)}
                   disabled={formData.guests <= 1}
                 >
-                  <FontAwesomeIcon icon={faMinus} />
+                  < icon={faMinus} />
                 </Button>
                 <Form.Control
                   type="number"
@@ -255,11 +255,11 @@ const BookingFormStep = ({
                   onClick={() => handleGuestsChange(formData.guests + 1)}
                   disabled={formData.guests >= facility.capacity.maximum}
                 >
-                  <FontAwesomeIcon icon={faPlus} />
+                  < icon={faPlus} />
                 </Button>
               </div>
 
-              <small className="text-muted">
+              <small className="text-gray-600 dark:text-gray-400">
                 Max capacity: {facility.capacity.maximum}
               </small>
             </Form.Group>
@@ -343,7 +343,7 @@ const BookingFormStep = ({
 
         {/* Special Requests */}
         <Form.Group className="mb-4">
-          <Form.Label className="fw-semibold">
+          <Form.Label className="font-semibold">
             Special Requests (Optional)
           </Form.Label>
           <Form.Control
@@ -432,7 +432,7 @@ const ProgressSteps = ({ currentStep }: { currentStep: number }) => (
 const FacilitySummary = ({ facility }: { facility: Facility }) => (
   <Card className="mb-3 border-secondary shadow">
     <Card.Body className="p-4">
-      <div className="d-flex mb-3">
+      <div className="flex mb-3">
         <img
           src={
             getResourceUrl(facility.images[0]?.path) ||
@@ -443,16 +443,16 @@ const FacilitySummary = ({ facility }: { facility: Facility }) => (
           style={{ width: '80px', height: '80px' }}
         />
         <div>
-          <h5 className="fw-semibold mb-1">{facility.name}</h5>
-          <div className="text-muted small d-flex align-items-center mb-2">
-            <FontAwesomeIcon icon={faMapMarkerAlt} className="me-1" />
+          <h5 className="font-semibold mb-1">{facility.name}</h5>
+          <div className="text-gray-600 dark:text-gray-400 small d-flex align-items-center mb-2">
+            < icon={MapPin} className="me-1" />
             {facility.location.address?.split(',')[0]}
           </div>
           {facility.rating && (
-            <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faStar} className="text-warning me-1" />
+            <div className="flex align-items-center">
+              < icon={Star} className="text-warning me-1" />
               <span className="small">{facility.rating.average}</span>
-              <span className="text-muted small ms-1">
+              <span className="text-gray-600 dark:text-gray-400 small ms-1">
                 ({facility.rating.totalReviews})
               </span>
             </div>
@@ -461,16 +461,16 @@ const FacilitySummary = ({ facility }: { facility: Facility }) => (
       </div>
       <div className="mb-3">
         <h6 className="mb-2">Key Amenities</h6>
-        <div className="d-flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           {facility.amenities
             .slice(0, 4)
             .map((amenity: string, index: number) => (
               <Badge
                 key={index}
                 bg="secondary"
-                className="d-flex align-items-center"
+                className="flex align-items-center"
               >
-                <FontAwesomeIcon
+                <
                   icon={getAmenityIcon(amenity)}
                   className="me-1"
                 />
@@ -478,7 +478,7 @@ const FacilitySummary = ({ facility }: { facility: Facility }) => (
               </Badge>
             ))}
           {facility.amenities.length > 4 && (
-            <span className="text-muted small">
+            <span className="text-gray-600 dark:text-gray-400 small">
               +{facility.amenities.length - 4} more
             </span>
           )}
@@ -510,61 +510,61 @@ const BookingSummary = ({
       <Card.Body className="p-4">
         {formData.selectedDate && formData.selectedTime && (
           <div className="mb-3">
-            <div className="d-flex justify-content-between mb-2">
-              <span className="text-muted">Date:</span>
-              <span className="fw-semibold">
+            <div className="flex justify-content-between mb-2">
+              <span className="text-gray-600 dark:text-gray-400">Date:</span>
+              <span className="font-semibold">
                 {new Date(formData.selectedDate).toLocaleDateString()}
               </span>
             </div>
-            <div className="d-flex justify-content-between mb-2">
-              <span className="text-muted">Time:</span>
-              <span className="fw-semibold">
+            <div className="flex justify-content-between mb-2">
+              <span className="text-gray-600 dark:text-gray-400">Time:</span>
+              <span className="font-semibold">
                 {formData.selectedTime}{' '}
                 {formData.endTime && `- ${formData.endTime}`}
               </span>
             </div>
-            <div className="d-flex justify-content-between mb-2">
-              <span className="text-muted">Duration:</span>
-              <span className="fw-semibold">{formData.duration}</span>
+            <div className="flex justify-content-between mb-2">
+              <span className="text-gray-600 dark:text-gray-400">Duration:</span>
+              <span className="font-semibold">{formData.duration}</span>
             </div>
-            <div className="d-flex justify-content-between mb-3">
-              <span className="text-muted">Guests:</span>
-              <span className="fw-semibold">{formData.guests}</span>
+            <div className="flex justify-content-between mb-3">
+              <span className="text-gray-600 dark:text-gray-400">Guests:</span>
+              <span className="font-semibold">{formData.guests}</span>
             </div>
             <hr className="border-secondary" />
           </div>
         )}
         <div className="mb-3">
-          <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">
+          <div className="flex justify-content-between mb-2">
+            <span className="text-gray-600 dark:text-gray-400">
               {currencyFormat(pricing.basePrice)} ×{' '}
               {Number.parseInt(formData.duration) || 1} {defaultPricing.unit}
               {(Number.parseInt(formData.duration) || 1) > 1 ? 's' : ''}
             </span>
             <span>{currencyFormat(pricing.subtotal)}</span>
           </div>
-          <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Service fee</span>
+          <div className="flex justify-content-between mb-2">
+            <span className="text-gray-600 dark:text-gray-400">Service fee</span>
             <span>{currencyFormat(pricing.serviceFee)}</span>
           </div>
-          <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Tax</span>
+          <div className="flex justify-content-between mb-2">
+            <span className="text-gray-600 dark:text-gray-400">Tax</span>
             <span>{currencyFormat(pricing.tax)}</span>
           </div>
           <hr className="border-secondary" />
-          <div className="d-flex justify-content-between fw-bold h5">
+          <div className="flex justify-content-between fw-bold h5">
             <span>Total</span>
             <span>{currencyFormat(pricing.total)}</span>
           </div>
         </div>
         <div className="p-3 bg-success bg-opacity-10 border border-success rounded">
-          <div className="d-flex align-items-center mb-2">
-            <FontAwesomeIcon icon={faShieldAlt} className="text-success me-2" />
+          <div className="flex align-items-center mb-2">
+            < icon={faShieldAlt} className="text-success me-2" />
             <span className="text-success fw-semibold small">
               Secure Booking
             </span>
           </div>
-          <ul className="text-muted small mb-0 ps-3">
+          <ul className="text-gray-600 dark:text-gray-400 small mb-0 ps-3">
             <li>SSL encrypted payment processing</li>
             <li>Instant booking confirmation</li>
             <li>24/7 customer support</li>
@@ -597,11 +597,11 @@ const ReviewConfirmationStep = ({
     <Card className="mb-4 border-secondary shadow">
       <Card.Header className="border-secondary d-flex justify-content-between align-items-center">
         <h5 className="mb-0">
-          <FontAwesomeIcon icon={faCheck} className="me-2 text-primary" />
+          < icon={Check} className="me-2 text-primary" />
           Review Your Booking
         </h5>
         <Button variant="outline-primary" size="sm" onClick={onEdit}>
-          <FontAwesomeIcon icon={faEdit} className="me-2" />
+          < icon={faEdit} className="me-2" />
           Edit Details
         </Button>
       </Card.Header>
@@ -612,8 +612,8 @@ const ReviewConfirmationStep = ({
           <Row>
             <Col md={6}>
               <div className="mb-3">
-                <strong className="text-muted small">DATE & TIME</strong>
-                <div className="fw-semibold">
+                <strong className="text-gray-600 dark:text-gray-400 small">DATE & TIME</strong>
+                <div className="font-semibold">
                   {new Date(formData.selectedDate).toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
@@ -621,19 +621,19 @@ const ReviewConfirmationStep = ({
                     day: 'numeric'
                   })}
                 </div>
-                <div className="text-muted">
+                <div className="text-gray-600 dark:text-gray-400">
                   {amPm(formData.selectedTime)} - {amPm(formData.endTime)}
                 </div>
               </div>
             </Col>
             <Col md={6}>
               <div className="mb-3">
-                <strong className="text-muted small">DURATION & GUESTS</strong>
-                <div className="fw-semibold">
+                <strong className="text-gray-600 dark:text-gray-400 small">DURATION & GUESTS</strong>
+                <div className="font-semibold">
                   {formData.duration} hour
                   {Number.parseInt(formData.duration) > 1 ? 's' : ''}
                 </div>
-                <div className="text-muted">
+                <div className="text-gray-600 dark:text-gray-400">
                   {formData.guests} guest{formData.guests > 1 ? 's' : ''}
                 </div>
               </div>
@@ -647,17 +647,17 @@ const ReviewConfirmationStep = ({
           <Row>
             <Col md={6}>
               <div className="mb-3">
-                <strong className="text-muted small">CONTACT PERSON</strong>
-                <div className="fw-semibold">{formData.customerInfo.name}</div>
-                <div className="text-muted">{formData.customerInfo.email}</div>
-                <div className="text-muted">{formData.customerInfo.phone}</div>
+                <strong className="text-gray-600 dark:text-gray-400 small">CONTACT PERSON</strong>
+                <div className="font-semibold">{formData.customerInfo.name}</div>
+                <div className="text-gray-600 dark:text-gray-400">{formData.customerInfo.email}</div>
+                <div className="text-gray-600 dark:text-gray-400">{formData.customerInfo.phone}</div>
               </div>
             </Col>
             {formData.customerInfo.company && (
               <Col md={6}>
                 <div className="mb-3">
-                  <strong className="text-muted small">ORGANIZATION</strong>
-                  <div className="fw-semibold">
+                  <strong className="text-gray-600 dark:text-gray-400 small">ORGANIZATION</strong>
+                  <div className="font-semibold">
                     {formData.customerInfo.company}
                   </div>
                 </div>
@@ -680,23 +680,23 @@ const ReviewConfirmationStep = ({
         <div className="mb-4">
           <h6 className="text-primary mb-3">Payment Summary</h6>
           <div className="p-3 border rounded">
-            <div className="d-flex justify-content-between mb-2">
+            <div className="flex justify-content-between mb-2">
               <span>
                 Base Price ({formData.duration} hour
                 {Number.parseInt(formData.duration) > 1 ? 's' : ''})
               </span>
               <span>{currencyFormat(pricing.subtotal)}</span>
             </div>
-            <div className="d-flex justify-content-between mb-2">
-              <span className="text-muted">Service Fee</span>
+            <div className="flex justify-content-between mb-2">
+              <span className="text-gray-600 dark:text-gray-400">Service Fee</span>
               <span>{currencyFormat(pricing.serviceFee)}</span>
             </div>
-            <div className="d-flex justify-content-between mb-2">
-              <span className="text-muted">Tax</span>
+            <div className="flex justify-content-between mb-2">
+              <span className="text-gray-600 dark:text-gray-400">Tax</span>
               <span>{currencyFormat(pricing.tax)}</span>
             </div>
             <hr />
-            <div className="d-flex justify-content-between fw-bold h5">
+            <div className="flex justify-content-between fw-bold h5">
               <span>Total Amount</span>
               <span className="text-primary">
                 {currencyFormat(pricing.total)}
@@ -712,7 +712,7 @@ const ReviewConfirmationStep = ({
               type="submit"
               variant="primary"
               size="lg"
-              className="fw-semibold"
+              className="font-semibold"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -722,14 +722,14 @@ const ReviewConfirmationStep = ({
                 </>
               ) : (
                 <>
-                  <FontAwesomeIcon icon={faCreditCard} className="me-2" />
+                  < icon={faCreditCard} className="me-2" />
                   Proceed to Pay - {currencyFormat(pricing.total)}
                 </>
               )}
             </Button>
           </div>
           <div className="text-center mt-3">
-            <small className="text-muted">
+            <small className="text-gray-600 dark:text-gray-400">
               You will be redirected to Paystack for secure payment processing
             </small>
           </div>
@@ -1053,9 +1053,9 @@ const BookingPage = () => {
           as={Link}
           to={`/facility/${facility._id}`}
           variant="outline"
-          className="d-flex align-items-center"
+          className="flex align-items-center"
         >
-          <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+          < icon={faArrowLeft} className="me-2" />
           Back to Facility
         </Button>
       </div>

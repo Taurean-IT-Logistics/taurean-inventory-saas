@@ -1,11 +1,11 @@
-import { Card, Row, Col } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Card, Row, Col } from 'components/ui';
+import {  } from '';
 import {
   faBox,
   faBuilding,
-  faUsers,
-  faCheckCircle
-} from '@fortawesome/free-solid-svg-icons';
+  Users,
+  CheckCircle
+} from 'lucide-react';
 
 interface DashboardMetricsProps {
   metrics: {
@@ -35,14 +35,14 @@ const DashboardMetrics = ({ metrics }: DashboardMetricsProps) => {
     {
       title: 'Users',
       value: metrics.totalUsers,
-      icon: faUsers,
+      icon: Users,
       color: 'info',
       description: 'Registered users'
     },
     {
       title: 'Active Bookings',
       value: metrics.activeBookings,
-      icon: faCheckCircle,
+      icon: CheckCircle,
       color: 'success',
       description: 'Current bookings'
     }
@@ -56,14 +56,14 @@ const DashboardMetrics = ({ metrics }: DashboardMetricsProps) => {
             className={`bg-${metric.color} bg-opacity-10 border-${metric.color} h-100`}
           >
             <Card.Body className="text-center">
-              <FontAwesomeIcon
+              <
                 icon={metric.icon}
                 size="2x"
                 className={`text-${metric.color} mb-2`}
               />
               <div className="h3 mb-1">{metric.value}</div>
-              <div className="fw-semibold mb-1">{metric.title}</div>
-              <small className="text-muted">{metric.description}</small>
+              <div className="font-semibold mb-1">{metric.title}</div>
+              <small className="text-gray-600 dark:text-gray-400">{metric.description}</small>
             </Card.Body>
           </Card>
         </Col>

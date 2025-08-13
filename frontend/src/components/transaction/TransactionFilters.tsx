@@ -1,6 +1,6 @@
-import { Card, Row, Col, Form, InputGroup } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import { Card, Row, Col, Form, InputGroup } from 'components/ui';
+import {  } from '';
+import { Search } from 'lucide-react';
 
 interface TransactionFiltersProps {
   searchTerm: string;
@@ -24,11 +24,11 @@ const TransactionFilters = ({
   return (
     <Card className="border-secondary mb-4">
       <Card.Body>
-        <Row className="align-items-center gap-2">
+        <Row className="items-center gap-2">
           <Col md={4}>
             <InputGroup>
               <InputGroup.Text className="border-secondary ">
-                <FontAwesomeIcon icon={faSearch} />
+                < icon={Search} />
               </InputGroup.Text>
               <Form.Control
                 type="text"

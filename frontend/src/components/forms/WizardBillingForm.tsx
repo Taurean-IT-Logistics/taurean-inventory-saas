@@ -1,6 +1,6 @@
 import { WizardFormData } from 'pages/modules/forms/WizardExample';
 import { useWizardFormContext } from 'providers/WizardFormProvider';
-import { Col, Form, Row } from 'react-bootstrap';
+import { Col, Form, Row } from 'components/ui';
 
 const WizardBillingForm = () => {
   const { formData, onChange, validation } =

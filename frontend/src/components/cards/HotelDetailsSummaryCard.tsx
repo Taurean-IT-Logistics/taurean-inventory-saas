@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 import img1 from 'assets/img/hotels/39.png';
 import { cartItems } from 'data/travel-agency/customer/hotelDetails';
 import HotelDetailsCartItem from './HotelDetailsCartItem';
@@ -37,7 +37,7 @@ const HotelDetailsSummaryCard = ({
             <h4 className="text-body-highlight mb-2">
               Radisson Blu Water Garden Hotel, Dhaka
             </h4>
-            <p className="mb-5 text-body-tertiary">
+            <p className="mb-8 text-body-tertiary">
               Airport Rd, Dhaka Cantonment, Dhaka, 1206, Bangladesh
             </p>
           </>
@@ -53,7 +53,7 @@ const HotelDetailsSummaryCard = ({
           />
         ))}
         <div className="px-4 py-3 bg-body-highlight rounded-2">
-          <div className="d-flex flex-between-center mb-2">
+          <div className="flex flex-between-center mb-2">
             <h6 className="text-body-tertiary fw-semibold">Sub-total</h6>
             <h6 className="text-body-highlight fw-semibold">
               {currencyFormat(subTotal, {
@@ -62,14 +62,14 @@ const HotelDetailsSummaryCard = ({
               })}
             </h6>
           </div>
-          <div className="d-flex flex-between-center mb-2">
+          <div className="flex flex-between-center mb-2">
             <h6 className="text-body-tertiary fw-semibold">Discount</h6>
             <h6 className="text-body-tertiary fw-semibold">
               -{currencyFormat(discount)}
             </h6>
           </div>
           <hr />
-          <div className="d-flex flex-between-center">
+          <div className="flex flex-between-center">
             <h4 className="text-body">Total</h4>
             <h4 className="text-body">
               {currencyFormat(subTotal !== 0 ? subTotal - discount : 0, {

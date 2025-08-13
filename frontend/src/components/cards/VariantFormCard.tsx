@@ -1,6 +1,6 @@
 import Button from 'components/base/Button';
 import ProductVariant from 'components/forms/ProductVariant';
-import { Card, Col, Row } from 'react-bootstrap';
+import { Card, Col, Row } from 'components/ui';
 
 const VariantFormCard = ({ className }: { className?: string }) => {
   return (

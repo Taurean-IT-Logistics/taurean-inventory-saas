@@ -8,21 +8,21 @@ import {
   Alert,
   Spinner,
   Button
-} from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'components/ui';
+import {  } from '';
 import {
-  faCheckCircle,
+  CheckCircle,
   faTimesCircle,
   faReceipt,
-  faListOl,
+  ListOl,
   faArrowLeft,
-  faCalendarAlt,
+  Calendar,
   faRedo,
   faEnvelope,
   faPhone,
   faMobileAlt,
   faUser
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { TransactionController } from 'controllers';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { RootState } from 'lib/store';
@@ -141,15 +141,15 @@ const PaymentCallback = () => {
     switch (status) {
       case 'success':
         return (
-          <FontAwesomeIcon
-            icon={faCheckCircle}
+          <
+            icon={CheckCircle}
             className="text-success"
             style={{ fontSize: '4rem' }}
           />
         );
       case 'failed':
         return (
-          <FontAwesomeIcon
+          <
             icon={faTimesCircle}
             className="text-danger"
             style={{ fontSize: '4rem' }}
@@ -287,7 +287,7 @@ const PaymentCallback = () => {
   return (
     <div className="min-vh-100 d-flex align-items-center py-5">
       <Container fluid>
-        <Row className="justify-content-center">
+        <Row className="justify-center">
           <Col lg={8} xl={6}>
             <Card className="shadow-lg border-0">
               <Card.Body className="p-5">
@@ -310,7 +310,7 @@ const PaymentCallback = () => {
                       variant="primary"
                       className="mb-3"
                     />
-                    <p className="text-muted">Verifying your payment...</p>
+                    <p className="text-gray-600 dark:text-gray-400">Verifying your payment...</p>
                   </div>
                 )}
 
@@ -320,7 +320,7 @@ const PaymentCallback = () => {
                     <Alert.Heading>Missing Payment Information</Alert.Heading>
                     <p>{error}</p>
                     <hr />
-                    <div className="d-flex justify-content-center">
+                    <div className="flex justify-content-center">
                       <Button
                         as={Link}
                         to="/facilities"
@@ -337,21 +337,21 @@ const PaymentCallback = () => {
                   <Card className="mb-4">
                     <Card.Header>
                       <h5 className="mb-0">
-                        <FontAwesomeIcon icon={faReceipt} className="me-2" />
+                        < icon={faReceipt} className="me-2" />
                         Transaction Details
                       </h5>
                     </Card.Header>
                     <Card.Body>
                       <Row>
                         <Col md={6} className="mb-3">
-                          <small className="text-muted">Reference Number</small>
-                          <div className="fw-bold font-monospace">
+                          <small className="text-gray-600 dark:text-gray-400">Reference Number</small>
+                          <div className="font-bold font-monospace">
                             {paymentData.reference || 'N/A'}
                           </div>
                         </Col>
                         <Col md={6} className="mb-3">
-                          <small className="text-muted">Amount Paid</small>
-                          <div className="fw-bold">
+                          <small className="text-gray-600 dark:text-gray-400">Amount Paid</small>
+                          <div className="font-bold">
                             {formatCurrency(
                               paymentData.amount,
                               paymentData.currency
@@ -359,15 +359,15 @@ const PaymentCallback = () => {
                           </div>
                         </Col>
                         <Col md={6} className="mb-3">
-                          <small className="text-muted">Payment Date</small>
-                          <div className="fw-bold">
+                          <small className="text-gray-600 dark:text-gray-400">Payment Date</small>
+                          <div className="font-bold">
                             {formatDate(paymentData.paid_at)}
                           </div>
                         </Col>
                         <Col md={6} className="mb-3">
-                          <small className="text-muted">Payment Method</small>
-                          <div className="fw-bold d-flex align-items-center">
-                            <FontAwesomeIcon
+                          <small className="text-gray-600 dark:text-gray-400">Payment Method</small>
+                          <div className="font-bold d-flex align-items-center">
+                            <
                               icon={
                                 paymentData.channel === 'mobile_money'
                                   ? faMobileAlt
@@ -379,7 +379,7 @@ const PaymentCallback = () => {
                           </div>
                         </Col>
                         <Col md={6} className="mb-3">
-                          <small className="text-muted">Status</small>
+                          <small className="text-gray-600 dark:text-gray-400">Status</small>
                           <div
                             className={`fw-bold ${
                               status === 'success'
@@ -395,8 +395,8 @@ const PaymentCallback = () => {
                           </div>
                         </Col>
                         <Col md={6} className="mb-3">
-                          <small className="text-muted">Currency</small>
-                          <div className="fw-bold">
+                          <small className="text-gray-600 dark:text-gray-400">Currency</small>
+                          <div className="font-bold">
                             {paymentData.currency || 'N/A'}
                           </div>
                         </Col>
@@ -407,21 +407,21 @@ const PaymentCallback = () => {
                         <>
                           <hr className="my-3" />
                           <h6 className="mb-3">
-                            <FontAwesomeIcon icon={faUser} className="me-2" />
+                            < icon={faUser} className="me-2" />
                             Customer Information
                           </h6>
                           <Row>
                             <Col md={6} className="mb-3">
-                              <small className="text-muted">Email</small>
-                              <div className="fw-bold">
+                              <small className="text-gray-600 dark:text-gray-400">Email</small>
+                              <div className="font-bold">
                                 {paymentData.customer.email || 'N/A'}
                               </div>
                             </Col>
                             <Col md={6} className="mb-3">
-                              <small className="text-muted">
+                              <small className="text-gray-600 dark:text-gray-400">
                                 Customer Code
                               </small>
-                              <div className="fw-bold font-monospace">
+                              <div className="font-bold font-monospace">
                                 {paymentData.customer.customer_code || 'N/A'}
                               </div>
                             </Col>
@@ -436,16 +436,16 @@ const PaymentCallback = () => {
                           <h6 className="mb-3">Additional Transaction Info</h6>
                           <Row>
                             <Col md={6} className="mb-3">
-                              <small className="text-muted">
+                              <small className="text-gray-600 dark:text-gray-400">
                                 Transaction ID
                               </small>
-                              <div className="fw-bold font-monospace">
+                              <div className="font-bold font-monospace">
                                 {paymentData.transaction._id || 'N/A'}
                               </div>
                             </Col>
                             <Col md={6} className="mb-3">
-                              <small className="text-muted">Category</small>
-                              <div className="fw-bold">
+                              <small className="text-gray-600 dark:text-gray-400">Category</small>
+                              <div className="font-bold">
                                 {!paymentData.transaction.category
                                   ? 'N/A'
                                   : paymentData.transaction.category ===
@@ -456,10 +456,10 @@ const PaymentCallback = () => {
                             </Col>
                             {paymentData.transaction.reconciledAt && (
                               <Col md={6} className="mb-3">
-                                <small className="text-muted">
+                                <small className="text-gray-600 dark:text-gray-400">
                                   Reconciled At
                                 </small>
-                                <div className="fw-bold">
+                                <div className="font-bold">
                                   {formatDate(
                                     paymentData.transaction.reconciledAt
                                   )}
@@ -478,14 +478,14 @@ const PaymentCallback = () => {
                   <Card className="mb-4">
                     <Card.Header>
                       <h5 className="mb-0">
-                        <FontAwesomeIcon icon={faListOl} className="me-2" />
+                        < icon={ListOl} className="me-2" />
                         What happens next?
                       </h5>
                     </Card.Header>
                     <Card.Body>
                       <ol className="list-unstyled">
                         {getNextSteps().map((step, index) => (
-                          <li key={index} className="d-flex mb-3">
+                          <li key={index} className="flex mb-3">
                             <span
                               className={`badge ${
                                 status === 'success'
@@ -508,16 +508,16 @@ const PaymentCallback = () => {
 
                 {/* Action Buttons */}
                 {!loading && (
-                  <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                  <div className="flex flex-column flex-sm-row gap-3 justify-content-center">
                     <Button as={Link} to="/" variant="outline-primary">
-                      <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+                      < icon={faArrowLeft} className="me-2" />
                       Back to Home
                     </Button>
 
                     {status === 'success' && (
                       <Button as={Link} to="/facilities" variant="primary">
-                        <FontAwesomeIcon
-                          icon={faCalendarAlt}
+                        <
+                          icon={Calendar}
                           className="me-2"
                         />
                         View Facilities
@@ -533,7 +533,7 @@ const PaymentCallback = () => {
                           variant="danger"
                           disabled={!accessCode}
                         >
-                          <FontAwesomeIcon icon={faRedo} className="me-2" />
+                          < icon={faRedo} className="me-2" />
                           Try Again
                         </Button>
                         <Button
@@ -558,12 +558,12 @@ const PaymentCallback = () => {
                 {/* Contact Support */}
                 <hr className="my-4" />
                 <div className="text-center">
-                  <small className="text-muted d-block mb-2">
+                  <small className="text-gray-600 dark:text-gray-400 d-block mb-2">
                     Need help or have questions?
                   </small>
-                  <div className="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                  <div className="flex flex-column flex-sm-row gap-2 justify-content-center">
                     <small>
-                      <FontAwesomeIcon icon={faEnvelope} className="me-1" />
+                      < icon={faEnvelope} className="me-1" />
                       <a
                         href="mailto:support@example.com"
                         className="text-decoration-none"
@@ -571,9 +571,9 @@ const PaymentCallback = () => {
                         support@example.com
                       </a>
                     </small>
-                    <small className="text-muted d-none d-sm-inline">|</small>
+                    <small className="text-gray-600 dark:text-gray-400 d-none d-sm-inline">|</small>
                     <small>
-                      <FontAwesomeIcon icon={faPhone} className="me-1" />
+                      < icon={faPhone} className="me-1" />
                       <a
                         href="tel:+1234567890"
                         className="text-decoration-none"

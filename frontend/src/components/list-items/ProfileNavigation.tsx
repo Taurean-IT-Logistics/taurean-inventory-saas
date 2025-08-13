@@ -1,8 +1,8 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import classNames from 'classnames';
 import Button from 'components/base/Button';
 import { dropdownData } from 'data/social/dropdownData';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 const ProfileNavigation = ({ className }: { className?: string }) => {
@@ -29,7 +29,7 @@ const ProfileNavigation = ({ className }: { className?: string }) => {
               }
             )}
             startIcon={
-              <FontAwesomeIcon
+              <
                 icon={item.icon}
                 className="me-2 mb-2 mb-xxl-0"
               />

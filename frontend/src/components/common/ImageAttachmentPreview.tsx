@@ -1,6 +1,6 @@
-import { faEllipsisH } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Dropdown } from 'react-bootstrap';
+import { faEllipsisH } from 'lucide-react';
+import {  } from '';
+import { Dropdown } from 'components/ui';
 
 const ImageAttachmentPreview = ({
   image,
@@ -20,7 +20,7 @@ const ImageAttachmentPreview = ({
           className="text-body bg-body dropdown-caret-none px-3 py-2"
           id="dropdown-basic"
         >
-          <FontAwesomeIcon icon={faEllipsisH} />
+          < icon={faEllipsisH} />
         </Dropdown.Toggle>
         <Dropdown.Menu className="py-1" align="end">
           <Dropdown.Item href="#/action-1" onClick={handleClose}>

@@ -1,5 +1,5 @@
 import Button from 'components/base/Button';
-import { Col, Form, Row } from 'react-bootstrap';
+import { Col, Form, Row } from 'components/ui';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch } from 'hooks/useAppDispatch';
 import { useState } from 'react';

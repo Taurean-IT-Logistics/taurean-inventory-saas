@@ -2,13 +2,13 @@
 import React, { forwardRef, HTMLAttributes, useEffect, useRef } from 'react';
 import mapboxgl, { Map, MapboxOptions } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Button } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Button } from 'components/ui';
+import {  } from '';
 import classNames from 'classnames';
 import { useAppContext } from 'providers/AppProvider';
 // @ts-ignore
 import MapboxWorker from 'mapbox-gl/dist/mapbox-gl-csp-worker?worker';
-import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faMinus, faPlus } from 'lucide-react';
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
 // @ts-ignore
@@ -78,10 +78,10 @@ const Mapbox = forwardRef<Map | null, MapboxProps>(
           <div ref={mapContainer} className="map-container" />
           <div className="mapbox-control-btn">
             <Button onClick={() => map.current?.zoomIn()} className="zoomIn">
-              <FontAwesomeIcon icon={faPlus} />
+              < icon={faPlus} />
             </Button>
             <Button onClick={() => map.current?.zoomOut()} className="zoomOut">
-              <FontAwesomeIcon icon={faMinus} />
+              < icon={faMinus} />
             </Button>
           </div>
         </div>

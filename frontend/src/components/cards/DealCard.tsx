@@ -2,11 +2,11 @@ import {
   faAngleDown,
   faSquareEnvelope,
   faSquarePhone
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'lucide-react';
+import {  } from '';
 import { Deal } from 'data/crm/deals';
 import { currencyFormat } from 'helpers/utils';
-import { Card, Collapse, Form, ProgressBar, Table } from 'react-bootstrap';
+import { Card, Collapse, Form, ProgressBar, Table } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 import { UilHeadphones, UilUser } from '@iconscout/react-unicons';
 import classNames from 'classnames';
@@ -64,7 +64,7 @@ const DealCard = ({ deal, columnId, cursor }: DealCardProps) => {
     <div ref={setNodeRef} style={styles} {...attributes} {...listeners}>
       <Card className="mb-3">
         <Card.Body>
-          <div className="d-flex align-items-center justify-content-between mb-3">
+          <div className="flex align-items-center justify-content-between mb-3">
             <FeatherIcon icon="clock" size={16} className="me-2" />
 
             <p className="mb-0 fs-9 fw-semibold text-body-tertiary flex-1">
@@ -75,7 +75,7 @@ const DealCard = ({ deal, columnId, cursor }: DealCardProps) => {
               className="btn p-0 deal-collapse-btn"
               onClick={handleOpenDetails}
             >
-              <FontAwesomeIcon
+              <
                 icon={faAngleDown}
                 className={classNames('text-body-tertiary fs-8', {
                   show: deal.openDetails
@@ -83,10 +83,10 @@ const DealCard = ({ deal, columnId, cursor }: DealCardProps) => {
               />
             </button>
           </div>
-          <div className="d-flex align-items-center mb-2">
+          <div className="flex align-items-center mb-2">
             <Link
               to="/apps/crm/deal-details"
-              className="fw-bold line-clamp-1 me-3 fs-7"
+              className="font-bold line-clamp-1 me-3 fs-7"
             >
               {deal.title}
             </Link>
@@ -119,13 +119,13 @@ const DealCard = ({ deal, columnId, cursor }: DealCardProps) => {
               'd-none': deal.openDetails
             })}
           >
-            <div className="d-flex align-items-center">
+            <div className="flex align-items-center">
               <UilUser className="me-2" size={16} />
               <p className="text-body-secondary fw-bold fs-9 mb-0">
                 {deal.company}
               </p>
             </div>
-            <div className="d-flex align-items-center">
+            <div className="flex align-items-center">
               <UilHeadphones className="me-2" size={16} />
               <p className="text-body-secondary fw-bold fs-9 mb-0">
                 {deal.agent}
@@ -135,7 +135,7 @@ const DealCard = ({ deal, columnId, cursor }: DealCardProps) => {
 
           <Collapse in={deal.openDetails}>
             <div>
-              <div className="d-flex gap-2 mb-5">
+              <div className="flex gap-2 mb-5">
                 <Badge variant="phoenix" bg={deal.status.variant as BadgeBg}>
                   {deal.status.label}
                 </Badge>
@@ -147,52 +147,52 @@ const DealCard = ({ deal, columnId, cursor }: DealCardProps) => {
                 <Table className="mb-0 w-100 align-middle" borderless size="sm">
                   <tbody>
                     <tr>
-                      <td className="d-flex gap-2 align-items-center">
+                      <td className="flex gap-2 align-items-center">
                         <FeatherIcon
                           icon="dollar-sign"
                           size={16}
                           className="text-body-tertiary"
                         />
-                        <p className="fw-semibold fs-9 mb-0 text-body-tertiary">
+                        <p className="font-semibold fs-9 mb-0 text-body-tertiary">
                           Expected Revenue
                         </p>
                       </td>
                       <td>:</td>
-                      <td className="fw-semibold fs-9 mb-0 text-body-emphasis">
+                      <td className="font-semibold fs-9 mb-0 text-body-emphasis">
                         {currencyFormat(deal.revenue, {
                           minimumFractionDigits: 2
                         })}
                       </td>
                     </tr>
                     <tr>
-                      <td className="d-flex gap-2 align-items-center">
+                      <td className="flex gap-2 align-items-center">
                         <FeatherIcon
                           icon="user"
                           size={16}
                           className="text-body-tertiary"
                         />
-                        <p className="fw-semibold fs-9 mb-0 text-body-tertiary">
+                        <p className="font-semibold fs-9 mb-0 text-body-tertiary">
                           Company Name
                         </p>
                       </td>
                       <td>:</td>
-                      <td className="fw-semibold fs-9 mb-0 text-body-emphasis">
-                        <p className="align-items-center d-flex fs-9 fw-semibold gap-2 mb-0 text-body-emphasis">
+                      <td className="font-semibold fs-9 mb-0 text-body-emphasis">
+                        <p className="items-center d-flex fs-9 fw-semibold gap-2 mb-0 text-body-emphasis">
                           {deal.company}
                           <Link to="#!">
-                            <FontAwesomeIcon
+                            <
                               icon={faSquarePhone}
                               className="text-body-tertiary"
                             />
                           </Link>
                           <Link to="#!">
-                            <FontAwesomeIcon
+                            <
                               icon={faSquareEnvelope}
                               className="text-body-tertiary"
                             />
                           </Link>
                           <Link to="#!">
-                            <FontAwesomeIcon
+                            <
                               icon={faWhatsappSquare}
                               className="text-body-tertiary"
                             />
@@ -201,34 +201,34 @@ const DealCard = ({ deal, columnId, cursor }: DealCardProps) => {
                       </td>
                     </tr>
                     <tr>
-                      <td className="d-flex gap-2 align-items-center">
+                      <td className="flex gap-2 align-items-center">
                         <FeatherIcon
                           icon="calendar"
                           size={16}
                           className="text-body-tertiary"
                         />
-                        <p className="fw-semibold fs-9 mb-0 text-body-tertiary">
+                        <p className="font-semibold fs-9 mb-0 text-body-tertiary">
                           Closing Date & Time
                         </p>
                       </td>
                       <td>:</td>
-                      <td className="fw-semibold fs-9 mb-0 text-body-emphasis">
+                      <td className="font-semibold fs-9 mb-0 text-body-emphasis">
                         {deal.closingDate} . <span>{deal.closingTime}</span>
                       </td>
                     </tr>
                     <tr>
-                      <td className="d-flex gap-2 align-items-center">
+                      <td className="flex gap-2 align-items-center">
                         <FeatherIcon
                           icon="headphones"
                           size={16}
                           className="text-body-tertiary"
                         />
-                        <p className="fw-semibold fs-9 mb-0 text-body-tertiary">
+                        <p className="font-semibold fs-9 mb-0 text-body-tertiary">
                           Assigned Agent
                         </p>
                       </td>
                       <td>:</td>
-                      <td className="fw-semibold fs-9 mb-0 text-body-emphasis">
+                      <td className="font-semibold fs-9 mb-0 text-body-emphasis">
                         <Form.Select
                           size="sm"
                           className="py-0 ms-n3 border-0 shadow-none"

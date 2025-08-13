@@ -1,9 +1,9 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import { useCallback, useLayoutEffect, useRef } from 'react';
-import { Container, Dropdown, Nav, NavItem, Navbar } from 'react-bootstrap';
+import { Container, Dropdown, Nav, NavItem, Navbar } from 'components/ui';
 import { Link, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
-import { faAngleDown } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDown } from 'lucide-react';
 import { ResizableNav } from 'data/travel-agency/resizableNav';
 
 const ResizableNavbar = ({ navItems }: ResizableNav) => {
@@ -68,7 +68,7 @@ const ResizableNavbar = ({ navItems }: ResizableNav) => {
     <Navbar className="resizable-nav bg-body-emphasis border-y bg-body-emphasis border-translucent py-2">
       <Container
         fluid="medium"
-        className="d-flex flex-between-center flex-nowrap w-100"
+        className="flex flex-between-center flex-nowrap w-100"
         ref={containerRef}
       >
         <Nav as="ul" className="justify-content-end align-items-center gap-5">
@@ -93,10 +93,10 @@ const ResizableNavbar = ({ navItems }: ResizableNav) => {
           <Dropdown align="end" as={NavItem} ref={moreBtnRef}>
             <Dropdown.Toggle
               variant=""
-              className="fw-bold nav-link dropdown-caret-none"
+              className="font-bold nav-link dropdown-caret-none"
             >
               More
-              <FontAwesomeIcon icon={faAngleDown} className="ms-2" />
+              < icon={faAngleDown} className="ms-2" />
             </Dropdown.Toggle>
 
             <Dropdown.Menu align="end" renderOnMount>

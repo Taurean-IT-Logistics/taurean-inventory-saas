@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Form, Button, Row, Col } from 'react-bootstrap';
+import { Modal, Form, Button, Row, Col } from 'components/ui';
 import { Transaction } from 'types';
 
 interface EditTransactionModalProps {

@@ -1,9 +1,9 @@
-import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMinus, faPlus } from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import Button from 'components/base/Button';
 import React, { useState } from 'react';
-import { Form, InputGroup } from 'react-bootstrap';
+import { Form, InputGroup } from 'components/ui';
 
 interface InputGroupCounterProps {
   id?: string;
@@ -32,7 +32,7 @@ const InputGroupCounter = ({
         className={classNames(buttonClasses)}
         onClick={() => handleCount('decrease')}
       >
-        <FontAwesomeIcon icon={faMinus} className={classNames(iconClasses)} />
+        < icon={faMinus} className={classNames(iconClasses)} />
       </Button>
 
       <Form.Control
@@ -47,7 +47,7 @@ const InputGroupCounter = ({
         className={classNames(buttonClasses)}
         onClick={() => handleCount('increase')}
       >
-        <FontAwesomeIcon icon={faPlus} className={classNames(iconClasses)} />
+        < icon={faPlus} className={classNames(iconClasses)} />
       </Button>
     </InputGroup>
   );

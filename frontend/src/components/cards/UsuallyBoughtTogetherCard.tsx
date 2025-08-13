@@ -1,15 +1,15 @@
-import { faShoppingCart } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShoppingCart } from 'lucide-react';
+import {  } from '';
 import { SuggestedProductType } from 'data/e-commerce/products';
 import { currencyFormat } from 'helpers/utils';
 import { useState } from 'react';
-import { Button, Card, Form, Stack } from 'react-bootstrap';
+import { Button, Card, Form, Stack } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 const ProductListItem = ({ product }: { product: SuggestedProductType }) => {
   const [checked, setChecked] = useState(product.checked);
   return (
-    <div className="d-flex align-items-center">
+    <div className="flex align-items-center">
       <Form.Check
         checked={checked}
         className="me-2"
@@ -55,7 +55,7 @@ const UsuallyBoughtTogetherCard = ({
             <ProductListItem product={product} key={product.id} />
           ))}
         </Stack>
-        <div className="d-flex align-items-end justify-content-between">
+        <div className="flex align-items-end justify-content-between">
           <div>
             <h5 className="mb-2 text-body-tertiary text-opacity-85">Total</h5>
             <h4 className="mb-0 text-body-emphasis">
@@ -64,7 +64,7 @@ const UsuallyBoughtTogetherCard = ({
           </div>
           <Button variant="outline-warning">
             Add 3 items to cart
-            <FontAwesomeIcon icon={faShoppingCart} className="ms-2" />
+            < icon={faShoppingCart} className="ms-2" />
           </Button>
         </div>
       </Card.Body>

@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import Button from 'components/base/Button';
 import { customerNotes } from 'data/e-commerce/customers';
 import React from 'react';
-import { Card, Form } from 'react-bootstrap';
+import { Card, Form } from 'components/ui';
 
 interface NoteProps {
   note: string;

@@ -1,13 +1,13 @@
 import Button from 'components/base/Button';
 import React from 'react';
-import { Form } from 'react-bootstrap';
+import { Form } from 'components/ui';
 
 const ResetPasswordForm = () => {
   return (
     <div className="text-center mb-6">
       <h4 className="text-body-highlight">Reset new password</h4>
       <p className="text-body-tertiary">Type your new password</p>
-      <Form className="mt-5">
+      <Form className="mt-8">
         <Form.Control
           className="mb-2"
           id="password"

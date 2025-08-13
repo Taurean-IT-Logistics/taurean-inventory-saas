@@ -1,6 +1,6 @@
-import { Card, Form, Row, Col, Button, Badge } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { Card, Form, Row, Col, Button, Badge } from 'components/ui';
+import {  } from '';
+import { faPlus, faTimes } from 'lucide-react';
 import { Facility } from 'types';
 
 interface DetailsAmenitiesStepProps {
@@ -29,7 +29,7 @@ const DetailsAmenitiesStep = ({
         <Row className="mb-4">
           <Col md={6} className="mb-3">
             <Form.Group>
-              <Form.Label className="fw-semibold">Opening Time *</Form.Label>
+              <Form.Label className="font-semibold">Opening Time *</Form.Label>
               <Form.Control
                 type="time"
                 name="operationalHours.opening"
@@ -41,7 +41,7 @@ const DetailsAmenitiesStep = ({
           </Col>
           <Col md={6} className="mb-3">
             <Form.Group>
-              <Form.Label className="fw-semibold">Closing Time *</Form.Label>
+              <Form.Label className="font-semibold">Closing Time *</Form.Label>
               <Form.Control
                 type="time"
                 name="operationalHours.closing"
@@ -54,8 +54,8 @@ const DetailsAmenitiesStep = ({
         </Row>
 
         <div className="mb-4">
-          <Form.Label className="fw-semibold">Amenities</Form.Label>
-          <div className="d-flex mb-3">
+          <Form.Label className="font-semibold">Amenities</Form.Label>
+          <div className="flex mb-3">
             <Form.Control
               type="text"
               value={newAmenity}
@@ -74,17 +74,17 @@ const DetailsAmenitiesStep = ({
               disabled={!newAmenity.trim()}
               className="ms-2"
             >
-              <FontAwesomeIcon icon={faPlus} className="me-1" />
+              < icon={faPlus} className="me-1" />
               Add
             </Button>
           </div>
 
-          <div className="d-flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {formData.amenities?.map((amenity, index) => (
               <Badge
                 key={index}
                 bg="secondary"
-                className="d-flex align-items-center p-2"
+                className="flex align-items-center p-2"
               >
                 <span className="me-2">{amenity}</span>
                 <Button
@@ -93,14 +93,14 @@ const DetailsAmenitiesStep = ({
                   className="p-0 text-white"
                   onClick={() => removeAmenity(index)}
                 >
-                  <FontAwesomeIcon icon={faTimes} />
+                  < icon={faTimes} />
                 </Button>
               </Badge>
             ))}
           </div>
 
           {(!formData.amenities || formData.amenities.length === 0) && (
-            <small className="text-muted">No amenities added yet.</small>
+            <small className="text-gray-600 dark:text-gray-400">No amenities added yet.</small>
           )}
         </div>
       </Card.Body>

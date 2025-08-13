@@ -5,17 +5,17 @@ import AdvanceTableProvider from 'providers/AdvanceTableProvider';
 import { Link } from 'react-router-dom';
 import AdvanceTableFooter from 'components/base/AdvanceTableFooter';
 import Button from 'components/base/Button';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import { Project, Status, projects } from 'data/project-management/projects';
 import Avatar from 'components/base/Avatar';
-import { OverlayTrigger, ProgressBar, Tooltip } from 'react-bootstrap';
+import { OverlayTrigger, ProgressBar, Tooltip } from 'components/ui';
 import classNames from 'classnames';
 import RevealDropdown, {
   RevealDropdownTrigger
 } from 'components/base/RevealDropdown';
 import ActionDropdownItems from 'components/common/ActionDropdownItems';
 import AvatarDropdown from 'components/common/AvatarDropdown';
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faPlus } from 'lucide-react';
 
 const columns: ColumnDef<Project>[] = [
   {
@@ -83,10 +83,10 @@ const columns: ColumnDef<Project>[] = [
       if (calculation) {
         return (
           <>
-            <p className="fw-bold text-body-emphasis fs-9 mb-0">
+            <p className="font-bold text-body-emphasis fs-9 mb-0">
               {calculation?.amount}
             </p>
-            <p className="fw-semibold fs-10 text-body-tertiary mb-0">
+            <p className="font-semibold fs-10 text-body-tertiary mb-0">
               {calculation?.label}
             </p>
           </>
@@ -94,7 +94,7 @@ const columns: ColumnDef<Project>[] = [
       }
       return (
         <Button variant="phoenix-secondary" className="btn-icon">
-          <FontAwesomeIcon icon={faPlus} />
+          < icon={faPlus} />
         </Button>
       );
     },

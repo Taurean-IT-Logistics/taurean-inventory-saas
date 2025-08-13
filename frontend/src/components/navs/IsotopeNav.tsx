@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { Nav, NavProps } from 'react-bootstrap';
+import { Nav, NavProps } from 'components/ui';
 
 export interface IsotopeNavItem {
   eventKey: string | number;

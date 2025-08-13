@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import AdvanceTableFooter from 'components/base/AdvanceTableFooter';
 import { Project } from 'data/project-management/projects';
 import Avatar from 'components/base/Avatar';
-import { ProgressBar } from 'react-bootstrap';
+import { ProgressBar } from 'components/ui';
 import RevealDropdown, {
   RevealDropdownTrigger
 } from 'components/base/RevealDropdown';

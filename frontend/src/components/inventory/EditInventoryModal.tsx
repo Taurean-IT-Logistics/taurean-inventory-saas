@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col, Badge } from 'react-bootstrap';
+import { Modal, Button, Form, Row, Col, Badge } from 'components/ui';
 import { InventoryItem } from 'types';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload, faTimes, faPlus } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faUpload, faTimes, faPlus } from 'lucide-react';
 import { getResourceUrl } from 'controllers';
 
 interface PricingFormProps {
@@ -57,7 +57,7 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
 
   return (
     <div className="mb-3">
-      <div className="d-flex justify-content-between align-items-center mb-2">
+      <div className="flex justify-content-between align-items-center mb-2">
         <Form.Label className="mb-0">Pricing Information</Form.Label>
         <Button
           type="button"
@@ -65,14 +65,14 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
           size="sm"
           onClick={handleAddPricing}
         >
-          <FontAwesomeIcon icon={faPlus} className="me-1" />
+          < icon={faPlus} className="me-1" />
           Add Pricing
         </Button>
       </div>
 
       {pricing.length === 0 ? (
         <div className="border border-secondary rounded p-3">
-          <p className="text-muted mb-0 text-center">
+          <p className="text-gray-600 dark:text-gray-400 mb-0 text-center">
             No pricing information added yet.
           </p>
         </div>
@@ -83,7 +83,7 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
               key={index}
               className={`${index > 0 ? 'border-top pt-3 mt-3' : ''}`}
             >
-              <div className="d-flex justify-content-between align-items-center mb-2">
+              <div className="flex justify-content-between align-items-center mb-2">
                 <h6 className="mb-0 text-muted">Pricing Option {index + 1}</h6>
                 {pricing.length > 1 && (
                   <Button
@@ -92,7 +92,7 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
                     size="sm"
                     onClick={() => handleRemovePricing(index)}
                   >
-                    <FontAwesomeIcon icon={faTimes} />
+                    < icon={faTimes} />
                   </Button>
                 )}
               </div>
@@ -360,11 +360,11 @@ const EditInventoryModal = ({
                 onChange={handleImageUpload}
                 className="border-secondary mb-3"
               />
-              <div className="d-flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4">
                 {imagePreviews.map((preview, index) => {
                   const isExisting = index < existingImages.length;
                   return (
-                    <div key={index} className="position-relative">
+                    <div key={index} className="relative">
                       <img
                         src={getResourceUrl(preview)}
                         alt={`Preview ${index + 1}`}
@@ -382,7 +382,7 @@ const EditInventoryModal = ({
                         style={{ transform: 'translate(25%, -25%)' }}
                         onClick={() => removeImage(index)}
                       >
-                        <FontAwesomeIcon icon={faTimes} />
+                        < icon={faTimes} />
                       </Button>
                       {!isExisting && (
                         <Badge
@@ -401,12 +401,12 @@ const EditInventoryModal = ({
                 })}
                 {imagePreviews.length === 0 && (
                   <div className="text-center w-100 py-4">
-                    <FontAwesomeIcon
+                    <
                       icon={faUpload}
                       size="3x"
-                      className="text-muted mb-2"
+                      className="text-gray-600 dark:text-gray-400 mb-2"
                     />
-                    <p className="text-muted">No images uploaded</p>
+                    <p className="text-gray-600 dark:text-gray-400">No images uploaded</p>
                   </div>
                 )}
               </div>
@@ -541,16 +541,16 @@ const EditInventoryModal = ({
               </Col>
               <Col md={2}>
                 <Button
-                  className="d-flex"
+                  className="flex"
                   variant="primary"
                   onClick={addSpecification}
                 >
-                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  < icon={faPlus} className="me-2" />
                   Add
                 </Button>
               </Col>
             </Row>
-            <div className="d-flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               {formData.specifications &&
                 (() => {
                   const specs =
@@ -562,7 +562,7 @@ const EditInventoryModal = ({
                     <Badge
                       key={key}
                       bg="secondary"
-                      className="d-flex align-items-center gap-2"
+                      className="flex align-items-center gap-2"
                     >
                       {key}: {String(value)}
                       <Button

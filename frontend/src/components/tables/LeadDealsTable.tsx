@@ -11,7 +11,7 @@ import RevealDropdown, {
 } from 'components/base/RevealDropdown';
 import ActionDropdownItems from 'components/common/ActionDropdownItems';
 import Badge, { BadgeBg } from 'components/base/Badge';
-import { ProgressBar } from 'react-bootstrap';
+import { ProgressBar } from 'components/ui';
 
 const getBadgeBg = (label: string): BadgeBg => {
   switch (label) {
@@ -42,7 +42,7 @@ const columns: ColumnDef<LeadDeal>[] = [
     header: 'deal name',
     accessorKey: 'name',
     cell: ({ row: { original } }) => (
-      <Link to="#!" className="fw-semibold">
+      <Link to="#!" className="font-semibold">
         {original.name}
       </Link>
     ),

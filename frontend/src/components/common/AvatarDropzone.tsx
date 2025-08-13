@@ -5,8 +5,8 @@ import {
   DropzoneProps as ReactDropZoneProps,
   useDropzone
 } from 'react-dropzone';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faUpload } from 'lucide-react';
 
 interface DropzoneProps extends ReactDropZoneProps {
   className?: string;
@@ -36,7 +36,7 @@ const AvatarDropzone = ({ className, onDrop, ...rest }: DropzoneProps) => {
         <input {...getInputProps()} />
         <div className="text-center text-body-emphasis">
           <h5 className="mb-2">
-            <FontAwesomeIcon icon={faUpload} className="me-2" />
+            < icon={faUpload} className="me-2" />
             Upload Profile Picture
           </h5>
           <p className="mb-0 fs-9 text-body-tertiary text-opacity-85 lh-sm">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import { ColumnDef } from '@tanstack/react-table';
 import AdvanceTable from 'components/base/AdvanceTable';
 import AdvanceTableFooter from 'components/base/AdvanceTableFooter';
@@ -10,11 +10,11 @@ import {
   faBed,
   faBorderAll,
   faFileExport,
-  faFilter,
+  Filter,
   faPersonShelter,
   faPlus,
   faUser
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import SearchBox from 'components/common/SearchBox';
 
 import useAdvanceTable from 'hooks/useAdvanceTable';
@@ -41,7 +41,7 @@ const columns: ColumnDef<RoomListingInterface>[] = [
       const { img, name, category, price } = original;
       return (
         <>
-          <div className="d-flex align-items-center gap-3">
+          <div className="flex align-items-center gap-3">
             <Link to="#!">
               <img
                 src={img}
@@ -58,10 +58,10 @@ const columns: ColumnDef<RoomListingInterface>[] = [
                 {name}
               </Link>
               <h6 className="fw-seibold text-body text-nowrap mt-1 mb-2">
-                <FontAwesomeIcon icon={faBorderAll} className="me-2" />
+                < icon={faBorderAll} className="me-2" />
                 {category}
               </h6>
-              <h4 className="fw-bolder mb-0">${price}</h4>
+              <h4 className="font-bolder mb-0">${price}</h4>
             </div>
           </div>
         </>
@@ -79,12 +79,12 @@ const columns: ColumnDef<RoomListingInterface>[] = [
     cell: ({ row: { original } }) => {
       const { beds, bedRooms } = original;
       return (
-        <div className="d-flex align-items-center">
+        <div className="flex align-items-center">
           <div
-            className="d-flex align-items-center justify-content-center bg-primary-subtle rounded me-2"
+            className="flex align-items-center justify-content-center bg-primary-subtle rounded me-2"
             style={{ height: 24, width: 24 }}
           >
-            <FontAwesomeIcon
+            <
               icon={faPersonShelter}
               className="text-primary-darker"
             />
@@ -93,10 +93,10 @@ const columns: ColumnDef<RoomListingInterface>[] = [
             {bedRooms}
           </h5>
           <div
-            className="d-flex align-items-center justify-content-center bg-success-subtle rounded me-2"
+            className="flex align-items-center justify-content-center bg-success-subtle rounded me-2"
             style={{ height: 24, width: 24 }}
           >
-            <FontAwesomeIcon icon={faBed} className="text-success-darker" />
+            < icon={faBed} className="text-success-darker" />
           </div>
           <h5 className="text-body-emphasis fw-semibold mb-0">{beds}</h5>
         </div>
@@ -116,19 +116,19 @@ const columns: ColumnDef<RoomListingInterface>[] = [
     cell: ({ row: { original } }) => {
       const { guest, child } = original;
       return (
-        <div className="d-flex align-items-center">
+        <div className="flex align-items-center">
           <div
-            className="d-flex align-items-center justify-content-center bg-warning-subtle rounded me-2"
+            className="flex align-items-center justify-content-center bg-warning-subtle rounded me-2"
             style={{ height: 24, width: 24 }}
           >
-            <FontAwesomeIcon icon={faUser} className="text-warning-darker" />
+            < icon={faUser} className="text-warning-darker" />
           </div>
           <h5 className="text-body-emphasis fw-semibold mb-0 me-3">{guest}</h5>
           <div
-            className="d-flex align-items-center justify-content-center bg-info-subtle rounded me-2"
+            className="flex align-items-center justify-content-center bg-info-subtle rounded me-2"
             style={{ height: 24, width: 24 }}
           >
-            <FontAwesomeIcon icon={faBaby} className="text-info-darker" />
+            < icon={faBaby} className="text-info-darker" />
           </div>
           <h5 className="text-body-emphasis fw-semibold mb-0">{child}</h5>
         </div>
@@ -148,12 +148,12 @@ const columns: ColumnDef<RoomListingInterface>[] = [
     cell: ({ row: { original } }) => {
       const { bathRooms } = original;
       return (
-        <div className="d-flex align-items-center">
+        <div className="flex align-items-center">
           <div
-            className="d-flex align-items-center justify-content-center bg-danger-subtle rounded me-2"
+            className="flex align-items-center justify-content-center bg-danger-subtle rounded me-2"
             style={{ height: 24, width: 24 }}
           >
-            <FontAwesomeIcon icon={faBath} className="text-danger-darker" />
+            < icon={faBath} className="text-danger-darker" />
           </div>
           <h5 className="text-body-emphasis fw-semibold mb-0 me-3">
             {bathRooms}
@@ -176,7 +176,7 @@ const columns: ColumnDef<RoomListingInterface>[] = [
     cell: ({ row: { original } }) => {
       const { amenities } = original;
       return (
-        <div className="d-flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           {amenities.slice(0, 13).map((item, index) => (
             <Badge
               key={index}
@@ -188,7 +188,7 @@ const columns: ColumnDef<RoomListingInterface>[] = [
             </Badge>
           ))}
           {amenities.length > 13 && (
-            <Link to="#!" className="fw-bold fs-9">
+            <Link to="#!" className="font-bold fs-9">
               +{amenities.length - 13} More
             </Link>
           )}
@@ -256,7 +256,7 @@ const RoomListingTable = () => {
       <div className="d-md-flex mt-5 mb-4">
         <Button
           variant="primary"
-          startIcon={<FontAwesomeIcon icon={faPlus} className="me-2" />}
+          startIcon={< icon={faPlus} className="me-2" />}
           className="me-4"
         >
           Create Listing
@@ -264,19 +264,19 @@ const RoomListingTable = () => {
         <Button
           variant="link"
           startIcon={
-            <FontAwesomeIcon icon={faFileExport} className="me-2 fs-9" />
+            < icon={faFileExport} className="me-2 fs-9" />
           }
           className="text-body me-4 px-0"
         >
           Export
         </Button>
-        <div className="d-flex gap-2 ms-md-auto mt-3 mt-md-0">
+        <div className="flex gap-2 ms-md-auto mt-3 mt-md-0">
           <SearchBox
             placeholder="Search products"
             onChange={handleSearchInputChange}
           />
           <Button variant="phoenix-primary" className="px-3">
-            <FontAwesomeIcon transform="down-2" icon={faFilter} />
+            < transform="down-2" icon={Filter} />
           </Button>
         </div>
       </div>

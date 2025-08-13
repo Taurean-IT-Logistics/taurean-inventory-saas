@@ -1,6 +1,6 @@
 import { UseWizardFormResult } from 'hooks/useWizardForm';
 import { Context, PropsWithChildren, createContext, useContext } from 'react';
-import { Tab } from 'react-bootstrap';
+import { Tab } from 'components/ui';
 
 interface WizardFormContextInterface<T> extends UseWizardFormResult<T> {}
 interface WizardFormProviderInterface<T>

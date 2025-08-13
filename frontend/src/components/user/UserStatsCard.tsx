@@ -1,11 +1,11 @@
-import { Card, Row, Col } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Card, Row, Col } from 'components/ui';
+import {  } from '';
 import {
-  faUsers,
+  Users,
   faUser,
   faUserTie,
   faUserShield
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { User } from 'types';
 
 interface UserStatsCardsProps {
@@ -18,14 +18,14 @@ const UserStatsCards = ({ users }: UserStatsCardsProps) => {
       <Col lg={3} md={6} className="mb-3">
         <Card className="bg-primary bg-opacity-10 border-primary">
           <Card.Body>
-            <div className="d-flex align-items-center justify-content-between">
+            <div className="flex align-items-center justify-content-between">
               <div>
                 <h3 className="text-primary mb-1">
                   {users.filter(u => !u.isDeleted).length}
                 </h3>
-                <p className="text-muted mb-0 small">Total Users</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-0 small">Total Users</p>
               </div>
-              <FontAwesomeIcon icon={faUsers} className="text-primary fs-2" />
+              < icon={Users} className="text-primary fs-2" />
             </div>
           </Card.Body>
         </Card>
@@ -33,14 +33,14 @@ const UserStatsCards = ({ users }: UserStatsCardsProps) => {
       <Col lg={3} md={6} className="mb-3">
         <Card className="bg-success bg-opacity-10 border-success">
           <Card.Body>
-            <div className="d-flex align-items-center justify-content-between">
+            <div className="flex align-items-center justify-content-between">
               <div>
                 <h3 className="text-success mb-1">
                   {users.filter(u => u.role === 'user' && !u.isDeleted).length}
                 </h3>
-                <p className="text-muted mb-0 small">Customers</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-0 small">Customers</p>
               </div>
-              <FontAwesomeIcon icon={faUser} className="text-success fs-2" />
+              < icon={faUser} className="text-success fs-2" />
             </div>
           </Card.Body>
         </Card>
@@ -48,14 +48,14 @@ const UserStatsCards = ({ users }: UserStatsCardsProps) => {
       <Col lg={3} md={6} className="mb-3">
         <Card className="bg-warning bg-opacity-10 border-warning">
           <Card.Body>
-            <div className="d-flex align-items-center justify-content-between">
+            <div className="flex align-items-center justify-content-between">
               <div>
                 <h3 className="text-warning mb-1">
                   {users.filter(u => u.role === 'staff' && !u.isDeleted).length}
                 </h3>
-                <p className="text-muted mb-0 small">Staff</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-0 small">Staff</p>
               </div>
-              <FontAwesomeIcon icon={faUserTie} className="text-warning fs-2" />
+              < icon={faUserTie} className="text-warning fs-2" />
             </div>
           </Card.Body>
         </Card>
@@ -63,14 +63,14 @@ const UserStatsCards = ({ users }: UserStatsCardsProps) => {
       <Col lg={3} md={6} className="mb-3">
         <Card className="bg-danger bg-opacity-10 border-danger">
           <Card.Body>
-            <div className="d-flex align-items-center justify-content-between">
+            <div className="flex align-items-center justify-content-between">
               <div>
                 <h3 className="text-danger mb-1">
                   {users.filter(u => u.role === 'admin' && !u.isDeleted).length}
                 </h3>
-                <p className="text-muted mb-0 small">Admins</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-0 small">Admins</p>
               </div>
-              <FontAwesomeIcon
+              <
                 icon={faUserShield}
                 className="text-danger fs-2"
               />

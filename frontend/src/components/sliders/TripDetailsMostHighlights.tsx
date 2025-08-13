@@ -3,11 +3,11 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import { NavigationOptions } from 'swiper/types';
 import type { MostHighlightedImage } from 'data/travel-agency/customer/trip';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import {
   faChevronLeft,
   faChevronRight
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 
 interface TripDetailsMostHighlightsProps {
   items: MostHighlightedImage[];
@@ -55,10 +55,10 @@ const TripDetailsMostHighlights = ({
       </Swiper>
       <div className="swiper-nav swiper-nav-inside">
         <button className="swiper-button-next" ref={navigationNextRef}>
-          <FontAwesomeIcon icon={faChevronRight} />
+          < icon={faChevronRight} />
         </button>
         <button className="swiper-button-prev" ref={navigationPrevRef}>
-          <FontAwesomeIcon icon={faChevronLeft} />
+          < icon={faChevronLeft} />
         </button>
       </div>
     </div>

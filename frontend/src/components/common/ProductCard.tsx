@@ -1,5 +1,5 @@
-import { faCheck, faHeart } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Check, faHeart } from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import Badge from 'components/base/Badge';
 import Button from 'components/base/Button';
@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 const ProductCard = ({ product }: { product: ProductType }) => {
   return (
     <div className="position-relative text-decoration-none product-card h-100">
-      <div className="d-flex flex-column justify-content-between h-100">
+      <div className="flex flex-column justify-content-between h-100">
         <div>
           <div className="border border-translucent rounded-3 position-relative mb-3">
             <Button
@@ -25,11 +25,11 @@ const ProductCard = ({ product }: { product: ProductType }) => {
               )}
             >
               {product.wishListed ? (
-                <FontAwesomeIcon icon={faHeart} />
+                < icon={faHeart} />
               ) : (
                 <>
-                  <FontAwesomeIcon icon={faHeart} className="d-block-hover" />
-                  <FontAwesomeIcon icon={farHeart} className="d-none-hover" />
+                  < icon={faHeart} className="d-block-hover" />
+                  < icon={farHeart} className="d-none-hover" />
                 </>
               )}
             </Button>
@@ -37,7 +37,7 @@ const ProductCard = ({ product }: { product: ProductType }) => {
             {product.verified && (
               <Badge bg="success" className="fs-10 product-verified-badge">
                 Verified
-                <FontAwesomeIcon icon={faCheck} className="ms-1" />
+                < icon={Check} className="ms-1" />
               </Badge>
             )}
           </div>
@@ -75,7 +75,7 @@ const ProductCard = ({ product }: { product: ProductType }) => {
           {product.salePrice && (
             <>
               {product.price ? (
-                <div className="d-flex align-items-center mb-1">
+                <div className="flex align-items-center mb-1">
                   <p className="me-2 text-body text-decoration-line-through mb-0">
                     {currencyFormat(product.price)}
                   </p>

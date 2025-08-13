@@ -3,10 +3,10 @@ import {
   faImage,
   faLocationDot,
   faTag
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
-import { Form } from 'react-bootstrap';
+import { Form } from 'components/ui';
 
 const CommentForm = () => {
   return (
@@ -14,18 +14,18 @@ const CommentForm = () => {
       <Form.Group className="mb-3" controlId="commentForm">
         <Form.Control placeholder="Add comment" as="textarea" rows={3} />
       </Form.Group>
-      <div className="d-flex align-items-center gap-3">
+      <div className="flex align-items-center gap-3">
         <Button size="sm" className="p-0">
-          <FontAwesomeIcon icon={faImage} className="fs-8" />
+          < icon={faImage} className="fs-8" />
         </Button>
         <Button size="sm" className="p-0">
-          <FontAwesomeIcon icon={faCalendarDays} className="fs-8" />
+          < icon={faCalendarDays} className="fs-8" />
         </Button>
         <Button size="sm" className="p-0">
-          <FontAwesomeIcon icon={faLocationDot} className="fs-8" />
+          < icon={faLocationDot} className="fs-8" />
         </Button>
         <Button size="sm" className="p-0">
-          <FontAwesomeIcon icon={faTag} className="fs-8" />
+          < icon={faTag} className="fs-8" />
         </Button>
         <Button variant="primary" className="px-6 ms-auto">
           Comment

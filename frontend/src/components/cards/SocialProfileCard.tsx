@@ -1,15 +1,15 @@
 import CoverUpload from 'components/common/CoverUpload';
 import coverImage from 'assets/img/generic/59.png';
 import AvatarUpload from 'components/common/AvatarUpload';
-import { Card, Col, Row } from 'react-bootstrap';
+import { Card, Col, Row } from 'components/ui';
 import { CSSProperties } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import { Link } from 'react-router-dom';
 import {
   faPencil,
   faUserCheck,
   faUserGroup
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 
 interface SocialProfileCardProps {
   showAbout?: boolean;
@@ -46,38 +46,38 @@ const SocialProfileCard = ({
       <Card.Body>
         <Row>
           <Col xs={12}>
-            <div className="d-flex flex-wrap mb-2 align-items-center">
+            <div className="flex flex-wrap mb-2 align-items-center">
               <h3 className="me-2">Ansolo Lazinatov</h3>
               <span className="fw-normal fs-8">u/hansolo</span>
             </div>
-            <div className="d-flex flex-wrap gap-y-2 gap-x-4 d-xl-block d-xxl-flex align-items-center">
-              <div className="d-flex mb-xl-2 mb-xxl-0">
-                <FontAwesomeIcon
+            <div className="flex flex-wrap gap-y-2 gap-x-4 d-xl-block d-xxl-flex align-items-center">
+              <div className="flex mb-xl-2 mb-xxl-0">
+                <
                   icon={faUserGroup}
                   className="fs-10 me-2 me-lg-1 me-xl-2"
                 />
                 <h6 className="mb-0">
                   1297
-                  <span className="fw-semibold ms-1">Followers</span>
+                  <span className="font-semibold ms-1">Followers</span>
                 </h6>
               </div>
-              <div className="d-flex">
-                <FontAwesomeIcon
+              <div className="flex">
+                <
                   icon={faUserCheck}
                   className="fs-10 me-2 me-lg-1 me-xl-2"
                 />
                 <h6 className="mb-0">
                   3971
-                  <span className="fw-semibold ms-1">Following</span>
+                  <span className="font-semibold ms-1">Following</span>
                 </h6>
               </div>
             </div>
             {showAbout && (
               <div className="mt-4">
-                <p className="fw-semibold mb-0">
+                <p className="font-semibold mb-0">
                   About me
                   <Link to="#!">
-                    <FontAwesomeIcon
+                    <
                       icon={faPencil}
                       className="fs-10 text-body-quaternary ms-3"
                     />

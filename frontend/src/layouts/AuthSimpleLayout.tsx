@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import Logo from 'components/common/Logo';
 import { PropsWithChildren } from 'react';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 interface AuthSimpleLayoutProps {
@@ -21,12 +21,12 @@ const AuthSimpleLayout = ({
           {logo && (
             <Link
               to="/"
-              className="d-flex flex-center text-decoration-none mb-4"
+              className="flex flex-center text-decoration-none mb-4"
             >
               <Logo
                 text={false}
                 width={100}
-                className="fw-bolder fs-5 d-inline-block"
+                className="font-bolder fs-5 d-inline-block"
               />
             </Link>
           )}

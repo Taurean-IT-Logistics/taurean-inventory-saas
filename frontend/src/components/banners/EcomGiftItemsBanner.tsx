@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Container, Row, Col, Button, Badge } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Container, Row, Col, Button, Badge } from 'components/ui';
+import {  } from '';
 import {
-  faCalendarAlt,
+  Calendar,
   faArrowRight,
-  faUsers,
+  Users,
   faBuilding,
-  faStar,
+  Star,
   faPhone,
   faEnvelope,
   faGift,
   faPercent,
-  faClock,
+  Clock,
   faShield,
   faFire,
   faHeart,
@@ -20,7 +20,7 @@ import {
   faRocket,
   faHeadset,
   faChartLine
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Link } from 'react-router-dom';
 import CompanyInfo from 'data';
@@ -93,7 +93,7 @@ const FloatingShape = ({
 export const HolidayBookingSection = () => {
   return (
     <section
-      className="d-flex align-items-center position-relative overflow-hidden"
+      className="flex align-items-center position-relative overflow-hidden"
       style={{
         height: '33vh',
         minHeight: '400px',
@@ -124,7 +124,7 @@ export const HolidayBookingSection = () => {
       />
 
       <Container style={{ zIndex: 10 }}>
-        <Row className="align-items-center">
+        <Row className="items-center">
           <Col lg={8}>
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -132,7 +132,7 @@ export const HolidayBookingSection = () => {
               transition={{ duration: 0.8 }}
             >
               <Badge bg="warning" className="mb-3 px-3 py-2 rounded-pill fs-6">
-                <FontAwesomeIcon icon={faGift} className="me-2" />
+                < icon={faGift} className="me-2" />
                 Limited Time Offer
               </Badge>
 
@@ -166,9 +166,9 @@ export const HolidayBookingSection = () => {
                     border: 'none'
                   }}
                 >
-                  <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+                  < icon={Calendar} className="me-2" />
                   Book Facilities
-                  <FontAwesomeIcon icon={faArrowRight} className="ms-2" />
+                  < icon={faArrowRight} className="ms-2" />
                 </Button>
               </motion.div>
             </motion.div>
@@ -200,12 +200,12 @@ export const HolidayBookingSection = () => {
                 }}
               >
                 <div className="text-center text-white">
-                  <FontAwesomeIcon
+                  <
                     icon={faBuilding}
                     size="4x"
                     className="mb-3"
                   />
-                  <h4 className="fw-bold">Premium Venues</h4>
+                  <h4 className="font-bold">Premium Venues</h4>
                 </div>
               </motion.div>
             </motion.div>
@@ -220,7 +220,7 @@ export const HolidayBookingSection = () => {
 export const BookingStatsSection = () => {
   const stats = [
     {
-      icon: faUsers,
+      icon: Users,
       number: '2,500+',
       label: 'Happy Clients',
       color: '#00b894'
@@ -232,7 +232,7 @@ export const BookingStatsSection = () => {
       color: '#0984e3'
     },
     {
-      icon: faStar,
+      icon: Star,
       number: '4.9',
       label: 'Average Rating',
       color: '#fdcb6e'
@@ -247,7 +247,7 @@ export const BookingStatsSection = () => {
 
   return (
     <section
-      className="d-flex align-items-center position-relative overflow-hidden"
+      className="flex align-items-center position-relative overflow-hidden"
       style={{
         height: '33vh',
         minHeight: '400px',
@@ -320,7 +320,7 @@ export const BookingStatsSection = () => {
                   whileHover={{ scale: 1.1, rotate: 10 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <FontAwesomeIcon
+                  <
                     icon={stat.icon}
                     size="2x"
                     className="text-white"
@@ -352,7 +352,7 @@ export const BookingStatsSection = () => {
 export const FacilityAdvertisementSection = () => {
   return (
     <section
-      className="d-flex align-items-center position-relative overflow-hidden"
+      className="flex align-items-center position-relative overflow-hidden"
       style={{
         height: '33vh',
         minHeight: '400px',
@@ -383,7 +383,7 @@ export const FacilityAdvertisementSection = () => {
       />
 
       <Container style={{ zIndex: 10 }}>
-        <Row className="align-items-center">
+        <Row className="items-center">
           <Col lg={6}>
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -395,7 +395,7 @@ export const FacilityAdvertisementSection = () => {
                 text="dark"
                 className="mb-3 px-3 py-2 rounded-pill fs-6"
               >
-                <FontAwesomeIcon icon={faFire} className="me-2" />
+                < icon={faFire} className="me-2" />
                 Hot Deal
               </Badge>
 
@@ -413,7 +413,7 @@ export const FacilityAdvertisementSection = () => {
                 centers at unbeatable prices. Limited slots available!
               </p>
 
-              <div className="d-flex flex-column flex-sm-row gap-3">
+              <div className="flex flex-column flex-sm-row gap-3">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -427,7 +427,7 @@ export const FacilityAdvertisementSection = () => {
                       border: 'none'
                     }}
                   >
-                    <FontAwesomeIcon icon={faPercent} className="me-2" />
+                    < icon={faPercent} className="me-2" />
                     View Deals
                   </Button>
                 </motion.div>
@@ -440,7 +440,7 @@ export const FacilityAdvertisementSection = () => {
                     size="lg"
                     className="rounded-pill px-4 py-3 fw-semibold"
                   >
-                    <FontAwesomeIcon icon={faBuilding} className="me-2" />
+                    < icon={faBuilding} className="me-2" />
                     Browse All
                   </Button>
                 </motion.div>
@@ -472,12 +472,12 @@ export const FacilityAdvertisementSection = () => {
                       repeat: Number.POSITIVE_INFINITY
                     }}
                   >
-                    <FontAwesomeIcon
+                    <
                       icon={faBuilding}
                       size="2x"
                       className="mb-2"
                     />
-                    <h6 className="fw-bold mb-0">Meeting Rooms</h6>
+                    <h6 className="font-bold mb-0">Meeting Rooms</h6>
                   </motion.div>
                 </Col>
                 <Col xs={6}>
@@ -497,12 +497,12 @@ export const FacilityAdvertisementSection = () => {
                       delay: 1
                     }}
                   >
-                    <FontAwesomeIcon
-                      icon={faUsers}
+                    <
+                      icon={Users}
                       size="2x"
                       className="mb-2"
                     />
-                    <h6 className="fw-bold mb-0">Event Halls</h6>
+                    <h6 className="font-bold mb-0">Event Halls</h6>
                   </motion.div>
                 </Col>
               </Row>
@@ -541,7 +541,7 @@ export const ContactTeamSection = () => {
 
   return (
     <section
-      className="d-flex align-items-center position-relative overflow-hidden"
+      className="flex align-items-center position-relative overflow-hidden"
       style={{
         height: '33vh',
         minHeight: '400px',
@@ -572,7 +572,7 @@ export const ContactTeamSection = () => {
       />
 
       <Container style={{ zIndex: 10 }}>
-        <Row className="align-items-center">
+        <Row className="items-center">
           <Col lg={6}>
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -584,7 +584,7 @@ export const ContactTeamSection = () => {
                 text="dark"
                 className="mb-3 px-3 py-2 rounded-pill fs-6"
               >
-                <FontAwesomeIcon icon={faHeadset} className="me-2" />
+                < icon={faHeadset} className="me-2" />
                 Expert Support
               </Badge>
 
@@ -617,7 +617,7 @@ export const ContactTeamSection = () => {
                     border: 'none'
                   }}
                 >
-                  <FontAwesomeIcon icon={faRocket} className="me-2" />
+                  < icon={faRocket} className="me-2" />
                   Get Started
                 </Button>
               </motion.div>
@@ -659,10 +659,10 @@ export const ContactTeamSection = () => {
                         }
                         transition={{ duration: 0.3 }}
                       >
-                        <FontAwesomeIcon icon={method.icon} size="lg" />
+                        < icon={method.icon} size="lg" />
                       </motion.div>
                       <div>
-                        <h6 className="fw-bold mb-1">{method.title}</h6>
+                        <h6 className="font-bold mb-1">{method.title}</h6>
                         <p className="mb-0 opacity-75 small">{method.info}</p>
                       </div>
                     </motion.div>
@@ -681,7 +681,7 @@ export const ContactTeamSection = () => {
 export const SpecialDealsSection = () => {
   return (
     <section
-      className="d-flex align-items-center position-relative overflow-hidden"
+      className="flex align-items-center position-relative overflow-hidden"
       style={{
         height: '33vh',
         minHeight: '400px',
@@ -712,7 +712,7 @@ export const SpecialDealsSection = () => {
       />
 
       <Container style={{ zIndex: 10 }} className="p-4">
-        <Row className="align-items-center text-center">
+        <Row className="items-center text-center">
           <Col lg={8} className="mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -720,7 +720,7 @@ export const SpecialDealsSection = () => {
               transition={{ duration: 0.8 }}
             >
               <Badge bg="warning" className="mb-3 px-3 py-2 rounded-pill fs-6">
-                <FontAwesomeIcon icon={faChartLine} className="me-2" />
+                < icon={faChartLine} className="me-2" />
                 Growing Fast
               </Badge>
 
@@ -749,7 +749,7 @@ export const SpecialDealsSection = () => {
                       repeat: Number.POSITIVE_INFINITY
                     }}
                   >
-                    <FontAwesomeIcon
+                    <
                       icon={faShield}
                       size="2x"
                       className="text-white mb-2"
@@ -768,8 +768,8 @@ export const SpecialDealsSection = () => {
                       delay: 1
                     }}
                   >
-                    <FontAwesomeIcon
-                      icon={faClock}
+                    <
+                      icon={Clock}
                       size="2x"
                       className="text-white mb-2"
                     />
@@ -787,7 +787,7 @@ export const SpecialDealsSection = () => {
                       delay: 2
                     }}
                   >
-                    <FontAwesomeIcon
+                    <
                       icon={faHeart}
                       size="2x"
                       className="text-white mb-2"
@@ -812,9 +812,9 @@ export const SpecialDealsSection = () => {
                     border: 'none'
                   }}
                 >
-                  <FontAwesomeIcon icon={faBuilding} className="me-2" />
+                  < icon={faBuilding} className="me-2" />
                   Explore Facilities
-                  <FontAwesomeIcon icon={faArrowRight} className="ms-2" />
+                  < icon={faArrowRight} className="ms-2" />
                 </Button>
               </motion.div>
             </motion.div>

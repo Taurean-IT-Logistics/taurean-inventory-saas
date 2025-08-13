@@ -1,13 +1,13 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import { useEffect } from 'react';
-import { Collapse, Nav } from 'react-bootstrap';
+import { Collapse, Nav } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 import { Route } from 'sitemap';
 import { capitalize } from 'helpers/utils';
 import classNames from 'classnames';
 import { NavLink, useLocation } from 'react-router-dom';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { faCaretRight } from '@fortawesome/free-solid-svg-icons';
+import { faCaretRight } from 'lucide-react';
 import { useNavbarVerticalCollapse } from './NavbarVerticalCollapseProvider';
 import Badge from 'components/base/Badge';
 import { useAppContext } from 'providers/AppProvider';
@@ -52,7 +52,7 @@ const NavItem = ({ route, level }: NavItemProps) => {
                 })}
               >
                 {route.iconSet === 'font-awesome' ? (
-                  <FontAwesomeIcon
+                  <
                     icon={route.icon as IconProp}
                     transform={{ size: 16 }}
                   />
@@ -146,9 +146,9 @@ const CollapsableNavItem = ({ route, level }: NavItemProps) => {
         })}
         aria-expanded={openItems[level] === route.name}
       >
-        <div className="d-flex align-items-center">
+        <div className="flex align-items-center">
           <div className="dropdown-indicator-icon">
-            <FontAwesomeIcon
+            <
               icon={faCaretRight}
               className={classNames({
                 'text-body-quaternary': !route.active

@@ -1,5 +1,5 @@
-import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMinus, faPlus } from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
 
@@ -30,13 +30,13 @@ const QuantityButtons = ({
 
   if (type === 'default') {
     return (
-      <div className="d-flex flex-between-center">
+      <div className="flex flex-between-center">
         <Button
           variant="phoenix-primary"
           className="px-3"
           onClick={handleDecrease}
         >
-          <FontAwesomeIcon icon={faMinus} />
+          < icon={faMinus} />
         </Button>
         <input
           type="number"
@@ -51,7 +51,7 @@ const QuantityButtons = ({
           className="px-3"
           onClick={handleIncrease}
         >
-          <FontAwesomeIcon icon={faPlus} />
+          < icon={faPlus} />
         </Button>
       </div>
     );

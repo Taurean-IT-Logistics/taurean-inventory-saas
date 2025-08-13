@@ -1,4 +1,4 @@
-import { Nav } from 'react-bootstrap';
+import { Nav } from 'components/ui';
 import { WizardNav } from 'data/wizard/wizard';
 import WizardNavItem from './WizardNavItem';
 

@@ -1,12 +1,12 @@
 import { InventoryItem } from 'types';
 import { currencyFormat } from 'helpers/utils';
-import { Card, Button, Badge } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Card, Button, Badge } from 'components/ui';
+import {  } from '';
 import {
   faEdit,
   faTrash,
   faTrashRestore
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { BadgeBg } from 'components/base/Badge';
 import SimplePaginatedList from 'booking/PaginatedComponent';
 
@@ -70,10 +70,10 @@ const InventoryTable = ({
             <tr key={item._id}>
               <td>
                 <div>
-                  <div className="fw-semibold">{item.name}</div>
+                  <div className="font-semibold">{item.name}</div>
                   <small className="text-info">{item.sku}</small>
                   {item.description && (
-                    <div className="text-muted small mt-1">
+                    <div className="text-gray-600 dark:text-gray-400 small mt-1">
                       {item.description}
                     </div>
                   )}
@@ -100,7 +100,7 @@ const InventoryTable = ({
                 </div>
               </td>
               <td>
-                <div className="d-flex flex-column gap-1">
+                <div className="flex flex-column gap-1">
                   {getAlerts(item).map((alert, index) => (
                     <Badge
                       key={index}
@@ -113,13 +113,13 @@ const InventoryTable = ({
                 </div>
               </td>
               <td>
-                <div className="d-flex gap-2">
+                <div className="flex gap-2">
                   <Button
                     variant="outline-primary"
                     size="sm"
                     onClick={() => onEdit(item)}
                   >
-                    <FontAwesomeIcon icon={faEdit} />
+                    < icon={faEdit} />
                   </Button>
                   {!item.isDeleted && (
                     <Button
@@ -127,7 +127,7 @@ const InventoryTable = ({
                       size="sm"
                       onClick={() => onDelete(item._id!)}
                     >
-                      <FontAwesomeIcon icon={faTrash} />
+                      < icon={faTrash} />
                     </Button>
                   )}
                   {item.isDeleted && (
@@ -136,7 +136,7 @@ const InventoryTable = ({
                       size="sm"
                       onClick={() => onRestore(item._id!)}
                     >
-                      <FontAwesomeIcon icon={faTrashRestore} />
+                      < icon={faTrashRestore} />
                     </Button>
                   )}
                 </div>

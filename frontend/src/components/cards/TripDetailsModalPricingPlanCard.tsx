@@ -1,9 +1,9 @@
-import { faCircle } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircle } from 'lucide-react';
+import {  } from '';
 import { TripDetailsModalPricingPlan } from 'data/travel-agency/customer/trip';
 import { currencyFormat } from 'helpers/utils';
 import React from 'react';
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 
 const TripDetailsModalPricingPlanCard = ({
   pricingPlan
@@ -19,7 +19,7 @@ const TripDetailsModalPricingPlanCard = ({
         className="card-form-check-input d-none"
         defaultChecked={pricingPlan.checked}
       />
-      <div className="position-relative">
+      <div className="relative">
         <label
           htmlFor={pricingPlan.name.split(' ').join('-')}
           className="stretched-link"
@@ -32,8 +32,8 @@ const TripDetailsModalPricingPlanCard = ({
             </h4>
             <ul className="list-unstyled mb-0">
               {pricingPlan.facilities.map(item => (
-                <li key={item.id} className="d-flex mb-1">
-                  <FontAwesomeIcon
+                <li key={item.id} className="flex mb-1">
+                  <
                     icon={faCircle}
                     className="text-secondary-light me-3"
                     transform="down-20"

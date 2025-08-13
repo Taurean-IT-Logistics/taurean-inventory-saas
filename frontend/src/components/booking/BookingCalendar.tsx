@@ -9,12 +9,12 @@ import {
   faDownload,
   faSyncAlt,
   faTrash,
-  faCheck,
+  Check,
   faTimes,
   faCalendarCheck,
   faCalendarTimes
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'lucide-react';
+import {  } from '';
 import { Booking, Facility } from 'types';
 import { currencyFormat } from 'helpers/utils';
 import {
@@ -29,7 +29,7 @@ import {
   Alert,
   Tabs,
   Tab
-} from 'react-bootstrap';
+} from 'components/ui';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
 
@@ -333,8 +333,8 @@ const BookingCalendar = ({
           </Alert>
         )}
 
-        <div className="d-flex justify-content-end align-items-center mb-4">
-          <div className="d-flex gap-2">
+        <div className="flex justify-content-end align-items-center mb-4">
+          <div className="flex gap-2">
             <Button
               variant="outline-primary"
               onClick={() => {
@@ -352,16 +352,16 @@ const BookingCalendar = ({
                 setShowEditModal(true);
               }}
             >
-              <FontAwesomeIcon icon={faPlus} className="me-2" /> New Booking
+              < icon={faPlus} className="me-2" /> New Booking
             </Button>
             <Button
               variant="outline-secondary"
               onClick={() => setRefresh(!refresh)}
             >
-              <FontAwesomeIcon icon={faSyncAlt} className="me-2" /> Refresh
+              < icon={faSyncAlt} className="me-2" /> Refresh
             </Button>
             <Button variant="outline-success">
-              <FontAwesomeIcon icon={faDownload} className="me-2" /> Export
+              < icon={faDownload} className="me-2" /> Export
             </Button>
           </div>
         </div>
@@ -370,7 +370,7 @@ const BookingCalendar = ({
           <Card.Body>
             <Row className="gap-3">
               <Col md={3}>
-                <Form.Label className="text-muted small">View</Form.Label>
+                <Form.Label className="text-gray-600 dark:text-gray-400 small">View</Form.Label>
                 <Form.Select
                   size="sm"
                   value={viewType}
@@ -382,7 +382,7 @@ const BookingCalendar = ({
                 </Form.Select>
               </Col>
               <Col md={3}>
-                <Form.Label className="text-muted small">Status</Form.Label>
+                <Form.Label className="text-gray-600 dark:text-gray-400 small">Status</Form.Label>
                 <Form.Select
                   size="sm"
                   value={filterStatus}
@@ -397,7 +397,7 @@ const BookingCalendar = ({
                 </Form.Select>
               </Col>
               <Col md={3}>
-                <Form.Label className="text-muted small">Facility</Form.Label>
+                <Form.Label className="text-gray-600 dark:text-gray-400 small">Facility</Form.Label>
                 <Form.Select
                   size="sm"
                   value={filterFacility}
@@ -411,8 +411,8 @@ const BookingCalendar = ({
                   ))}
                 </Form.Select>
               </Col>
-              <Col md={3} className="d-flex flex-column gap-1">
-                <Form.Label className="text-muted small">Stats</Form.Label>
+              <Col md={3} className="flex flex-column gap-1">
+                <Form.Label className="text-gray-600 dark:text-gray-400 small">Stats</Form.Label>
                 <div>
                   <Badge bg="success" className="me-2">
                     {
@@ -437,7 +437,7 @@ const BookingCalendar = ({
         <Card className="border-secondary">
           <Card.Body>
             {isLoading ? (
-              <div className="d-flex justify-content-center py-5">
+              <div className="flex justify-content-center py-5">
                 <Spinner animation="border" variant="primary" />
               </div>
             ) : events.length === 0 ? (
@@ -486,19 +486,19 @@ const BookingCalendar = ({
         <Modal.Body>
           {selectedBooking && (
             <>
-              <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="flex justify-content-between align-items-center mb-3">
                 <h5 className="text-primary mb-0">
                   {selectedBooking.facility?.name || 'Unknown Facility'}
                 </h5>
-                <div className="d-flex gap-2">
-                  <div className="d-flex flex-column gap-1">
-                    <small className="fw-bold"> Booking Status</small>
+                <div className="flex gap-2">
+                  <div className="flex flex-column gap-1">
+                    <small className="font-bold"> Booking Status</small>
                     <Badge bg={getStatusBadgeVariant(selectedBooking.status)}>
                       {selectedBooking.status}
                     </Badge>
                   </div>
-                  <div className="d-flex flex-column gap-1">
-                    <small className="fw-bold">Payment Status</small>
+                  <div className="flex flex-column gap-1">
+                    <small className="font-bold">Payment Status</small>
                     <Badge
                       bg={
                         selectedBooking.paymentStatus === 'completed'
@@ -668,7 +668,7 @@ const BookingCalendar = ({
               </Tabs>
 
               {/* Quick Actions */}
-              <div className="d-flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap">
                 {selectedBooking.status === 'pending' && (
                   <Button
                     variant="success"
@@ -678,7 +678,7 @@ const BookingCalendar = ({
                     }
                     disabled={isSaving}
                   >
-                    <FontAwesomeIcon icon={faCheck} className="me-1" />
+                    < icon={Check} className="me-1" />
                     Confirm
                   </Button>
                 )}
@@ -692,7 +692,7 @@ const BookingCalendar = ({
                     }
                     disabled={isSaving}
                   >
-                    <FontAwesomeIcon icon={faCalendarCheck} className="me-1" />
+                    < icon={faCalendarCheck} className="me-1" />
                     Complete
                   </Button>
                 )}
@@ -706,7 +706,7 @@ const BookingCalendar = ({
                     }
                     disabled={isSaving}
                   >
-                    <FontAwesomeIcon icon={faCalendarTimes} className="me-1" />
+                    < icon={faCalendarTimes} className="me-1" />
                     Cancel
                   </Button>
                 )}
@@ -720,7 +720,7 @@ const BookingCalendar = ({
                     }
                     disabled={isSaving}
                   >
-                    <FontAwesomeIcon icon={faTimes} className="me-1" />
+                    < icon={faTimes} className="me-1" />
                     No Show
                   </Button>
                 )}
@@ -735,7 +735,7 @@ const BookingCalendar = ({
               selectedBooking && handleEditBooking(selectedBooking)
             }
           >
-            <FontAwesomeIcon icon={faEdit} className="me-2" /> Edit
+            < icon={faEdit} className="me-2" /> Edit
           </Button>
           <Button
             variant="outline-danger"
@@ -744,7 +744,7 @@ const BookingCalendar = ({
             }
             disabled={isSaving}
           >
-            <FontAwesomeIcon icon={faTrash} className="me-2" /> Delete
+            < icon={faTrash} className="me-2" /> Delete
           </Button>
           <Button
             variant="secondary"

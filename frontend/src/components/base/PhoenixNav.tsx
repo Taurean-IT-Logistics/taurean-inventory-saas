@@ -1,5 +1,5 @@
 import React from 'react';
-import { Nav, NavLinkProps } from 'react-bootstrap';
+import { Nav, NavLinkProps } from 'components/ui';
 
 interface PhoenixNavItem extends NavLinkProps {
   label: string;
@@ -11,7 +11,7 @@ interface PhoenixNavProps {
 
 const PhoenixNav = ({ navItems }: PhoenixNavProps) => {
   return (
-    <Nav variant="phoenix-pills" className="mb-5 d-sm-none d-xl-flex">
+    <Nav variant="phoenix-pills" className="mb-8 d-sm-none d-xl-flex">
       {navItems.map(item => {
         const { label, ...rest } = item;
         return (

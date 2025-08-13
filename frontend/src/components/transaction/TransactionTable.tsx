@@ -4,20 +4,20 @@ import React, {
   useRef,
   useState
 } from 'react';
-import { Card, Button, Badge, Dropdown } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Card, Button, Badge, Dropdown } from 'components/ui';
+import {  } from '';
 import {
   faEye,
-  faCheck,
+  Check,
   faPrint,
   faDownload,
-  faExclamationTriangle,
+  AlertTriangle,
   faFileExcel,
   faFileCsv,
   faSpinner,
   faFileInvoice,
-  faCheckCircle
-} from '@fortawesome/free-solid-svg-icons';
+  CheckCircle
+} from 'lucide-react';
 import { Transaction } from 'types';
 import { currencyFormat } from 'helpers/utils';
 import SimplePaginatedList from 'booking/PaginatedComponent';
@@ -393,11 +393,11 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
           data-invoice-ref="true"
           style={{ display: 'none' }}
         >
-          <div className="d-flex justify-content-between align-items-start mb-4 pb-3 border-bottom border-primary border-3">
+          <div className="flex justify-content-between align-items-start mb-4 pb-3 border-bottom border-primary border-3">
             <div style={{ flex: 1 }}>
               <Logo className="mb-3" />
               <h1 className="h4 fw-bold mb-2">{CompanyInfo.name}</h1>
-              <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+              <div className="text-gray-600 dark:text-gray-400" style={{ fontSize: '0.875rem' }}>
                 <div>{CompanyInfo.address}</div>
                 <div>
                   {CompanyInfo.phone} | {CompanyInfo.email}
@@ -407,7 +407,7 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
             <div className="text-end" style={{ flex: 1 }}>
               <h1 className="h2 fw-bold text-danger mb-1">INVOICE</h1>
               <div className="h5 fw-bold text-dark mb-1">{transaction.ref}</div>
-              <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+              <div className="text-gray-600 dark:text-gray-400" style={{ fontSize: '0.875rem' }}>
                 <div>
                   <strong>Date:</strong>{' '}
                   {new Date(transaction.createdAt).toLocaleDateString()}
@@ -420,8 +420,8 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
             <div className="col-md-6">
               <div className="mb-4">
                 <h5 className="text-primary mb-2">Bill To:</h5>
-                <div className="fw-bold mb-1">{transaction.user.name}</div>
-                <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+                <div className="font-bold mb-1">{transaction.user.name}</div>
+                <div className="text-gray-600 dark:text-gray-400" style={{ fontSize: '0.875rem' }}>
                   <div>{transaction.user.email}</div>
                   <div>{transaction.user.phone}</div>
                 </div>
@@ -429,7 +429,7 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
 
               <div className="border border-primary rounded p-3 mb-4">
                 <h5 className="text-primary mb-3">
-                  <FontAwesomeIcon
+                  <
                     icon={faFileInvoice}
                     size="sm"
                     className="me-2"
@@ -487,8 +487,8 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
               </div>
 
               <div className="bg-success text-white p-3 rounded text-center mb-4">
-                <FontAwesomeIcon
-                  icon={faCheckCircle}
+                <
+                  icon={CheckCircle}
                   size="sm"
                   className="me-2"
                 />
@@ -499,7 +499,7 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
 
               <div className="border rounded p-3">
                 <h6 className="mb-2">Payment Information</h6>
-                <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+                <div className="text-gray-600 dark:text-gray-400" style={{ fontSize: '0.875rem' }}>
                   <div>
                     <strong>Transaction ID:</strong> {transaction.ref}
                   </div>
@@ -517,8 +517,8 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
           </div>
 
           <div className="text-center border-top pt-3">
-            <h5 className="text-dark mb-2">Thank you for your business!</h5>
-            <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+            <h5 className="text-gray-900 dark:text-gray-100 mb-2">Thank you for your business!</h5>
+            <div className="text-gray-600 dark:text-gray-400" style={{ fontSize: '0.875rem' }}>
               <div>
                 Questions? Contact us at {CompanyInfo.email} |{' '}
                 {CompanyInfo.phone}
@@ -1062,14 +1062,14 @@ const TransactionTable = ({
       <Card className="border-secondary">
         <Card.Header className="border-secondary d-flex justify-content-between align-items-center">
           <h5 className="mb-0">Transactions</h5>
-          <div className="d-flex gap-2">
+          <div className="flex gap-2">
             <Button
               variant="outline-primary"
               size="sm"
               onClick={printReport}
               disabled={isExporting}
             >
-              <FontAwesomeIcon icon={faPrint} className="me-2" />
+              < icon={faPrint} className="me-2" />
               Print Report
             </Button>
             <Dropdown>
@@ -1079,23 +1079,23 @@ const TransactionTable = ({
                 disabled={isExporting}
               >
                 {isExporting ? (
-                  <FontAwesomeIcon icon={faSpinner} spin className="me-2" />
+                  < icon={faSpinner} spin className="me-2" />
                 ) : (
-                  <FontAwesomeIcon icon={faDownload} className="me-2" />
+                  < icon={faDownload} className="me-2" />
                 )}
                 Export
               </Dropdown.Toggle>
               <Dropdown.Menu className="border-secondary">
                 <Dropdown.Item onClick={exportToPDF}>
-                  <FontAwesomeIcon icon={faPrint} className="me-2" />
+                  < icon={faPrint} className="me-2" />
                   Export as PDF
                 </Dropdown.Item>
                 <Dropdown.Item onClick={exportToExcel}>
-                  <FontAwesomeIcon icon={faFileExcel} className="me-2" />
+                  < icon={faFileExcel} className="me-2" />
                   Export as Excel
                 </Dropdown.Item>
                 <Dropdown.Item onClick={exportToCSV}>
-                  <FontAwesomeIcon icon={faFileCsv} className="me-2" />
+                  < icon={faFileCsv} className="me-2" />
                   Export as CSV
                 </Dropdown.Item>
               </Dropdown.Menu>
@@ -1124,38 +1124,38 @@ const TransactionTable = ({
               <tr key={index}>
                 <td>
                   <div>
-                    <div className="fw-semibold">{txn.ref}</div>
-                    <small className="text-muted">{txn.description}</small>
+                    <div className="font-semibold">{txn.ref}</div>
+                    <small className="text-gray-600 dark:text-gray-400">{txn.description}</small>
                   </div>
                 </td>
                 <td>
                   <div>
                     <div>{txn.user.name}</div>
-                    <small className="text-muted">{txn.user.email}</small>
+                    <small className="text-gray-600 dark:text-gray-400">{txn.user.email}</small>
                   </div>
                 </td>
                 <td>
                   <Badge bg="secondary">{txn.type}</Badge>
                 </td>
                 <td>
-                  <span className="fw-bold">{currencyFormat(txn.amount)}</span>
+                  <span className="font-bold">{currencyFormat(txn.amount)}</span>
                 </td>
                 <td>{getMethodBadge(txn.method)}</td>
                 <td>{getStatusBadge(txn.reconciled)}</td>
                 <td>
-                  <span className="text-muted">
+                  <span className="text-gray-600 dark:text-gray-400">
                     {new Date(txn.createdAt).toLocaleDateString()}
                   </span>
                 </td>
                 <td>
-                  <div className="d-flex gap-1">
+                  <div className="flex gap-1">
                     <Button
                       variant="outline-primary"
                       size="sm"
                       onClick={() => onView(txn)}
                       title="View Details"
                     >
-                      <FontAwesomeIcon icon={faEye} />
+                      < icon={faEye} />
                     </Button>
                     {!txn.reconciled && (
                       <Button
@@ -1164,7 +1164,7 @@ const TransactionTable = ({
                         onClick={() => onReconcile(txn.ref || '')}
                         title="Reconcile"
                       >
-                        <FontAwesomeIcon icon={faCheck} />
+                        < icon={Check} />
                       </Button>
                     )}
                     {txn.reconciled && (
@@ -1174,7 +1174,7 @@ const TransactionTable = ({
                         onClick={() => onReconcile(txn.ref || '')}
                         title="Unreconcile"
                       >
-                        <FontAwesomeIcon icon={faExclamationTriangle} />
+                        < icon={AlertTriangle} />
                       </Button>
                     )}
                     <Button
@@ -1182,7 +1182,7 @@ const TransactionTable = ({
                       size="sm"
                       onClick={() => handlePrintInvoice(txn)}
                     >
-                      <FontAwesomeIcon icon={faPrint} />
+                      < icon={faPrint} />
                     </Button>
                   </div>
                 </td>
@@ -1205,8 +1205,8 @@ const TransactionTable = ({
         <div ref={reportRef} style={{ display: 'none' }}>
           <div className="text-center mb-4 d-flex items-center justify-content-between">
             <Logo />
-            <h3 className="fw-bold">Transaction Report</h3>
-            <p className="text-muted">
+            <h3 className="font-bold">Transaction Report</h3>
+            <p className="text-gray-600 dark:text-gray-400">
               Generated on {new Date().toLocaleDateString()} at{' '}
               {new Date().toLocaleTimeString()}
             </p>
@@ -1259,19 +1259,19 @@ const TransactionTable = ({
               {transactions.map((txn, index) => (
                 <tr key={index}>
                   <td>
-                    <div className="fw-bold">{txn.ref}</div>
+                    <div className="font-bold">{txn.ref}</div>
                     {txn.description && (
-                      <small className="text-muted">{txn.description}</small>
+                      <small className="text-gray-600 dark:text-gray-400">{txn.description}</small>
                     )}
                   </td>
                   <td>
                     <div>{txn.user.name}</div>
-                    <small className="text-muted">{txn.user.email}</small>
+                    <small className="text-gray-600 dark:text-gray-400">{txn.user.email}</small>
                   </td>
                   <td>
                     <span className="badge bg-secondary">{txn.type}</span>
                   </td>
-                  <td className="fw-bold">{currencyFormat(txn.amount)}</td>
+                  <td className="font-bold">{currencyFormat(txn.amount)}</td>
                   <td>{txn.method}</td>
                   <td>
                     <span
@@ -1290,7 +1290,7 @@ const TransactionTable = ({
 
           {/* Footer */}
           <div className="border-top pt-3 mt-4 text-center">
-            <p className="text-muted">
+            <p className="text-gray-600 dark:text-gray-400">
               Report generated from Transaction Management System
             </p>
           </div>

@@ -9,9 +9,9 @@ import {
   Badge,
   InputGroup,
   Card
-} from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faPlus, faUpload } from '@fortawesome/free-solid-svg-icons';
+} from 'components/ui';
+import {  } from '';
+import { faTimes, faPlus, faUpload } from 'lucide-react';
 import { Facility } from 'types';
 import { getResourceUrl } from 'controllers';
 
@@ -67,7 +67,7 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
 
   return (
     <div className="mb-3">
-      <div className="d-flex justify-content-between align-items-center mb-2">
+      <div className="flex justify-content-between align-items-center mb-2">
         <Form.Label className="mb-0">Pricing Information</Form.Label>
         <Button
           type="button"
@@ -75,14 +75,14 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
           size="sm"
           onClick={handleAddPricing}
         >
-          <FontAwesomeIcon icon={faPlus} className="me-1" />
+          < icon={faPlus} className="me-1" />
           Add Pricing
         </Button>
       </div>
 
       {pricing.length === 0 ? (
         <div className="border border-secondary rounded p-3">
-          <p className="text-muted mb-0 text-center">
+          <p className="text-gray-600 dark:text-gray-400 mb-0 text-center">
             No pricing information added yet.
           </p>
         </div>
@@ -93,7 +93,7 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
               key={index}
               className={`${index > 0 ? 'border-top pt-3 mt-3' : ''}`}
             >
-              <div className="d-flex justify-content-between align-items-center mb-2">
+              <div className="flex justify-content-between align-items-center mb-2">
                 <h6 className="mb-0 text-muted">Pricing Option {index + 1}</h6>
                 {pricing.length > 1 && (
                   <Button
@@ -102,7 +102,7 @@ const PricingForm = ({ formData, setFormData }: PricingFormProps) => {
                     size="sm"
                     onClick={() => handleRemovePricing(index)}
                   >
-                    <FontAwesomeIcon icon={faTimes} />
+                    < icon={faTimes} />
                   </Button>
                 )}
               </div>
@@ -371,11 +371,11 @@ const FacilityModal = ({
                 onChange={handleImageUpload}
                 className="border-secondary mb-3"
               />
-              <div className="d-flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4">
                 {imagePreviews.map((preview, index) => {
                   const isExisting = index < existingImages.length;
                   return (
-                    <div key={index} className="position-relative">
+                    <div key={index} className="relative">
                       <img
                         src={getResourceUrl(preview)}
                         alt={`Preview ${index + 1}`}
@@ -393,7 +393,7 @@ const FacilityModal = ({
                         style={{ transform: 'translate(25%, -25%)' }}
                         onClick={() => removeImage(index)}
                       >
-                        <FontAwesomeIcon icon={faTimes} />
+                        < icon={faTimes} />
                       </Button>
                       {!isExisting && (
                         <Badge
@@ -412,12 +412,12 @@ const FacilityModal = ({
                 })}
                 {imagePreviews.length === 0 && (
                   <div className="text-center w-100 py-4">
-                    <FontAwesomeIcon
+                    <
                       icon={faUpload}
                       size="3x"
-                      className="text-muted mb-2"
+                      className="text-gray-600 dark:text-gray-400 mb-2"
                     />
-                    <p className="text-muted">No images uploaded</p>
+                    <p className="text-gray-600 dark:text-gray-400">No images uploaded</p>
                   </div>
                 )}
               </div>
@@ -552,8 +552,8 @@ const FacilityModal = ({
             <Col>
               <Card className="mb-4 border-secondary">
                 <Card.Body>
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <Form.Label className="fw-semibold mb-0">
+                  <div className="flex justify-content-between align-items-center mb-3">
+                    <Form.Label className="font-semibold mb-0">
                       Weekly Availability
                     </Form.Label>
                   </div>
@@ -563,7 +563,7 @@ const FacilityModal = ({
                       formData.availability.map((day, index) => (
                         <Card key={day.day} className="mb-2">
                           <Card.Body className="py-2">
-                            <Row className="align-items-center">
+                            <Row className="items-center">
                               <Col md={3}>
                                 <Form.Select size="sm" value={day.day} disabled>
                                   <option value="monday">Monday</option>
@@ -654,7 +654,7 @@ const FacilityModal = ({
                 onClick={addAmenity}
                 disabled={!newAmenity.trim()}
               >
-                <FontAwesomeIcon icon={faPlus} />
+                < icon={faPlus} />
               </Button>
             </InputGroup>
             <div>
@@ -666,7 +666,7 @@ const FacilityModal = ({
                   style={{ cursor: 'pointer' }}
                 >
                   {amenity}
-                  <FontAwesomeIcon
+                  <
                     icon={faTimes}
                     className="ms-2"
                     onClick={() => removeAmenity(index)}

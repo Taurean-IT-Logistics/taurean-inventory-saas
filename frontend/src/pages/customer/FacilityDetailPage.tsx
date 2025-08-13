@@ -98,18 +98,18 @@ const FacilityDetails = ({
   };
   return (
     <>
-      <div className="d-flex justify-content-between align-items-start mb-4">
+      <div className="flex justify-content-between align-items-start mb-4">
         <div>
           <h1 className="display-6 fw-bold mb-2">{facility.name}</h1>
-          <div className="d-flex align-items-center gap-3 text-muted">
-            <div className="d-flex align-items-center">
+          <div className="flex align-items-center gap-3 text-muted">
+            <div className="flex align-items-center">
               <MapPin className="w-4 h-4 mr-2" />
               <span>{facility.location.address}</span>
             </div>
             {facility.rating && (
-              <div className="d-flex align-items-center">
+              <div className="flex align-items-center">
                 <Star className="w-4 h-4 text-yellow-500 mr-1 fill-current" />
-                <span className="fw-semibold">{facility.rating.average}</span>
+                <span className="font-semibold">{facility.rating.average}</span>
                 <span className="ms-1 text-muted">
                   ({facility.rating.totalReviews} reviews)
                 </span>
@@ -118,9 +118,9 @@ const FacilityDetails = ({
           </div>
         </div>
       </div>
-      <div className="d-flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4">
         {hasVerifiedReviews && (
-          <Badge bg="success" className="d-flex align-items-center">
+          <Badge bg="success" className="flex align-items-center">
             <Check className="w-4 h-4 mr-1" />
             Verified
           </Badge>
@@ -131,13 +131,13 @@ const FacilityDetails = ({
           <Badge bg="warning">Currently Unavailable</Badge>
         )}
       </div>
-      <div className="mb-5">
+      <div className="mb-8">
         <h3 className="h4 fw-semibold mb-3">About this space</h3>
-        <p className="text-muted lh-lg">{facility.description}</p>
+        <p className="text-gray-600 dark:text-gray-400 lh-lg">{facility.description}</p>
         {facility.terms && (
           <div className="mt-3">
-            <h5 className="fw-semibold mb-2">Terms & Conditions</h5>
-            <p className="text-muted small">{facility.terms}</p>
+            <h5 className="font-semibold mb-2">Terms & Conditions</h5>
+            <p className="text-gray-600 dark:text-gray-400 small">{facility.terms}</p>
           </div>
         )}
       </div>
@@ -200,7 +200,7 @@ interface FacilityAmenitiesProps {
   amenities: string[];
 }
 const FacilityAmenities = ({ amenities }: FacilityAmenitiesProps) => (
-  <div className="mb-5">
+  <div className="mb-8">
     <h3 className="h4 fw-semibold mb-3">What this place offers</h3>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {amenities.map((amenity: string, idx: number) => (
@@ -282,7 +282,7 @@ const ReviewForm = ({
   return (
     <Card className="border-secondary shadow">
       <Card.Body className="p-4">
-        <h5 className="fw-semibold mb-3">Leave a Review</h5>
+        <h5 className="font-semibold mb-3">Leave a Review</h5>
         <Form onSubmit={handleSubmit}>
           {/* Form fields for review submission */}
           <div className="mb-3">
@@ -297,7 +297,7 @@ const ReviewForm = ({
                   data-testid={`star-${star}`}
                 />
               ))}
-              <p className="text-muted small mt-1">{rating} out of 5 stars</p>
+              <p className="text-gray-600 dark:text-gray-400 small mt-1">{rating} out of 5 stars</p>
             </div>
           </div>
           <div className="mb-3">
@@ -374,8 +374,8 @@ const FacilityReviews = ({
     setReviewsData(reviews.reviews);
   }, [reviews.reviews]);
   return (
-    <div className="mb-5">
-      <div className="d-flex align-items-center mb-4">
+    <div className="mb-8">
+      <div className="flex align-items-center mb-4">
         <Star className="w-5 h-5 text-yellow-500 mr-2 fill-current" />
         <h3 className="h4 fw-semibold mb-0">
           {facility.rating.average} · {facility.rating.totalReviews} reviews
@@ -414,7 +414,7 @@ const FacilityReviews = ({
             <SwiperSlide key={idx}>
               <Card className="border-secondary bg-opacity-50">
                 <Card.Body>
-                  <div className="d-flex align-items-center mb-2">
+                  <div className="flex align-items-center mb-2">
                     <div
                       className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3"
                       style={{ width: '40px', height: '40px' }}
@@ -424,8 +424,8 @@ const FacilityReviews = ({
                       </span>
                     </div>
                     <div>
-                      <div className="fw-semibold">{review.user?.name}</div>
-                      <div className="d-flex align-items-center">
+                      <div className="font-semibold">{review.user?.name}</div>
+                      <div className="flex align-items-center">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
@@ -439,7 +439,7 @@ const FacilityReviews = ({
                       </div>
                     </div>
                   </div>
-                  <p className="text-muted mb-0">{review.comment}</p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-0">{review.comment}</p>
                 </Card.Body>
               </Card>
             </SwiperSlide>
@@ -473,7 +473,7 @@ const FacilityReviews = ({
         </Col>
       </Row>
       {showReviewForm && (
-        <Row className="justify-content-center mt-3">
+        <Row className="justify-center mt-3">
           <Col>
             <ReviewForm
               facility={facility}
@@ -507,15 +507,15 @@ const FacilityBookingCard = ({
 }: FacilityBookingCardProps) => (
   <Card className="border-secondary shadow mb-3">
     <Card.Body className="p-4">
-      <div className="d-flex align-items-baseline mb-3">
+      <div className="flex align-items-baseline mb-3">
         <span className="h3 fw-bold mb-0">
           {currencyFormat(defaultPricing.amount || 0)}
         </span>
-        <span className="text-muted ms-2">per {defaultPricing.unit}</span>
+        <span className="text-gray-600 dark:text-gray-400 ms-2">per {defaultPricing.unit}</span>
       </div>
       {facility.pricing.length > 1 && (
         <div className="mb-3">
-          <small className="text-muted">Other pricing options:</small>
+          <small className="text-gray-600 dark:text-gray-400">Other pricing options:</small>
           {facility.pricing
             .filter((p: Pricing) => !p.isDefault)
             .map((pricing: Pricing, idx: number) => (
@@ -534,20 +534,20 @@ const FacilityBookingCard = ({
         </Link>
       </div>
       <div className="text-center">
-        <small className="text-muted">You won't be charged yet</small>
+        <small className="text-gray-600 dark:text-gray-400">You won't be charged yet</small>
       </div>
       <hr className="border-secondary" />
       <div className="small">
-        <div className="d-flex justify-content-between mb-2">
-          <span className="text-muted">Response time:</span>
+        <div className="flex justify-content-between mb-2">
+          <span className="text-gray-600 dark:text-gray-400">Response time:</span>
           <span>Within 1 hour</span>
         </div>
-        <div className="d-flex justify-content-between mb-2">
-          <span className="text-muted">Cancellation:</span>
+        <div className="flex justify-content-between mb-2">
+          <span className="text-gray-600 dark:text-gray-400">Cancellation:</span>
           <span>Free until 24h before</span>
         </div>
-        <div className="d-flex justify-content-between">
-          <span className="text-muted">Languages:</span>
+        <div className="flex justify-content-between">
+          <span className="text-gray-600 dark:text-gray-400">Languages:</span>
           <span>English, Spanish</span>
         </div>
       </div>
@@ -559,8 +559,8 @@ const FacilityBookingCard = ({
 const FacilityContactCard = () => (
   <Card className="border-secondary shadow">
     <Card.Body className="p-4 text-center">
-      <h5 className="fw-semibold mb-3">Need help?</h5>
-      <p className="text-muted small mb-3">
+      <h5 className="font-semibold mb-3">Need help?</h5>
+      <p className="text-gray-600 dark:text-gray-400 small mb-3">
         Our team is here to assist you with your booking
       </p>
       <Button variant="outline-primary" className="w-100">

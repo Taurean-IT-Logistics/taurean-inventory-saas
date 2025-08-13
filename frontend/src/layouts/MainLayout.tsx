@@ -6,7 +6,7 @@ import NavbarTopDefault from 'components/navbars/navbar-top/NavbarTopDefault';
 import NavbarVertical from 'components/navbars/navbar-vertical/NavbarVertical';
 import { useAppContext } from 'providers/AppProvider';
 import { useMainLayoutContext } from 'providers/MainLayoutProvider';
-import { Container } from 'react-bootstrap';
+import { Container } from 'components/ui';
 import { Outlet } from 'react-router-dom';
 
 const MainLayout = () => {

@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Form } from 'react-bootstrap';
+import { Form } from 'components/ui';
 
 export interface CheckboxItemProps {
   type?: 'checkbox' | 'radio';

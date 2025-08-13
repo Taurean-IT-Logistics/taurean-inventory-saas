@@ -1,4 +1,4 @@
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'components/ui';
 
 const ActionDropdownItems = () => {
   return (

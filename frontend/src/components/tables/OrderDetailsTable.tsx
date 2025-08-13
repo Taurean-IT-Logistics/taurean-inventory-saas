@@ -30,7 +30,7 @@ const columns: ColumnDef<WishlistProductType>[] = [
     cell: ({ row: { original } }) => {
       const { product } = original;
       return (
-        <Link to="#!" className="fw-semibold line-clamp-2">
+        <Link to="#!" className="font-semibold line-clamp-2">
           {product}
         </Link>
       );
@@ -109,7 +109,7 @@ const OrderDetailsTable = () => {
       <AdvanceTableProvider {...table}>
         <div className="border-y border-translucent">
           <AdvanceTable tableProps={{ className: 'phoenix-table fs-9' }} />
-          <div className="d-flex flex-between-center py-3">
+          <div className="flex flex-between-center py-3">
             <p className="text-body-emphasis fw-semibold lh-sm mb-0">
               Items subtotal :
             </p>

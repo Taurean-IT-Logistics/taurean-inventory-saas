@@ -1,6 +1,6 @@
-import { Card, Row, Col, Form, InputGroup } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import { Card, Row, Col, Form, InputGroup } from 'components/ui';
+import {  } from '';
+import { Search } from 'lucide-react';
 
 interface UserFiltersProps {
   searchTerm: string;
@@ -22,11 +22,11 @@ const UserFilters = ({
   return (
     <Card className="border-secondary mb-4">
       <Card.Body>
-        <Row className="align-items-center gap-3">
+        <Row className="items-center gap-3">
           <Col md={6}>
             <InputGroup>
               <InputGroup.Text className="border-secondary">
-                <FontAwesomeIcon icon={faSearch} />
+                < icon={Search} />
               </InputGroup.Text>
               <Form.Control
                 type="text"
@@ -50,7 +50,7 @@ const UserFilters = ({
             </Form.Select>
           </Col>
           <Col md={3} className="text-end">
-            <span className="text-muted small">
+            <span className="text-gray-600 dark:text-gray-400 small">
               Showing {filteredCount} of {totalCount} users
             </span>
           </Col>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 
-import { Dropdown } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAdjust, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
+import { Dropdown } from 'components/ui';
+import {  } from '';
+import { faAdjust, faMoon, faSun } from 'lucide-react';
 import { useAppContext } from 'providers/AppProvider';
 
 const ThemeDropdown = () => {
@@ -31,17 +31,17 @@ const ThemeDropdown = () => {
         }}
         className="dropdown-caret-none"
       >
-        <FontAwesomeIcon
+        <
           id="iconLight"
           className={iconLight !== true ? 'd-none' : 'd-inline'}
           icon={faSun}
         />
-        <FontAwesomeIcon
+        <
           id="iconDark"
           className={iconDark !== true ? 'd-none' : 'd-inline'}
           icon={faMoon}
         />
-        <FontAwesomeIcon
+        <
           id="iconAuto"
           className={iconAuto !== true ? 'd-none' : 'd-inline'}
           icon={faAdjust}
@@ -54,23 +54,23 @@ const ThemeDropdown = () => {
         <div className="rounded-2 py-2">
           <Dropdown.Item
             onClick={() => setConfig({ theme: 'light' })}
-            className="d-flex align-items-center gap-2"
+            className="flex align-items-center gap-2"
           >
-            <FontAwesomeIcon icon={faSun} />
+            < icon={faSun} />
             light
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => setConfig({ theme: 'dark' })}
-            className="d-flex align-items-center gap-2"
+            className="flex align-items-center gap-2"
           >
-            <FontAwesomeIcon icon={faMoon} />
+            < icon={faMoon} />
             Dark
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => setConfig({ theme: 'auto' })}
-            className="d-flex align-items-center gap-2"
+            className="flex align-items-center gap-2"
           >
-            <FontAwesomeIcon icon={faAdjust} />
+            < icon={faAdjust} />
             Auto
           </Dropdown.Item>
         </div>

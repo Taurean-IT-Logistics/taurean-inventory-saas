@@ -7,9 +7,9 @@ import {
   Alert,
   Spinner,
   Image
-} from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload, faTimes } from '@fortawesome/free-solid-svg-icons';
+} from 'components/ui';
+import {  } from '';
+import { faUpload, faTimes } from 'lucide-react';
 import { Facility } from 'types';
 
 interface BasicInfoStepProps {
@@ -39,7 +39,7 @@ const BasicInfoStep = ({
       <Card.Body>
         {/* Image Upload Section */}
         <div className="mb-4">
-          <Form.Label className="fw-semibold">Facility Images *</Form.Label>
+          <Form.Label className="font-semibold">Facility Images *</Form.Label>
           <div className="border-2 border-dashed rounded p-4 text-center">
             <Form.Control
               type="file"
@@ -53,15 +53,15 @@ const BasicInfoStep = ({
               id="imageUpload"
             />
             <label htmlFor="imageUpload" className="cursor-pointer">
-              <FontAwesomeIcon
+              <
                 icon={faUpload}
                 size="2x"
-                className="text-muted mb-2"
+                className="text-gray-600 dark:text-gray-400 mb-2"
               />
-              <div className="text-muted">
+              <div className="text-gray-600 dark:text-gray-400">
                 <strong>Click to upload images</strong> or drag and drop
               </div>
-              <small className="text-muted">
+              <small className="text-gray-600 dark:text-gray-400">
                 PNG, JPG, GIF up to 10MB each
               </small>
             </label>
@@ -78,7 +78,7 @@ const BasicInfoStep = ({
             <Row className="mt-3">
               {formData.images.map((image, index) => (
                 <Col xs={6} md={4} lg={3} key={index} className="mb-3">
-                  <div className="position-relative">
+                  <div className="relative">
                     <Image
                       src={image.path}
                       alt={image.originalName}
@@ -91,10 +91,10 @@ const BasicInfoStep = ({
                       className="position-absolute top-0 end-0 m-1"
                       onClick={() => removeImage(index)}
                     >
-                      <FontAwesomeIcon icon={faTimes} />
+                      < icon={faTimes} />
                     </Button>
                   </div>
-                  <small className="text-muted d-block mt-1">
+                  <small className="text-gray-600 dark:text-gray-400 d-block mt-1">
                     {image.originalName}
                   </small>
                 </Col>
@@ -112,7 +112,7 @@ const BasicInfoStep = ({
         <Row>
           <Col md={6} className="mb-3">
             <Form.Group>
-              <Form.Label className="fw-semibold">Facility Name *</Form.Label>
+              <Form.Label className="font-semibold">Facility Name *</Form.Label>
               <Form.Control
                 type="text"
                 name="name"
@@ -125,7 +125,7 @@ const BasicInfoStep = ({
           </Col>
           <Col md={6} className="mb-3">
             <Form.Group>
-              <Form.Label className="fw-semibold">Address</Form.Label>
+              <Form.Label className="font-semibold">Address</Form.Label>
               <Form.Control
                 type="text"
                 name="location.address"
@@ -140,7 +140,7 @@ const BasicInfoStep = ({
         <Row>
           <Col md={6} className="mb-3">
             <Form.Group>
-              <Form.Label className="fw-semibold">Latitude</Form.Label>
+              <Form.Label className="font-semibold">Latitude</Form.Label>
               <Form.Control
                 type="number"
                 step="any"
@@ -153,7 +153,7 @@ const BasicInfoStep = ({
           </Col>
           <Col md={6} className="mb-3">
             <Form.Group>
-              <Form.Label className="fw-semibold">Longitude</Form.Label>
+              <Form.Label className="font-semibold">Longitude</Form.Label>
               <Form.Control
                 type="number"
                 step="any"
@@ -167,7 +167,7 @@ const BasicInfoStep = ({
         </Row>
 
         <Form.Group className="mb-3">
-          <Form.Label className="fw-semibold">Description</Form.Label>
+          <Form.Label className="font-semibold">Description</Form.Label>
           <Form.Control
             as="textarea"
             rows={4}
@@ -181,7 +181,7 @@ const BasicInfoStep = ({
         <Row>
           <Col md={6} className="mb-3">
             <Form.Group>
-              <Form.Label className="fw-semibold">
+              <Form.Label className="font-semibold">
                 Maximum Capacity *
               </Form.Label>
               <Form.Control
@@ -197,7 +197,7 @@ const BasicInfoStep = ({
           </Col>
           <Col md={6} className="mb-3">
             <Form.Group>
-              <Form.Label className="fw-semibold">
+              <Form.Label className="font-semibold">
                 Recommended Capacity
               </Form.Label>
               <Form.Control

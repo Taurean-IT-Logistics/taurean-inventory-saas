@@ -6,12 +6,12 @@ import {
   Placeholder,
   Badge,
   Spinner
-} from 'react-bootstrap';
+} from 'components/ui';
 
 const FacilitySummarySkeleton = () => (
   <Card className="mb-3 border-secondary shadow">
     <Card.Body className="p-4">
-      <div className="d-flex mb-3">
+      <div className="flex mb-3">
         <Placeholder
           as="div"
           animation="glow"
@@ -39,7 +39,7 @@ const FacilitySummarySkeleton = () => (
         <Placeholder as="h6" animation="glow">
           <Placeholder xs={4} bg="secondary" />
         </Placeholder>
-        <div className="d-flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           {Array.from({ length: 4 }).map((_, idx) => (
             <Placeholder
               as={Badge}
@@ -54,7 +54,7 @@ const FacilitySummarySkeleton = () => (
           <Placeholder
             as="span"
             animation="glow"
-            className="text-muted small"
+            className="text-gray-600 dark:text-gray-400 small"
             style={{ width: 40 }}
           >
             <Placeholder xs={2} bg="secondary" />
@@ -75,13 +75,13 @@ const BookingSummarySkeleton = () => (
     <Card.Body className="p-4">
       <div className="mb-3">
         {Array.from({ length: 4 }).map((_, idx) => (
-          <div className="d-flex justify-content-between mb-2" key={idx}>
+          <div className="flex justify-content-between mb-2" key={idx}>
             <Placeholder xs={5} bg="secondary" />
             <Placeholder xs={3} bg="secondary" />
           </div>
         ))}
         <hr className="border-secondary" />
-        <div className="d-flex justify-content-between fw-bold h5">
+        <div className="flex justify-content-between fw-bold h5">
           <Placeholder xs={3} bg="secondary" />
           <Placeholder xs={3} bg="secondary" />
         </div>
@@ -90,7 +90,7 @@ const BookingSummarySkeleton = () => (
         <Placeholder as="div" animation="glow" className="mb-2">
           <Placeholder xs={5} bg="secondary" />
         </Placeholder>
-        <ul className="text-muted small mb-0 ps-3">
+        <ul className="text-gray-600 dark:text-gray-400 small mb-0 ps-3">
           {Array.from({ length: 4 }).map((_, idx) => (
             <li key={idx}>
               <Placeholder xs={7} bg="secondary" />
@@ -182,7 +182,7 @@ const DateTimeStepSkeleton = () => (
         <Placeholder as="label" animation="glow">
           <Placeholder xs={4} bg="secondary" />
         </Placeholder>
-        <div className="d-flex align-items-center gap-3">
+        <div className="flex align-items-center gap-3">
           <Placeholder.Button
             variant="secondary"
             style={{ width: 38, height: 38 }}
@@ -239,7 +239,7 @@ const CustomerInfoStepSkeleton = () => (
         </Placeholder>
         <Placeholder animation="glow" className="bg-opacity-10 border-info">
           <Placeholder xs={10} bg="secondary" className="mb-2" />
-          <ul className="text-muted small mb-0 ps-3">
+          <ul className="text-gray-600 dark:text-gray-400 small mb-0 ps-3">
             {Array.from({ length: 4 }).map((_, idx) => (
               <li key={idx}>
                 <Placeholder xs={7} bg="secondary" />
@@ -255,7 +255,7 @@ const CustomerInfoStepSkeleton = () => (
 const BookingPageLoader = () => (
   <div className="min-vh-100">
     <Container fluid className="py-4">
-      <div className="d-flex align-items-center mb-4">
+      <div className="flex align-items-center mb-4">
         <Placeholder.Button
           variant="secondary"
           style={{ width: 120, height: 38, marginRight: 16 }}
@@ -308,7 +308,7 @@ const BookingPageLoader = () => (
         zIndex: 1050
       }}
     >
-      <div className="d-flex flex-column align-items-center">
+      <div className="flex flex-column align-items-center">
         <Spinner
           animation="border"
           variant="primary"

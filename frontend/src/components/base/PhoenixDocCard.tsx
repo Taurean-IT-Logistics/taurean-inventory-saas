@@ -1,7 +1,7 @@
 import React, { PropsWithChildren, useEffect, useState } from 'react';
-import { Card, Col, Nav, Row, Collapse, Toast } from 'react-bootstrap';
+import { Card, Col, Nav, Row, Collapse, Toast } from 'components/ui';
 import Button from './Button';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import FeatherIcon from 'feather-icons-react';
 import { LiveEditor, LiveError, LivePreview } from 'react-live';
 import classNames from 'classnames';
@@ -13,7 +13,7 @@ import PhoenixDocProvider, {
 import PhoenixLiveProvider, {
   PhoenixLiveProviderProps
 } from 'components/docs/PhoenixLiveProvider';
-import { faCopy } from '@fortawesome/free-solid-svg-icons';
+import { faCopy } from 'lucide-react';
 
 interface PhoenixDocCardProps {
   className?: string;
@@ -115,7 +115,7 @@ const PhoenixDocCardHeader = ({
                 className="px-2 text-body copy-code-btn me-2"
                 onClick={handleCopyCode}
               >
-                <FontAwesomeIcon icon={faCopy} className="me-1" />
+                < icon={faCopy} className="me-1" />
                 Copy Code
               </Button>
               <Button
@@ -145,12 +145,12 @@ const PhoenixDocCardHeader = ({
       <Toast
         show={showToast}
         onClose={() => setShowToast(false)}
-        className="align-items-center bg-dark border-0 bottom-0 end-0 mb-3 me-3 position-fixed text-white z-5"
+        className="items-center bg-dark border-0 bottom-0 end-0 mb-3 me-3 position-fixed text-white z-5"
         delay={3000}
         data-bs-theme="light"
         autohide
       >
-        <div className="d-flex">
+        <div className="flex">
           <Toast.Body className="P-3">
             <span className="fw-black">
               <code className="text-body-quaternary">

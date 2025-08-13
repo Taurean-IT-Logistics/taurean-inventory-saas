@@ -7,7 +7,7 @@ import {
 } from 'data/TopRegionsTableData';
 import useAdvanceTable from 'hooks/useAdvanceTable';
 import AdvanceTableProvider from 'providers/AdvanceTableProvider';
-import { Table } from 'react-bootstrap';
+import { Table } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 const columns: ColumnDef<TopRegionsTableDataType>[] = [
@@ -18,10 +18,10 @@ const columns: ColumnDef<TopRegionsTableDataType>[] = [
       const serial = row.index + 1;
       const { country } = row.original;
       return (
-        <div className="d-flex align-items-center">
+        <div className="flex align-items-center">
           <h6 className="mb-0 me-3">{serial}.</h6>
           <Link to="#!">
-            <div className="d-flex justify-content-center">
+            <div className="flex justify-content-center">
               <img src={country.flag} alt="" width={24} />
               <p className="mb-0 ps-3 text-primary fw-bold fs-9">
                 {country.name}

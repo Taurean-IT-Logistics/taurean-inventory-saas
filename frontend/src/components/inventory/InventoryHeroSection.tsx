@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faChevronRight } from 'lucide-react';
 import { InventoryItem } from 'types';
 import InventoryItemCard from './InventoryItemCard';
 import Swiper from 'components/base/Swiper';
@@ -20,8 +20,8 @@ const InventoryHeroSection = ({
 }: InventoryHeroSectionProps) => {
   return (
     <>
-      <div className="d-flex flex-between-center mb-3">
-        <div className="d-flex">
+      <div className="flex flex-between-center mb-3">
+        <div className="flex">
           <h3 className="mx-2">{title}</h3>
         </div>
         <Link
@@ -29,11 +29,11 @@ const InventoryHeroSection = ({
           className="btn btn-link btn-lg p-0 d-none d-md-block"
         >
           Explore more
-          <FontAwesomeIcon icon={faChevronRight} className="fs-9 ms-1" />
+          < icon={faChevronRight} className="fs-9 ms-1" />
         </Link>
       </div>
       <Swiper
-        className="mb-5"
+        className="mb-8"
         slidesPerView={1}
         spaceBetween={16}
         navigationPosition={{ top: '25%' }}

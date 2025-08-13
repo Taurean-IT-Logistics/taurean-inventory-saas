@@ -1,12 +1,12 @@
 import React, { CSSProperties } from 'react';
 import { PricingColumn, pricingColumnFeatures } from 'data/pricing';
-import { Col } from 'react-bootstrap';
+import { Col } from 'components/ui';
 import Button from 'components/base/Button';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import classNames from 'classnames';
 import Badge from 'components/base/Badge';
 import { currencyFormat } from 'helpers/utils';
-import { faCheck, faCircle, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { Check, faCircle, faTimes } from 'lucide-react';
 
 interface PricingColumnItemProps {
   pricing: PricingColumn;
@@ -33,7 +33,7 @@ const PricingColumnItem = ({ pricing }: PricingColumnItemProps) => {
         <h3 className="mb-2">{pricing.title}</h3>
         <p className="text-body-secondary mb-0 pe-3">{pricing.description}</p>
       </div>
-      <div className="d-flex align-items-center mb-4">
+      <div className="flex align-items-center mb-4">
         {pricing.price === 0 ? (
           <h3 className="display-3 fw-bolder">Free</h3>
         ) : (
@@ -59,7 +59,7 @@ const PricingColumnItem = ({ pricing }: PricingColumnItemProps) => {
       >
         <li className="text-body-secondary mb-2">
           <span className="fa-li">
-            <FontAwesomeIcon icon={faCheck} className="text-primary" />
+            < icon={Check} className="text-primary" />
           </span>
           Timeline
         </li>
@@ -73,7 +73,7 @@ const PricingColumnItem = ({ pricing }: PricingColumnItemProps) => {
           >
             <span className="fa-li me-2 stack-icon-item">
               <span className="fa-layers fa-fw">
-                <FontAwesomeIcon
+                <
                   icon={faCircle}
                   className={classNames(
                     {
@@ -85,8 +85,8 @@ const PricingColumnItem = ({ pricing }: PricingColumnItemProps) => {
                     }
                   )}
                 />
-                <FontAwesomeIcon
-                  icon={pricing.features.includes(item.id) ? faCheck : faTimes}
+                <
+                  icon={pricing.features.includes(item.id) ? Check : faTimes}
                   inverse
                   className={classNames(
                     'fs-11',

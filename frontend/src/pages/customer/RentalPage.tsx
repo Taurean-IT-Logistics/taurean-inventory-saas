@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Form, Button } from 'react-bootstrap';
+import { Container, Row, Col, Form, Button } from 'components/ui';
 import { Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faArrowLeft } from 'lucide-react';
 import { InventoryItem } from 'types';
 import InventoryHeroSection from 'components/inventory/InventoryHeroSection';
 import InventoryItemCard from 'components/inventory/InventoryItemCard';
@@ -105,7 +105,7 @@ const RentalPage = () => {
       <div className="min-vh-100 d-flex justify-content-center align-items-center">
         <div className="text-center">
           <h5 className="text-danger">Error</h5>
-          <p className="text-muted">{error}</p>
+          <p className="text-gray-600 dark:text-gray-400">{error}</p>
           <Button variant="primary" onClick={() => window.location.reload()}>
             Retry
           </Button>
@@ -118,14 +118,14 @@ const RentalPage = () => {
     <div className="min-vh-100">
       <Container fluid className="py-4">
         {/* Header */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="h3 fw-bold mb-1">Item Rental</h1>
-            <p className="text-muted mb-0">Find and rent the item you need</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-0">Find and rent the item you need</p>
           </div>
-          <div className="d-flex gap-2">
+          <div className="flex gap-2">
             <Link to="/" className="btn btn-outline-secondary">
-              <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+              < icon={faArrowLeft} className="me-2" />
               Back to Home
             </Link>
           </div>
@@ -202,12 +202,12 @@ const RentalPage = () => {
           </Row>
         ) : (
           <div className="text-center py-5">
-            <h5 className="text-muted">
+            <h5 className="text-gray-600 dark:text-gray-400">
               {items.length === 0
                 ? 'No inventory items available'
                 : 'No equipment found'}
             </h5>
-            <p className="text-muted">
+            <p className="text-gray-600 dark:text-gray-400">
               {items.length === 0
                 ? 'Please check back later or contact support.'
                 : 'Try adjusting your search criteria.'}

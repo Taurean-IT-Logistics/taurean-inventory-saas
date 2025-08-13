@@ -1,9 +1,9 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import { Report } from 'data/crm/reportsData';
-import { Card, Col, Form, Row } from 'react-bootstrap';
+import { Card, Col, Form, Row } from 'components/ui';
 import { Link } from 'react-router-dom';
 import FeatherIcon from 'feather-icons-react';
-import { faCircle } from '@fortawesome/free-solid-svg-icons';
+import { faCircle } from 'lucide-react';
 import { faFolder } from '@fortawesome/free-regular-svg-icons';
 
 const ReportCard = ({ report }: { report: Report }) => {
@@ -11,22 +11,22 @@ const ReportCard = ({ report }: { report: Report }) => {
     <Card>
       <Card.Body>
         <div className="border-bottom border-translucent">
-          <div className="d-flex align-items-start mb-1">
+          <div className="flex align-items-start mb-1">
             <Form.Check type="checkbox" />
             <div className="d-sm-flex align-items-center ps-3">
               <Link
                 to="/apps/crm/report-details"
-                className="fw-bold fs-7 lh-sm line-clamp-1 me-sm-4"
+                className="font-bold fs-7 lh-sm line-clamp-1 me-sm-4"
               >
                 {report.title}
               </Link>
-              <div className="d-flex align-items-center">
-                <FontAwesomeIcon
+              <div className="flex align-items-center">
+                <
                   icon={faCircle}
                   transform="shrink-6 up-1"
                   className={`me-1 text-${report.priority.type}`}
                 />
-                <span className="fw-bold fs-9 text-body lh-2">
+                <span className="font-bold fs-9 text-body lh-2">
                   {report.priority.label}
                 </span>
               </div>
@@ -38,13 +38,13 @@ const ReportCard = ({ report }: { report: Report }) => {
         </div>
         <Row className="g-1 g-sm-3 mt-2 lh-1">
           <Col sm="auto" className="flex-1 text-truncate">
-            <Link to="#!" className="fw-semibold fs-9">
-              <FontAwesomeIcon icon={faFolder} className="me-2" />
+            <Link to="#!" className="font-semibold fs-9">
+              < icon={faFolder} className="me-2" />
               {report.reportsby}
             </Link>
           </Col>
           <Col sm="auto">
-            <div className="d-flex align-items-center">
+            <div className="flex align-items-center">
               <FeatherIcon
                 icon="grid"
                 width={16}
@@ -57,7 +57,7 @@ const ReportCard = ({ report }: { report: Report }) => {
             </div>
           </Col>
           <Col sm="auto">
-            <div className="d-flex align-items-center">
+            <div className="flex align-items-center">
               <FeatherIcon
                 icon="clock"
                 className="me-2"

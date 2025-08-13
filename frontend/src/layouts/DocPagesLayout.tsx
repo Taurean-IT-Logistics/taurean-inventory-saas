@@ -7,7 +7,7 @@ import React, {
   useEffect,
   useState
 } from 'react';
-import { Col, Nav, Row } from 'react-bootstrap';
+import { Col, Nav, Row } from 'components/ui';
 import { useLocation } from 'react-router-dom';
 
 export type SideNavItem = {

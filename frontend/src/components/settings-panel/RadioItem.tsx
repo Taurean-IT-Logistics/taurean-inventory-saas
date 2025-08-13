@@ -1,5 +1,5 @@
 import React, { ChangeEvent } from 'react';
-import { Form } from 'react-bootstrap';
+import { Form } from 'components/ui';
 
 interface RadioItemProps {
   name: string;

@@ -1,17 +1,17 @@
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronRight } from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
 import OrderSummaryDetails from 'components/common/OrderSummaryDetails';
 import { currencyFormat } from 'helpers/utils';
 import React from 'react';
-import { Card, Form, FormControl, InputGroup } from 'react-bootstrap';
+import { Card, Form, FormControl, InputGroup } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 const EcomCartSummaryCard = () => {
   return (
     <Card>
       <Card.Body>
-        <div className="d-flex flex-between-center mb-3">
+        <div className="flex flex-between-center mb-3">
           <h3 className="mb-0">Summary</h3>
           <Link to="#!" className="btn btn-link p-0">
             Edit cart
@@ -29,7 +29,7 @@ const EcomCartSummaryCard = () => {
             Apply
           </Button>
         </InputGroup>
-        <div className="d-flex justify-content-between border-y border-dashed border-translucent py-3 mb-4">
+        <div className="flex justify-content-between border-y border-dashed border-translucent py-3 mb-4">
           <h4 className="mb-0">Total :</h4>
           <h4 className="mb-">
             {currencyFormat(695.2, { minimumFractionDigits: 2 })}
@@ -39,7 +39,7 @@ const EcomCartSummaryCard = () => {
           className="w-100"
           variant="primary"
           endIcon={
-            <FontAwesomeIcon icon={faChevronRight} className="ms-1 fs-10" />
+            < icon={faChevronRight} className="ms-1 fs-10" />
           }
         >
           Proceed to check out

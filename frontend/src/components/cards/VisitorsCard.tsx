@@ -1,7 +1,7 @@
-import { faEllipsisH } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEllipsisH } from 'lucide-react';
+import {  } from '';
 import React, { useState } from 'react';
-import { Card, Dropdown } from 'react-bootstrap';
+import { Card, Dropdown } from 'components/ui';
 import CountryWiseVitorsChart from 'components/charts/e-charts/CountryWiseVisitorsChart';
 import { VisitorsTable } from 'components/tables/VisitorsTable';
 
@@ -25,7 +25,7 @@ export const VisitorsCard = () => {
             variant="phoenix-secondary"
             className="dropdown-caret-none px-3 bg-body-emphasis bg-body-hover"
           >
-            <FontAwesomeIcon transform="shrink-2" icon={faEllipsisH} />
+            < transform="shrink-2" icon={faEllipsisH} />
           </Dropdown.Toggle>
           <Dropdown.Menu align="end">
             <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
@@ -35,7 +35,7 @@ export const VisitorsCard = () => {
         </Dropdown>
       </Card.Header>
       <Card.Body className="py-0">
-        <h4 className="d-flex align-items-center gap-2 text-body-highlight mb-3">
+        <h4 className="flex align-items-center gap-2 text-body-highlight mb-3">
           <span>{userCounter}</span>
           <span className="fs-9 fw-normal">User per second</span>
         </h4>

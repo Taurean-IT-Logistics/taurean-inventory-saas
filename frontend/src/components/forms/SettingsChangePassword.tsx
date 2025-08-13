@@ -1,7 +1,7 @@
-import { faKey, faLock } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faKey, faLock } from 'lucide-react';
+import {  } from '';
 import React from 'react';
-import { Form } from 'react-bootstrap';
+import { Form } from 'components/ui';
 
 const SettingsChangePassword = () => {
   return (
@@ -22,7 +22,7 @@ const SettingsChangePassword = () => {
             OLD PASSWORD
           </label>
         </Form.Floating>
-        <FontAwesomeIcon icon={faLock} className="text-body fs-9 form-icon" />
+        < icon={faLock} className="text-body fs-9 form-icon" />
       </div>
       <div className="form-icon-container mb-3">
         <Form.Floating>
@@ -39,7 +39,7 @@ const SettingsChangePassword = () => {
             NEW PASSWORD
           </label>
         </Form.Floating>
-        <FontAwesomeIcon icon={faKey} className="text-body fs-9 form-icon" />
+        < icon={faKey} className="text-body fs-9 form-icon" />
       </div>
       <div className="form-icon-container">
         <Form.Floating>
@@ -56,7 +56,7 @@ const SettingsChangePassword = () => {
             CONFIRM NEW PASSWORD
           </label>
         </Form.Floating>
-        <FontAwesomeIcon icon={faKey} className="text-body fs-9 form-icon" />
+        < icon={faKey} className="text-body fs-9 form-icon" />
       </div>
     </>
   );

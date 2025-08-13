@@ -38,7 +38,7 @@ const columns: ColumnDef<WishlistProductType>[] = [
       return (
         <Link
           to="/apps/e-commerce/customer/product-details"
-          className="fw-semibold line-clamp-1"
+          className="font-semibold line-clamp-1"
         >
           {product}
         </Link>

@@ -1,9 +1,9 @@
-import { faPen } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPen } from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
 import SeeMoreText from 'components/base/SeeMoreText';
 import { useState } from 'react';
-import { FormControl } from 'react-bootstrap';
+import { FormControl } from 'components/ui';
 
 interface EditableDetailsFieldProps {
   children: string;
@@ -23,7 +23,7 @@ const EditableDetailsField = ({
 
   return (
     <div className={className}>
-      <div className="d-flex align-items-center mb-2">
+      <div className="flex align-items-center mb-2">
         <h4 className="text-body me-4">Description</h4>
         {!editMode && (
           <Button
@@ -31,7 +31,7 @@ const EditableDetailsField = ({
             className="text-decoration-none p-0"
             onClick={() => setEditMode(true)}
           >
-            <FontAwesomeIcon icon={faPen} />
+            < icon={faPen} />
           </Button>
         )}
       </div>
@@ -44,7 +44,7 @@ const EditableDetailsField = ({
             value={value}
             onChange={e => setValue(e.target.value)}
           />
-          <div className="d-flex gap-2">
+          <div className="flex gap-2">
             <Button
               variant="primary"
               size="sm"

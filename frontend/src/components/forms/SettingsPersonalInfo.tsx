@@ -3,9 +3,9 @@ import {
   faEnvelope,
   faPhone,
   faUser
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Col, Form, Row } from 'react-bootstrap';
+} from 'lucide-react';
+import {  } from '';
+import { Col, Form, Row } from 'components/ui';
 
 const SettingsPersonalInfo = () => {
   return (
@@ -28,7 +28,7 @@ const SettingsPersonalInfo = () => {
                 FIRST NAME
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faUser}
               className="text-body fs-9 form-icon"
             />
@@ -50,7 +50,7 @@ const SettingsPersonalInfo = () => {
                 LAST NAME
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faUser}
               className="text-body fs-9 form-icon"
             />
@@ -72,7 +72,7 @@ const SettingsPersonalInfo = () => {
                 ENTER YOUR EMAIL
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faEnvelope}
               className="text-body fs-9 form-icon"
             />
@@ -94,7 +94,7 @@ const SettingsPersonalInfo = () => {
                 ENTER YOUR PHONE
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faPhone}
               className="text-body fs-9 form-icon"
             />
@@ -118,7 +118,7 @@ const SettingsPersonalInfo = () => {
                 INFO
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faCircleInfo}
               className="text-body fs-9 form-icon"
             />

@@ -3,11 +3,11 @@ import {
   faPlane,
   faSuitcaseRolling,
   IconDefinition
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import React from 'react';
-import { Nav } from 'react-bootstrap';
+import { Nav } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 interface Nav {
@@ -45,7 +45,7 @@ const NavbarHome = ({ currentPage }: { currentPage: string }) => {
               })}
               to={item.path}
             >
-              <FontAwesomeIcon icon={item.icon} className="me-2" />
+              < icon={item.icon} className="me-2" />
               {item.label}
             </Nav.Link>
           </Nav.Item>

@@ -1,11 +1,11 @@
-import { Card, Table, Button, Badge } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Card, Table, Button, Badge } from 'components/ui';
+import {  } from '';
 import {
   faEdit,
   faTrash,
   faToggleOn,
   faToggleOff
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { Tax } from 'types';
 
 interface TaxTableProps {
@@ -79,14 +79,14 @@ const TaxTable = ({
                     </span>
                   </td>
                   <td>
-                    <div className="d-flex gap-2">
+                    <div className="flex gap-2">
                       <Button
                         variant="outline-primary"
                         size="sm"
                         onClick={() => onEdit(tax)}
                         title="Edit Tax"
                       >
-                        <FontAwesomeIcon icon={faEdit} />
+                        < icon={faEdit} />
                       </Button>
                       <Button
                         variant={
@@ -96,7 +96,7 @@ const TaxTable = ({
                         onClick={() => onToggleStatus(tax)}
                         title={tax.active ? 'Deactivate' : 'Activate'}
                       >
-                        <FontAwesomeIcon
+                        <
                           icon={tax.active ? faToggleOff : faToggleOn}
                         />
                       </Button>
@@ -106,7 +106,7 @@ const TaxTable = ({
                         onClick={() => onDelete(tax._id || tax.name)}
                         title="Delete Tax"
                       >
-                        <FontAwesomeIcon icon={faTrash} />
+                        < icon={faTrash} />
                       </Button>
                     </div>
                   </td>

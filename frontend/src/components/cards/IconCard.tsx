@@ -1,9 +1,9 @@
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import { Icon } from '@iconscout/react-unicons';
 import Unicon from 'components/base/Unicon';
 import { PropsWithChildren, useEffect, useState } from 'react';
-import { Form, Toast } from 'react-bootstrap';
+import { Form, Toast } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 
 interface IconCardProps {
@@ -28,7 +28,7 @@ const IconCard = ({
 
   useEffect(() => {
     if (iconFamily === 'font-awesome') {
-      setText(`<FontAwesomeIcon icon={${name}} />`);
+      setText(`< icon={${name}} />`);
     }
     if (iconFamily === 'unicons') {
       setText(`<Unicon icon={${name}} />`);
@@ -41,7 +41,7 @@ const IconCard = ({
   return (
     <div className="border rounded-2 p-3 mb-4 text-center bg-body-emphasis dark__bg-gray-1000 shadow-sm">
       {iconFamily === 'font-awesome' && (
-        <FontAwesomeIcon icon={icon as IconProp} className="text-body fs-5" />
+        < icon={icon as IconProp} className="text-body fs-5" />
       )}
       {iconFamily === 'unicons' && (
         <Unicon icon={icon as Icon} className="text-body fs-5" />
@@ -61,12 +61,12 @@ const IconCard = ({
       <Toast
         show={showCopyToast}
         onClose={() => setShowCopyToast(false)}
-        className="align-items-center bg-dark border-0 bottom-0 end-0 mb-3 me-3 position-fixed text-white z-5"
+        className="items-center bg-dark border-0 bottom-0 end-0 mb-3 me-3 position-fixed text-white z-5"
         data-bs-theme="light"
         delay={3000}
         autohide
       >
-        <div className="d-flex">
+        <div className="flex">
           <Toast.Body className="P-3">
             <span className="fw-black">
               Copied: <code className="text-body-quaternary">{text}</code>

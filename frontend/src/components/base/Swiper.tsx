@@ -6,12 +6,12 @@ import {
 // Import Swiper styles
 import 'swiper/css';
 import { CSSProperties, PropsWithChildren, useRef } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import { NavigationOptions } from 'swiper/types';
 import {
   faChevronLeft,
   faChevronRight
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 
 interface SwiperProps extends ReactSwiperProps {
   navigationPosition?: CSSProperties;
@@ -35,14 +35,14 @@ const Swiper = ({
             style={navigationPosition}
             ref={navigationNextRef}
           >
-            <FontAwesomeIcon icon={faChevronRight} />
+            < icon={faChevronRight} />
           </button>
           <button
             className="swiper-button-prev"
             style={navigationPosition}
             ref={navigationPrevRef}
           >
-            <FontAwesomeIcon icon={faChevronLeft} />
+            < icon={faChevronLeft} />
           </button>
         </>
       )}

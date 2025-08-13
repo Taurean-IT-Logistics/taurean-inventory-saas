@@ -1,9 +1,9 @@
-import { faLocationCrosshairs } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faLocationCrosshairs } from 'lucide-react';
+import {  } from '';
 import TripCheckoutFormDatePicker from 'components/modules/travel-agency/trip/checkout/TripCheckoutFormDatePicker';
 import TripCheckoutFormTimePicker from 'components/modules/travel-agency/trip/checkout/TripCheckoutFormTimePicker';
 import React from 'react';
-import { Col, Form, Row, FormControlProps } from 'react-bootstrap';
+import { Col, Form, Row, FormControlProps } from 'components/ui';
 import { Link } from 'react-router-dom';
 import PaymentMethodForm from './PaymentMethodForm';
 
@@ -20,13 +20,13 @@ const TextInputFiled = ({
 }: TextInputFieldProps) => {
   return (
     <>
-      <label htmlFor={id} className="fw-bold text-body-highlight mb-1">
+      <label htmlFor={id} className="font-bold text-body-highlight mb-1">
         {label}
       </label>
       {endIcon ? (
-        <div className="position-relative">
+        <div className="relative">
           <Form.Control id={id} className="pe-6" {...rest} />
-          <FontAwesomeIcon
+          <
             icon={faLocationCrosshairs}
             className="position-absolute top-0 end-0 mt-2 me-3 text-body-quaternary"
             transform="down-3"
@@ -42,9 +42,9 @@ const TextInputFiled = ({
 const TripCheckoutForm = () => {
   return (
     <>
-      <hr className="mt-5 mb-7" />
+      <hr className="mt-8 mb-7" />
       <div>
-        <h3 className="mb-5">Contact details</h3>
+        <h3 className="mb-8">Contact details</h3>
         <Row className="g-3 mb-3">
           <Col sm={6}>
             <TextInputFiled
@@ -82,7 +82,7 @@ const TripCheckoutForm = () => {
       <hr className="my-7" />
       <div>
         <h3 className="mb-3">Traveler details</h3>
-        <Form.Check type="checkbox" className="mb-5">
+        <Form.Check type="checkbox" className="mb-8">
           <Form.Check.Input id="anotherCountry" type="checkbox" />
           <Form.Check.Label
             className="fw-normal fs-8 text-body"
@@ -144,7 +144,7 @@ const TripCheckoutForm = () => {
       </div>
       <hr className="my-7" />
       <div>
-        <h3 className="mb-5"> Tour specifics</h3>
+        <h3 className="mb-8"> Tour specifics</h3>
         <Row className="gx-3 gy-4">
           <Col sm={6}>
             <TextInputFiled

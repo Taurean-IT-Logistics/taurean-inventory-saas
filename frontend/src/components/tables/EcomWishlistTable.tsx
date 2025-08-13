@@ -6,8 +6,8 @@ import AdvanceTableProvider from 'providers/AdvanceTableProvider';
 import { Link } from 'react-router-dom';
 import AdvanceTableFooter from 'components/base/AdvanceTableFooter';
 import Button from 'components/base/Button';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShoppingCart, faTrash } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faShoppingCart, faTrash } from 'lucide-react';
 import { InventoryItem, Facility } from 'types';
 
 type TableItem = InventoryItem | Facility;
@@ -38,7 +38,7 @@ const columns: ColumnDef<TableItem>[] = [
     accessorKey: 'name',
     header: 'Item',
     cell: ({ row: { original } }) => (
-      <Link to="#!" className="fw-semibold line-clamp-1">
+      <Link to="#!" className="font-semibold line-clamp-1">
         {original.name}
       </Link>
     ),
@@ -98,17 +98,17 @@ const columns: ColumnDef<TableItem>[] = [
   {
     id: 'action',
     cell: () => (
-      <div className="d-flex gap-2 justify-content-end">
+      <div className="flex gap-2 justify-content-end">
         <Button
           size="sm"
           className="text-body-quaternary text-body-tertiary-hover"
         >
-          <FontAwesomeIcon icon={faTrash} />
+          < icon={faTrash} />
         </Button>
         <Button
           variant="primary"
           className="fs-10 text-nowrap"
-          startIcon={<FontAwesomeIcon icon={faShoppingCart} />}
+          startIcon={< icon={faShoppingCart} />}
         >
           Add to cart
         </Button>

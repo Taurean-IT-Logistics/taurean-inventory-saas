@@ -1,6 +1,6 @@
 import Button, { ButtonProps } from 'components/base/Button';
 import { useAppContext } from 'providers/AppProvider';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { OverlayTrigger, Tooltip } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 import classNames from 'classnames';
 

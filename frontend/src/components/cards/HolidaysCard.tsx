@@ -1,7 +1,7 @@
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronRight } from 'lucide-react';
+import {  } from '';
 import React from 'react';
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 import Button from 'components/base/Button';
 
 import { Link } from 'react-router-dom';
@@ -23,7 +23,7 @@ export const HolidaysCard = () => {
           as={Link}
           to={`#!`}
           endIcon={
-            <FontAwesomeIcon icon={faChevronRight} className="ms-2 fs-10" />
+            < icon={faChevronRight} className="ms-2 fs-10" />
           }
         >
           Go to Calender

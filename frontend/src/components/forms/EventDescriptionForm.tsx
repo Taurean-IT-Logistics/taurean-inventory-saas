@@ -1,6 +1,6 @@
 import Dropzone from 'components/base/Dropzone';
 import ReactSelect from 'components/base/ReactSelect';
-import { Col, FloatingLabel, Form } from 'react-bootstrap';
+import { Col, FloatingLabel, Form } from 'components/ui';
 
 const options = [
   { value: 'MUSIC', label: 'music' },

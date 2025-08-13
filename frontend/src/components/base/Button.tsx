@@ -4,7 +4,7 @@ import {
   Button as BsButton,
   ButtonProps as BsButtonProps,
   Spinner
-} from 'react-bootstrap';
+} from 'components/ui';
 
 export type ButtonVariant =
   | ''

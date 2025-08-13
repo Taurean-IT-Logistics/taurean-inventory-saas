@@ -1,11 +1,11 @@
-import { Card, Row, Col } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Card, Row, Col } from 'components/ui';
+import {  } from '';
 import {
   faPercent,
   faToggleOn,
   faToggleOff,
   faCalculator
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { Tax } from 'types';
 
 interface TaxStatsCardsProps {
@@ -30,13 +30,13 @@ const TaxStatsCards = ({ taxes }: TaxStatsCardsProps) => {
       <Col md={3} className="mb-3">
         <Card className=" border-secondary h-100">
           <Card.Body className="text-center">
-            <FontAwesomeIcon
+            <
               icon={faCalculator}
               size="2x"
               className="text-primary mb-2"
             />
             <h4 className="text-primary">{taxes.length}</h4>
-            <p className="text-muted mb-0">Total Taxes</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-0">Total Taxes</p>
           </Card.Body>
         </Card>
       </Col>
@@ -44,13 +44,13 @@ const TaxStatsCards = ({ taxes }: TaxStatsCardsProps) => {
       <Col md={3} className="mb-3">
         <Card className=" border-secondary h-100">
           <Card.Body className="text-center">
-            <FontAwesomeIcon
+            <
               icon={faToggleOn}
               size="2x"
               className="text-success mb-2"
             />
             <h4 className="text-success">{activeTaxes.length}</h4>
-            <p className="text-muted mb-0">Active Taxes</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-0">Active Taxes</p>
           </Card.Body>
         </Card>
       </Col>
@@ -58,13 +58,13 @@ const TaxStatsCards = ({ taxes }: TaxStatsCardsProps) => {
       <Col md={3} className="mb-3">
         <Card className=" border-secondary h-100">
           <Card.Body className="text-center">
-            <FontAwesomeIcon
+            <
               icon={faPercent}
               size="2x"
               className="text-warning mb-2"
             />
             <h4 className="text-warning">{averageRate.toFixed(1)}%</h4>
-            <p className="text-muted mb-0">Average Rate</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-0">Average Rate</p>
           </Card.Body>
         </Card>
       </Col>
@@ -72,13 +72,13 @@ const TaxStatsCards = ({ taxes }: TaxStatsCardsProps) => {
       <Col md={3} className="mb-3">
         <Card className=" border-secondary h-100">
           <Card.Body className="text-center">
-            <FontAwesomeIcon
+            <
               icon={faToggleOff}
               size="2x"
               className="text-danger mb-2"
             />
             <h4 className="text-danger">{taxes.length - activeTaxes.length}</h4>
-            <p className="text-muted mb-0">Inactive Taxes</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-0">Inactive Taxes</p>
           </Card.Body>
         </Card>
       </Col>

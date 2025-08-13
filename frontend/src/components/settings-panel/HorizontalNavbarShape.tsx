@@ -1,6 +1,6 @@
 import { useAppContext } from 'providers/AppProvider';
 import { ChangeEvent } from 'react';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import topDefault from 'assets/img/generic/top-default.png';
 import topDefaultDark from 'assets/img/generic/top-default-dark.png';
 import topSlim from 'assets/img/generic/top-slim.png';

@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 
 interface FooterProps {
   className?: string;

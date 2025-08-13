@@ -1,8 +1,8 @@
-import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Search } from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import { CSSProperties } from 'react';
-import { Form, FormControlProps } from 'react-bootstrap';
+import { Form, FormControlProps } from 'components/ui';
 
 export interface SearchBoxProps extends FormControlProps {
   placeholder?: string;
@@ -32,7 +32,7 @@ const SearchBox = ({
           size={size}
           {...rest}
         />
-        <FontAwesomeIcon icon={faSearch} className="search-box-icon" />
+        < icon={Search} className="search-box-icon" />
       </form>
     </div>
   );

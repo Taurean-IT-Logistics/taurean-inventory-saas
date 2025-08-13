@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { Card, Col, Row } from 'react-bootstrap';
+import { Card, Col, Row } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 import { Stat } from 'data/crm/dealDetailsInfo';
 
@@ -34,8 +34,8 @@ const DealsPrintingDimensionsCard = ({
                   />
                 </div>
                 <div>
-                  <p className="fw-bold mb-1">{stat.title}</p>
-                  <h4 className="fw-bolder text-nowrap">{stat.value}</h4>
+                  <p className="font-bold mb-1">{stat.title}</p>
+                  <h4 className="font-bolder text-nowrap">{stat.value}</h4>
                 </div>
               </div>
             </Col>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Badge, Button, Image, Stack } from 'react-bootstrap';
+import { Card, Badge, Button, Image, Stack } from 'components/ui';
 import { Link } from 'react-router-dom';
-import { faCheck, faStar, faEye } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Check, Star, faEye } from 'lucide-react';
+import {  } from '';
 import type { Facility } from 'types';
 import { currencyFormat } from 'helpers/utils';
 import { getResourceUrl } from 'controllers';
@@ -39,9 +39,9 @@ const ImageDots: React.FC<{ count: number }> = ({ count }) => (
 // Verified Badge Component
 const VerifiedBadge: React.FC = () => (
   <div className="position-absolute top-0 start-0 m-2">
-    <Badge bg="success" className="d-flex align-items-center">
-      <FontAwesomeIcon icon={faCheck} className="me-1" />
-      <span className="fw-semibold">Verified</span>
+    <Badge bg="success" className="flex align-items-center">
+      < icon={Check} className="me-1" />
+      <span className="font-semibold">Verified</span>
     </Badge>
   </div>
 );
@@ -60,7 +60,7 @@ const Amenities: React.FC<{ amenities: string[] }> = ({ amenities }) => (
         </Badge>
       ))}
       {amenities.length > 2 && (
-        <span className="text-muted small align-self-center">
+        <span className="text-gray-600 dark:text-gray-400 small align-self-center">
           +{amenities.length - 2} more
         </span>
       )}
@@ -77,14 +77,14 @@ const Rating: React.FC<{ average: number; totalReviews: number }> = ({
     <Stack
       direction="horizontal"
       gap={1}
-      className="align-items-center flex-shrink-0"
+      className="items-center flex-shrink-0"
     >
-      <FontAwesomeIcon
-        icon={faStar}
+      <
+        icon={Star}
         className="text-body-emphasis"
         style={{ fontSize: 12 }}
       />
-      <span className="fw-bold text-body-emphasis small">
+      <span className="font-bold text-body-emphasis small">
         {average.toFixed(2)}
       </span>
       <span className="text-body-secondary small">({totalReviews})</span>
@@ -119,7 +119,7 @@ const FacilityCard = ({ facility }: FacilityCardProps) => {
         className="shadow-sm h-100 overflow-hidden border border-secondary box-shadow"
         style={{ minWidth: 280, borderRadius: 12, border: 'none' }}
       >
-        <div className="position-relative" style={{ height: 220 }}>
+        <div className="relative" style={{ height: 220 }}>
           <Image
             src={image}
             alt={facility.name}
@@ -179,7 +179,7 @@ const FacilityCard = ({ facility }: FacilityCardProps) => {
                     gap={1}
                     className="align-items-baseline"
                   >
-                    <span className="fw-bold text-body-emphasis text-decoration-underline">
+                    <span className="font-bold text-body-emphasis text-decoration-underline">
                       {currencyFormat(defaultPricing.amount)}
                     </span>
                     <span className="text-body-emphasis small">
@@ -196,7 +196,7 @@ const FacilityCard = ({ facility }: FacilityCardProps) => {
             </Stack>
           </div>
 
-          <div className="d-flex gap-2">
+          <div className="flex gap-2">
             <Button
               as={Link}
               to={`/facility/${facility._id}`}
@@ -205,7 +205,7 @@ const FacilityCard = ({ facility }: FacilityCardProps) => {
               disabled={!isAvailable}
               className="flex-fill"
             >
-              <FontAwesomeIcon icon={faEye} className="me-1" />
+              < icon={faEye} className="me-1" />
               {isAvailable ? 'Book Now' : 'Unavailable'}
             </Button>
           </div>

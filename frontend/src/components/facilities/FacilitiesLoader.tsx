@@ -7,7 +7,7 @@ import {
   Spinner,
   Placeholder,
   Stack
-} from 'react-bootstrap';
+} from 'components/ui';
 
 const HeaderLoader: React.FC = () => (
   <Row className="mb-4">
@@ -44,7 +44,7 @@ const FilterCardLoader: React.FC = () => (
     <Col>
       <Card className="border-secondary">
         <Card.Body>
-          <Row className="align-items-center">
+          <Row className="items-center">
             {[4, 2, 2, 2].map((col, idx) => (
               <Col md={col} className="mb-2" key={idx}>
                 <Placeholder as="div" animation="glow">
@@ -160,7 +160,7 @@ const OverlayLoader: React.FC = () => (
       zIndex: 1050
     }}
   >
-    <div className="d-flex flex-column align-items-center">
+    <div className="flex flex-column align-items-center">
       <Spinner
         animation="border"
         variant="primary"

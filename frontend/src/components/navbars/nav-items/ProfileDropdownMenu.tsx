@@ -1,6 +1,6 @@
 import Avatar from 'components/base/Avatar';
 import { useState } from 'react';
-import { Button, Card, Dropdown, Nav } from 'react-bootstrap';
+import { Button, Card, Dropdown, Nav } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 import { Link } from 'react-router-dom';
 import classNames from 'classnames';
@@ -32,7 +32,7 @@ const ProfileDropdownMenu = ({ className }: { className?: string }) => {
       {isAuthenticated && user ? (
         <Card className="position-relative border-0">
           <Card.Body className="p-0">
-            <div className="d-flex flex-column align-items-center justify-content-center gap-2 pt-4 pb-3">
+            <div className="flex flex-column align-items-center justify-content-center gap-2 pt-4 pb-3">
               <Avatar variant="name" size="xl">
                 {user?.name?.[0] || 'U'}
               </Avatar>
@@ -96,7 +96,7 @@ const ProfileDropdownMenu = ({ className }: { className?: string }) => {
       ) : (
         <Card className="border-0 text-center py-4 px-3">
           <h6 className="mb-3">Welcome!</h6>
-          <p className="text-muted mb-4 fs-9">
+          <p className="text-gray-600 dark:text-gray-400 mb-4 fs-9">
             Sign in or create an account to access personalized features.
           </p>
           <div className="d-grid gap-2">

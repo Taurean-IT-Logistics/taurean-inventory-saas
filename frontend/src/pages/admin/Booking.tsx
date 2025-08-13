@@ -5,24 +5,24 @@ import { currencyFormat } from 'helpers/utils';
 import { StateManagement } from 'lib';
 import { useAppSelector } from 'hooks/useAppDispatch';
 import { BookingController, FacilityController } from 'controllers';
-import { Container, Nav } from 'react-bootstrap';
+import { Container, Nav } from 'components/ui';
 import BookingManagement from 'components/booking/BookingManagement';
 import BookingCalendar from 'components/booking/BookingCalendar';
 import QuickActionsSidebar from 'components/dashboard/QuickActions';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import {
   faArrowLeft,
   faCalendar,
-  faCalendarAlt,
+  Calendar,
   faChartBar,
   faChartLine,
-  faCheckCircle,
-  faClock,
+  CheckCircle,
+  Clock,
   faDollarSign,
-  faList,
+  List,
   faPlus,
   faTachometerAlt
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import Button from 'components/base/Button';
 import { showToast } from 'components/toaster/toaster';
 import SimplePaginatedList from 'booking/PaginatedComponent';
@@ -388,7 +388,7 @@ const BookingDashboard = () => {
           >
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p className="text-muted">Loading dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -418,21 +418,21 @@ const BookingDashboard = () => {
   return (
     <Container fluid className="py-4">
       {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="flex justify-content-between align-items-center mb-4">
         <div>
           <h1 className="h3 fw-bold  mb-1">Booking Dashboard</h1>
-          <p className="text-muted mb-0">
+          <p className="text-gray-600 dark:text-gray-400 mb-0">
             Overview of all facility bookings and performance metrics
           </p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="flex gap-2">
           <Link to="/admin/create-facility" className="btn btn-primary">
-            <FontAwesomeIcon icon={faPlus} className="me-2" />
+            < icon={faPlus} className="me-2" />
             New Facility
           </Link>
 
           <Link to="/admin" className="btn btn-outline-secondary">
-            <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+            < icon={faArrowLeft} className="me-2" />
             Back to Dashboard
           </Link>
         </div>
@@ -446,7 +446,7 @@ const BookingDashboard = () => {
               className={`nav-link ${activeTab === 'overview' ? 'active' : ''}`}
               onClick={() => setActiveTab('overview')}
             >
-              <FontAwesomeIcon icon={faTachometerAlt} className="me-2" />
+              < icon={faTachometerAlt} className="me-2" />
               Overview
             </Button>
           </Nav.Link>
@@ -455,7 +455,7 @@ const BookingDashboard = () => {
               className={`nav-link ${activeTab === 'calendar' ? 'active' : ''}`}
               onClick={() => setActiveTab('calendar')}
             >
-              <FontAwesomeIcon icon={faCalendar} className="me-2" />
+              < icon={faCalendar} className="me-2" />
               Calendar
             </Button>
           </Nav.Link>
@@ -464,7 +464,7 @@ const BookingDashboard = () => {
               className={`nav-link ${activeTab === 'bookings' ? 'active' : ''}`}
               onClick={() => setActiveTab('bookings')}
             >
-              <FontAwesomeIcon icon={faList} className="me-2" />
+              < icon={List} className="me-2" />
               All Bookings
             </Button>
           </Nav.Link>
@@ -481,17 +481,17 @@ const BookingDashboard = () => {
                 <div className="col-lg-3 col-md-6 mb-3">
                   <div className="card bg-primary bg-opacity-10 border-primary h-100">
                     <div className="card-body">
-                      <div className="d-flex align-items-center justify-content-between">
+                      <div className="flex align-items-center justify-content-between">
                         <div>
                           <h3 className="text-primary mb-1">
                             {stats.totalBookings}
                           </h3>
-                          <p className="text-muted mb-0 small">
+                          <p className="text-gray-600 dark:text-gray-400 mb-0 small">
                             Total Bookings
                           </p>
                         </div>
-                        <FontAwesomeIcon
-                          icon={faCalendarAlt}
+                        <
+                          icon={Calendar}
                           className="text-primary fs-2"
                         />
                       </div>
@@ -520,15 +520,15 @@ const BookingDashboard = () => {
                 <div className="col-lg-3 col-md-6 mb-3">
                   <div className="card bg-success bg-opacity-10 border-success h-100">
                     <div className="card-body">
-                      <div className="d-flex align-items-center justify-content-between">
+                      <div className="flex align-items-center justify-content-between">
                         <div>
                           <h3 className="text-success mb-1">
                             {stats.confirmedBookings}
                           </h3>
-                          <p className="text-muted mb-0 small">Confirmed</p>
+                          <p className="text-gray-600 dark:text-gray-400 mb-0 small">Confirmed</p>
                         </div>
-                        <FontAwesomeIcon
-                          icon={faCheckCircle}
+                        <
+                          icon={CheckCircle}
                           className="text-success fs-2"
                         />
                       </div>
@@ -551,14 +551,14 @@ const BookingDashboard = () => {
                 <div className="col-lg-3 col-md-6 mb-3">
                   <div className="card bg-info bg-opacity-10 border-info h-100">
                     <div className="card-body">
-                      <div className="d-flex align-items-center justify-content-between">
+                      <div className="flex align-items-center justify-content-between">
                         <div>
                           <h3 className="text-info mb-1">
                             {currencyFormat(stats.totalRevenue)}
                           </h3>
-                          <p className="text-muted mb-0 small">Total Revenue</p>
+                          <p className="text-gray-600 dark:text-gray-400 mb-0 small">Total Revenue</p>
                         </div>
-                        <FontAwesomeIcon
+                        <
                           icon={faDollarSign}
                           className="text-info fs-2"
                         />
@@ -575,17 +575,17 @@ const BookingDashboard = () => {
                 <div className="col-lg-3 col-md-6 mb-3">
                   <div className="card bg-warning bg-opacity-10 border-warning h-100">
                     <div className="card-body">
-                      <div className="d-flex align-items-center justify-content-between">
+                      <div className="flex align-items-center justify-content-between">
                         <div>
                           <h3 className="text-warning mb-1">
                             {stats.pendingBookings}
                           </h3>
-                          <p className="text-muted mb-0 small">
+                          <p className="text-gray-600 dark:text-gray-400 mb-0 small">
                             Pending Review
                           </p>
                         </div>
-                        <FontAwesomeIcon
-                          icon={faClock}
+                        <
+                          icon={Clock}
                           className="text-warning fs-2"
                         />
                       </div>
@@ -608,14 +608,14 @@ const BookingDashboard = () => {
                 <div className="col-lg-6 col-md-6 mb-3">
                   <div className="card bg-secondary bg-opacity-10 border-secondary h-100">
                     <div className="card-body">
-                      <div className="d-flex align-items-center justify-content-between">
+                      <div className="flex align-items-center justify-content-between">
                         <div>
                           <h3 className=" mb-1">
                             {currencyFormat(stats.weeklyRevenue)}
                           </h3>
                           <p className="-50 mb-0 small">Weekly Revenue</p>
                         </div>
-                        <FontAwesomeIcon icon={faChartLine} className="me-2" />
+                        < icon={faChartLine} className="me-2" />
                       </div>
                     </div>
                   </div>
@@ -624,14 +624,14 @@ const BookingDashboard = () => {
                 <div className="col-lg-6 col-md-6 mb-3">
                   <div className="card bg-secondary bg-opacity-10 border-secondary h-100">
                     <div className="card-body">
-                      <div className="d-flex align-items-center justify-content-between">
+                      <div className="flex align-items-center justify-content-between">
                         <div>
                           <h3 className=" mb-1">
                             {currencyFormat(stats.monthlyRevenue)}
                           </h3>
                           <p className="-50 mb-0 small">Monthly Revenue</p>
                         </div>
-                        <FontAwesomeIcon icon={faChartBar} className="me-2" />
+                        < icon={faChartBar} className="me-2" />
                       </div>
                     </div>
                   </div>
@@ -658,7 +658,7 @@ const BookingDashboard = () => {
                 <tr key={booking._id || index}>
                   <td>
                     <div>
-                      <div className="fw-semibold">
+                      <div className="font-semibold">
                         {safeGetUserName(booking)}
                       </div>
                       <small className="-50">{safeGetUserEmail(booking)}</small>
@@ -685,7 +685,7 @@ const BookingDashboard = () => {
                     </span>
                   </td>
                   <td>
-                    <span className="fw-bold">
+                    <span className="font-bold">
                       {currencyFormat(booking.totalPrice || 0)}
                     </span>
                   </td>

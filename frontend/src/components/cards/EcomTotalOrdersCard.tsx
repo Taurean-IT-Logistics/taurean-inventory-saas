@@ -1,13 +1,13 @@
 import Badge from 'components/base/Badge';
 import EcomTotalOrdersChart from 'components/charts/e-charts/EcomTotalOrdersChart';
 import React from 'react';
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 
 const EcomTotalOrdersCard = () => {
   return (
     <Card className="h-100">
       <Card.Body>
-        <div className="d-flex justify-content-between">
+        <div className="flex justify-content-between">
           <div>
             <h5 className="mb-1">
               Total orders
@@ -19,16 +19,16 @@ const EcomTotalOrdersCard = () => {
           </div>
           <h4>16,247</h4>
         </div>
-        <div className="d-flex justify-content-center px-4 py-6">
+        <div className="flex justify-content-center px-4 py-6">
           <EcomTotalOrdersChart />
         </div>
         <div className="mt-2">
-          <div className="d-flex align-items-center mb-2">
+          <div className="flex align-items-center mb-2">
             <div className="bullet-item bg-primary me-2" />
             <h6 className="text-body fw-semibold flex-1 mb-0">Completed</h6>
             <h6 className="text-body fw-semibold mb-0">52%</h6>
           </div>
-          <div className="d-flex align-items-center">
+          <div className="flex align-items-center">
             <div className="bullet-item bg-primary-subtle me-2" />
             <h6 className="text-body fw-semibold flex-1 mb-0">
               Pending payment

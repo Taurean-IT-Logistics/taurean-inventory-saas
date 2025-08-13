@@ -1,6 +1,6 @@
 import Logo from 'components/common/Logo';
 import { PropsWithChildren } from 'react';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 interface AuthSplitLayoutProps {
@@ -35,7 +35,7 @@ const AuthSplitLayout = ({
                   <Logo
                     text={false}
                     width={58}
-                    className="fw-bolder fs-5 d-inline-block"
+                    className="font-bolder fs-5 d-inline-block"
                   />
                 </Link>
               </div>

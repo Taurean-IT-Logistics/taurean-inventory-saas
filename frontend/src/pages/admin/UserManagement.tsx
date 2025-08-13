@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Container } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { Container } from 'components/ui';
+import {  } from '';
+import { faArrowLeft } from 'lucide-react';
 import { User, Transaction } from 'types';
 import UserStatsCards from 'components/user/UserStatsCard';
 import UserFilters from 'components/user/UserFilters';
@@ -205,16 +205,16 @@ const UserManagement = () => {
   return (
     <div className="min-vh-100">
       <Container fluid className="py-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="h3 fw-bold mb-1">User Management</h1>
-            <p className="text-muted mb-0">
+            <p className="text-gray-600 dark:text-gray-400 mb-0">
               Manage system users and their profiles
             </p>
           </div>
-          <div className="d-flex gap-2">
+          <div className="flex gap-2">
             <Link to="/admin" className="btn btn-outline-secondary">
-              <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+              < icon={faArrowLeft} className="me-2" />
               Back to Dashboard
             </Link>
           </div>

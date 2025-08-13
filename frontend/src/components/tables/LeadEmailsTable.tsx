@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import AdvanceTableFooter from 'components/base/AdvanceTableFooter';
 import { LeadEmail } from 'data/crm/leadsData';
 import Badge, { BadgeBg } from 'components/base/Badge';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPhone } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faPhone } from 'lucide-react';
 
 const getBadgeBg = (label: string): BadgeBg => {
   switch (label) {
@@ -36,7 +36,7 @@ export const leadEmailsColumns: ColumnDef<LeadEmail>[] = [
       }
     }) => (
       <>
-        <Link to="#!" className="fw-semibold">
+        <Link to="#!" className="font-semibold">
           {mail.subject}
         </Link>
         <p className="mb-0 fs-10">{mail.email}</p>
@@ -83,7 +83,7 @@ export const leadEmailsColumns: ColumnDef<LeadEmail>[] = [
       }
     }) => (
       <>
-        <FontAwesomeIcon icon={faPhone} className="text-primary me-2" />
+        < icon={faPhone} className="text-primary me-2" />
         {action}
       </>
     ),

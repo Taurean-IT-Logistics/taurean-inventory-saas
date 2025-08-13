@@ -1,8 +1,8 @@
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronRight } from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import Button from 'components/base/Button';
-import { Form } from 'react-bootstrap';
+import { Form } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 const ForgotPasswordForm = ({
@@ -20,7 +20,7 @@ const ForgotPasswordForm = ({
           Enter your email below and we will send <br className="d-sm-none" />
           you a reset link
         </p>
-        <Form className="d-flex align-items-center mb-5">
+        <Form className="flex align-items-center mb-5">
           <Form.Control
             type="email"
             id="email"
@@ -30,7 +30,7 @@ const ForgotPasswordForm = ({
           <Button
             variant="primary"
             className="ms-2"
-            endIcon={<FontAwesomeIcon icon={faChevronRight} className="ms-2" />}
+            endIcon={< icon={faChevronRight} className="ms-2" />}
           >
             Send
           </Button>

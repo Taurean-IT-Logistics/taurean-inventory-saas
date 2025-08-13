@@ -1,7 +1,7 @@
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlus } from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
-import { Col, Form, Row } from 'react-bootstrap';
+import { Col, Form, Row } from 'components/ui';
 
 const EventTicketPricing = () => {
   return (
@@ -55,7 +55,7 @@ const EventTicketPricing = () => {
         <Col xs={12}>
           <Button
             className="p-0"
-            startIcon={<FontAwesomeIcon icon={faPlus} className="me-2" />}
+            startIcon={< icon={faPlus} className="me-2" />}
             variant="link"
           >
             Add an option

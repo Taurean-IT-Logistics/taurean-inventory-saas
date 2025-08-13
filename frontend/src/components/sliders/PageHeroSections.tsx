@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import FacilityCard from 'components/facilities/FacilityCard';
 import { Facility } from 'types';
 import Swiper from 'components/base/Swiper';
 import { SwiperSlide } from 'swiper/react';
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faChevronRight } from 'lucide-react';
 
 interface PageHeroSectionProps {
   facilities: Facility[];
@@ -16,8 +16,8 @@ interface PageHeroSectionProps {
 const PageHeroSections = ({ facilities, title, to }: PageHeroSectionProps) => {
   return (
     <>
-      <div className="d-flex flex-between-center mb-3">
-        <div className="d-flex">
+      <div className="flex flex-between-center mb-3">
+        <div className="flex">
           <h3 className="mx-2">{title}</h3>
         </div>
         <Link
@@ -25,7 +25,7 @@ const PageHeroSections = ({ facilities, title, to }: PageHeroSectionProps) => {
           className="btn btn-link btn-lg p-0 d-none d-md-block"
         >
           Explore more
-          <FontAwesomeIcon icon={faChevronRight} className="fs-9 ms-1" />
+          < icon={faChevronRight} className="fs-9 ms-1" />
         </Link>
       </div>
       <Swiper

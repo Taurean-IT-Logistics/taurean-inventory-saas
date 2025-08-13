@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import { HTMLAttributes, PropsWithChildren, useEffect } from 'react';
-import { Nav, NavLinkProps } from 'react-bootstrap';
+import { Nav, NavLinkProps } from 'components/ui';
 import { useInView } from 'react-intersection-observer';
 import ScrollSpyProvider, {
   useScrollSpyContext

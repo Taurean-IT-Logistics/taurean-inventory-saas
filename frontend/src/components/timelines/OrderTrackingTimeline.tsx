@@ -1,4 +1,4 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import classNames from 'classnames';
 import Timeline from 'components/base/Timeline';
 import { TimelineData } from 'data/timelineData';
@@ -21,9 +21,9 @@ const OrderTrackingTimeline = ({ data }: { data: TimelineData[] }) => {
                   {item.oppositeContent.time}
                 </p>
               </Timeline.OppositeContent>
-              <Timeline.Separator className="position-relative">
+              <Timeline.Separator className="relative">
                 <Timeline.Dot className={item.separator.dotClass}>
-                  <FontAwesomeIcon
+                  <
                     icon={item.separator.icon}
                     className="text-white fs-10"
                   />

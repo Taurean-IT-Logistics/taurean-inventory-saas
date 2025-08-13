@@ -1,18 +1,18 @@
 import React from 'react';
-import { Card, Col, Form, Row } from 'react-bootstrap';
+import { Card, Col, Form, Row } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 const DealsOtherInformation = () => {
   return (
     <Card>
       <Card.Body>
-        <h4 className="mb-5">Others Information</h4>
+        <h4 className="mb-8">Others Information</h4>
         <Row className="g-3">
           <Col xs={12}>
             <div className="mb-4">
-              <div className="d-flex flex-wrap justify-content-between mb-2">
+              <div className="flex flex-wrap justify-content-between mb-2">
                 <h5 className="mb-0 text-body-highlight me-2">Category</h5>
-                <Link to="#!" className="fw-bold fs-9">
+                <Link to="#!" className="font-bold fs-9">
                   Add new category
                 </Link>
               </div>
@@ -44,9 +44,9 @@ const DealsOtherInformation = () => {
               </Form.Select>
             </div>
             <div className="mb-4">
-              <div className="d-flex flex-wrap justify-content-between mb-2">
+              <div className="flex flex-wrap justify-content-between mb-2">
                 <h5 className="mb-0 text-body-highlight me-2">Lead Source</h5>
-                <Link to="#!" className="fw-bold fs-9">
+                <Link to="#!" className="font-bold fs-9">
                   Add new
                 </Link>
               </div>
@@ -61,11 +61,11 @@ const DealsOtherInformation = () => {
               </Form.Select>
             </div>
             <div>
-              <div className="d-flex flex-wrap justify-content-between mb-2">
+              <div className="flex flex-wrap justify-content-between mb-2">
                 <h5 className="mb-0 text-body-highlight me-2">
                   Campaign Source
                 </h5>
-                <Link to="#!" className="fw-bold fs-9">
+                <Link to="#!" className="font-bold fs-9">
                   Add new
                 </Link>
               </div>

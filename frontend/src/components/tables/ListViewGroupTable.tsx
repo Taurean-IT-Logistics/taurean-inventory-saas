@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import { useAdvanceTableContext } from 'providers/AdvanceTableProvider';
-import { Table, TableProps } from 'react-bootstrap';
+import { Table, TableProps } from 'components/ui';
 import { flexRender } from '@tanstack/react-table';
 import { File } from 'data/file-manager';
 import React from 'react';

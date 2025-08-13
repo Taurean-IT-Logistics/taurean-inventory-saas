@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction } from 'react';
-import { Nav } from 'react-bootstrap';
+import { Nav } from 'components/ui';
 import blueFront from 'assets/img/products/details/blue_front.png';
 import blueBack from 'assets/img/products/details/blue_back.png';
 import blueSide from 'assets/img/products/details/blue_side.png';

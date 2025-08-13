@@ -32,7 +32,7 @@ export const membersTablecolumns: ColumnDef<Member>[] = [
     cell: ({ row: { original } }) => {
       const { email } = original;
       return (
-        <Link to={`mailto:${email}`} className="fw-semibold">
+        <Link to={`mailto:${email}`} className="font-semibold">
           {email}
         </Link>
       );
@@ -50,7 +50,7 @@ export const membersTablecolumns: ColumnDef<Member>[] = [
     cell: ({ row: { original } }) => {
       const { mobile } = original;
       return (
-        <Link to={`tel:${mobile}`} className="fw-bold text-body-emphasis">
+        <Link to={`tel:${mobile}`} className="font-bold text-body-emphasis">
           {mobile}
         </Link>
       );

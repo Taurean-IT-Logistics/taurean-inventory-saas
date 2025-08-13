@@ -7,7 +7,7 @@ import {
   faFileZipper,
   faImage,
   faMusic
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import ts, { transpile } from 'typescript';
 
 export const getSystemTheme = () =>

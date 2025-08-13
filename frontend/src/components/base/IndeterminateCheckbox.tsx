@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import React, { HTMLProps } from 'react';
-import { Form } from 'react-bootstrap';
+import { Form } from 'components/ui';
 import { FormCheckInputProps } from 'react-bootstrap/esm/FormCheckInput';
 
 interface IndeterminateCheckboxProps extends FormCheckInputProps {

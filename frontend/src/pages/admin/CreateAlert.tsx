@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faSave } from '@fortawesome/free-solid-svg-icons';
+import { Container, Row, Col, Card, Form, Button } from 'components/ui';
+import {  } from '';
+import { faArrowLeft, faSave } from 'lucide-react';
 
 const CreateAlert = () => {
   const [formData, setFormData] = useState({
@@ -80,15 +80,15 @@ const CreateAlert = () => {
   return (
     <div className="min-vh-100">
       <Container fluid className="py-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="h3 fw-bold  mb-1">Create New Alert</h1>
-            <p className="text-muted mb-0">
+            <p className="text-gray-600 dark:text-gray-400 mb-0">
               Create a new system alert or notification
             </p>
           </div>
           <Button as={Link} to="/admin/alerts" variant="outline-secondary">
-            <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+            < icon={faArrowLeft} className="me-2" />
             Back to Alerts
           </Button>
         </div>
@@ -185,12 +185,12 @@ const CreateAlert = () => {
                 </Col>
               </Row>
 
-              <div className="d-flex justify-content-end gap-2 mt-4">
+              <div className="flex justify-content-end gap-2 mt-4">
                 <Button as={Link} to="/admin/alerts" variant="secondary">
                   Cancel
                 </Button>
                 <Button variant="primary" type="submit">
-                  <FontAwesomeIcon icon={faSave} className="me-2" />
+                  < icon={faSave} className="me-2" />
                   Create Alert
                 </Button>
               </div>

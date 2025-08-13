@@ -1,4 +1,4 @@
-import { Card, Col, Form, Row } from 'react-bootstrap';
+import { Card, Col, Form, Row } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 const OrganizeFormCard = ({ className }: { className?: string }) => {
@@ -8,9 +8,9 @@ const OrganizeFormCard = ({ className }: { className?: string }) => {
         <h4 className="mb-4">Organize</h4>
         <Row className="gx-3 gy-4">
           <Col xs={12} sm={6} xl={12}>
-            <div className="d-flex gap-2 mb-2">
+            <div className="flex gap-2 mb-2">
               <h5 className="mb-0 text-body-highlight">Category</h5>
-              <Link className="fw-bold fs-9" to="#!">
+              <Link className="font-bold fs-9" to="#!">
                 Add new category
               </Link>
             </div>
@@ -21,9 +21,9 @@ const OrganizeFormCard = ({ className }: { className?: string }) => {
             </Form.Select>
           </Col>
           <Col xs={12} sm={6} xl={12}>
-            <div className="d-flex gap-2 mb-2">
+            <div className="flex gap-2 mb-2">
               <h5 className="mb-0 text-body-highlight">Vendor</h5>
-              <Link className="fw-bold fs-9" to="#!">
+              <Link className="font-bold fs-9" to="#!">
                 Add new vendor
               </Link>
             </div>
@@ -38,9 +38,9 @@ const OrganizeFormCard = ({ className }: { className?: string }) => {
             <Form.Control placeholder="Collection" />
           </Col>
           <Col xs={12} sm={6} xl={12}>
-            <div className="d-flex gap-2 mb-2">
+            <div className="flex gap-2 mb-2">
               <h5 className="mb-0 text-body-highlight">Tags</h5>
-              <Link className="fw-bold fs-9 lh-sm" to="#!">
+              <Link className="font-bold fs-9 lh-sm" to="#!">
                 View all tags
               </Link>
             </div>

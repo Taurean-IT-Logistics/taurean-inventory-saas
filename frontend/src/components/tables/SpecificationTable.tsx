@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import React, { Fragment } from 'react';
-import { Table } from 'react-bootstrap';
+import { Table } from 'components/ui';
 
 export interface TableRowData {
   key: string;

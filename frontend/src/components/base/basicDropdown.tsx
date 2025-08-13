@@ -1,9 +1,9 @@
 import classNames from 'classnames';
 import { PropsWithChildren } from 'react';
-import { Dropdown } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Dropdown } from 'components/ui';
+import {  } from '';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { faEllipsis } from '@fortawesome/free-solid-svg-icons';
+import { faEllipsis } from 'lucide-react';
 
 interface BasicDropdownProps {
   className?: string;
@@ -29,7 +29,7 @@ const BasicDropdown = ({
           'bg-body-emphasis bg-body-hover dropdown-caret-none'
         )}
       >
-        <FontAwesomeIcon icon={icon} className="fs-10" />
+        < icon={icon} className="fs-10" />
       </Dropdown.Toggle>
       <Dropdown.Menu
         align="end"

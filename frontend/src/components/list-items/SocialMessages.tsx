@@ -3,7 +3,7 @@ import RevealDropdown, {
   RevealDropdownTrigger
 } from 'components/base/RevealDropdown';
 import { Message } from 'data/social/messages';
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 interface SocialMessagesProps {
@@ -13,7 +13,7 @@ interface SocialMessagesProps {
 const SocialMessages = ({ messages }: SocialMessagesProps) => {
   return (
     <>
-      <div className="d-flex flex-between-center pb-3 border-bottom border-dashed">
+      <div className="flex flex-between-center pb-3 border-bottom border-dashed">
         <h3 className="mb-0">
           Messages
           <span className="text-body-tertiary ms-2 fw-normal">(97)</span>
@@ -32,7 +32,7 @@ const SocialMessages = ({ messages }: SocialMessagesProps) => {
       {messages.map(message => (
         <div
           key={message.id}
-          className="d-flex py-3 align-items-center border-bottom border-translucent border-dashed"
+          className="flex py-3 align-items-center border-bottom border-translucent border-dashed"
         >
           <div className="me-2">
             <Avatar

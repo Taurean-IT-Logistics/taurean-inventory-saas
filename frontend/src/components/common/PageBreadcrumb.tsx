@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { Breadcrumb } from 'react-bootstrap';
+import { Breadcrumb } from 'components/ui';
 
 export interface PageBreadcrumbItem {
   label: string;

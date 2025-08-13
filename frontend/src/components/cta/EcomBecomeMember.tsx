@@ -1,10 +1,10 @@
 import React from 'react';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import illustration30 from 'assets/img/light_30.png';
 import illustration30Dark from 'assets/img/dark_30.png';
 import { Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faChevronRight } from 'lucide-react';
 
 const EcomBecomeMember = () => {
   return (
@@ -21,7 +21,7 @@ const EcomBecomeMember = () => {
       <Col xs="auto">
         <div className="text-center text-lg-start">
           <h3 className="text-body-highlight mb-2">
-            <span className="fw-semibold">Want to have the</span> ultimate
+            <span className="font-semibold">Want to have the</span> ultimate
             customer experience?
           </h3>
           <h1 className="display-3 fw-semibold mb-4">
@@ -30,7 +30,7 @@ const EcomBecomeMember = () => {
           </h1>
           <Link to="/sign-up" className="btn btn-lg btn-primary px-7">
             Sign up
-            <FontAwesomeIcon icon={faChevronRight} className="ms-2 fs-9" />
+            < icon={faChevronRight} className="ms-2 fs-9" />
           </Link>
         </div>
       </Col>

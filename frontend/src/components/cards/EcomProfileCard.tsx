@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Col, Row } from 'react-bootstrap';
+import { Card, Col, Row } from 'components/ui';
 import Avatar from 'components/base/Avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { User } from 'types';
@@ -12,7 +12,7 @@ const EcomProfileCard = ({ user }: ProfileCardProps) => {
     <Card className="h-100">
       <Card.Body>
         <div className="border-bottom border-dashed pb-4">
-          <Row className="align-items-center g-3 g-sm-5 text-center text-sm-start">
+          <Row className="items-center g-3 g-sm-5 text-center text-sm-start">
             <Col xs={12} sm="auto">
               <Avatar size="5xl" variant="name">
                 {user?.name.split(' ')[0][0]}
@@ -31,7 +31,7 @@ const EcomProfileCard = ({ user }: ProfileCardProps) => {
             </Col>
           </Row>
         </div>
-        <div className="d-flex flex-between-center pt-4">
+        <div className="flex flex-between-center pt-4">
           <div>
             <h6 className="mb-2 text-body-secondary">Total Spent</h6>
             <h4 className="fs-7 text-body-highlight mb-0">

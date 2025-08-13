@@ -1,6 +1,6 @@
 import Rating from 'components/base/Rating';
 import { Testimonial, testimonials } from 'data/landing/testimonial';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import Carousel from 'react-bootstrap/Carousel';
 import bg2 from 'assets/img/bg/bg-2.png';
 

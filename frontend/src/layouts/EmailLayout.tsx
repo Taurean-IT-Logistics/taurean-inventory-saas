@@ -1,4 +1,4 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import Button from 'components/base/Button';
 import PhoenixOffcanvas from 'components/base/PhoenixOffcanvas';
 import SearchBox from 'components/common/SearchBox';
@@ -6,12 +6,12 @@ import EmailSidebar from 'components/modules/email/EmailSidebar';
 import { useBreakpoints } from 'providers/BreakpointsProvider';
 import { useMainLayoutContext } from 'providers/MainLayoutProvider';
 import React, { PropsWithChildren, useEffect, useState } from 'react';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import InboxToolbar from '../components/modules/email/InboxToolbar';
 import { emails } from 'data/email';
 import EmailRow from '../components/modules/email/EmailRow';
 import { Link } from 'react-router-dom';
-import { faBars, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faBars, faPlus } from 'lucide-react';
 import BulkSelectProvider from 'providers/BulkSelectProvider';
 
 interface EmailLayoutProps {
@@ -50,14 +50,14 @@ const EmailLayout = ({
             className="px-3 text-body-tertiary d-lg-none"
             onClick={() => setOpenSidebar(true)}
           >
-            <FontAwesomeIcon icon={faBars} />
+            < icon={faBars} />
           </Button>
         </Col>
         {page !== 'compose' && (
           <Col className="col-auto d-lg-none">
             <Button variant="primary" className="px-3 px-sm-4">
               <span className="d-none d-sm-inline-block">Compose</span>
-              <FontAwesomeIcon icon={faPlus} className="d-sm-none" />
+              < icon={faPlus} className="d-sm-none" />
             </Button>
           </Col>
         )}

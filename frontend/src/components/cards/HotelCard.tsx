@@ -1,6 +1,6 @@
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
-import { faMapMarkerAlt, faStar } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { MapPin, Star } from 'lucide-react';
+import {  } from '';
 import Badge from 'components/base/Badge';
 import { hotelInterFace } from 'data/travel-agency/customer/hotel';
 import { currencyFormat } from 'helpers/utils';
@@ -14,7 +14,7 @@ const HotelCard = ({ hotelInfo }: { hotelInfo: hotelInterFace }) => {
       <img src={img} alt="" height={220} className="img-fluid" />
       <div className="hover-actions top-0 end-0 mt-4 me-4 z-5">
         <button className="btn btn-wish">
-          <FontAwesomeIcon icon={faHeart} transform="down-1" />
+          < icon={faHeart} transform="down-1" />
         </button>
       </div>
       <div className="backdrop-faded backdrop-secondary-dark h-100 d-flex flex-column justify-content-end">
@@ -25,13 +25,13 @@ const HotelCard = ({ hotelInfo }: { hotelInfo: hotelInterFace }) => {
           {name}
         </Link>
         <p className="mb-2 text-secondary-lighter">
-          <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" />
+          < icon={MapPin} className="me-2" />
           {location}
         </p>
-        <div className="d-flex align-items-center gap-3">
+        <div className="flex align-items-center gap-3">
           <Badge variant="phoenix" bg="warning" className="fs-8 fw-normal">
-            <FontAwesomeIcon
-              icon={faStar}
+            <
+              icon={Star}
               className="text-warning-emphasis me-1 fs-9"
               transform="up-1"
             />

@@ -47,7 +47,7 @@ const columns: ColumnDef<Booking>[] = [
     accessorKey: 'facility.name',
     header: 'Facility',
     cell: ({ row: { original } }) => (
-      <Link to="#!" className="fw-semibold text-primary">
+      <Link to="#!" className="font-semibold text-primary">
         {original.facility?.name}
       </Link>
     ),

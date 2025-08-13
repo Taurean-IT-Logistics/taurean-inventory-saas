@@ -1,10 +1,10 @@
-import { faClock } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Clock } from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import Avatar from 'components/base/Avatar';
 import RevealDropdown from 'components/base/RevealDropdown';
 import { Notification } from 'data/notifications';
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'components/ui';
 
 export interface NotificationItemProps {
   notification: Notification;
@@ -29,8 +29,8 @@ const NotificationItem = ({
         }
       )}
     >
-      <div className="d-flex align-items-center justify-content-between position-relative">
-        <div className="d-flex">
+      <div className="flex align-items-center justify-content-between position-relative">
+        <div className="flex">
           <Avatar
             src={notification.avatar}
             placeholder={!notification.avatar}
@@ -50,7 +50,7 @@ const NotificationItem = ({
               </span>
               <span>{notification.interaction}</span>
               {type === 'pageItem' && (
-                <span className="fw-bold">{notification.detail}</span>
+                <span className="font-bold">{notification.detail}</span>
               )}
 
               <span className="ms-2 text-body-quaternary text-opactity-75 fw-bold fs-10">
@@ -58,8 +58,8 @@ const NotificationItem = ({
               </span>
             </p>
             <p className="text-body-secondary fs-9 mb-0">
-              <FontAwesomeIcon icon={faClock} className="me-1" />
-              <span className="fw-bold">{notification.time}</span>
+              < icon={Clock} className="me-1" />
+              <span className="font-bold">{notification.time}</span>
               {notification.date}
             </p>
           </div>

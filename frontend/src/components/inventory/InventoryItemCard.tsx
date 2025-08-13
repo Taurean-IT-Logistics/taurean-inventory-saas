@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, Button, Badge } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShoppingCart } from '@fortawesome/free-solid-svg-icons';
+import { Card, Button, Badge } from 'components/ui';
+import {  } from '';
+import { faShoppingCart } from 'lucide-react';
 import { InventoryItem } from 'types';
 import { currencyFormat } from 'helpers/utils';
 import { getResourceUrl } from 'controllers';
@@ -52,7 +52,7 @@ const InventoryItemCard = ({ item }: InventoryItemCardProps) => {
       style={{ textDecoration: 'none', display: 'block' }}
     >
       <Card className="h-100 border-secondary" style={{ minWidth: 290 }}>
-        <div className="position-relative">
+        <div className="relative">
           <Card.Img
             variant="top"
             src={image}
@@ -65,26 +65,26 @@ const InventoryItemCard = ({ item }: InventoryItemCardProps) => {
           </div>
         </div>
 
-        <Card.Body className="d-flex flex-column">
+        <Card.Body className="flex flex-column">
           <div className="flex-grow-1">
             <Card.Title className="text-white h6 mb-2">{item.name}</Card.Title>
-            <Card.Text className="text-muted small mb-2">
+            <Card.Text className="text-gray-600 dark:text-gray-400 small mb-2">
               {item.description || 'No description available'}
             </Card.Text>
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="fw-bold">
+            <div className="flex justify-content-between align-items-center mb-2">
+              <span className="font-bold">
                 {currencyFormat(price)}/
                 {item.pricing.find(p => p.isDefault || p.unit === 'day').unit}
               </span>
               <Badge bg="secondary">{item.category || 'Uncategorized'}</Badge>
             </div>
-            <div className="text-muted small">
+            <div className="text-gray-600 dark:text-gray-400 small">
               <div>Quantity: {item.quantity || 0}</div>
               <div className="text-info">SKU: {item.sku || 'N/A'}</div>
             </div>
           </div>
 
-          <div className="d-flex gap-2 mt-3">
+          <div className="flex gap-2 mt-3">
             {isAvailable ? (
               <Button
                 variant="primary"
@@ -93,7 +93,7 @@ const InventoryItemCard = ({ item }: InventoryItemCardProps) => {
                 as={Link}
                 to={`/item/${item._id}`}
               >
-                <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
+                < icon={faShoppingCart} className="me-1" />
                 Rent Item
               </Button>
             ) : (

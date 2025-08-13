@@ -1,15 +1,15 @@
 import {
-  faCalendarAlt,
+  Calendar,
   faCaretDown,
   faGlobeAsia,
   faImage,
-  faMapMarkerAlt,
+  MapPin,
   faTag
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
 import { useState } from 'react';
-import { Card, Dropdown, Form } from 'react-bootstrap';
+import { Card, Dropdown, Form } from 'components/ui';
 
 const FeedTextarea = ({ className }: { className?: string }) => {
   const [privacy, setPrivacy] = useState('Public');
@@ -24,27 +24,27 @@ const FeedTextarea = ({ className }: { className?: string }) => {
         />
       </Card.Body>
       <Card.Footer className="p-3">
-        <div className="d-flex justify-content-between align-items-center">
+        <div className="flex justify-content-between align-items-center">
           <Button className="p-0 me-3">
-            <FontAwesomeIcon icon={faImage} className="fs-8" />
+            < icon={faImage} className="fs-8" />
           </Button>
           <Button className="p-0 me-3">
-            <FontAwesomeIcon icon={faCalendarAlt} className="fs-8" />
+            < icon={Calendar} className="fs-8" />
           </Button>
           <Button className="p-0 me-3">
-            <FontAwesomeIcon icon={faMapMarkerAlt} className="fs-8" />
+            < icon={MapPin} className="fs-8" />
           </Button>
           <Button className="p-0 me-3">
-            <FontAwesomeIcon icon={faTag} className="fs-8" />
+            < icon={faTag} className="fs-8" />
           </Button>
           <Dropdown className="me-3 flex-1">
             <Dropdown.Toggle
               variant=""
               className="p-0 dropdown-caret-none d-flex align-items-center"
             >
-              <FontAwesomeIcon icon={faGlobeAsia} className="fs-8 me-1" />
+              < icon={faGlobeAsia} className="fs-8 me-1" />
               <span className="me-1 lh-base d-none d-sm-block">{privacy}</span>
-              <FontAwesomeIcon
+              <
                 icon={faCaretDown}
                 className="fs-10 text-body-quaternary"
               />

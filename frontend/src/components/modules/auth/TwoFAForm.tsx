@@ -2,7 +2,7 @@
 import classNames from 'classnames';
 import Button from 'components/base/Button';
 import React, { ChangeEvent, useRef, useState } from 'react';
-import { Form } from 'react-bootstrap';
+import { Form } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 const totalInputLength = 6;
@@ -54,7 +54,7 @@ const TwoFAForm = ({ layout }: { layout?: 'simple' | 'card' | 'split' }) => {
             <Link to="#!"> Use another method</Link>
           </p>
           <div className="verification-form">
-            <div className="d-flex align-items-center gap-2 mb-3">
+            <div className="flex align-items-center gap-2 mb-3">
               {Array(totalInputLength)
                 .fill('')
                 .map((_, index) => (

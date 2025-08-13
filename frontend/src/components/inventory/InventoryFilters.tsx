@@ -1,5 +1,5 @@
-import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Search } from 'lucide-react';
+import {  } from '';
 
 interface InventoryFiltersProps {
   searchTerm: string;
@@ -25,7 +25,7 @@ const InventoryFilters = ({
           <div className="col-md-6">
             <div className="input-group">
               <span className="input-group-text border-secondary">
-                <FontAwesomeIcon icon={faSearch} />
+                < icon={Search} />
               </span>
               <input
                 type="text"
@@ -51,7 +51,7 @@ const InventoryFilters = ({
             </select>
           </div>
           <div className="col-md-3 text-end">
-            <span className="text-muted small">
+            <span className="text-gray-600 dark:text-gray-400 small">
               Showing {filteredCount} of {totalCount} items
             </span>
           </div>

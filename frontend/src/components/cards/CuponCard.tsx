@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, InputGroup, Form, Button } from 'react-bootstrap';
+import { Card, InputGroup, Form, Button } from 'components/ui';
 
 const CouponCard = () => {
   return (

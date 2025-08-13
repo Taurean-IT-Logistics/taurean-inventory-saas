@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Form, Row, Col, InputGroup } from 'react-bootstrap';
+import { Card, Form, Row, Col, InputGroup } from 'components/ui';
 import { Facility } from 'types';
 
 interface AvailabilityPricingStepProps {
@@ -52,14 +52,14 @@ const AvailabilityPricingStep = ({
       </Card.Header>
       <Card.Body>
         <div className="mb-4">
-          <Form.Label className="fw-semibold mb-3">
+          <Form.Label className="font-semibold mb-3">
             Weekly Availability
           </Form.Label>
           {formData.availability && formData.availability.length === 7 ? (
             formData.availability.map((day, index) => (
               <Card key={day.day} className="mb-2">
                 <Card.Body className="py-2">
-                  <Row className="align-items-center gap-2">
+                  <Row className="items-center gap-2">
                     <Col md={3}>
                       <Form.Select size="sm" value={day.day} disabled>
                         {DAYS.map(d => (
@@ -115,7 +115,7 @@ const AvailabilityPricingStep = ({
         </div>
 
         <div className="mb-4">
-          <Form.Label className="fw-semibold">Pricing *</Form.Label>
+          <Form.Label className="font-semibold">Pricing *</Form.Label>
           <Row className="gap-2">
             <Col md={6}>
               <Form.Select

@@ -6,8 +6,8 @@ import {
   faTimes,
   faEye,
   faEyeSlash
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
 import Section from 'components/base/Section';
 import EcoimDefaultAddressCard from 'components/cards/EcoimDefaultAddressCard';
@@ -18,7 +18,7 @@ import { useAppSelector, useAppDispatch } from 'hooks/useAppDispatch';
 import { StateManagement } from 'lib';
 import { RootState } from 'lib/store';
 import { useEffect, useState } from 'react';
-import { Col, Modal, Row, Form } from 'react-bootstrap';
+import { Col, Modal, Row, Form } from 'components/ui';
 import { User } from 'types';
 
 interface EditDetailsModalProps {
@@ -217,8 +217,8 @@ const EditDetailsModal = ({
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered>
       <Modal.Header closeButton className="border-bottom">
-        <Modal.Title className="d-flex align-items-center">
-          <FontAwesomeIcon icon={faPencil} className="me-2 text-primary" />
+        <Modal.Title className="flex align-items-center">
+          < icon={faPencil} className="me-2 text-primary" />
           Edit Profile Details
         </Modal.Title>
       </Modal.Header>
@@ -228,7 +228,7 @@ const EditDetailsModal = ({
           <Row className="g-3">
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="fw-semibold">
+                <Form.Label className="font-semibold">
                   Full Name <span className="text-danger">*</span>
                 </Form.Label>
                 <Form.Control
@@ -247,7 +247,7 @@ const EditDetailsModal = ({
 
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="fw-semibold">
+                <Form.Label className="font-semibold">
                   Username <span className="text-danger">*</span>
                 </Form.Label>
                 <Form.Control
@@ -266,7 +266,7 @@ const EditDetailsModal = ({
 
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="fw-semibold">
+                <Form.Label className="font-semibold">
                   Email Address <span className="text-danger">*</span>
                 </Form.Label>
                 <Form.Control
@@ -285,7 +285,7 @@ const EditDetailsModal = ({
 
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="fw-semibold">Phone Number</Form.Label>
+                <Form.Label className="font-semibold">Phone Number</Form.Label>
                 <Form.Control
                   type="tel"
                   name="phone"
@@ -304,16 +304,16 @@ const EditDetailsModal = ({
           {/* Password Change Section */}
           <div className="mt-4 pt-3 border-top">
             <h6 className="mb-3 d-flex align-items-center">
-              <FontAwesomeIcon icon={faKey} className="me-2 text-primary" />
+              < icon={faKey} className="me-2 text-primary" />
               Change Password (Optional)
             </h6>
             <Row className="g-3">
               <Col md={12}>
                 <Form.Group>
-                  <Form.Label className="fw-semibold">
+                  <Form.Label className="font-semibold">
                     Current Password
                   </Form.Label>
-                  <div className="position-relative">
+                  <div className="relative">
                     <Form.Control
                       type={showCurrentPassword ? 'text' : 'password'}
                       name="currentPassword"
@@ -331,9 +331,9 @@ const EditDetailsModal = ({
                       }
                       type="button"
                     >
-                      <FontAwesomeIcon
+                      <
                         icon={showCurrentPassword ? faEyeSlash : faEye}
-                        className="text-muted"
+                        className="text-gray-600 dark:text-gray-400"
                       />
                     </Button>
                   </div>
@@ -345,8 +345,8 @@ const EditDetailsModal = ({
 
               <Col md={6}>
                 <Form.Group>
-                  <Form.Label className="fw-semibold">New Password</Form.Label>
-                  <div className="position-relative">
+                  <Form.Label className="font-semibold">New Password</Form.Label>
+                  <div className="relative">
                     <Form.Control
                       type={showNewPassword ? 'text' : 'password'}
                       name="newPassword"
@@ -362,9 +362,9 @@ const EditDetailsModal = ({
                       onClick={() => setShowNewPassword(!showNewPassword)}
                       type="button"
                     >
-                      <FontAwesomeIcon
+                      <
                         icon={showNewPassword ? faEyeSlash : faEye}
-                        className="text-muted"
+                        className="text-gray-600 dark:text-gray-400"
                       />
                     </Button>
                   </div>
@@ -372,7 +372,7 @@ const EditDetailsModal = ({
                     {errors.newPassword}
                   </Form.Control.Feedback>
                   {formData.newPassword && formData.newPassword.length < 6 && (
-                    <Form.Text className="text-muted">
+                    <Form.Text className="text-gray-600 dark:text-gray-400">
                       Password must be at least 6 characters long
                     </Form.Text>
                   )}
@@ -381,10 +381,10 @@ const EditDetailsModal = ({
 
               <Col md={6}>
                 <Form.Group>
-                  <Form.Label className="fw-semibold">
+                  <Form.Label className="font-semibold">
                     Confirm New Password
                   </Form.Label>
-                  <div className="position-relative">
+                  <div className="relative">
                     <Form.Control
                       type={showConfirmPassword ? 'text' : 'password'}
                       name="confirmPassword"
@@ -402,9 +402,9 @@ const EditDetailsModal = ({
                       }
                       type="button"
                     >
-                      <FontAwesomeIcon
+                      <
                         icon={showConfirmPassword ? faEyeSlash : faEye}
-                        className="text-muted"
+                        className="text-gray-600 dark:text-gray-400"
                       />
                     </Button>
                   </div>
@@ -414,14 +414,14 @@ const EditDetailsModal = ({
                 </Form.Group>
               </Col>
             </Row>
-            <small className="text-muted mt-2 d-block">
+            <small className="text-gray-600 dark:text-gray-400 mt-2 d-block">
               Leave password fields empty if you don't want to change your
               password
             </small>
           </div>
 
           <div className="mt-4 pt-3 border-top">
-            <small className="text-muted">
+            <small className="text-gray-600 dark:text-gray-400">
               <span className="text-danger">*</span> Required fields
             </small>
           </div>
@@ -433,7 +433,7 @@ const EditDetailsModal = ({
           variant="phoenix-secondary"
           onClick={handleClose}
           disabled={isLoading}
-          startIcon={<FontAwesomeIcon icon={faTimes} />}
+          startIcon={< icon={faTimes} />}
         >
           Cancel
         </Button>
@@ -441,7 +441,7 @@ const EditDetailsModal = ({
           variant="primary"
           onClick={handleSubmit}
           disabled={isLoading}
-          startIcon={<FontAwesomeIcon icon={faSave} />}
+          startIcon={< icon={faSave} />}
         >
           {isLoading ? 'Saving...' : 'Save Changes'}
         </Button>
@@ -498,20 +498,20 @@ const Profile = () => {
   return (
     <div className="pt-5 mb-9">
       <Section fluid className="py-0">
-        <Row className="align-items-center justify-content-between g-3 mb-4">
+        <Row className="items-center justify-content-between g-3 mb-4">
           <Col xs="auto">
             <h2 className="mb-0">Profile</h2>
           </Col>
-          <Col xs="auto" className="d-flex flex-wrap gap-2 gap-sm-3">
+          <Col xs="auto" className="flex flex-wrap gap-2 gap-sm-3">
             <Button
               variant="phoenix-danger"
-              startIcon={<FontAwesomeIcon className="me-2" icon={faTrashAlt} />}
+              startIcon={< className="me-2" icon={faTrashAlt} />}
             >
               Request Account Deletion
             </Button>
             <Button
               variant="phoenix-secondary"
-              startIcon={<FontAwesomeIcon className="me-2" icon={faPencil} />}
+              startIcon={< className="me-2" icon={faPencil} />}
               onClick={handleEditDetails}
             >
               Edit Details

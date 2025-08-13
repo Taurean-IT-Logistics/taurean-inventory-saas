@@ -1,9 +1,9 @@
-import { ProgressBar } from 'react-bootstrap';
+import { ProgressBar } from 'components/ui';
 
 const DealForecasrProgressBar = () => {
   return (
     <div className="w-100">
-      <div className="d-flex flex-start">
+      <div className="flex flex-start">
         <div style={{ width: '20.72%' }}>
           <p className="mb-2 text-body-tertiary fw-semibold fs-9">$21.0k</p>
         </div>

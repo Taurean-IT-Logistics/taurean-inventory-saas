@@ -1,6 +1,6 @@
-import { faStar } from '@fortawesome/free-solid-svg-icons';
-import { faStar as farStar } from '@fortawesome/free-regular-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Star } from 'lucide-react';
+import { Star as farStar } from '@fortawesome/free-regular-svg-icons';
+import {  } from '';
 import classNames from 'classnames';
 import {
   Rating as ReactRating,
@@ -23,13 +23,13 @@ const Rating = ({
     <ReactRating
       allowFraction
       fillIcon={
-        <FontAwesomeIcon
-          icon={faStar}
+        <
+          icon={Star}
           className={classNames(iconClass, `text-${fillIconColor}`)}
         />
       }
       emptyIcon={
-        <FontAwesomeIcon
+        <
           icon={farStar}
           className={classNames(iconClass, `text-${emptyIconColor}`)}
         />

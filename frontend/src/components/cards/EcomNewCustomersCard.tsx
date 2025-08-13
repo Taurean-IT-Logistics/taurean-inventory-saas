@@ -1,12 +1,12 @@
 import Badge from 'components/base/Badge';
 import EcomNewCustomersChart from 'components/charts/e-charts/EcomNewCustomersChart';
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 
 const EcomNewCustomersCard = () => {
   return (
     <Card className="h-100">
       <Card.Body>
-        <div className="d-flex justify-content-between">
+        <div className="flex justify-content-between">
           <div>
             <h5 className="mb-1">
               New customers

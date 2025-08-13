@@ -1,6 +1,6 @@
 import Button from 'components/base/Button';
 import { getNumbersInRange } from 'helpers/utils';
-import { Col, Form, Row } from 'react-bootstrap';
+import { Col, Form, Row } from 'components/ui';
 
 const MONTHS = [
   'January',

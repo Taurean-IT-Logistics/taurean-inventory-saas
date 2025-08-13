@@ -1,5 +1,5 @@
 import { useSettingsPanelContext } from 'providers/SettingsPanelProvider';
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 
 const SettingsToggle = () => {
   const {
@@ -13,7 +13,7 @@ const SettingsToggle = () => {
 
   return (
     <Card className="setting-toggle" onClick={handleClick}>
-      <Card.Body className="d-flex align-items-center px-2 py-1">
+      <Card.Body className="flex align-items-center px-2 py-1">
         <div
           className="position-relative rounded-start"
           style={{ height: 34, width: 28 }}

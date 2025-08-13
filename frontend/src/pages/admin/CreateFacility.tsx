@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Container, Row, Col, Button, Alert, Spinner } from 'react-bootstrap';
+import { Container, Row, Col, Button, Alert, Spinner } from 'components/ui';
 import { Facility } from 'types';
 import FacilityFormHeader from 'components/facilities/FacilityFormHeader';
 import FacilityProgressSteps from 'components/facilities/FacilityProgressSteps';
@@ -183,7 +183,7 @@ const CreateFacility = () => {
 
         <FacilityProgressSteps currentStep={step} />
 
-        <Row className="justify-content-center">
+        <Row className="justify-center">
           <Col lg={10} xl={8}>
             <form onSubmit={handleSubmit}>
               {step === 1 && (
@@ -216,7 +216,7 @@ const CreateFacility = () => {
               )}
 
               {/* Navigation Buttons */}
-              <div className="d-flex justify-content-between mt-4">
+              <div className="flex justify-content-between mt-4">
                 <div>
                   {step > 1 && (
                     <Button

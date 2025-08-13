@@ -7,14 +7,14 @@ import {
   Form,
   Button,
   Alert
-} from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'components/ui';
+import {  } from '';
 import {
   faArrowLeft,
   faSave,
   faPercent,
-  faExclamationTriangle
-} from '@fortawesome/free-solid-svg-icons';
+  AlertTriangle
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Tax } from 'types';
 import { TaxController } from 'controllers';
@@ -112,28 +112,28 @@ const CreateTax = () => {
 
         <Row className="mb-4">
           <Col>
-            <div className="d-flex justify-content-between align-items-center">
-              <div className="d-flex align-items-center">
-                <FontAwesomeIcon
+            <div className="flex justify-content-between align-items-center">
+              <div className="flex align-items-center">
+                <
                   icon={faPercent}
                   size="2x"
                   className="text-primary me-3"
                 />
                 <div>
                   <h1 className="h3  mb-1">Create New Tax</h1>
-                  <p className="text-muted mb-0">
+                  <p className="text-gray-600 dark:text-gray-400 mb-0">
                     Configure a new tax rate for your system
                   </p>
                 </div>
               </div>
-              <div className="d-flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="border-secondary border"
                   as={Link}
                   to="/admin"
-                  className="d-flex align-items-center"
+                  className="flex align-items-center"
                 >
-                  <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+                  < icon={faArrowLeft} className="me-2" />
                   Back to Dashboard
                 </Button>
               </div>
@@ -149,7 +149,7 @@ const CreateTax = () => {
             dismissible
             onClose={() => setAlert(null)}
           >
-            <FontAwesomeIcon icon={faExclamationTriangle} className="me-2" />
+            < icon={AlertTriangle} className="me-2" />
             {alert.message}
           </Alert>
         )}
@@ -177,7 +177,7 @@ const CreateTax = () => {
                         placeholder="e.g., Value Added Tax (VAT)"
                         required
                       />
-                      <Form.Text className="text-muted">
+                      <Form.Text className="text-gray-600 dark:text-gray-400">
                         Enter a descriptive name for this tax
                       </Form.Text>
                     </Col>
@@ -198,7 +198,7 @@ const CreateTax = () => {
                         placeholder="0.00"
                         required
                       />
-                      <Form.Text className="text-muted">
+                      <Form.Text className="text-gray-600 dark:text-gray-400">
                         Enter the tax rate as a percentage (0-100)
                       </Form.Text>
                     </Col>
@@ -218,7 +218,7 @@ const CreateTax = () => {
                         placeholder="e.g., Federal, State, Local"
                         required
                       />
-                      <Form.Text className="text-muted">
+                      <Form.Text className="text-gray-600 dark:text-gray-400">
                         Specify the type/category of this tax
                       </Form.Text>
                     </Col>
@@ -242,7 +242,7 @@ const CreateTax = () => {
                           Both Inventory & Facilities
                         </option>
                       </Form.Select>
-                      <Form.Text className="text-muted">
+                      <Form.Text className="text-gray-600 dark:text-gray-400">
                         Choose what this tax applies to
                       </Form.Text>
                     </Col>
@@ -261,16 +261,16 @@ const CreateTax = () => {
 
                   <hr className="border-secondary my-4" />
 
-                  <div className="d-flex justify-content-between">
+                  <div className="flex justify-content-between">
                     <Button as={Link} to="/taxes" variant="outline-secondary">
                       Cancel
                     </Button>
                     <Button
                       variant="primary"
                       type="submit"
-                      className="d-flex align-items-center"
+                      className="flex align-items-center"
                     >
-                      <FontAwesomeIcon icon={faSave} className="me-2" />
+                      < icon={faSave} className="me-2" />
                       Create Tax
                     </Button>
                   </div>

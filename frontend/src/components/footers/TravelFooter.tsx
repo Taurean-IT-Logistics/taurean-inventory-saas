@@ -1,8 +1,8 @@
-import { faEnvelope, faPhone } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEnvelope, faPhone } from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
 import React from 'react';
-import { Col, Form, Row } from 'react-bootstrap';
+import { Col, Form, Row } from 'components/ui';
 import { Link } from 'react-router-dom';
 import bg43 from 'assets/img/bg/43.png';
 const footerList1: string[] = [
@@ -60,7 +60,7 @@ const TravelFooter = () => {
                 to="mailto:info@phoenixtravels.com"
                 className="d-block text-secondary-lighter mb-1 text-nowrap"
               >
-                <FontAwesomeIcon
+                <
                   icon={faEnvelope}
                   className="me-2 me-lg-1 me-xl-2"
                 />
@@ -70,7 +70,7 @@ const TravelFooter = () => {
                 to="tel:+13134048290"
                 className="d-block text-secondary-lighter mb-1"
               >
-                <FontAwesomeIcon icon={faPhone} className="me-2" />
+                < icon={faPhone} className="me-2" />
                 +13134048290
               </Link>
             </Col>
@@ -78,11 +78,11 @@ const TravelFooter = () => {
               <h2 className="text-white mb-2 fw-semibold">
                 Enjoy your trip to the fullest
               </h2>
-              <p className="mb-5 text-secondary-lighter">
+              <p className="mb-8 text-secondary-lighter">
                 Sign up and get notified
                 <br /> about best deals immediately
               </p>
-              <div className="d-flex gap-2">
+              <div className="flex gap-2">
                 <div className="form-icon-container flex-1">
                   <Form.Control
                     id="PickPlace"
@@ -90,7 +90,7 @@ const TravelFooter = () => {
                     placeholder="Your email address"
                     className="form-icon-input"
                   />
-                  <FontAwesomeIcon
+                  <
                     icon={faEnvelope}
                     className="form-icon text-body fs-9"
                     transform="up-2"

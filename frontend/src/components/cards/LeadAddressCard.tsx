@@ -7,13 +7,13 @@ import {
 import classNames from 'classnames';
 import Button from 'components/base/Button';
 import LeadInfoItem from 'components/info-items/LeadInfoItem';
-import { Card } from 'react-bootstrap';
+import { Card } from 'components/ui';
 
 const LeadAddressCard = ({ className }: { className?: string }) => {
   return (
     <Card className={classNames(className)}>
       <Card.Body>
-        <div className="d-flex align-items-center mb-5">
+        <div className="flex align-items-center mb-5">
           <h3>Address</h3>
           <Button variant="link" className="px-3">
             Edit

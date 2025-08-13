@@ -1,9 +1,9 @@
-import { Card, Col, Row } from 'react-bootstrap';
+import { Card, Col, Row } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 import Button from 'components/base/Button';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import { faCalendarPlus } from '@fortawesome/free-regular-svg-icons';
-import { faHeart, faShareNodes } from '@fortawesome/free-solid-svg-icons';
+import { faHeart, faShareNodes } from 'lucide-react';
 
 const EventTitleCard = ({ className }: { className?: string }) => {
   return (
@@ -16,13 +16,13 @@ const EventTitleCard = ({ className }: { className?: string }) => {
         <p className="fs-0 mb-4 text-body-tertiary">
           Tavern on the Greend, New York
         </p>
-        <Card className="mb-5 mb-xxl-7">
+        <Card className="mb-8 mb-xxl-7">
           <Card.Body>
             <Row className="gy-5">
-              <Col md={6} className="d-flex justify-content-between">
+              <Col md={6} className="flex justify-content-between">
                 <div>
                   <div className="mb-3">
-                    <div className="d-flex align-items-center">
+                    <div className="flex align-items-center">
                       <div className="px-2 py-1 bg-info-subtle rounded">
                         <FeatherIcon
                           icon="map-pin"
@@ -42,7 +42,7 @@ const EventTitleCard = ({ className }: { className?: string }) => {
               </Col>
               <Col md={6}>
                 <div className="mb-3">
-                  <div className="d-flex align-items-center">
+                  <div className="flex align-items-center">
                     <div className="px-2 py-1 bg-primary-subtle rounded">
                       <FeatherIcon
                         icon="clock"
@@ -72,7 +72,7 @@ const EventTitleCard = ({ className }: { className?: string }) => {
               variant="phoenix-primary"
               className="w-100"
               startIcon={
-                <FontAwesomeIcon icon={faCalendarPlus} className="me-2" />
+                < icon={faCalendarPlus} className="me-2" />
               }
             >
               Add to Calendar
@@ -82,7 +82,7 @@ const EventTitleCard = ({ className }: { className?: string }) => {
             <Button
               variant="phoenix-primary"
               className="w-100"
-              startIcon={<FontAwesomeIcon icon={faHeart} className="me-2" />}
+              startIcon={< icon={faHeart} className="me-2" />}
             >
               3677
             </Button>
@@ -92,7 +92,7 @@ const EventTitleCard = ({ className }: { className?: string }) => {
               variant="phoenix-primary"
               className="w-100"
               startIcon={
-                <FontAwesomeIcon icon={faShareNodes} className="me-2" />
+                < icon={faShareNodes} className="me-2" />
               }
             >
               4467

@@ -4,8 +4,8 @@ import AdvanceTableFooter from 'components/base/AdvanceTableFooter';
 import useAdvanceTable from 'hooks/useAdvanceTable';
 import AdvanceTableProvider from 'providers/AdvanceTableProvider';
 import Badge from 'components/base/Badge';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { visitorData } from 'data/travel-agency/travelAgency';
 
@@ -16,7 +16,7 @@ const columns: ColumnDef<visitorData>[] = [
     accessorFn: ({ country }) => country.name,
     cell: ({ row: { original } }) => (
       <Link
-        className="d-flex align-items-center text-primary py-md-1 py-xxl-0"
+        className="flex align-items-center text-primary py-md-1 py-xxl-0"
         to="#!"
       >
         <img src={original.country.flag} alt="" width="40" />
@@ -51,7 +51,7 @@ const columns: ColumnDef<visitorData>[] = [
     accessorKey: 'status',
     cell: ({ row: { original } }) => (
       <Badge className="fs-10" variant="phoenix" bg={original.status.type}>
-        <FontAwesomeIcon icon={faPlus} className="me-1" />
+        < icon={faPlus} className="me-1" />
         {original.status.label}
       </Badge>
     ),

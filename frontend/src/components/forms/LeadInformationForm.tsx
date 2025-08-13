@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { Col, FloatingLabel, Form, Row } from 'react-bootstrap';
+import { Col, FloatingLabel, Form, Row } from 'components/ui';
 
 const LeadInformationForm = ({ className }: { className?: string }) => {
   return (

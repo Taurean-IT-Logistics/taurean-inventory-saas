@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
+import { Modal, Button, Form, Row, Col } from 'components/ui';
 import { Tax } from 'types';
 
 interface TaxModalProps {

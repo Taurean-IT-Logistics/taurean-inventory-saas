@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import React, { PropsWithChildren, ReactElement } from 'react';
-import { FloatingLabelProps, Form } from 'react-bootstrap';
+import { FloatingLabelProps, Form } from 'components/ui';
 
 export interface PhoenixFloatingLabelProps extends FloatingLabelProps {
   startComponent?: ReactElement;

@@ -1,7 +1,7 @@
-import { faBuilding, faGlobe } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBuilding, faGlobe } from 'lucide-react';
+import {  } from '';
 import React from 'react';
-import { Form } from 'react-bootstrap';
+import { Form } from 'components/ui';
 
 const SettingsCompanyInfo = () => {
   return (
@@ -22,7 +22,7 @@ const SettingsCompanyInfo = () => {
             COMPANY NAME
           </label>
         </Form.Floating>
-        <FontAwesomeIcon
+        <
           icon={faBuilding}
           className="text-body fs-9 form-icon"
         />
@@ -42,7 +42,7 @@ const SettingsCompanyInfo = () => {
             WEBSITE
           </label>
         </Form.Floating>
-        <FontAwesomeIcon icon={faGlobe} className="text-body fs-9 form-icon" />
+        < icon={faGlobe} className="text-body fs-9 form-icon" />
       </div>
     </>
   );

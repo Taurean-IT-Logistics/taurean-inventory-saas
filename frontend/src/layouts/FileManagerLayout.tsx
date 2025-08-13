@@ -4,7 +4,7 @@ import Sidebar from 'components/modules/file-manager/sidebar/Sidebar';
 import RecentFilesCard from 'components/modules/file-manager/RecentFilesCard';
 import { defaultBreadcrumbItems } from 'data/commonData';
 import React, { PropsWithChildren, useState } from 'react';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import FileManagerTableWrapper from 'components/tables/FileManagerTableWrapper';
 
 const FileManagerLayout = ({ children }: PropsWithChildren) => {

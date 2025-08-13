@@ -1,14 +1,17 @@
 import EcommerceFooter from 'components/footers/EcommerceFooter';
 import EcommerceTopbar from 'components/navbars/ecommerce/EcommerceTopBar';
-import { Outlet } from 'react-router-dom';
 
-const EcommerceLayout = () => {
+interface EcommerceLayoutProps {
+  children: React.ReactNode;
+}
+
+const EcommerceLayout = ({ children }: EcommerceLayoutProps) => {
   return (
-    <div>
+    <div className="min-h-screen flex flex-col">
       <EcommerceTopbar />
-      <div className="position-relative">
-        <Outlet />
-      </div>
+      <main className="relative flex-1">
+        {children}
+      </main>
       <EcommerceFooter />
     </div>
   );

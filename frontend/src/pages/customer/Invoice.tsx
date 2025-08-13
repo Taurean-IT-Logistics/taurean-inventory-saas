@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import {
   faPrint,
   faDownload,
   faArrowLeft,
   faFileInvoice,
   faEye,
-  faCheckCircle
-} from '@fortawesome/free-solid-svg-icons';
+  CheckCircle
+} from 'lucide-react';
 import {
   Container,
   Row,
@@ -18,7 +18,7 @@ import {
   Table,
   Badge,
   Spinner
-} from 'react-bootstrap';
+} from 'components/ui';
 import { Transaction } from 'types';
 import { currencyFormat } from 'helpers/utils';
 import { TransactionController } from 'controllers';
@@ -459,16 +459,16 @@ const TransactionsTable = ({
     <Card className="border-secondary">
       <Card.Header className="border-secondary d-flex justify-content-between align-items-center">
         <h5 className="mb-0">
-          <FontAwesomeIcon icon={faFileInvoice} className="me-2" />
+          < icon={faFileInvoice} className="me-2" />
           All Transactions
         </h5>
-        <div className="d-flex gap-2">
+        <div className="flex gap-2">
           <Button variant="outline-primary" size="sm" onClick={printTable}>
-            <FontAwesomeIcon icon={faPrint} className="me-2" />
+            < icon={faPrint} className="me-2" />
             Print Report
           </Button>
           <Button variant="outline-success" size="sm" onClick={exportToCSV}>
-            <FontAwesomeIcon icon={faDownload} className="me-2" />
+            < icon={faDownload} className="me-2" />
             Export CSV
           </Button>
         </div>
@@ -493,22 +493,22 @@ const TransactionsTable = ({
                   <tr key={index}>
                     <td>
                       <div>
-                        <div className="fw-semibold">{txn.ref}</div>
-                        <small className="text-muted">{txn.description}</small>
+                        <div className="font-semibold">{txn.ref}</div>
+                        <small className="text-gray-600 dark:text-gray-400">{txn.description}</small>
                       </div>
                     </td>
                     <td>
                       <Badge bg="secondary">{txn.type}</Badge>
                     </td>
                     <td>
-                      <span className="fw-bold">
+                      <span className="font-bold">
                         {currencyFormat(txn.amount)}
                       </span>
                     </td>
                     <td>{getMethodBadge(txn.method)}</td>
                     <td>{getStatusBadge(txn.reconciled)}</td>
                     <td>
-                      <span className="text-muted">
+                      <span className="text-gray-600 dark:text-gray-400">
                         {new Date(txn.createdAt).toLocaleDateString()}
                       </span>
                     </td>
@@ -521,7 +521,7 @@ const TransactionsTable = ({
                           size="sm"
                           title="View Invoice"
                         >
-                          <FontAwesomeIcon icon={faEye} />
+                          < icon={faEye} />
                         </Button>
                       </Link>
                     </td>
@@ -839,13 +839,13 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
   return (
     <div>
       {/* Action Buttons */}
-      <div className="d-flex justify-content-end gap-2 mb-4 no-print">
+      <div className="flex justify-content-end gap-2 mb-4 no-print">
         <Button
           variant="outline-primary"
           onClick={() => printInvoice()}
           disabled={isExporting}
         >
-          <FontAwesomeIcon icon={faPrint} className="me-2" />
+          < icon={faPrint} className="me-2" />
           Print Invoice
         </Button>
         <Button
@@ -856,7 +856,7 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
           {isExporting ? (
             <Spinner size="sm" className="me-2" />
           ) : (
-            <FontAwesomeIcon icon={faDownload} className="me-2" />
+            < icon={faDownload} className="me-2" />
           )}
           Export PDF
         </Button>
@@ -866,11 +866,11 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
       <Card className="border-0 shadow">
         <Card.Body className="p-4" ref={invoiceRef}>
           {/* Header - Compact */}
-          <div className="d-flex justify-content-between align-items-start mb-4 pb-3 border-bottom border-primary border-3">
+          <div className="flex justify-content-between align-items-start mb-4 pb-3 border-bottom border-primary border-3">
             <div style={{ flex: 1 }}>
               <Logo className="mb-3" />
               <h1 className="h4 fw-bold mb-2">{CompanyInfo.name}</h1>
-              <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+              <div className="text-gray-600 dark:text-gray-400" style={{ fontSize: '0.875rem' }}>
                 <div>{CompanyInfo.address}</div>
                 <div>
                   {CompanyInfo.phone} | {CompanyInfo.email}
@@ -880,7 +880,7 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
             <div className="text-end" style={{ flex: 1 }}>
               <h1 className="h2 fw-bold text-danger mb-1">INVOICE</h1>
               <div className="h5 fw-bold text-dark mb-1">{transaction.ref}</div>
-              <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+              <div className="text-gray-600 dark:text-gray-400" style={{ fontSize: '0.875rem' }}>
                 <div>
                   <strong>Date:</strong>{' '}
                   {new Date(transaction.createdAt).toLocaleDateString()}
@@ -896,8 +896,8 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
               {/* Bill To Section - Compact */}
               <div className="mb-4">
                 <h5 className="text-primary mb-2">Bill To:</h5>
-                <div className="fw-bold mb-1">{transaction.user.name}</div>
-                <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+                <div className="font-bold mb-1">{transaction.user.name}</div>
+                <div className="text-gray-600 dark:text-gray-400" style={{ fontSize: '0.875rem' }}>
                   <div>{transaction.user.email}</div>
                   <div>{transaction.user.phone}</div>
                 </div>
@@ -906,7 +906,7 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
               {/* Transaction Details - Compact */}
               <div className="border border-primary rounded p-3 mb-4">
                 <h5 className="text-primary mb-3">
-                  <FontAwesomeIcon
+                  <
                     icon={faFileInvoice}
                     size="sm"
                     className="me-2"
@@ -967,8 +967,8 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
 
               {/* Payment Status */}
               <div className="bg-success text-white p-3 rounded text-center mb-4">
-                <FontAwesomeIcon
-                  icon={faCheckCircle}
+                <
+                  icon={CheckCircle}
                   size="sm"
                   className="me-2"
                 />
@@ -980,7 +980,7 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
               {/* Additional Info */}
               <div className="border rounded p-3">
                 <h6 className="mb-2">Payment Information</h6>
-                <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+                <div className="text-gray-600 dark:text-gray-400" style={{ fontSize: '0.875rem' }}>
                   <div>
                     <strong>Transaction ID:</strong> {transaction.ref}
                   </div>
@@ -999,8 +999,8 @@ const InvoiceTemplate = ({ transaction }: { transaction: Transaction }) => {
 
           {/* Footer - Compact */}
           <div className="text-center border-top pt-3">
-            <h5 className="text-dark mb-2">Thank you for your business!</h5>
-            <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+            <h5 className="text-gray-900 dark:text-gray-100 mb-2">Thank you for your business!</h5>
+            <div className="text-gray-600 dark:text-gray-400" style={{ fontSize: '0.875rem' }}>
               <div>
                 Questions? Contact us at {CompanyInfo.email} |{' '}
                 {CompanyInfo.phone}
@@ -1110,7 +1110,7 @@ const InvoicePage = () => {
                 ? 'Loading Invoice Details...'
                 : 'Loading Transactions...'}
             </h4>
-            <p className="text-muted mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               {reference
                 ? `Fetching details for transaction ${reference}`
                 : 'Retrieving all transaction records'}
@@ -1135,26 +1135,26 @@ const InvoicePage = () => {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center">
         <Container>
-          <Row className="justify-content-center">
+          <Row className="justify-center">
             <Col md={6}>
               <Card className="border-danger shadow">
                 <Card.Body className="text-center p-5">
                   <div className="text-danger mb-4">
-                    <FontAwesomeIcon icon={faFileInvoice} size="4x" />
+                    < icon={faFileInvoice} size="4x" />
                   </div>
                   <h3 className="text-danger mb-3">Error Loading Data</h3>
-                  <p className="text-muted mb-4">
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
                     {reference
                       ? `Unable to load transaction details for reference: ${reference}`
                       : 'Unable to load transaction list'}
                   </p>
-                  <div className="d-flex gap-2 justify-content-center">
+                  <div className="flex gap-2 justify-content-center">
                     <Button variant="primary" onClick={handleRetry}>
-                      <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+                      < icon={faArrowLeft} className="me-2" />
                       Try Again
                     </Button>
                     <Link to="/" className="btn btn-outline-secondary">
-                      <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+                      < icon={faArrowLeft} className="me-2" />
                       Back to Home
                     </Link>
                   </div>
@@ -1172,16 +1172,16 @@ const InvoicePage = () => {
     return (
       <div className="min-vh-100">
         <Container fluid className="py-4">
-          <div className="d-flex justify-content-between align-items-center mb-4">
+          <div className="flex justify-content-between align-items-center mb-4">
             <div>
               <h1 className="h3 fw-bold mb-1">Invoices & Transactions</h1>
-              <p className="text-muted mb-0">
+              <p className="text-gray-600 dark:text-gray-400 mb-0">
                 View and print all transaction records ({transactions.length}{' '}
                 total)
               </p>
             </div>
             <Link to="/" className="btn btn-outline-secondary">
-              <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+              < icon={faArrowLeft} className="me-2" />
               Back to Home
             </Link>
           </div>
@@ -1189,13 +1189,13 @@ const InvoicePage = () => {
           {transactions.length === 0 ? (
             <Card className="text-center py-5">
               <Card.Body>
-                <FontAwesomeIcon
+                <
                   icon={faFileInvoice}
                   size="3x"
-                  className="text-muted mb-3"
+                  className="text-gray-600 dark:text-gray-400 mb-3"
                 />
-                <h4 className="text-muted">No Transactions Found</h4>
-                <p className="text-muted">
+                <h4 className="text-gray-600 dark:text-gray-400">No Transactions Found</h4>
+                <p className="text-gray-600 dark:text-gray-400">
                   There are no transactions to display at this time.
                 </p>
               </Card.Body>
@@ -1213,27 +1213,27 @@ const InvoicePage = () => {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center">
         <Container>
-          <Row className="justify-content-center">
+          <Row className="justify-center">
             <Col md={6}>
               <Card className="text-center shadow">
                 <Card.Body className="p-5">
-                  <FontAwesomeIcon
+                  <
                     icon={faFileInvoice}
                     size="4x"
-                    className="text-muted mb-4"
+                    className="text-gray-600 dark:text-gray-400 mb-4"
                   />
                   <h3 className="mb-3">Transaction Not Found</h3>
-                  <p className="text-muted mb-4">
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
                     The requested transaction with reference{' '}
                     <strong>{reference}</strong> could not be found.
                   </p>
-                  <div className="d-flex gap-2 justify-content-center">
+                  <div className="flex gap-2 justify-content-center">
                     <Link to="/invoices" className="btn btn-primary">
-                      <FontAwesomeIcon icon={faFileInvoice} className="me-2" />
+                      < icon={faFileInvoice} className="me-2" />
                       View All Transactions
                     </Link>
                     <Link to="/" className="btn btn-outline-secondary">
-                      <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+                      < icon={faArrowLeft} className="me-2" />
                       Back to Home
                     </Link>
                   </div>
@@ -1249,10 +1249,10 @@ const InvoicePage = () => {
   return (
     <div className="min-vh-100">
       <Container fluid className="py-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="h3 fw-bold mb-1">Invoice {singleTransaction.ref}</h1>
-            <p className="text-muted mb-0">
+            <p className="text-gray-600 dark:text-gray-400 mb-0">
               Issued on{' '}
               {new Date(singleTransaction.createdAt).toLocaleDateString()} •
               Status:{' '}
@@ -1261,13 +1261,13 @@ const InvoicePage = () => {
               </Badge>
             </p>
           </div>
-          <div className="d-flex gap-2">
+          <div className="flex gap-2">
             <Link to="/invoices" className="btn btn-outline-info">
-              <FontAwesomeIcon icon={faFileInvoice} className="me-2" />
+              < icon={faFileInvoice} className="me-2" />
               All Invoices
             </Link>
             <Link to="/" className="btn btn-outline-secondary">
-              <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+              < icon={faArrowLeft} className="me-2" />
               Dashboard
             </Link>
           </div>

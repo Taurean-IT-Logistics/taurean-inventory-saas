@@ -1,11 +1,11 @@
 import { Facility, InventoryItem } from 'types';
 import { useEffect, useState } from 'react';
 import { FacilityController } from 'controllers';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import {
   faSpinner,
-  faExclamationTriangle
-} from '@fortawesome/free-solid-svg-icons';
+  AlertTriangle
+} from 'lucide-react';
 
 interface BasicInfoFormProps {
   formData: Partial<InventoryItem>;
@@ -88,7 +88,7 @@ const BasicInfoForm = ({
       return (
         <select className="form-select border-secondary" disabled>
           <option>
-            <FontAwesomeIcon icon={faSpinner} spin className="me-2" />
+            < icon={faSpinner} spin className="me-2" />
             Loading facilities...
           </option>
         </select>
@@ -105,7 +105,7 @@ const BasicInfoForm = ({
             <option>Failed to load facilities</option>
           </select>
           <div className="text-warning small mt-1">
-            <FontAwesomeIcon icon={faExclamationTriangle} className="me-1" />
+            < icon={AlertTriangle} className="me-1" />
             {facilitiesError}
           </div>
         </div>

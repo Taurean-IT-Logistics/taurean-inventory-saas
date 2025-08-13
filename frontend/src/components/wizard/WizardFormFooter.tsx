@@ -1,8 +1,8 @@
 import {
   faChevronLeft,
   faChevronRight
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import Button from 'components/base/Button';
 import { useWizardFormContext } from 'providers/WizardFormProvider';
@@ -30,7 +30,7 @@ const WizardFormFooter = ({
         className={classNames('p-0', {
           'd-none': hidePrevBtn || !getCanPreviousPage
         })}
-        startIcon={<FontAwesomeIcon icon={faChevronLeft} className="fs-10" />}
+        startIcon={< icon={faChevronLeft} className="fs-10" />}
         onClick={() => goToStep(selectedStep - 1)}
       >
         Previous
@@ -40,7 +40,7 @@ const WizardFormFooter = ({
         className={classNames('px-6', {
           'ms-auto': !hidePrevBtn
         })}
-        endIcon={<FontAwesomeIcon icon={faChevronRight} className="fs-10" />}
+        endIcon={< icon={faChevronRight} className="fs-10" />}
         onClick={() => {
           if (getCanNextPage) {
             goToStep(selectedStep + 1);

@@ -22,7 +22,7 @@ const SeeMoreText = ({
       {children.length > maxChars && (
         <>
           <>...</>
-          <Link to={link} className="fw-semibold">
+          <Link to={link} className="font-semibold">
             see more
           </Link>
         </>

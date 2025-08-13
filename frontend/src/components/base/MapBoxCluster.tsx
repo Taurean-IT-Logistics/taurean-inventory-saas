@@ -1,9 +1,9 @@
 import React, { HTMLAttributes, useEffect, useRef } from 'react';
 import mapboxgl, { AnyLayer, Layer, Map, MapboxOptions } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Button } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { Button } from 'components/ui';
+import {  } from '';
+import { faMinus, faPlus } from 'lucide-react';
 import classNames from 'classnames';
 import { useAppContext } from 'providers/AppProvider';
 
@@ -156,10 +156,10 @@ const MapboxCluster: React.FC<MapboxProps> = ({
       <div ref={mapContainer} className="map-container" />
       <div className="mapbox-control-btn">
         <Button onClick={() => map.current?.zoomIn()} className="zoomIn">
-          <FontAwesomeIcon icon={faPlus} />
+          < icon={faPlus} />
         </Button>
         <Button onClick={() => map.current?.zoomOut()} className="zoomOut">
-          <FontAwesomeIcon icon={faMinus} />
+          < icon={faMinus} />
         </Button>
       </div>
     </div>

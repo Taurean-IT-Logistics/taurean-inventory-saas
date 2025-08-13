@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { Nav } from 'react-bootstrap';
+import { Nav } from 'components/ui';
 
 export interface FilterTabItem {
   label: string;

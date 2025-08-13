@@ -1,6 +1,6 @@
 import { useAppContext } from 'providers/AppProvider';
 import { ChangeEvent } from 'react';
-import { Col, Row } from 'react-bootstrap';
+import { Col, Row } from 'components/ui';
 import defaultLight from 'assets/img/generic/default-light.png';
 import defaultDark from 'assets/img/generic/default-dark.png';
 import auto from 'assets/img/generic/auto.png';

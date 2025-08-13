@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Spinner, Alert, Pagination } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRefresh, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { Modal, Button, Spinner, Alert, Pagination } from 'components/ui';
+import {  } from '';
+import { faRefresh, faTimes } from 'lucide-react';
 import { FacilityController } from 'controllers';
 import { showToast } from 'components/toaster/toaster';
 import { User } from 'types';
@@ -95,7 +95,7 @@ const ReviewModal = ({ show, onHide, facility }: ReviewModalProps) => {
     const emptyStars = 5 - Math.ceil(rating);
 
     return (
-      <div className="d-flex align-items-center">
+      <div className="flex align-items-center">
         {[...Array(fullStars)].map((_, i) => (
           <span key={`full-${i}`} className="text-warning">
             ★
@@ -103,7 +103,7 @@ const ReviewModal = ({ show, onHide, facility }: ReviewModalProps) => {
         ))}
         {hasHalfStar && <span className="text-warning">☆</span>}
         {[...Array(emptyStars)].map((_, i) => (
-          <span key={`empty-${i}`} className="text-muted">
+          <span key={`empty-${i}`} className="text-gray-600 dark:text-gray-400">
             ☆
           </span>
         ))}
@@ -178,7 +178,7 @@ const ReviewModal = ({ show, onHide, facility }: ReviewModalProps) => {
     }
 
     return (
-      <div className="d-flex justify-content-center align-items-center mt-4">
+      <div className="flex justify-content-center align-items-center mt-4">
         <Pagination>
           <Pagination.Prev
             disabled={currentPage === 1}
@@ -270,13 +270,13 @@ const ReviewModal = ({ show, onHide, facility }: ReviewModalProps) => {
                 key={review._id}
                 className="review-item border-bottom pb-3 mb-3"
               >
-                <div className="d-flex justify-content-between align-items-start mb-2">
+                <div className="flex justify-content-between align-items-start mb-2">
                   <div>
                     <h6>{review.user.name}</h6>
                     <p className="mb-1 text-muted">@{review.user.username}</p>
                     {renderStars(review.rating)}
                   </div>
-                  <small className="text-muted">
+                  <small className="text-gray-600 dark:text-gray-400">
                     {formatDate(review.createdAt)}
                   </small>
                 </div>
@@ -294,11 +294,11 @@ const ReviewModal = ({ show, onHide, facility }: ReviewModalProps) => {
 
       <Modal.Footer className="border-secondary">
         <Button variant="secondary" onClick={onHide}>
-          <FontAwesomeIcon icon={faTimes} className="me-2" />
+          < icon={faTimes} className="me-2" />
           Close
         </Button>
         <Button variant="primary" onClick={refresh} disabled={loading}>
-          <FontAwesomeIcon icon={faRefresh} className="me-2" />
+          < icon={faRefresh} className="me-2" />
           Refresh Reviews
         </Button>
       </Modal.Footer>

@@ -1,5 +1,5 @@
-import { faCalendarDays } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCalendarDays } from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import { Activity } from 'data/crm/dealDetailsData';
 import { Link } from 'react-router-dom';
@@ -14,18 +14,18 @@ const DealDetailsTimeline = ({ activities }: { activities: Activity[] }) => {
             'pb-0 border-bottom-0': index === activities.length - 1
           })}
         >
-          <div className="d-flex">
+          <div className="flex">
             <div
               className={`d-flex bg-${activity.variant}-subtle rounded-circle flex-center me-3`}
               style={{ width: '25px', height: '25px' }}
             >
-              <FontAwesomeIcon
+              <
                 icon={activity.icon}
                 className={`text-${activity.variant}-dark fs-9`}
               />
             </div>
             <div className="flex-1">
-              <div className="d-flex justify-content-between flex-column flex-xl-row mb-2 mb-sm-0">
+              <div className="flex justify-content-between flex-column flex-xl-row mb-2 mb-sm-0">
                 <div className="flex-1 me-2">
                   <h5 className="text-body-highlight lh-sm">
                     {activity.title}
@@ -35,11 +35,11 @@ const DealDetailsTimeline = ({ activities }: { activities: Activity[] }) => {
                   </p>
                 </div>
                 <div className="fs-9">
-                  <FontAwesomeIcon
+                  <
                     icon={faCalendarDays}
                     className="text-primary me-2"
                   />
-                  <span className="fw-semibold">{activity.date}</span>
+                  <span className="font-semibold">{activity.date}</span>
                 </div>
               </div>
               {activity.description && (

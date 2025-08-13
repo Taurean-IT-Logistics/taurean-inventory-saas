@@ -1,13 +1,13 @@
 import React from 'react';
-import { Container, Row, Col, Card, Button } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button } from 'components/ui';
 import { Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import {
   faArrowLeft,
   faTrash,
   faShoppingCart,
   faHeart
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { useWishlist } from 'hooks/useWishlist';
 import { useCart } from 'hooks/useCart';
 import { currencyFormat } from 'helpers/utils';
@@ -26,15 +26,15 @@ const WishlistPage = () => {
   if (items.length === 0) {
     return (
       <div className="min-vh-100">
-        <Container fluid className="py-5">
+        <Container fluid className="py-8">
           <div className="text-center">
-            <FontAwesomeIcon
+            <
               icon={faHeart}
               size="4x"
-              className="text-muted mb-4"
+              className="text-gray-600 dark:text-gray-400 mb-4"
             />
             <h3 className="mb-3">Your wishlist is empty</h3>
-            <p className="text-muted mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               Save items you like to your wishlist
             </p>
             <Link to="/rental" className="btn btn-primary">
@@ -50,23 +50,23 @@ const WishlistPage = () => {
     <div className="min-vh-100">
       <Container fluid className="py-4">
         {/* Header */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="h3 fw-bold mb-1">My Wishlist</h1>
-            <p className="text-muted mb-0">
+            <p className="text-gray-600 dark:text-gray-400 mb-0">
               {totalItems} item{totalItems !== 1 ? 's' : ''} saved
             </p>
           </div>
-          <div className="d-flex gap-2">
+          <div className="flex gap-2">
             <Button variant="outline-danger" onClick={clearWishlist}>
               Clear Wishlist
             </Button>
             <Link to="/cart" className="btn btn-primary">
-              <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
+              < icon={faShoppingCart} className="me-2" />
               View Cart
             </Link>
             <Link to="/rental" className="btn btn-outline-secondary">
-              <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+              < icon={faArrowLeft} className="me-2" />
               Continue Shopping
             </Link>
           </div>
@@ -83,7 +83,7 @@ const WishlistPage = () => {
               lg={3}
             >
               <Card className="h-100 border-secondary">
-                <div className="position-relative">
+                <div className="relative">
                   <Card.Img
                     variant="top"
                     src={getResourceUrl(item.imageUrl)}
@@ -96,30 +96,30 @@ const WishlistPage = () => {
                       size="sm"
                       onClick={() => removeFromWishlist(item.itemId)}
                     >
-                      <FontAwesomeIcon icon={faTrash} />
+                      < icon={faTrash} />
                     </Button>
                   </div>
                 </div>
 
-                <Card.Body className="d-flex flex-column">
+                <Card.Body className="flex flex-column">
                   <div className="flex-grow-1">
                     <Card.Title className="h6 mb-2">{item.name}</Card.Title>
-                    <div className="fw-bold mb-2">
+                    <div className="font-bold mb-2">
                       {currencyFormat(item.price || 0)}/day
                     </div>
-                    <div className="text-muted small mb-3">
+                    <div className="text-gray-600 dark:text-gray-400 small mb-3">
                       Type: {item.type.replace('_', ' ')}
                     </div>
                   </div>
 
-                  <div className="d-flex gap-2">
+                  <div className="flex gap-2">
                     <Button
                       variant="primary"
                       size="sm"
                       className="flex-fill"
                       onClick={() => handleMoveToCart(item)}
                     >
-                      <FontAwesomeIcon icon={faShoppingCart} className="me-1" />
+                      < icon={faShoppingCart} className="me-1" />
                       Add to Cart
                     </Button>
                   </div>

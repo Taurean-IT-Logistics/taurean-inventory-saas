@@ -1,12 +1,12 @@
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash } from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
 import Scrollbar from 'components/base/Scrollbar';
 import QuantityButtons from 'components/common/QuantityButtons';
 import { CartItemType } from 'data/e-commerce/products';
 import { currencyFormat } from 'helpers/utils';
 import { useMemo, useState } from 'react';
-import { Table } from 'react-bootstrap';
+import { Table } from 'components/ui';
 import { Link } from 'react-router-dom';
 
 interface EcomCartTableProps {
@@ -77,7 +77,7 @@ const EcomCartTableRow = ({ product }: { product: CartItemType }) => {
         </div>
       </td>
       <td>
-        <Link className="fw-semibold line-clamp-2" to="#!">
+        <Link className="font-semibold line-clamp-2" to="#!">
           {product.name}
         </Link>
       </td>
@@ -85,7 +85,7 @@ const EcomCartTableRow = ({ product }: { product: CartItemType }) => {
       <td className="white-space-nowrap text-body-tertiary fw-semibold">
         {product.size}
       </td>
-      <td className="fw-semibold text-end">{currencyFormat(product.price)}</td>
+      <td className="font-semibold text-end">{currencyFormat(product.price)}</td>
       <td className="fs-8 ps-5">
         <QuantityButtons
           type="secondary"
@@ -93,7 +93,7 @@ const EcomCartTableRow = ({ product }: { product: CartItemType }) => {
           setQuantity={setQuantity}
         />
       </td>
-      <td className="fw-bold text-body-highlight text-end">
+      <td className="font-bold text-body-highlight text-end">
         {currencyFormat(total)}
       </td>
       <td className="text-end ps-3">
@@ -102,7 +102,7 @@ const EcomCartTableRow = ({ product }: { product: CartItemType }) => {
           variant="link"
           className="text-body-quaternary text-body-tertiary-hover me-2"
         >
-          <FontAwesomeIcon icon={faTrash} />
+          < icon={faTrash} />
         </Button>
       </td>
     </tr>

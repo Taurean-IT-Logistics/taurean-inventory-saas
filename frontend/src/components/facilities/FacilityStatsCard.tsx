@@ -1,11 +1,11 @@
-import { Row, Col, Card } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Row, Col, Card } from 'components/ui';
+import {  } from '';
 import {
   faBuilding,
-  faCheckCircle,
+  CheckCircle,
   faTimesCircle,
-  faStar
-} from '@fortawesome/free-solid-svg-icons';
+  Star
+} from 'lucide-react';
 import { Facility } from 'types';
 
 interface FacilityStatsCardsProps {
@@ -35,7 +35,7 @@ const FacilityStatsCards = ({ facilities }: FacilityStatsCardsProps) => {
     {
       title: 'Active Facilities',
       value: activeFacilities,
-      icon: faCheckCircle,
+      icon: CheckCircle,
       variant: 'success',
       bgClass: 'bg-success'
     },
@@ -49,7 +49,7 @@ const FacilityStatsCards = ({ facilities }: FacilityStatsCardsProps) => {
     {
       title: 'Average Rating',
       value: averageRating.toFixed(1),
-      icon: faStar,
+      icon: Star,
       variant: 'warning',
       bgClass: 'bg-warning'
     }
@@ -60,9 +60,9 @@ const FacilityStatsCards = ({ facilities }: FacilityStatsCardsProps) => {
       {stats.map((stat, index) => (
         <Col lg={3} md={6} key={index} className="mb-3">
           <Card className="border-secondary h-100">
-            <Card.Body className="d-flex align-items-center">
+            <Card.Body className="flex align-items-center">
               <div className={`rounded-circle px-3 py-3 me-3 ${stat.bgClass}`}>
-                <FontAwesomeIcon
+                <
                   icon={stat.icon}
                   className="text-white"
                   size="lg"
@@ -70,7 +70,7 @@ const FacilityStatsCards = ({ facilities }: FacilityStatsCardsProps) => {
               </div>
               <div>
                 <h3 className={`text-${stat.variant} mb-0`}>{stat.value}</h3>
-                <p className="text-muted mb-0 small">{stat.title}</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-0 small">{stat.title}</p>
               </div>
             </Card.Body>
           </Card>

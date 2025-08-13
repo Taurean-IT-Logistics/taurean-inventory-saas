@@ -1,6 +1,6 @@
 import { UilCheckCircle } from '@iconscout/react-unicons';
 import Unicon from 'components/base/Unicon';
-import { Card, Col, Container, Row } from 'react-bootstrap';
+import { Card, Col, Container, Row } from 'components/ui';
 import bg37 from 'assets/img/bg/37.png';
 import bg38 from 'assets/img/bg/38.png';
 import authIllustrations from 'assets/img/spot-illustrations/auth.png';
@@ -31,7 +31,7 @@ const AuthCardLayout = ({
         <Col xs={11} sm={10} xl={8}>
           <Card className="border border-translucent auth-card">
             <Card.Body className="pe-md-0">
-              <Row className="align-items-center gx-0 gy-7">
+              <Row className="items-center gx-0 gy-7">
                 <Col
                   xs="auto"
                   className="bg-body-highlight dark__bg-gray-1100 rounded-3 position-relative overflow-hidden auth-title-box"
@@ -54,7 +54,7 @@ const AuthCardLayout = ({
                       the uniqueness of Phoenix!
                     </p>
                     <ul className="list-unstyled mb-0 w-max-content w-md-auto mx-auto">
-                      <li className="d-flex align-items-center gap-2">
+                      <li className="flex align-items-center gap-2">
                         <Unicon
                           icon={UilCheckCircle}
                           className="text-success"
@@ -64,7 +64,7 @@ const AuthCardLayout = ({
                           Fast
                         </span>
                       </li>
-                      <li className="d-flex align-items-center gap-2">
+                      <li className="flex align-items-center gap-2">
                         <Unicon
                           icon={UilCheckCircle}
                           className="text-success"
@@ -74,7 +74,7 @@ const AuthCardLayout = ({
                           Simple
                         </span>
                       </li>
-                      <li className="d-flex align-items-center gap-2">
+                      <li className="flex align-items-center gap-2">
                         <Unicon
                           icon={UilCheckCircle}
                           className="text-success"
@@ -109,7 +109,7 @@ const AuthCardLayout = ({
                         <Logo
                           text={false}
                           width={58}
-                          className="fw-bolder fs-5 d-inline-block"
+                          className="font-bolder fs-5 d-inline-block"
                         />
                       </Link>
                     </div>

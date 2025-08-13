@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table } from 'react-bootstrap';
+import { Table } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 
 interface AddressTableDataType {
@@ -12,7 +12,7 @@ const TableRow = ({ rowData }: { rowData: AddressTableDataType }) => {
   return (
     <tr>
       <td className="py-2 ps-0">
-        <div className="d-flex">
+        <div className="flex">
           <FeatherIcon icon={rowData.labelIcon} size={16} className="me-2" />
           <h5 className="lh-sm me-4">{rowData.label}</h5>
         </div>

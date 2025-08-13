@@ -1,14 +1,14 @@
-import { Card, Button } from 'react-bootstrap';
+import { Card, Button } from 'components/ui';
 import { Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import {
   faBox,
   faBuilding,
-  faUsers,
+  Users,
   faChartLine,
   faBook,
   faCoins
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 
 const QuickActionsSidebar = () => {
   const quickActions = [
@@ -29,7 +29,7 @@ const QuickActionsSidebar = () => {
     {
       title: 'Manage Users',
       description: 'Manage users and roles',
-      icon: faUsers,
+      icon: Users,
       to: '/admin/users',
       variant: 'info'
     },
@@ -58,7 +58,7 @@ const QuickActionsSidebar = () => {
     {
       title: 'User Management',
       to: '/admin/users',
-      icon: faUsers
+      icon: Users
     },
     {
       title: 'Transaction Management',
@@ -98,9 +98,9 @@ const QuickActionsSidebar = () => {
                 variant={action.variant}
                 className="text-start opacity-75"
               >
-                <FontAwesomeIcon icon={action.icon} className="me-2" />
+                < icon={action.icon} className="me-2" />
                 <div>
-                  <div className="fw-semibold">{action.title}</div>
+                  <div className="font-semibold">{action.title}</div>
                   <small className="opacity-75">{action.description}</small>
                 </div>
               </Button>
@@ -123,7 +123,7 @@ const QuickActionsSidebar = () => {
                 variant="outline-secondary"
                 className="text-start"
               >
-                <FontAwesomeIcon icon={link.icon} className="me-2" />
+                < icon={link.icon} className="me-2" />
                 {link.title}
               </Button>
             ))}

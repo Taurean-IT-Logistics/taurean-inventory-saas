@@ -1,9 +1,9 @@
 import bg32 from 'assets/img/bg/bg-32.png';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import Avatar, { Size } from 'components/base/Avatar';
 import Button from 'components/base/Button';
 import FeatherIcon from 'feather-icons-react';
-import { Dropdown, Nav } from 'react-bootstrap';
+import { Dropdown, Nav } from 'components/ui';
 import { Member } from 'data/users';
 import {
   faChevronRight,
@@ -14,7 +14,7 @@ import {
   faPhone,
   faUserPlus,
   faVideo
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 
 interface AvatarDropdownInterface {
   user: Member;
@@ -33,7 +33,7 @@ const AvatarDropdown = ({ user, size }: AvatarDropdownInterface) => {
         popperConfig={{ strategy: 'fixed' }}
         renderOnMount
       >
-        <div className="position-relative">
+        <div className="relative">
           <div
             className="bg-holder z-n1"
             style={{
@@ -45,10 +45,10 @@ const AvatarDropdown = ({ user, size }: AvatarDropdownInterface) => {
           <div className="p-3">
             <div className="text-end">
               <button className="btn p-0 me-2">
-                <FontAwesomeIcon icon={faUserPlus} className="text-white" />
+                < icon={faUserPlus} className="text-white" />
               </button>
               <button className="btn p-0">
-                <FontAwesomeIcon icon={faEllipsis} className="text-white" />
+                < icon={faEllipsis} className="text-white" />
               </button>
             </div>
             <div className="text-center">
@@ -62,12 +62,12 @@ const AvatarDropdown = ({ user, size }: AvatarDropdownInterface) => {
               <p className="text-light text-opacity-50 fw-semibold fs-10 mb-2">
                 @{user.username}
               </p>
-              <div className="d-flex flex-center mb-3">
+              <div className="flex flex-center mb-3">
                 <h6 className="text-white mb-0">
                   {user.connections}{' '}
                   <span className="fw-normal text-light">connections</span>
                 </h6>
-                <FontAwesomeIcon
+                <
                   icon={faCircle}
                   className="text-body-tertiary mx-1 fs-9"
                   transform="shrink-10 up-2"
@@ -82,29 +82,29 @@ const AvatarDropdown = ({ user, size }: AvatarDropdownInterface) => {
         </div>
         <div className="bg-body-emphasis">
           <div className="p-3 border-bottom border-translucent">
-            <div className="d-flex gap-2">
+            <div className="flex gap-2">
               <Button
                 variant="phoenix-secondary"
                 className="btn-icon btn-icon-lg"
               >
-                <FontAwesomeIcon icon={faPhone} />
+                < icon={faPhone} />
               </Button>
               <Button
                 variant="phoenix-secondary"
                 className="btn-icon btn-icon-lg"
               >
-                <FontAwesomeIcon icon={faMessage} />
+                < icon={faMessage} />
               </Button>
               <Button
                 variant="phoenix-secondary"
                 className="btn-icon btn-icon-lg"
               >
-                <FontAwesomeIcon icon={faVideo} />
+                < icon={faVideo} />
               </Button>
               <Button
                 variant="phoenix-primary"
                 startIcon={
-                  <FontAwesomeIcon icon={faEnvelope} className="me-2" />
+                  < icon={faEnvelope} className="me-2" />
                 }
                 className="ms-auto"
               >
@@ -122,7 +122,7 @@ const AvatarDropdown = ({ user, size }: AvatarDropdownInterface) => {
               <span className="text-body-highlight flex-1">
                 Assigned Projects
               </span>
-              <FontAwesomeIcon icon={faChevronRight} className="fs-11" />
+              < icon={faChevronRight} className="fs-11" />
             </Nav.Link>
             <Nav.Link className="">
               <FeatherIcon
@@ -131,7 +131,7 @@ const AvatarDropdown = ({ user, size }: AvatarDropdownInterface) => {
                 className="me-2 text-body d-inline-block"
               />
               <span className="text-body-highlight flex-1">View activiy</span>
-              <FontAwesomeIcon icon={faChevronRight} className="fs-11" />
+              < icon={faChevronRight} className="fs-11" />
             </Nav.Link>
           </Nav>
 

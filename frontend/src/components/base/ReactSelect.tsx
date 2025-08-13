@@ -1,5 +1,5 @@
-import { faAngleDown } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faAngleDown } from 'lucide-react';
+import {  } from '';
 import { ReactElement } from 'react';
 import Select, {
   ClearIndicatorProps,
@@ -26,7 +26,7 @@ const ClearIndicator = (props: ClearIndicatorProps) => {
 const DropdownIndicator = (props: DropdownIndicatorProps) => {
   return (
     <components.DropdownIndicator {...props}>
-      <FontAwesomeIcon icon={faAngleDown} className="fs-9 text-body" />
+      < icon={faAngleDown} className="fs-9 text-body" />
     </components.DropdownIndicator>
   );
 };

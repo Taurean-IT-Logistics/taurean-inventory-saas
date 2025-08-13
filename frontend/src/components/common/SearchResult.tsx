@@ -1,5 +1,5 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Dropdown } from 'react-bootstrap';
+import {  } from '';
+import { Dropdown } from 'components/ui';
 import { Link } from 'react-router-dom';
 import { getFileIcon } from 'helpers/utils';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
@@ -9,7 +9,7 @@ import Scrollbar from 'components/base/Scrollbar';
 import useSearchHook from 'hooks/useSearchHook';
 import { ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
-import { faClockRotateLeft, faLink } from '@fortawesome/free-solid-svg-icons';
+import { ClockRotateLeft, faLink } from 'lucide-react';
 
 const ResultSectionHeader = ({ title }: { title: string }) => (
   <h6 className="text-body-highlight fs-9 border-y border-translucent py-2 lh-sm mb-0 px-3">
@@ -67,9 +67,9 @@ const SearchResult = ({ searchValue = '', data = [] }: SearchResultProps) => {
           <div className="py-2">
             {recentlySearchedItems.map(item => (
               <Dropdown.Item as={Link} to={item.url} key={item.label}>
-                <div className="d-flex align-items-center fw-normal gap-1 text-body-highlight">
-                  <FontAwesomeIcon
-                    icon={faClockRotateLeft}
+                <div className="flex align-items-center fw-normal gap-1 text-body-highlight">
+                  <
+                    icon={ClockRotateLeft}
                     transform="shrink-2"
                   />
                   {item.label}
@@ -118,8 +118,8 @@ const SearchResult = ({ searchValue = '', data = [] }: SearchResultProps) => {
           <div className="py-2">
             {quickLinks.map(item => (
               <Dropdown.Item as={Link} to={item.url} key={item.label}>
-                <div className="d-flex align-items-center fw-normal gap-1 text-body-highlight">
-                  <FontAwesomeIcon
+                <div className="flex align-items-center fw-normal gap-1 text-body-highlight">
+                  <
                     icon={faLink}
                     transform="shrink-2"
                     className="text-body"
@@ -137,8 +137,8 @@ const SearchResult = ({ searchValue = '', data = [] }: SearchResultProps) => {
           <div className="py-2">
             {suggestionFiles.map(item => (
               <Dropdown.Item as={Link} to={item.url} key={item.label}>
-                <div className="d-flex align-items-center fw-normal gap-1 text-body-highlight">
-                  <FontAwesomeIcon
+                <div className="flex align-items-center fw-normal gap-1 text-body-highlight">
+                  <
                     icon={getFileIcon(item.format || '')}
                     transform="shrink-2"
                     className="text-body"
@@ -156,7 +156,7 @@ const SearchResult = ({ searchValue = '', data = [] }: SearchResultProps) => {
           <div className="py-2">
             {members.map(item => (
               <Dropdown.Item as={Link} to={item.url} key={item.label}>
-                <div className="d-flex align-items-center fw-normal text-body-highlight">
+                <div className="flex align-items-center fw-normal text-body-highlight">
                   <Avatar
                     src={item.avatar}
                     size="l"
@@ -183,8 +183,8 @@ const SearchResult = ({ searchValue = '', data = [] }: SearchResultProps) => {
           <div className="py-2">
             {relatedSearchedItems.map(item => (
               <Dropdown.Item as={Link} to={item.url} key={item.label}>
-                <div className="d-flex align-items-center fw-normal gap-1 text-body-highlight">
-                  <FontAwesomeIcon
+                <div className="flex align-items-center fw-normal gap-1 text-body-highlight">
+                  <
                     icon={item.icon as IconProp}
                     transform="shrink-2"
                     className="text-body"

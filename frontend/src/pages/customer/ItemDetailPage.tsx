@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Container, Row, Col, Card, Badge } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Container, Row, Col, Card, Badge } from 'components/ui';
+import {  } from '';
 import {
   faArrowLeft,
   faCalendar,
   faInfo,
   faTag
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { showToast } from 'components/toaster/toaster';
 import { currencyFormat } from 'helpers/utils';
 
@@ -53,7 +53,7 @@ const InventoryItemDetailPage = () => {
   if (!item) {
     return (
       <div className="min-vh-100">
-        <Container className="py-5">
+        <Container className="py-8">
           <div className="text-center">
             <h3 className="mb-3">Item not found</h3>
             <Link to="/rental" className="btn btn-primary">
@@ -92,9 +92,9 @@ const InventoryItemDetailPage = () => {
   return (
     <div className="min-vh-100">
       <Container fluid className="py-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <Link to="/rental" className="btn btn-outline-secondary">
-            <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+            < icon={faArrowLeft} className="me-2" />
             Back to Rentals
           </Link>
         </div>
@@ -103,7 +103,7 @@ const InventoryItemDetailPage = () => {
           <Col lg={6}>
             <Card border="secondary" className="mb-4">
               <Card.Body className="p-0">
-                <div className="position-relative">
+                <div className="relative">
                   <Card.Img
                     src={getResourceUrl(images[selectedImage]?.path || '')}
                     alt={item.name}
@@ -138,10 +138,10 @@ const InventoryItemDetailPage = () => {
 
           <Col lg={6}>
             <div className="mb-4">
-              <div className="d-flex justify-content-between align-items-start mb-3">
+              <div className="flex justify-content-between align-items-start mb-3">
                 <div>
                   <h1 className="mb-2">{item.name}</h1>
-                  <div className="d-flex align-items-center gap-2">
+                  <div className="flex align-items-center gap-2">
                     <Badge bg="secondary">{item.category}</Badge>
                     <span className="text-info">SKU: {item.sku || 'N/A'}</span>
                   </div>
@@ -152,7 +152,7 @@ const InventoryItemDetailPage = () => {
                 <h2 className="text-primary mb-2">
                   {currencyFormat(price)}/{unit}
                 </h2>
-                <p className="text-muted mb-3">
+                <p className="text-gray-600 dark:text-gray-400 mb-3">
                   {item.description ||
                     'No description available for this item.'}
                 </p>
@@ -167,7 +167,7 @@ const InventoryItemDetailPage = () => {
                       className="w-100 mb-2"
                       disabled={!isAvailable}
                     >
-                      <FontAwesomeIcon icon={faTag} className="me-2" />
+                      < icon={faTag} className="me-2" />
                       {isAvailable ? 'Rent Now' : 'Unavailable'}
                     </Button>
                   </Link>
@@ -177,22 +177,22 @@ const InventoryItemDetailPage = () => {
               <Card border="secondary">
                 <Card.Header className="border-secondary">
                   <h5 className="mb-0">
-                    <FontAwesomeIcon icon={faInfo} className="me-2" />
+                    < icon={faInfo} className="me-2" />
                     Item Information
                   </h5>
                 </Card.Header>
                 <Card.Body>
                   <Row>
                     <Col md={6} className="mb-3">
-                      <div className="text-muted small">Available Quantity</div>
+                      <div className="text-gray-600 dark:text-gray-400 small">Available Quantity</div>
                       <div>{item.quantity}</div>
                     </Col>
                     <Col md={6} className="mb-3">
-                      <div className="text-muted small">Category</div>
+                      <div className="text-gray-600 dark:text-gray-400 small">Category</div>
                       <div>{item.category}</div>
                     </Col>
                     <Col md={6} className="mb-3">
-                      <div className="text-muted small">Status</div>
+                      <div className="text-gray-600 dark:text-gray-400 small">Status</div>
                       <div>{getStatusBadge(item.status)}</div>
                     </Col>
                     <Col md={6} className="mb-3 text-info">
@@ -201,8 +201,8 @@ const InventoryItemDetailPage = () => {
                     </Col>
                     {item.purchaseInfo.purchaseDate && (
                       <Col xs={12}>
-                        <div className="text-muted small mb-1">
-                          <FontAwesomeIcon icon={faCalendar} className="me-2" />
+                        <div className="text-gray-600 dark:text-gray-400 small mb-1">
+                          < icon={faCalendar} className="me-2" />
                           Purchase Date
                         </div>
                         <div>

@@ -4,7 +4,7 @@ import Badge from 'components/base/Badge';
 import Unicon from 'components/base/Unicon';
 import { PricingGrid } from 'data/pricing';
 import { currencyFormat } from 'helpers/utils';
-import { Card, Col, Form, Row } from 'react-bootstrap';
+import { Card, Col, Form, Row } from 'components/ui';
 
 interface PricingGridItemProps {
   item: PricingGrid;
@@ -50,9 +50,9 @@ const PricingGridItem = ({ item, pricingType }: PricingGridItemProps) => {
               backgroundSize: 'auto'
             }}
           />
-          <Card.Body className="d-flex flex-column justify-content-between position-relative">
-            <div className="d-flex justify-content-between">
-              <div className="mb-5 mb-md-0 mb-lg-5 me-3">
+          <Card.Body className="flex flex-column justify-content-between position-relative">
+            <div className="flex justify-content-between">
+              <div className="mb-8 mb-md-0 mb-lg-5 me-3">
                 <div className="d-sm-flex align-items-center mb-3">
                   <h3 className="mb-0">{item.title}</h3>
                   {item.badge && (
@@ -69,11 +69,11 @@ const PricingGridItem = ({ item, pricingType }: PricingGridItemProps) => {
                   className="fs-9 text-body-tertiary"
                   dangerouslySetInnerHTML={{ __html: item.description }}
                 />
-                <div className="d-flex align-items-end mb-md-5 mb-lg-0">
+                <div className="flex align-items-end mb-md-5 mb-lg-0">
                   {item.monthlyPrice === 0 || item.yearlyPrice === 0 ? (
-                    <h4 className="fw-bolder me-1">Free</h4>
+                    <h4 className="font-bolder me-1">Free</h4>
                   ) : (
-                    <h4 className="fw-bolder me-1">{`${
+                    <h4 className="font-bolder me-1">{`${
                       pricingType === 'monthly'
                         ? currencyFormat(item.monthlyPrice)
                         : currencyFormat(item.yearlyPrice)

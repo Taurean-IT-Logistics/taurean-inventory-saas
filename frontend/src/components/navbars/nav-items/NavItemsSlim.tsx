@@ -1,14 +1,14 @@
-import { Dropdown, Modal, Nav } from 'react-bootstrap';
+import { Dropdown, Modal, Nav } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 import { Link } from 'react-router-dom';
 import ProfileDropdownMenu from './ProfileDropdownMenu';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import ThemeToggler from 'components/common/ThemeToggler';
 import NotificationDropdownMenu from './NotificationDropdownMenu';
 import { useState } from 'react';
 import DropdownSearchBox from 'components/common/DropdownSearchBox';
 import SearchResult from 'components/common/SearchResult';
-import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { ChevronDown } from 'lucide-react';
 
 const NavItemsSlim = () => {
   const [openSearchModal, setOpenSearchModal] = useState(false);
@@ -71,7 +71,7 @@ const NavItemsSlim = () => {
             className="dropdown-caret-none nav-link pe-0 py-0"
             variant=""
           >
-            Olivia <FontAwesomeIcon icon={faChevronDown} className="fs-10" />
+            Olivia < icon={ChevronDown} className="fs-10" />
           </Dropdown.Toggle>
           <ProfileDropdownMenu />
         </Dropdown>

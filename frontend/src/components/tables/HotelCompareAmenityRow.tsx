@@ -1,8 +1,8 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import {
   faCircleCheck,
   faCircleXmark
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 
 interface HotelCompareAmenityRowProps {
   title: string;
@@ -25,7 +25,7 @@ const HotelCompareAmenityRow = ({
         >
           {item ? (
             <h6 className="text-body">
-              <FontAwesomeIcon
+              <
                 icon={faCircleCheck}
                 className="text-success me-2"
               />
@@ -33,7 +33,7 @@ const HotelCompareAmenityRow = ({
             </h6>
           ) : (
             <h6 className="text-body">
-              <FontAwesomeIcon
+              <
                 icon={faCircleXmark}
                 className="text-secondary-light me-2"
               />

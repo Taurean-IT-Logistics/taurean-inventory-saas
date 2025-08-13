@@ -1,5 +1,5 @@
-import { faCircle, faXmark } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircle, faXmark } from 'lucide-react';
+import {  } from '';
 import classNames from 'classnames';
 import { getFileIcon } from 'helpers/utils';
 
@@ -46,7 +46,7 @@ const AttachmentPreview = ({
           />
         ) : (
           <>
-            <FontAwesomeIcon
+            <
               icon={getFileIcon(attachment.format)}
               className={classNames('fs-8 mb-1')}
             />
@@ -56,7 +56,7 @@ const AttachmentPreview = ({
 
         {handleRemove && (
           <button className="btn btn-x" onClick={handleRemove}>
-            <FontAwesomeIcon icon={faXmark} className="text-body" />
+            < icon={faXmark} className="text-body" />
           </button>
         )}
       </div>
@@ -82,7 +82,7 @@ const AttachmentPreview = ({
           <p className="mb-0 text-nowrap">{attachment.size}</p>
           {attachment.date && (
             <>
-              <FontAwesomeIcon
+              <
                 icon={faCircle}
                 className="text-body-quaternary"
                 transform="shrink-12"

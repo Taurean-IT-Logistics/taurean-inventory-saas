@@ -23,7 +23,7 @@ export const leadsTableColumns: ColumnDef<LeadDataType>[] = [
         status: { label, type }
       } = original.customer;
       return (
-        <div className="d-flex align-items-center">
+        <div className="flex align-items-center">
           <Link to="/apps/crm/lead-details#tasks">
             <Avatar src={avatar} size="xl" className="me-3" />
           </Link>
@@ -31,7 +31,7 @@ export const leadsTableColumns: ColumnDef<LeadDataType>[] = [
             <Link to="/apps/crm/lead-details#tasks" className="fs-8 fw-bold">
               {name}
             </Link>
-            <div className="d-flex align-items-center">
+            <div className="flex align-items-center">
               <p className="mb-0 text-body-highlight fw-semibold fs-9 me-2">
                 {designation}
               </p>

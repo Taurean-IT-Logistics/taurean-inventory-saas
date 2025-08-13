@@ -1,4 +1,4 @@
-import { ListGroup } from 'react-bootstrap';
+import { ListGroup } from 'components/ui';
 
 interface LeadSourceItemProps {
   serial: number;
@@ -21,9 +21,9 @@ const LeadSources = () => {
 const LeadSourceItem = ({ serial, source, count }: LeadSourceItemProps) => {
   return (
     <ListGroup.Item className="bg-transparent list-group-crm fw-bold text-body fs-9 py-2">
-      <div className="d-flex justify-content-between">
+      <div className="flex justify-content-between">
         <span className="fw-normal fs-9 mx-1">
-          <span className="fw-bold">{serial}.</span> {source}
+          <span className="font-bold">{serial}.</span> {source}
         </span>{' '}
         <span>({count})</span>
       </div>

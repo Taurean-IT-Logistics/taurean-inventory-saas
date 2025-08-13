@@ -1,22 +1,22 @@
 import { useState, useEffect } from 'react';
 import {
-  faSearch,
+  Search,
   faPlus,
   faEdit,
   faTrash,
   faEye,
   faDownload,
-  faCalendarAlt,
+  Calendar,
   faDollarSign,
-  faCheckCircle,
+  CheckCircle,
   faTimesCircle,
-  faClock,
-  faExclamationTriangle,
-  faCheck,
+  Clock,
+  AlertTriangle,
+  Check,
   faCalendarCheck,
   faCalendarTimes
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+} from 'lucide-react';
+import {  } from '';
 import {
   Card,
   Button,
@@ -30,7 +30,7 @@ import {
   Badge,
   Tabs,
   Tab
-} from 'react-bootstrap';
+} from 'components/ui';
 import { Booking, Facility } from 'types';
 import { currencyFormat } from 'helpers/utils';
 import { useAppSelector } from 'hooks/useAppDispatch';
@@ -114,15 +114,15 @@ const BookingManagement = ({
     switch (status) {
       case 'confirmed':
       case 'completed':
-        return faCheckCircle;
+        return CheckCircle;
       case 'pending':
-        return faClock;
+        return Clock;
       case 'cancelled':
         return faTimesCircle;
       case 'no_show':
-        return faExclamationTriangle;
+        return AlertTriangle;
       default:
-        return faClock;
+        return Clock;
     }
   };
 
@@ -292,14 +292,14 @@ const BookingManagement = ({
           </Alert>
         )}
 
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="h3 fw-bold mb-1">Booking Management</h1>
-            <p className="text-muted mb-0">
+            <p className="text-gray-600 dark:text-gray-400 mb-0">
               Manage all facility bookings and reservations
             </p>
           </div>
-          <div className="d-flex gap-2">
+          <div className="flex gap-2">
             <Button
               variant="primary"
               onClick={() => {
@@ -317,11 +317,11 @@ const BookingManagement = ({
                 setShowEditModal(true);
               }}
             >
-              <FontAwesomeIcon icon={faPlus} className="me-2" />
+              < icon={faPlus} className="me-2" />
               New Booking
             </Button>
             <Button variant="outline-success">
-              <FontAwesomeIcon icon={faDownload} className="me-2" />
+              < icon={faDownload} className="me-2" />
               Export
             </Button>
           </div>
@@ -332,14 +332,14 @@ const BookingManagement = ({
           <Col md={3} className="mb-3">
             <Card className="bg-primary bg-opacity-10 border-primary">
               <Card.Body>
-                <div className="d-flex align-items-center">
-                  <FontAwesomeIcon
-                    icon={faCalendarAlt}
+                <div className="flex align-items-center">
+                  <
+                    icon={Calendar}
                     className="text-primary fs-3 me-3"
                   />
                   <div>
                     <h5 className="text-primary mb-0">{bookings.length}</h5>
-                    <small className="text-muted">Total Bookings</small>
+                    <small className="text-gray-600 dark:text-gray-400">Total Bookings</small>
                   </div>
                 </div>
               </Card.Body>
@@ -348,9 +348,9 @@ const BookingManagement = ({
           <Col md={3} className="mb-3">
             <Card className="bg-success bg-opacity-10 border-success">
               <Card.Body>
-                <div className="d-flex align-items-center">
-                  <FontAwesomeIcon
-                    icon={faCheckCircle}
+                <div className="flex align-items-center">
+                  <
+                    icon={CheckCircle}
                     className="text-success fs-3 me-3"
                   />
                   <div>
@@ -364,7 +364,7 @@ const BookingManagement = ({
                         ).length
                       }
                     </h5>
-                    <small className="text-muted">Confirmed</small>
+                    <small className="text-gray-600 dark:text-gray-400">Confirmed</small>
                   </div>
                 </div>
               </Card.Body>
@@ -373,16 +373,16 @@ const BookingManagement = ({
           <Col md={3} className="mb-3">
             <Card className="bg-warning bg-opacity-10 border-warning">
               <Card.Body>
-                <div className="d-flex align-items-center">
-                  <FontAwesomeIcon
-                    icon={faClock}
+                <div className="flex align-items-center">
+                  <
+                    icon={Clock}
                     className="text-warning fs-3 me-3"
                   />
                   <div>
                     <h5 className="text-warning mb-0">
                       {bookings.filter(b => b && b.status === 'pending').length}
                     </h5>
-                    <small className="text-muted">Pending</small>
+                    <small className="text-gray-600 dark:text-gray-400">Pending</small>
                   </div>
                 </div>
               </Card.Body>
@@ -391,8 +391,8 @@ const BookingManagement = ({
           <Col md={3} className="mb-3">
             <Card className="bg-info bg-opacity-10 border-info">
               <Card.Body>
-                <div className="d-flex align-items-center">
-                  <FontAwesomeIcon
+                <div className="flex align-items-center">
+                  <
                     icon={faDollarSign}
                     className="text-info fs-3 me-3"
                   />
@@ -410,7 +410,7 @@ const BookingManagement = ({
                         }, 0)
                       )}
                     </h5>
-                    <small className="text-muted">Total Revenue</small>
+                    <small className="text-gray-600 dark:text-gray-400">Total Revenue</small>
                   </div>
                 </div>
               </Card.Body>
@@ -421,11 +421,11 @@ const BookingManagement = ({
         {/* Filters */}
         <Card className="border-secondary mb-4">
           <Card.Body className="p-3">
-            <Row className="align-items-center">
+            <Row className="items-center">
               <Col md={3} className="mb-2">
                 <div className="input-group">
                   <span className="input-group-text border-secondary text-muted">
-                    <FontAwesomeIcon icon={faSearch} />
+                    < icon={Search} />
                   </span>
                   <Form.Control
                     type="text"
@@ -476,7 +476,7 @@ const BookingManagement = ({
                 </Form.Select>
               </Col>
               <Col md={3} className="mb-2">
-                <div className="text-muted small">
+                <div className="text-gray-600 dark:text-gray-400 small">
                   Showing {filteredBookings.length} of {bookings.length}{' '}
                   bookings
                 </div>
@@ -519,10 +519,10 @@ const BookingManagement = ({
                       </td>
                       <td>
                         <div>
-                          <div className="fw-semibold">
+                          <div className="font-semibold">
                             {booking.user?.name || 'N/A'}
                           </div>
-                          <small className="text-muted">
+                          <small className="text-gray-600 dark:text-gray-400">
                             {booking.user?.email || 'N/A'}
                           </small>
                         </div>
@@ -537,7 +537,7 @@ const BookingManagement = ({
                               ? new Date(booking.startDate).toLocaleDateString()
                               : 'N/A'}
                           </div>
-                          <small className="text-muted">
+                          <small className="text-gray-600 dark:text-gray-400">
                             {booking.startDate
                               ? new Date(booking.startDate).toLocaleTimeString(
                                   [],
@@ -566,9 +566,9 @@ const BookingManagement = ({
                       <td>
                         <Badge
                           bg={getStatusColor(booking.status)}
-                          className="d-flex align-items-center"
+                          className="flex align-items-center"
                         >
-                          <FontAwesomeIcon
+                          <
                             icon={getStatusIcon(booking.status)}
                             className="me-1"
                           />
@@ -583,25 +583,25 @@ const BookingManagement = ({
                         </Badge>
                       </td>
                       <td>
-                        <span className="fw-bold">
+                        <span className="font-bold">
                           {currencyFormat(booking.totalPrice || 0)}
                         </span>
                       </td>
                       <td>
-                        <div className="d-flex gap-1">
+                        <div className="flex gap-1">
                           <Button
                             variant="outline-primary"
                             size="sm"
                             onClick={() => handleViewDetails(booking)}
                           >
-                            <FontAwesomeIcon icon={faEye} />
+                            < icon={faEye} />
                           </Button>
                           <Button
                             variant="outline-warning"
                             size="sm"
                             onClick={() => handleEditBooking(booking)}
                           >
-                            <FontAwesomeIcon icon={faEdit} />
+                            < icon={faEdit} />
                           </Button>
                           <Button
                             variant="outline-danger"
@@ -609,7 +609,7 @@ const BookingManagement = ({
                             onClick={() => handleDeleteBooking(booking)}
                             disabled={isSaving}
                           >
-                            <FontAwesomeIcon icon={faTrash} />
+                            < icon={faTrash} />
                           </Button>
                         </div>
                       </td>
@@ -621,8 +621,8 @@ const BookingManagement = ({
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="d-flex justify-content-between align-items-center p-3 border-top border-secondary">
-                <div className="text-muted small">
+              <div className="flex justify-content-between align-items-center p-3 border-top border-secondary">
+                <div className="text-gray-600 dark:text-gray-400 small">
                   Showing {indexOfFirstItem + 1} to{' '}
                   {Math.min(indexOfLastItem, filteredBookings.length)} of{' '}
                   {filteredBookings.length} entries
@@ -775,7 +775,7 @@ const BookingManagement = ({
                 </Tab>
               </Tabs>
 
-              <div className="d-flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap">
                 {selectedBooking.status === 'pending' && (
                   <Button
                     variant="success"
@@ -785,7 +785,7 @@ const BookingManagement = ({
                     }
                     disabled={isSaving}
                   >
-                    <FontAwesomeIcon icon={faCheck} className="me-1" />
+                    < icon={Check} className="me-1" />
                     Confirm
                   </Button>
                 )}
@@ -799,7 +799,7 @@ const BookingManagement = ({
                     }
                     disabled={isSaving}
                   >
-                    <FontAwesomeIcon icon={faCalendarCheck} className="me-1" />
+                    < icon={faCalendarCheck} className="me-1" />
                     Complete
                   </Button>
                 )}
@@ -813,7 +813,7 @@ const BookingManagement = ({
                     }
                     disabled={isSaving}
                   >
-                    <FontAwesomeIcon icon={faCalendarTimes} className="me-1" />
+                    < icon={faCalendarTimes} className="me-1" />
                     Cancel
                   </Button>
                 )}
@@ -828,7 +828,7 @@ const BookingManagement = ({
               selectedBooking && handleEditBooking(selectedBooking)
             }
           >
-            <FontAwesomeIcon icon={faEdit} className="me-2" /> Edit
+            < icon={faEdit} className="me-2" /> Edit
           </Button>
           <Button
             variant="outline-danger"
@@ -837,7 +837,7 @@ const BookingManagement = ({
             }
             disabled={isSaving}
           >
-            <FontAwesomeIcon icon={faTrash} className="me-2" /> Delete
+            < icon={faTrash} className="me-2" /> Delete
           </Button>
           <Button
             variant="secondary"

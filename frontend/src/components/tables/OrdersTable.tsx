@@ -15,7 +15,7 @@ export const ordersTableColumns: ColumnDef<Order>[] = [
     cell: ({ row: { original } }) => {
       const { orderId } = original;
       return (
-        <Link to="#!" className="fw-semibold">
+        <Link to="#!" className="font-semibold">
           #{orderId}
         </Link>
       );
@@ -43,7 +43,7 @@ export const ordersTableColumns: ColumnDef<Order>[] = [
       return (
         <Link
           to="/apps/e-commerce/admin/customer-details"
-          className="d-flex align-items-center"
+          className="flex align-items-center"
         >
           <Avatar src={avatar} size="m" />
           <p className="mb-0 ms-3 text-body-emphasis fw-bold">{name}</p>

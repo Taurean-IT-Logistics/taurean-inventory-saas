@@ -6,10 +6,10 @@ import {
   faTwitter,
   faYoutube
 } from '@fortawesome/free-brands-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import React from 'react';
-import { Form } from 'react-bootstrap';
-import { Col, Row } from 'react-bootstrap';
+import { Form } from 'components/ui';
+import { Col, Row } from 'components/ui';
 
 const SettingsSocial = () => {
   return (
@@ -32,7 +32,7 @@ const SettingsSocial = () => {
                 FACEBOOK
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faFacebook}
               className="text-body fs-9 form-icon"
             />
@@ -54,7 +54,7 @@ const SettingsSocial = () => {
                 TWITTER
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faTwitter}
               className="text-body fs-9 form-icon"
             />
@@ -76,7 +76,7 @@ const SettingsSocial = () => {
                 LINKEDIN
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faLinkedin}
               className="text-body fs-9 form-icon"
             />
@@ -98,7 +98,7 @@ const SettingsSocial = () => {
                 YOUTUBE
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faYoutube}
               className="text-body fs-9 form-icon"
             />
@@ -120,7 +120,7 @@ const SettingsSocial = () => {
                 ARTSTATION
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faArtstation}
               className="text-body fs-9 form-icon"
             />
@@ -142,7 +142,7 @@ const SettingsSocial = () => {
                 BEHANCE
               </label>
             </Form.Floating>
-            <FontAwesomeIcon
+            <
               icon={faBehance}
               className="text-body fs-9 form-icon"
             />

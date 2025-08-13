@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import {
-  faCheck,
+  Check,
   faEllipsisH,
   faTrash
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Link } from 'react-router-dom';
-import { Col, Dropdown, Row } from 'react-bootstrap';
+import { Col, Dropdown, Row } from 'components/ui';
 import FeatherIcon from 'feather-icons-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -90,7 +90,7 @@ const EcomLatestReviewsTable = ({ facilities }: Props) => {
         accessorKey: 'product',
         header: () => 'Product',
         cell: ({ row: { original } }) => (
-          <Link to="#!" className="fw-semibold">
+          <Link to="#!" className="font-semibold">
             {original.product.length > 46
               ? original.product.slice(0, 46) + '...'
               : original.product}
@@ -102,7 +102,7 @@ const EcomLatestReviewsTable = ({ facilities }: Props) => {
         accessorFn: ({ customer }) => customer.name,
         header: 'CUSTOMER',
         cell: ({ row: { original } }) => (
-          <Link to="#!" className="d-flex align-items-center text-body">
+          <Link to="#!" className="flex align-items-center text-body">
             {original.customer.variant === 'name' ? (
               <Avatar size="l" variant="name">
                 {original.customer.name[0]?.toUpperCase()}
@@ -186,17 +186,17 @@ const EcomLatestReviewsTable = ({ facilities }: Props) => {
         header: '',
         cell: () => (
           <>
-            <div className="position-relative">
+            <div className="relative">
               <div className="hover-actions">
                 <Button
                   variant="phoenix-secondary"
                   className="me-1 fs-10"
                   size="sm"
                 >
-                  <FontAwesomeIcon icon={faCheck} />
+                  < icon={Check} />
                 </Button>
                 <Button variant="phoenix-secondary" className="fs-10" size="sm">
-                  <FontAwesomeIcon icon={faTrash} />
+                  < icon={faTrash} />
                 </Button>
               </div>
             </div>
@@ -243,7 +243,7 @@ const EcomLatestReviewsTable = ({ facilities }: Props) => {
                 onChange={handleSearchInputChange}
               />
             </Col>
-            <Col xs="auto" className="d-flex gap-2">
+            <Col xs="auto" className="flex gap-2">
               <Button
                 variant="phoenix-secondary"
                 size="sm"
@@ -257,7 +257,7 @@ const EcomLatestReviewsTable = ({ facilities }: Props) => {
                   size="sm"
                   className="bg-body-emphasis bg-body-hover dropdown-caret-none"
                 >
-                  <FontAwesomeIcon icon={faEllipsisH} />
+                  < icon={faEllipsisH} />
                 </Dropdown.Toggle>
                 <Dropdown.Menu align="end">
                   <Dropdown.Item href="#/action-1">Action</Dropdown.Item>

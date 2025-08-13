@@ -10,13 +10,13 @@ import {
   faFileZipper,
   faFilePdf,
   faFileCsv
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import Avatar from 'components/base/Avatar';
 import AvatarDropdown from 'components/common/AvatarDropdown';
 import RevealDropdown, {
   RevealDropdownTrigger
 } from 'components/base/RevealDropdown';
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'components/ui';
 import useLightbox from 'hooks/useLightbox';
 import Lightbox from 'components/base/LightBox';
 import useAdvanceTable from 'hooks/useAdvanceTable';
@@ -24,14 +24,14 @@ import { File } from 'data/file-manager';
 import { ColumnDef } from '@tanstack/react-table';
 import { useEffect, useRef } from 'react';
 import { useFileManagerContext } from 'providers/FileManagerProvider';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '';
 import classNames from 'classnames';
 
 const RenderFileIcon = ({ file }: { file: File }) => {
   switch (file.type) {
     case 'folder':
       return (
-        <FontAwesomeIcon
+        <
           icon={faFolder}
           className={classNames(
             'fs-9',
@@ -41,7 +41,7 @@ const RenderFileIcon = ({ file }: { file: File }) => {
       );
     case 'doc':
       return (
-        <FontAwesomeIcon
+        <
           icon={faFileWord}
           className="fs-9 text-body-tertiary"
         />
@@ -49,7 +49,7 @@ const RenderFileIcon = ({ file }: { file: File }) => {
     case 'xls':
     case 'xlx':
       return (
-        <FontAwesomeIcon
+        <
           icon={faFileExcel}
           className="fs-9 text-body-tertiary"
         />
@@ -57,25 +57,25 @@ const RenderFileIcon = ({ file }: { file: File }) => {
     case 'source-code':
     case 'html':
       return (
-        <FontAwesomeIcon
+        <
           icon={faFileInvoice}
           className="fs-9 text-body-tertiary"
         />
       );
     case 'zip':
       return (
-        <FontAwesomeIcon
+        <
           icon={faFileZipper}
           className="fs-9 text-body-tertiary"
         />
       );
     case 'pdf':
       return (
-        <FontAwesomeIcon icon={faFilePdf} className="fs-9 text-body-tertiary" />
+        < icon={faFilePdf} className="fs-9 text-body-tertiary" />
       );
     case 'csv':
       return (
-        <FontAwesomeIcon icon={faFileCsv} className="fs-9 text-body-tertiary" />
+        < icon={faFileCsv} className="fs-9 text-body-tertiary" />
       );
     case 'image':
       return (

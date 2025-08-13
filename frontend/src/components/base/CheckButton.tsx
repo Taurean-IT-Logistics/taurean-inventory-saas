@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import React, { InputHTMLAttributes } from 'react';
-import { Button } from 'react-bootstrap';
+import { Button } from 'components/ui';
 
 interface CheckButtonProps {
   type?: 'checkbox' | 'radio';

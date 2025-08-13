@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Container, Row, Col, Button, Alert } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Container, Row, Col, Button, Alert } from 'components/ui';
+import {  } from '';
 import {
   faPlus,
-  faExclamationTriangle,
+  AlertTriangle,
   faArrowLeft
-} from '@fortawesome/free-solid-svg-icons';
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Tax } from 'types';
 import TaxStatsCards from 'components/tax/TaxStatsCards';
@@ -198,29 +198,29 @@ const TaxManagement = () => {
         {/* Header */}
         <Row className="mb-4">
           <Col>
-            <div className="d-flex justify-content-between align-items-center">
+            <div className="flex justify-content-between align-items-center">
               <div>
                 <h1 className="h3  mb-1">Tax Management</h1>
-                <p className="text-muted mb-0">
+                <p className="text-gray-600 dark:text-gray-400 mb-0">
                   Configure and manage tax rates for your system
                 </p>
               </div>
-              <div className="d-flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="primary"
                   onClick={handleCreateTax}
-                  className="d-flex align-items-center"
+                  className="flex align-items-center"
                 >
-                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  < icon={faPlus} className="me-2" />
                   Create Tax
                 </Button>
                 <Button
                   variant="border-secondary border"
                   as={Link}
                   to="/admin"
-                  className="d-flex align-items-center"
+                  className="flex align-items-center"
                 >
-                  <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
+                  < icon={faArrowLeft} className="me-2" />
                   Back to Dashboard
                 </Button>
               </div>
@@ -236,7 +236,7 @@ const TaxManagement = () => {
             dismissible
             onClose={() => setAlert(null)}
           >
-            <FontAwesomeIcon icon={faExclamationTriangle} className="me-2" />
+            < icon={AlertTriangle} className="me-2" />
             {alert.message}
           </Alert>
         )}

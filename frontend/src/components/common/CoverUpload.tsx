@@ -1,6 +1,6 @@
 import { CSSProperties, ChangeEvent, useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCamera } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faCamera } from 'lucide-react';
 import Button from 'components/base/Button';
 import imageIcon from 'assets/img/icons/image-icon.png';
 import classNames from 'classnames';
@@ -57,7 +57,7 @@ const CoverUpload = ({
         />
         <label className="cover-image-file-input" htmlFor="coverFile" />
         <div className="hover-actions end-0 bottom-0 pe-1 pb-2 text-white">
-          <FontAwesomeIcon icon={faCamera} className="me-2 overlay-icon" />
+          < icon={faCamera} className="me-2 overlay-icon" />
         </div>
       </div>
     </>

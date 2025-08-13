@@ -1,4 +1,4 @@
-import { Col, Dropdown, Row } from 'react-bootstrap';
+import { Col, Dropdown, Row } from 'components/ui';
 import { Route, RouteItems } from 'sitemap';
 import { capitalize } from 'helpers/utils';
 import { Link, useLocation } from 'react-router-dom';

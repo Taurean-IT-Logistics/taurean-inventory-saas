@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload, faTimes } from '@fortawesome/free-solid-svg-icons';
+import {  } from '';
+import { faUpload, faTimes } from 'lucide-react';
 import { InventoryItem } from 'types';
 
 interface ImageUploadFormProps {
@@ -57,9 +57,9 @@ const ImageUploadForm = ({ images, onImagesChange }: ImageUploadFormProps) => {
             onChange={handleImageUpload}
             className="form-control border-secondary mb-3"
           />
-          <div className="d-flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3">
             {images.map((preview, index) => (
-              <div key={index} className="position-relative">
+              <div key={index} className="relative">
                 <img
                   src={preview}
                   alt={`Preview ${index + 1}`}
@@ -76,18 +76,18 @@ const ImageUploadForm = ({ images, onImagesChange }: ImageUploadFormProps) => {
                   style={{ transform: 'translate(25%, -25%)' }}
                   onClick={() => removeImage(index)}
                 >
-                  <FontAwesomeIcon icon={faTimes} />
+                  < icon={faTimes} />
                 </button>
               </div>
             ))}
             {images.length === 0 && (
               <div className="text-center w-100 py-4">
-                <FontAwesomeIcon
+                <
                   icon={faUpload}
                   size="3x"
-                  className="text-muted mb-2"
+                  className="text-gray-600 dark:text-gray-400 mb-2"
                 />
-                <p className="text-muted">No images uploaded</p>
+                <p className="text-gray-600 dark:text-gray-400">No images uploaded</p>
               </div>
             )}
           </div>

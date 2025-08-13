@@ -1,5 +1,5 @@
-import { faComment } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faComment } from 'lucide-react';
+import {  } from '';
 import Button from 'components/base/Button';
 import { useChatWidgetContext } from 'providers/ChatWidgetProvider';
 
@@ -14,7 +14,7 @@ const FaqCta = () => {
           onClick={() => setIsOpenChat(!isOpenChat)}
           variant="outline-primary"
           size="sm"
-          startIcon={<FontAwesomeIcon icon={faComment} className="me-2" />}
+          startIcon={< icon={faComment} className="me-2" />}
         >
           Chat with us
         </Button>
