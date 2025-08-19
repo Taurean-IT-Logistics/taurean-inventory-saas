@@ -22,6 +22,7 @@ import {
 import { Transaction } from "../types";
 import { isValidObjectId } from "mongoose";
 import fs from "fs";
+import { emailService } from "../services/email.service";
 
 // Initialize payment and create transaction document
 const initializePaymentController = async (
@@ -245,6 +246,28 @@ const verifyPaymentController = async (
           { new: true }
         );
       }
+    }
+
+    // Send email notification based on payment status
+    try {
+      if (verificationResponse.data.status === "success" && transaction.user) {
+        await emailService.sendPaymentSuccessEmail(doc._id!.toString());
+      } else if (verificationResponse.data.status === "failed" && transaction.user) {
+        const userDoc = await UserService.getUserByIdentifier(transaction.user.toString());
+        if (userDoc) {
+          await emailService.sendPaymentFailedEmail(
+            {
+              reference: verificationResponse.data.reference,
+              amount: verificationResponse.data.amount / 100,
+              currency: verificationResponse.data.currency,
+            },
+            userDoc.email,
+            transaction.company?.toString() || ''
+          );
+        }
+      }
+    } catch (emailError) {
+      console.warn('Failed to send payment notification email:', emailError);
     }
 
     // Format the response

@@ -6,6 +6,7 @@ import { TaxScheduleModel } from "../models/taxSchedule.model";
 import { emitEvent } from "../realtime/socket";
 import { Events } from "../realtime/events";
 import { notifyCompany } from "./notification.service";
+import { emailService } from "./email.service";
 
 function computeLineAmount(qty: number, unitPrice: number, duration?: number): number {
   const dur = duration && duration > 0 ? duration : 1;
@@ -89,7 +90,14 @@ export async function createInvoice(params: {
   try {
     emitEvent(Events.InvoiceCreated, { id: (doc as any)._id, invoice: doc }, `company:${params.companyId}`);
     await notifyCompany(params.companyId, { title: "Invoice created", message: `Invoice ${invoiceNumber} created`, type: "info" });
-  } catch {}
+    
+    // Send invoice email if customer exists
+    if (params.customerId) {
+      await emailService.sendInvoiceEmail((doc as any)._id.toString(), true);
+    }
+  } catch (emailError) {
+    console.warn('Failed to send invoice email:', emailError);
+  }
 
   return doc as any;
 }
@@ -123,7 +131,12 @@ export async function payInvoice(params: {
   try {
     emitEvent(Events.InvoicePaid, { id: (inv as any)._id, invoice: inv }, `company:${(inv as any).company?.toString?.()}`);
     await notifyCompany((inv as any).company?.toString?.(), { title: "Invoice paid", message: `Invoice ${inv.invoiceNumber} paid`, type: "success" });
-  } catch {}
+    
+    // Send receipt email
+    await emailService.sendReceiptEmail((receipt as any)._id.toString(), true);
+  } catch (emailError) {
+    console.warn('Failed to send receipt email:', emailError);
+  }
 
   return { invoice: inv as any, receipt: receipt as any };
 }

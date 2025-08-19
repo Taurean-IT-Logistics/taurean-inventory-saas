@@ -47,6 +47,20 @@ const CompanySchema = new Schema<CompanyDocument>(
     feePercent: { type: Number, default: 5 },
     paystackRecipientCode: { type: String },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    emailSettings: {
+      sendInvoiceEmails: { type: Boolean, default: true },
+      sendReceiptEmails: { type: Boolean, default: true },
+      sendBookingConfirmations: { type: Boolean, default: true },
+      sendBookingReminders: { type: Boolean, default: true },
+      sendPaymentNotifications: { type: Boolean, default: true },
+      sendWelcomeEmails: { type: Boolean, default: true },
+      sendSubscriptionNotices: { type: Boolean, default: true },
+      customFromName: { type: String },
+      customFromEmail: { type: String },
+      emailSignature: { type: String },
+      updatedAt: { type: Date },
+      updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    },
   },
   { timestamps: true }
 );

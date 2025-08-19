@@ -1,6 +1,7 @@
 import { BookingDocument, BookingModel, InventoryItemModel } from "../models";
 import { Types } from "mongoose";
 import { Booking } from "../types";
+import { emailService } from "./email.service";
 
 function hasOverlap(
   aStart: Date,
@@ -90,7 +91,12 @@ const createBooking = async (
       const { emitEvent } = await import("../realtime/socket");
       const { Events } = await import("../realtime/events");
       emitEvent(Events.BookingCreated, { id: saved._id, booking: saved });
-    } catch {}
+      
+      // Send booking confirmation email
+      await emailService.sendBookingConfirmation(saved._id.toString());
+    } catch (emailError) {
+      console.warn('Failed to send booking confirmation email:', emailError);
+    }
     return saved;
   } catch (error) {
     throw new Error((error as Error).message || "Error creating booking");
