@@ -20,7 +20,7 @@ export interface User {
   company?: string | Company;
   companyRole?: string | CompanyRole;
   cart?: CartItem[];
-  loyaltyProfile?: LoyaltyProfile;
+  loyaltyProfile?: any;
   status: "active" | "inactive" | "suspended";
   isDeleted: boolean;
   createdAt: Date;

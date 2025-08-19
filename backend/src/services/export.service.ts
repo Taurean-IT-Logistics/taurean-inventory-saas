@@ -114,14 +114,14 @@ export async function exportTransactions(options: ExportOptions): Promise<string
       category: transaction.category || '',
       description: transaction.description || '',
       amount: transaction.amount || 0,
-      currency: transaction.currency || 'GHS',
-      method: transaction.method || '',
-      status: transaction.status || 'pending',
+      currency: (transaction as any).currency || 'GHS',
+      method: (transaction as any).method || '',
+      status: (transaction as any).status || 'pending',
       reference: transaction.ref || transaction.paymentDetails?.paystackReference || '',
       customerName: (transaction.user as any)?.name || '',
       customerEmail: (transaction.user as any)?.email || '',
       facilityName: (transaction.facility as any)?.name || '',
-      createdBy: (transaction.createdBy as any)?.name || '',
+      createdBy: (transaction as any).createdBy?.name || '',
       reconciled: transaction.reconciled || false,
       reconciledAt: transaction.reconciledAt ? new Date(transaction.reconciledAt).toISOString().split('T')[0] : ''
     }));
@@ -173,19 +173,19 @@ export async function exportBookings(options: ExportOptions): Promise<string> {
       .lean();
 
     // Transform data for export
-    const exportData: BookingExportData[] = bookings.map(booking => ({
+    const exportData = bookings.map(booking => ({
       id: booking._id.toString(),
-      bookingNumber: booking.bookingNumber || '',
+      bookingNumber: (booking as any).bookingNumber || '',
       customerName: (booking.user as any)?.name || '',
       customerEmail: (booking.user as any)?.email || '',
       facilityName: (booking.facility as any)?.name || '',
       startDate: new Date(booking.startDate).toISOString(),
       endDate: new Date(booking.endDate).toISOString(),
-      duration: booking.duration || 0,
+      duration: (booking as any).duration || 0,
       status: booking.status || '',
-      totalAmount: booking.totalAmount || 0,
-      currency: booking.currency || 'GHS',
-      paymentStatus: booking.paymentStatus || 'pending',
+      totalAmount: (booking as any).totalAmount || 0,
+      currency: (booking as any).currency || 'GHS',
+      paymentStatus: (booking as any).paymentStatus || 'pending',
       createdAt: new Date(booking.createdAt).toISOString().split('T')[0]
     }));
 
@@ -242,7 +242,7 @@ export async function exportInvoices(options: ExportOptions): Promise<string> {
       customerName: (invoice.customer as any)?.name || 'Walk-in Customer',
       customerEmail: (invoice.customer as any)?.email || '',
       issueDate: new Date(invoice.createdAt).toISOString().split('T')[0],
-      dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '',
+      dueDate: (invoice as any).dueDate ? new Date((invoice as any).dueDate).toISOString().split('T')[0] : '',
       status: invoice.status,
       subtotal: invoice.subtotal,
       taxTotal: invoice.taxTotal,
