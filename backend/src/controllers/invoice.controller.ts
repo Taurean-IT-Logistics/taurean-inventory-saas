@@ -5,7 +5,7 @@ import { sendSuccess, sendError } from "../utils";
 import { InvoiceModel } from "../models/invoice.model";
 import { ReceiptModel } from "../models/receipt.model";
 
-export async function create(req: Request, res: Response) {
+export async function create(req: Request, res: Response): Promise<void> {
   try {
     const user = req.user as any;
     const { lines, customerId, currency, taxScheduleId } = req.body;
@@ -24,7 +24,7 @@ export async function create(req: Request, res: Response) {
   }
 }
 
-export async function pay(req: Request, res: Response) {
+export async function pay(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
     const { method, provider, reference, timestamp } = req.body;
@@ -41,7 +41,7 @@ export async function pay(req: Request, res: Response) {
   }
 }
 
-export async function listCompanyInvoices(req: Request, res: Response) {
+export async function listCompanyInvoices(req: Request, res: Response): Promise<void> {
   try {
     const companyId = (req.user as any)?.companyId;
     const docs = await InvoiceModel.find({ company: companyId }).sort({
@@ -53,7 +53,7 @@ export async function listCompanyInvoices(req: Request, res: Response) {
   }
 }
 
-export async function listUserInvoices(req: Request, res: Response) {
+export async function listUserInvoices(req: Request, res: Response): Promise<void> {
   try {
     const userId = (req.user as any)?.id;
     const docs = await InvoiceModel.find({ customer: userId }).sort({
@@ -65,7 +65,7 @@ export async function listUserInvoices(req: Request, res: Response) {
   }
 }
 
-export async function listCompanyReceipts(req: Request, res: Response) {
+export async function listCompanyReceipts(req: Request, res: Response): Promise<void> {
   try {
     const companyId = (req.user as any)?.companyId;
     const invoices = await InvoiceModel.find({ company: companyId }).select(
@@ -81,7 +81,7 @@ export async function listCompanyReceipts(req: Request, res: Response) {
   }
 }
 
-export async function listUserReceipts(req: Request, res: Response) {
+export async function listUserReceipts(req: Request, res: Response): Promise<void> {
   try {
     const userId = (req.user as any)?.id;
     const invoices = await InvoiceModel.find({ customer: userId }).select(
@@ -97,7 +97,7 @@ export async function listUserReceipts(req: Request, res: Response) {
   }
 }
 
-export async function downloadInvoicePDF(req: Request, res: Response) {
+export async function downloadInvoicePDF(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
     const user = req.user as any;
@@ -105,7 +105,8 @@ export async function downloadInvoicePDF(req: Request, res: Response) {
     // Check if user has access to this invoice
     const invoice = await InvoiceModel.findById(id);
     if (!invoice) {
-      return res.status(404).json({ error: "Invoice not found" });
+      sendError(res, "Invoice not found", 404);
+      return;
     }
 
     // Check permissions - either owner or company member
@@ -113,7 +114,8 @@ export async function downloadInvoicePDF(req: Request, res: Response) {
     const isCompanyMember = invoice.company?.toString() === user.companyId;
     
     if (!isOwner && !isCompanyMember) {
-      return res.status(403).json({ error: "Access denied" });
+      sendError(res, "Access denied", 403);
+      return;
     }
 
     const pdfBuffer = await PDFService.generateInvoicePDF(id);
@@ -128,7 +130,7 @@ export async function downloadInvoicePDF(req: Request, res: Response) {
   }
 }
 
-export async function downloadReceiptPDF(req: Request, res: Response) {
+export async function downloadReceiptPDF(req: Request, res: Response): Promise<void> {    
   try {
     const { id } = req.params;
     const user = req.user as any;
@@ -136,7 +138,8 @@ export async function downloadReceiptPDF(req: Request, res: Response) {
     // Check if user has access to this receipt
     const receipt = await ReceiptModel.findById(id).populate('invoice');
     if (!receipt || !receipt.invoice) {
-      return res.status(404).json({ error: "Receipt not found" });
+      sendError(res, "Receipt not found", 404);
+      return;
     }
 
     const invoice = receipt.invoice as any;
@@ -146,7 +149,8 @@ export async function downloadReceiptPDF(req: Request, res: Response) {
     const isCompanyMember = invoice.company?.toString() === user.companyId;
     
     if (!isOwner && !isCompanyMember) {
-      return res.status(403).json({ error: "Access denied" });
+      sendError(res, "Access denied", 403);
+      return;
     }
 
     const pdfBuffer = await PDFService.generateReceiptPDF(id);
