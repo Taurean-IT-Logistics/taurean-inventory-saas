@@ -45,7 +45,7 @@ export const BookingDetailsModal = ({
         <div className="space-y-6">
           <div className="flex justify-between items-start">
             <h3 className="text-xl font-semibold text-blue-600">
-              {booking.facility?.name || "Unknown Facility"}
+              {(booking.facility as any)?.name || "Unknown Facility"}
             </h3>
             <div className="flex gap-4">
               <div>
