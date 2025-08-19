@@ -9,26 +9,22 @@ export interface CartItem {
 }
 
 export interface User {
+  _id?: string;
   name: string;
   username: string;
   email: string;
-  phone?: string;
   password: string;
+  phone?: string;
   role: "user" | "staff" | "admin";
-  loyaltyProfile?: {
-    totalBookings: number;
-    totalSpent: number;
-    preferredFacilities: Facility[];
-    lastBookingDate?: Date;
-    loyaltyTier?: "bronze" | "silver" | "gold" | "platinum";
-  };
-  cart: CartItem[];
-  isDeleted?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-  company?: string; // Company ObjectId string
-  companyRole?: string; // CompanyRole ObjectId string
-  isSuperAdmin?: boolean;
+  isSuperAdmin?: boolean; // Only for Taurean IT users
+  company?: string | Company;
+  companyRole?: string | CompanyRole;
+  cart?: CartItem[];
+  loyaltyProfile?: LoyaltyProfile;
+  status: "active" | "inactive" | "suspended";
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface TokenPayload {
@@ -129,6 +125,7 @@ export interface Facility {
   isActive: boolean;
   isTaxable: boolean;
   isDeleted: boolean;
+  company: any;
   createdBy: User;
   createdAt: Date;
   updatedAt: Date;
@@ -276,6 +273,7 @@ export interface InventoryItem {
     maintenanceDue: boolean;
     warrantyExpiring: boolean;
   };
+  company: any;
   isTaxable: boolean;
   isDeleted: boolean;
   createdAt: Date;
@@ -406,7 +404,12 @@ export interface Tax {
 
 export interface Company {
   name: string;
-  logoUrl?: string;
+  logo?: {
+    path: string;
+    originalName: string;
+    mimetype: string;
+    size: number;
+  };
   registrationDocs?: string[];
   location?: string;
   contactEmail?: string;
@@ -420,10 +423,17 @@ export interface Company {
   currency?: string; // GHS, USD, etc.
   isActive: boolean;
   subscription?: {
-    plan: "monthly" | "biannual" | "annual" | "triannual";
+    plan: "free_trial" | "monthly" | "biannual" | "annual" | "triannual";
     expiresAt: Date;
     licenseKey: string;
+    paymentReference?: string;
+    activatedAt?: Date;
+    status?: "active" | "expired" | "cancelled";
+    updatedAt?: Date;
+    hasUsedTrial?: boolean;
+    isTrial?: boolean;
   };
+  owner: User;
   paystackSubaccountCode?: string;
   paystackRecipientCode?: string;
   feePercent?: number;
@@ -437,7 +447,13 @@ export interface Payout {
   amount: number;
   currency: string;
   recipientCode?: string;
-  status: "pending" | "approved" | "processing" | "paid" | "failed" | "rejected";
+  status:
+    | "pending"
+    | "approved"
+    | "processing"
+    | "paid"
+    | "failed"
+    | "rejected";
   requestedBy: string;
   processedBy?: string;
   paystackTransferCode?: string;

@@ -14,6 +14,7 @@ import {
 } from "../utils";
 import {
   BookingDocument,
+  CompanyModel,
   InventoryItemModel,
   TransactionDocument,
 } from "../models";
@@ -235,9 +236,12 @@ const verifyPaymentController = async (
             }
           );
         }
-      } else if (updatedDoc.category === "account" && updatedDoc.account) {
-        // Optionally, update account balance or reconciliation status
-        // e.g., AccountService.reconcileAccount(updatedDoc.account as any)
+      } else if (updatedDoc.category === "activation" && transaction.company) {
+        await CompanyModel.findByIdAndUpdate(
+          transaction.company,
+          { isActive: true },
+          { new: true }
+        );
       }
     }
 
@@ -353,11 +357,14 @@ const handlePaystackWebhookController = async (
                 );
               }
             } else if (
-              updatedDoc.category === "account" &&
-              updatedDoc.account
+              updatedDoc.category === "activation" &&
+              transaction.company
             ) {
-              // Optionally, update account balance or reconciliation status
-              // e.g., AccountService.reconcileAccount(updatedDoc.account as any)
+              await CompanyModel.findByIdAndUpdate(
+                transaction.company,
+                { isActive: true },
+                { new: true }
+              );
             }
           }
         }
@@ -547,7 +554,16 @@ const getAllTransactions = async (
   res: Response
 ): Promise<void> => {
   try {
-    const transactions = await TransactionService.getAllTransactions();
+    // Company-scoped transactions for the authenticated user
+    const companyId = (req.user?.companyId ||
+      (req.user as any)?.company) as any;
+    if (!companyId) {
+      sendValidationError(res, "User is not associated with a company");
+      return;
+    }
+    const transactions = await TransactionService.getCompanyTransactions(
+      companyId.toString()
+    );
 
     if (!transactions) {
       throw new Error("No transactions found");
@@ -606,6 +622,81 @@ const updateTransaction = async (
   }
 };
 
+const listBanks = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { country, currency, type } = req.query;
+    let countryCode = (country as string) || "Ghana";
+    const banks = await PaymentService.getAllBanks(
+      countryCode as string,
+      currency as string,
+      type as string
+    );
+
+    if (!banks) {
+      throw new Error("No banks found");
+    }
+
+    sendSuccess(res, "Banks retrieved successfully", banks);
+  } catch (error) {
+    sendError(res, "Failed to retrieve banks", error);
+  }
+};
+
+const getBankMomoDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { bankCode, accountNumber } = req.params;
+
+    const momoDetails = await PaymentService.getMomoBankDetails(
+      bankCode,
+      accountNumber
+    );
+
+    sendSuccess(res, "Momo bank details retrieved successfully", momoDetails);
+  } catch (error) {
+    sendError(res, "Failed to retrieve momo bank details", error);
+  }
+};
+
+const updateSubAccount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { subaccountCode } = req.params;
+    const data = req.body;
+
+    const updatedSubAccount = await PaymentService.updateSubAccount(
+      subaccountCode,
+      data
+    );
+
+    sendSuccess(res, "Subaccount updated successfully", updatedSubAccount);
+  } catch (error) {
+    sendError(res, "Failed to update subaccount", error);
+  }
+};
+
+const getSubAccountDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { subaccountCode } = req.params;
+
+    const subaccountDetails = await PaymentService.getSubaccountDetails(
+      subaccountCode
+    );
+
+    sendSuccess(
+      res,
+      "Subaccount details retrieved successfully",
+      subaccountDetails
+    );
+  } catch (error) {
+    sendError(res, "Failed to retrieve subaccount details", error);
+  }
+};
+
 export {
   initializePaymentController,
   verifyPaymentController,
@@ -615,4 +706,8 @@ export {
   getAllTransactions,
   updateTransaction,
   getUserTransactions,
+  getBankMomoDetails,
+  updateSubAccount,
+  listBanks,
+  getSubAccountDetails,
 };

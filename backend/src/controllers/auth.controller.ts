@@ -275,6 +275,9 @@ const getProfile = async (req: Request, res: Response): Promise<void> => {
       analytics: (fullUser as any).analytics,
       createdAt: fullUser.createdAt,
       updatedAt: fullUser.updatedAt,
+      isSuperAdmin: (fullUser as any).isSuperAdmin,
+      company: (fullUser as any).company,
+      companyRole: (fullUser as any).companyRole,
     };
 
     sendSuccess(res, "Profile retrieved successfully", userResponse);
@@ -316,6 +319,9 @@ const updateProfile = async (req: Request, res: Response): Promise<void> => {
       cart: updatedUser.cart,
       loyaltyProfile: updatedUser.loyaltyProfile,
       updatedAt: updatedUser.updatedAt,
+      isSuperAdmin: (updatedUser as any).isSuperAdmin,
+      company: (updatedUser as any).company,
+      companyRole: (updatedUser as any).companyRole,
     };
 
     sendSuccess(res, "Profile updated successfully", userResponse);

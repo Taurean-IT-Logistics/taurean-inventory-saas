@@ -22,6 +22,10 @@ tags:
     description: Booking management (Protected)
   - name: Taxes
     description: Tax management (Protected)
+  - name: Notifications
+    description: User notification management (Protected)
+  - name: Subscriptions
+    description: Subscription and license management (Partially Protected)
 
 paths:
   /api/v1/auth/login:
@@ -462,7 +466,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIResponse"
-        "404":
+        404:
           description: User not found
           content:
             application/json:
@@ -1535,6 +1539,137 @@ paths:
               schema:
                 $ref: "#/components/schemas/APIResponse"
 
+  /api/v1/transaction/banks:
+    get:
+      summary: List supported banks
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: country
+          schema:
+            type: string
+          description: Filter banks by country
+        - in: query
+          name: currency
+          schema:
+            type: string
+          description: Filter banks by currency
+        - in: query
+          name: type
+          schema:
+            type: string
+          description: Filter banks by type (e.g. commercial, savings)
+      responses:
+        "200":
+          description: List of banks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    code: { type: string }
+                    name: { type: string }
+        "404":
+          description: No banks found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/transaction/momo/{bankCode}/{accountNumber}:
+    get:
+      summary: Get mobile money details by bank code and account number
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: bankCode
+          required: true
+          schema: { type: string }
+        - in: path
+          name: accountNumber
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Mobile money details
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/transaction/subaccount/{subaccountCode}:
+    put:
+      summary: Update subaccount details (admin only)
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: subaccountCode
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Subaccount updated
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: Subaccount not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+    get:
+      summary: Get subaccount details (admin only)
+      tags: [Transaction]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: subaccountCode
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Subaccount details
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: Subaccount not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
   /api/v1/bookings:
     post:
       tags: [Bookings]
@@ -1760,8 +1895,6 @@ paths:
     get:
       summary: Get all taxes
       tags: [Taxes]
-      security:
-        - bearerAuth: []
       parameters:
         - in: query
           name: active
@@ -1969,6 +2102,225 @@ paths:
       responses:
         "200":
           description: Subscription renewed
+
+  # Subscription Management Endpoints
+  /api/v1/subscriptions/plans:
+    get:
+      summary: Get available subscription plans
+      tags: [Subscriptions]
+      security: []
+      responses:
+        "200":
+          description: Subscription plans retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/subscriptions/initialize-payment:
+    post:
+      summary: Initialize subscription payment
+      tags: [Subscriptions]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId, planId, email]
+              properties:
+                companyId:
+                  type: string
+                  description: Company ID to activate subscription for
+                planId:
+                  type: string
+                  enum: [monthly, biannual, annual, triannual]
+                  description: Subscription plan to activate
+                email:
+                  type: string
+                  format: email
+                  description: Email for payment processing
+      responses:
+        "200":
+          description: Payment initialized successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/subscriptions/verify-payment:
+    post:
+      summary: Verify subscription payment and activate license
+      tags: [Subscriptions]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reference]
+              properties:
+                reference:
+                  type: string
+                  description: Payment reference from Paystack
+      responses:
+        "200":
+          description: Payment verified and subscription activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/subscriptions/status/{companyId}:
+    get:
+      summary: Get company subscription status
+      tags: [Subscriptions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: Company ID to check subscription status
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Subscription status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/subscriptions/renew:
+    post:
+      summary: Renew subscription
+      tags: [Subscriptions]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId, planId, email]
+              properties:
+                companyId:
+                  type: string
+                  description: Company ID to renew subscription for
+                planId:
+                  type: string
+                  enum: [monthly, biannual, annual, triannual]
+                  description: Subscription plan to renew
+                email:
+                  type: string
+                  format: email
+                  description: Email for payment processing
+      responses:
+        "200":
+          description: Subscription renewal payment initialized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/subscriptions/{companyId}:
+    delete:
+      summary: Cancel subscription
+      tags: [Subscriptions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: Company ID to cancel subscription for
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Subscription cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
 
   /api/v1/invoices:
     post:
@@ -2303,6 +2655,651 @@ paths:
           schema: { type: string }
       responses:
         "200": { description: Cancelled }
+
+  # Notification Routes
+  /api/v1/notifications/user:
+    get:
+      summary: Get user notifications
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of notifications to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of notifications to skip
+      responses:
+        "200":
+          description: User notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/notifications/{id}/read:
+    patch:
+      summary: Mark notification as read
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Notification ID
+      responses:
+        "200":
+          description: Notification marked as read successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/notifications/read-all:
+    patch:
+      summary: Mark all notifications as read
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All notifications marked as read successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/notifications/{id}:
+    delete:
+      summary: Delete notification
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Notification ID
+      responses:
+        "200":
+          description: Notification deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "404":
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/notifications/preferences:
+    get:
+      summary: Get user notification preferences
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Notification preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+    patch:
+      summary: Update user notification preferences
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPreferencesInput"
+      responses:
+        "200":
+          description: Notification preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/notifications/unread-count:
+    get:
+      summary: Get unread notification count
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Unread count retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  # Company-specific Routes
+  /api/v1/facilities/company:
+    get:
+      summary: Get company-specific facilities
+      tags: [Facilities]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of facilities to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of facilities to skip
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, inactive, maintenance]
+          description: Filter by facility status
+      responses:
+        "200":
+          description: Company facilities retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/bookings/company:
+    get:
+      summary: Get company-specific bookings
+      tags: [Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of bookings to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of bookings to skip
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, confirmed, completed, cancelled]
+          description: Filter by booking status
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          description: Filter by start date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          description: Filter by end date
+      responses:
+        "200":
+          description: Company bookings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/users/company:
+    get:
+      summary: Get company-specific users
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of users to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of users to skip
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum: [admin, staff, user]
+          description: Filter by user role
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by name, email, or username
+      responses:
+        "200":
+          description: Company users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/inventory-items/company:
+    get:
+      summary: Get company-specific inventory items
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of items to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of items to skip
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [available, rented, maintenance, retired]
+          description: Filter by item status
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filter by item category
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by name or description
+      responses:
+        "200":
+          description: Company inventory items retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/taxes/company:
+    get:
+      summary: Get company-specific taxes
+      tags: [Taxes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of taxes to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of taxes to skip
+        - in: query
+          name: active
+          schema:
+            type: boolean
+          description: Filter by active status
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [percentage, fixed]
+          description: Filter by tax type
+      responses:
+        "200":
+          description: Company taxes retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  # Missing Invoice Routes
+  /api/v1/invoices/company:
+    get:
+      summary: Get company-specific invoices
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of invoices to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of invoices to skip
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, paid, overdue, cancelled]
+          description: Filter by invoice status
+      responses:
+        "200":
+          description: Company invoices retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/invoices/me:
+    get:
+      summary: Get user's own invoices
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of invoices to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of invoices to skip
+      responses:
+        "200":
+          description: User invoices retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/invoices/company/receipts:
+    get:
+      summary: Get company receipts
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of receipts to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of receipts to skip
+      responses:
+        "200":
+          description: Company receipts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  /api/v1/invoices/me/receipts:
+    get:
+      summary: Get user's own receipts
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of receipts to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of receipts to skip
+      responses:
+        "200":
+          description: User receipts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+
+  # Missing Transaction Routes
+  /api/v1/transaction/company:
+    get:
+      summary: Get company-specific transactions
+      tags: [Transactions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of transactions to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of transactions to skip
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, successful, failed, cancelled]
+          description: Filter by transaction status
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [payment, refund, transfer]
+          description: Filter by transaction type
+      responses:
+        "200":
+          description: Company transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIResponse"
 
 components:
   securitySchemes:
@@ -3088,3 +4085,35 @@ components:
                   endTime:
                     type: string
                     format: date-time
+
+    NotificationPreferencesInput:
+      type: object
+      properties:
+        email:
+          type: boolean
+          description: Enable email notifications
+          example: true
+        push:
+          type: boolean
+          description: Enable push notifications
+          example: true
+        sms:
+          type: boolean
+          description: Enable SMS notifications
+          example: false
+        bookingNotifications:
+          type: boolean
+          description: Enable booking-related notifications
+          example: true
+        paymentNotifications:
+          type: boolean
+          description: Enable payment-related notifications
+          example: true
+        systemNotifications:
+          type: boolean
+          description: Enable system notifications
+          example: true
+        marketingNotifications:
+          type: boolean
+          description: Enable marketing notifications
+          example: false

@@ -411,3 +411,16 @@ export async function getFacilityReviews(
     throw new Error("Error fetching facility reviews");
   }
 }
+
+// Export a service object for backward compatibility
+export const FacilityService = {
+  getFacilities,
+  getFacilityById,
+  createFacility,
+  updateFacility,
+  deleteFacility,
+  addAvailability,
+  removeAvailability,
+  leaveReview,
+  getFacilityReviews,
+};

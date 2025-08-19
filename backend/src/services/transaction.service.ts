@@ -12,7 +12,10 @@ const createTransaction = async (
     try {
       const { emitEvent } = await import("../realtime/socket");
       const { Events } = await import("../realtime/events");
-      emitEvent(Events.TransactionCreated, { id: saved._id, transaction: saved });
+      emitEvent(Events.TransactionCreated, {
+        id: saved._id,
+        transaction: saved,
+      });
     } catch {}
     return saved;
   } catch (error) {
@@ -31,7 +34,8 @@ const getAllTransactions = async (
       .populate("booking")
       .populate("account")
       .populate("facility")
-      .populate("approvedBy");
+      .populate("approvedBy")
+      .populate("company");
   } catch (error) {
     throw new Error("Error fetching transactions");
   }
@@ -50,7 +54,8 @@ const getAllUserTransactions = async (
       .populate("booking")
       .populate("account")
       .populate("facility")
-      .populate("approvedBy");
+      .populate("approvedBy")
+      .populate("company");
   } catch (error) {
     throw new Error("Error fetching transactions");
   }
@@ -71,7 +76,8 @@ const getTransactionById = async (
       .populate("booking")
       .populate("account")
       .populate("facility")
-      .populate("approvedBy");
+      .populate("approvedBy")
+      .populate("company");
   } catch (error) {
     throw new Error("Error fetching transaction");
   }
@@ -88,19 +94,27 @@ const updateTransaction = async (
       throw new Error("Invalid ID format");
     }
     const filter = showDeleted ? { _id: id } : { _id: id, isDeleted: false };
-    const updated = await TransactionModel.findOneAndUpdate(filter, updateData, {
-      new: true,
-    })
+    const updated = await TransactionModel.findOneAndUpdate(
+      filter,
+      updateData,
+      {
+        new: true,
+      }
+    )
       .populate("user")
       .populate("booking")
       .populate("account")
       .populate("facility")
-      .populate("approvedBy");
+      .populate("approvedBy")
+      .populate("company");
     if (updated) {
       try {
         const { emitEvent } = await import("../realtime/socket");
         const { Events } = await import("../realtime/events");
-        emitEvent(Events.TransactionUpdated, { id: updated._id, transaction: updated });
+        emitEvent(Events.TransactionUpdated, {
+          id: updated._id,
+          transaction: updated,
+        });
       } catch {}
     }
     return updated;
@@ -162,7 +176,8 @@ const getTransactionsByUserId = async (
       .populate("booking")
       .populate("account")
       .populate("facility")
-      .populate("approvedBy");
+      .populate("approvedBy")
+      .populate("company");
   } catch (error) {
     throw new Error("Error fetching transactions by user ID");
   }
@@ -185,7 +200,8 @@ const getTransactionsByFacilityId = async (
       .populate("booking")
       .populate("account")
       .populate("facility")
-      .populate("approvedBy");
+      .populate("approvedBy")
+      .populate("company");
   } catch (error) {
     throw new Error("Error fetching transactions by facility ID");
   }
@@ -205,9 +221,33 @@ const getTransactionByReference = async (
       .populate("booking")
       .populate("account")
       .populate("facility")
-      .populate("approvedBy");
+      .populate("approvedBy")
+      .populate("company");
   } catch (error) {
     throw new Error("Error fetching transaction by Paystack reference");
+  }
+};
+
+// Get company-specific transactions
+const getCompanyTransactions = async (
+  companyId: string,
+  showDeleted = false
+): Promise<TransactionDocument[]> => {
+  try {
+    const filter: any = { company: companyId };
+    if (!showDeleted) {
+      filter.isDeleted = false;
+    }
+    return await TransactionModel.find(filter)
+      .populate("user")
+      .populate("booking")
+      .populate("account")
+      .populate("facility")
+      .populate("approvedBy")
+      .populate("company")
+      .sort({ createdAt: -1 });
+  } catch (error) {
+    throw new Error("Error fetching company transactions");
   }
 };
 
@@ -222,4 +262,5 @@ export {
   getTransactionsByUserId,
   getTransactionsByFacilityId,
   getTransactionByReference,
+  getCompanyTransactions,
 };

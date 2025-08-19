@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../helpers";
-import { sendUnauthorized, sendError } from "../utils";
+import { sendUnauthorized, sendError, sendForbidden } from "../utils";
 import { CompanyModel, CompanyRoleModel, UserModel } from "../models";
 
 export function AuthMiddleware(
@@ -33,13 +33,15 @@ export function AuthorizeRoles(...roles: string[]) {
       return;
     }
 
-    // Super admin bypass
+    // For Taurean IT super admins, allow all operations
     if ((req.user as any).isSuperAdmin) {
       return next();
     }
 
-    if (!roles.includes(req.user.role)) {
-      sendUnauthorized(res, `Access requires one of: ${roles.join(", ")}`);
+    // For regular company users, check their role
+    const userRole = (req.user as any).role;
+    if (!roles.includes(userRole)) {
+      sendForbidden(res, "Insufficient permissions");
       return;
     }
 
@@ -50,24 +52,40 @@ export function AuthorizeRoles(...roles: string[]) {
 export function RequireActiveCompany() {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Taurean IT super admins bypass company checks
       if ((req.user as any)?.isSuperAdmin) {
         return next();
       }
+
       const companyId = (req.user as any)?.companyId;
       if (!companyId) {
         sendUnauthorized(res, "No company assigned");
         return;
       }
+
       const company = await CompanyModel.findById(companyId).lean();
-      if (!company || company.isActive !== true) {
-        sendUnauthorized(res, "Company inactive or not found");
+      if (!company) {
+        sendUnauthorized(res, "Company not found");
         return;
       }
+
+      // Taurean IT is always considered active
+      if (company.name === "Taurean IT") {
+        return next();
+      }
+
+      // For other companies, check if active and subscription is valid
+      if (company.isActive !== true) {
+        sendUnauthorized(res, "Company inactive");
+        return;
+      }
+
       const sub = (company as any).subscription;
       if (!sub || !sub.expiresAt || new Date(sub.expiresAt) < new Date()) {
         sendUnauthorized(res, "Subscription expired or missing");
         return;
       }
+
       return next();
     } catch (e: any) {
       sendError(res, "Company access check failed", e.message);
@@ -79,32 +97,40 @@ export function RequireActiveCompany() {
 export function RequirePermissions(required: (keyof any)[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Taurean IT super admins bypass permission checks
       if ((req.user as any)?.isSuperAdmin) return next();
+
       const userId = (req.user as any)?.id;
       if (!userId) {
         sendUnauthorized(res, "Authentication required");
         return;
       }
+
       const user = await UserModel.findById(userId)
         .select("companyRole")
         .lean();
+
       if (!user || !(user as any).companyRole) {
         sendUnauthorized(res, "No company role assigned");
         return;
       }
+
       const role = await CompanyRoleModel.findById(
         (user as any).companyRole
       ).lean();
+
       if (!role) {
         sendUnauthorized(res, "Role not found");
         return;
       }
+
       const perms = (role as any).permissions || {};
       const ok = required.every((p) => perms[p] === true);
       if (!ok) {
         sendUnauthorized(res, "Insufficient permissions");
         return;
       }
+
       return next();
     } catch (e: any) {
       sendError(res, "Permission check failed", e.message);

@@ -38,6 +38,33 @@ export const getTaxes = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
+ * Get company-specific taxes
+ */
+export const getCompanyTaxes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const filters = {
+      active:
+        req.query.active === "true"
+          ? true
+          : req.query.active === "false"
+          ? false
+          : undefined,
+      type: req.query.type as string,
+      appliesTo: req.query.appliesTo as string,
+      companyId: req.user?.companyId,
+    };
+
+    const taxes = await TaxService.getCompanyTaxes(filters);
+    sendSuccess(res, "Company taxes fetched successfully", taxes);
+  } catch (error) {
+    sendError(res, "Failed to fetch company taxes", error);
+  }
+};
+
+/**
  * Get a tax by ID
  */
 export const getTax = async (req: Request, res: Response): Promise<void> => {

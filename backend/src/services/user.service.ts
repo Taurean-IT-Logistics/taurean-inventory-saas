@@ -164,6 +164,85 @@ export async function getAllUsers(
 }
 
 /**
+ * Get company-specific users with pagination and filtering
+ */
+export async function getCompanyUsers(
+  options: {
+    page?: number;
+    limit?: number;
+    role?: string;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+    companyId?: string;
+  } = {}
+): Promise<{
+  users: UserDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}> {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      role,
+      search,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+      companyId,
+    } = options;
+
+    const skip = (page - 1) * limit;
+    const query: any = { company: companyId };
+
+    // Add role filter
+    if (role) {
+      query.role = role;
+    }
+
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { username: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Sort configuration
+    const sortConfig: any = {};
+    sortConfig[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    const [users, total] = await Promise.all([
+      UserModel.find(query)
+        .select("-password") // Exclude password from results
+        .sort(sortConfig)
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      UserModel.countDocuments(query),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      users,
+      total,
+      page,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  } catch (error: any) {
+    throw new Error("Error fetching company users: " + error.message);
+  }
+}
+
+/**
  * Get user by ID with optional analytics data
  */
 export async function getUserById(
@@ -177,6 +256,7 @@ export async function getUserById(
 
     const user = await UserModel.findOne({ _id: id })
       .select("-password")
+      .populate("company companyRole")
       .exec();
 
     if (!user) {
@@ -226,6 +306,7 @@ export async function getUserByIdentifier(
       $or: orConditions,
       isDeleted: false,
     })
+      .populate("company companyRole")
       .select(selectFields)
       .exec();
   } catch (error: any) {
@@ -279,6 +360,7 @@ export async function updateUser(
       { new: true, runValidators: true }
     )
       .select("-password")
+      .populate("company companyRole")
       .exec();
 
     return updatedUser;
@@ -306,6 +388,7 @@ export async function updateUserRole(
       { new: true, runValidators: true }
     )
       .select("-password")
+      .populate("company companyRole")
       .exec();
 
     if (!user) {
@@ -651,3 +734,18 @@ export async function updateUserLoyalty(
     throw new Error("Error updating user loyalty: " + error.message);
   }
 }
+
+// Export a service object for backward compatibility
+export const UserService = {
+  createUser,
+  getAllUsers,
+  getCompanyUsers,
+  getUserById,
+  getUserByIdentifier,
+  updateUser,
+  updateUserRole,
+  deleteUser,
+  getUserStatistics,
+  searchUsers,
+  updateUserLoyalty,
+};

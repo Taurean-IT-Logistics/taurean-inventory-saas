@@ -41,6 +41,10 @@ const storage = multer.diskStorage({
       prefix = "facility";
     } else if (req.baseUrl === "/api/v1/users") {
       prefix = "user";
+    } else if (req.baseUrl === "/api/v1/inventory-items") {
+      prefix = "inventory";
+    } else if (req.baseUrl === "/api/v1/companies") {
+      prefix = "company";
     }
 
     const extension = path.extname(sanitizedOriginalName);

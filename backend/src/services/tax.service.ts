@@ -50,6 +50,42 @@ const getAllTaxes = async (
 };
 
 /**
+ * Get company-specific taxes with optional filtering
+ */
+const getCompanyTaxes = async (
+  filters: {
+    active?: boolean;
+    type?: string;
+    appliesTo?: string;
+    companyId?: string;
+  } = {}
+): Promise<TaxDocument[]> => {
+  try {
+    const query: any = { company: filters.companyId };
+
+    if (filters.active !== undefined) {
+      query.active = filters.active;
+    }
+
+    if (filters.type) {
+      query.type = filters.type;
+    }
+
+    if (filters.appliesTo) {
+      query.appliesTo = filters.appliesTo;
+    }
+
+    return await TaxModel.find(query).sort({ createdAt: -1 });
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch company taxes: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
+/**
  * Get tax by ID
  */
 const getTaxById = async (id: string): Promise<TaxDocument | null> => {
@@ -101,4 +137,11 @@ const deleteTax = async (id: string): Promise<boolean> => {
   }
 };
 
-export { createTax, updateTax, getAllTaxes, getTaxById, deleteTax };
+export {
+  createTax,
+  updateTax,
+  getAllTaxes,
+  getCompanyTaxes,
+  getTaxById,
+  deleteTax,
+};

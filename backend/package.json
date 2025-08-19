@@ -1,13 +1,13 @@
 {
   "name": "inventory-backend",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "src/index.ts",
   "description": "",
   "scripts": {
     "start": "npm run seed && npm run build && node dist/index.js",
     "seed": "npx ts-node src/scripts/seedAdmin.ts",
     "build": "tsc",
-    "dev": "nodemon --exec",
+    "dev": "nodemon --exec ts-node src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

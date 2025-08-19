@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { InventoryItemModel } from "../models";
 import { InventoryItemService } from "../services";
 import {
   sendSuccess,
@@ -22,11 +23,48 @@ export const getAllInventoryItems = async (
   res: Response
 ): Promise<void> => {
   try {
-    const showDeleted = true;
-    const items = await InventoryItemService.getAllInventoryItems(showDeleted);
+    // Public listing - only require active companies, subscription check is optional
+    const items = await InventoryItemModel.aggregate([
+      {
+        $lookup: {
+          from: "companies",
+          localField: "company",
+          foreignField: "_id",
+          as: "company",
+        },
+      },
+      { $unwind: "$company" },
+      {
+        $match: {
+          isDeleted: false,
+          "company.isActive": true,
+          $or: [
+            { "company.subscription.expiresAt": { $gt: new Date() } },
+            { "company.name": "Taurean IT" }, // Taurean IT is always active
+          ],
+        },
+      },
+    ]);
     sendSuccess(res, "Inventory items fetched successfully", items);
   } catch (error: any) {
     sendError(res, "Failed to fetch inventory items", error.message);
+  }
+};
+
+// Get company-specific inventory items
+export const getCompanyInventoryItems = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const showDeleted = true;
+    const items = await InventoryItemService.getCompanyInventoryItems(
+      req.user?.companyId!,
+      showDeleted
+    );
+    sendSuccess(res, "Company inventory items fetched successfully", items);
+  } catch (error: any) {
+    sendError(res, "Failed to fetch company inventory items", error.message);
   }
 };
 
@@ -103,6 +141,8 @@ export const createInventoryItem = async (
         Object.entries(JSON.parse(itemData.specifications))
       );
     }
+
+    itemData.company = req.user?.companyId;
 
     const newItem = await InventoryItemService.createInventoryItem(itemData);
     sendSuccess(res, "Inventory item created successfully", newItem);
@@ -284,19 +324,31 @@ export const getLowStockItems = async (
   }
 };
 
-export const returnInventoryItem = async (req: Request, res: Response): Promise<void> => {
+export const returnInventoryItem = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const id = req.params.id;
     const { quantity, condition, notes } = req.body;
-    if (!Types.ObjectId.isValid(id)) { sendError(res, "Invalid ID", null, 400); return; }
-    if (typeof quantity !== "number" || quantity <= 0) { sendError(res, "Quantity must be > 0", null, 400); return; }
+    if (!Types.ObjectId.isValid(id)) {
+      sendError(res, "Invalid ID", null, 400);
+      return;
+    }
+    if (typeof quantity !== "number" || quantity <= 0) {
+      sendError(res, "Quantity must be > 0", null, 400);
+      return;
+    }
     const updated = await InventoryItemService.returnItem(id, {
       quantity,
       condition,
       notes,
       userId: (req.user as any)?.id,
     });
-    if (!updated) { sendNotFound(res, "Inventory item not found"); return; }
+    if (!updated) {
+      sendNotFound(res, "Inventory item not found");
+      return;
+    }
     sendSuccess(res, "Item returned", updated);
   } catch (e: any) {
     sendError(res, e.message || "Failed to return item");

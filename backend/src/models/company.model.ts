@@ -6,7 +6,12 @@ interface CompanyDocument extends Document, Company {}
 const CompanySchema = new Schema<CompanyDocument>(
   {
     name: { type: String, required: true, trim: true },
-    logoUrl: { type: String },
+    logo: {
+      path: { type: String },
+      originalName: { type: String },
+      mimetype: { type: String },
+      size: { type: Number },
+    },
     registrationDocs: [{ type: String }],
     location: { type: String },
     contactEmail: { type: String },
@@ -26,15 +31,22 @@ const CompanySchema = new Schema<CompanyDocument>(
     subscription: {
       plan: {
         type: String,
-        enum: ["monthly", "biannual", "annual", "triannual"],
+        enum: ["free_trial", "monthly", "biannual", "annual", "triannual"],
         default: "monthly",
       },
       expiresAt: { type: Date },
       licenseKey: { type: String },
+      paymentReference: { type: String },
+      activatedAt: { type: Date },
+      status: { type: String, enum: ["active", "expired", "cancelled"], default: "active" },
+      updatedAt: { type: Date },
+      hasUsedTrial: { type: Boolean, default: false },
+      isTrial: { type: Boolean, default: false },
     },
     paystackSubaccountCode: { type: String },
     feePercent: { type: Number, default: 5 },
     paystackRecipientCode: { type: String },
+    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }
 );

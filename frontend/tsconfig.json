@@ -1,11 +1,10 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "es6"],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
+    "target": "ES6",
     "skipLibCheck": true,
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -19,24 +18,8 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "components/*": ["./src/components/*"],
-      "pages/*": ["./src/pages/*"],
-      "utils/*": ["./src/utils/*"],
-      "hooks/*": ["./src/hooks/*"],
-      "providers/*": ["./src/providers/*"],
-      "layouts/*": ["./src/layouts/*"],
-      "types/*": ["./src/types/*"],
-      "config/*": ["./src/config/*"],
-      "data/*": ["./src/data/*"],
-      "helpers/*": ["./src/helpers/*"],
-      "controllers/*": ["./src/controllers/*"],
-      "reducers/*": ["./src/reducers/*"],
-      "assets/*": ["./src/assets/*"],
-      "lib/*": ["./src/lib/*"],
-      "booking/*": ["./src/booking/*"]
+      "@/*": ["./*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

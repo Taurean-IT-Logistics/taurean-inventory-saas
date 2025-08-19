@@ -87,6 +87,7 @@ const FacilitySchema = new Schema<FacilityDocument>(
       opening: { type: String, required: true },
       closing: { type: String, required: true },
     },
+    company: { type: Schema.Types.ObjectId, ref: "Company", required: true },
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
     isTaxable: { type: Boolean, default: false },

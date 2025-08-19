@@ -33,6 +33,14 @@ router.get(
   UserController.getAllUsers
 );
 
+// Company-specific: Get users for the authenticated user's company
+router.get(
+  "/company",
+  AuthMiddleware,
+  AuthorizeRoles("admin", "staff"),
+  UserController.getCompanyUsers
+);
+
 router.get(
   "/search",
   AuthMiddleware,
