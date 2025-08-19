@@ -78,4 +78,31 @@ router.put(
   TransactionController.updateTransaction
 );
 
+// Export routes
+router.get(
+  "/export",
+  RequireActiveCompany(),
+  RequirePermissions(["accessFinancials"]),
+  TransactionController.exportTransactions
+);
+
+router.get(
+  "/export/user",
+  TransactionController.exportUserTransactions
+);
+
+router.get(
+  "/export/bookings",
+  RequireActiveCompany(),
+  RequirePermissions(["accessFinancials"]),
+  TransactionController.exportBookings
+);
+
+router.get(
+  "/export/invoices",
+  RequireActiveCompany(),
+  RequirePermissions(["accessFinancials"]),
+  TransactionController.exportInvoices
+);
+
 export default router;

@@ -6,6 +6,7 @@ import {
   BookingService,
   FacilityService,
 } from "../services";
+import * as ExportService from "../services/export.service";
 import {
   sendSuccess,
   sendError,
@@ -20,6 +21,7 @@ import {
 } from "../models";
 import { Transaction } from "../types";
 import { isValidObjectId } from "mongoose";
+import fs from "fs";
 
 // Initialize payment and create transaction document
 const initializePaymentController = async (
@@ -697,6 +699,196 @@ const getSubAccountDetails = async (
   }
 };
 
+const exportTransactions = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { format = 'csv', startDate, endDate, type = 'all' } = req.query;
+    const user = req.user as any;
+    const companyId = user.companyId;
+
+    if (!companyId) {
+      sendValidationError(res, "User is not associated with a company");
+      return;
+    }
+
+    const options = {
+      format: format as 'csv' | 'excel',
+      companyId: companyId.toString(),
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+      type: type as 'income' | 'expense' | 'all'
+    };
+
+    const filePath = await ExportService.exportTransactions(options);
+    const fileName = `transactions-export.${format}`;
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    // Clean up the file after streaming
+    fileStream.on('end', async () => {
+      await ExportService.cleanupTempFile(filePath);
+    });
+
+    fileStream.on('error', async (error) => {
+      console.error('Error streaming file:', error);
+      await ExportService.cleanupTempFile(filePath);
+      if (!res.headersSent) {
+        sendError(res, "Failed to export transactions", error);
+      }
+    });
+
+  } catch (error) {
+    sendError(res, "Failed to export transactions", error);
+  }
+};
+
+const exportUserTransactions = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { format = 'csv', startDate, endDate } = req.query;
+    const user = req.user as any;
+    const userId = user.id;
+
+    if (!userId) {
+      sendValidationError(res, "User not authenticated");
+      return;
+    }
+
+    const options = {
+      format: format as 'csv' | 'excel',
+      userId: userId.toString(),
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+      type: 'all' as const
+    };
+
+    const filePath = await ExportService.exportTransactions(options);
+    const fileName = `my-transactions-export.${format}`;
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    // Clean up the file after streaming
+    fileStream.on('end', async () => {
+      await ExportService.cleanupTempFile(filePath);
+    });
+
+    fileStream.on('error', async (error) => {
+      console.error('Error streaming file:', error);
+      await ExportService.cleanupTempFile(filePath);
+      if (!res.headersSent) {
+        sendError(res, "Failed to export transactions", error);
+      }
+    });
+
+  } catch (error) {
+    sendError(res, "Failed to export user transactions", error);
+  }
+};
+
+const exportBookings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { format = 'csv', startDate, endDate } = req.query;
+    const user = req.user as any;
+    const companyId = user.companyId;
+
+    if (!companyId) {
+      sendValidationError(res, "User is not associated with a company");
+      return;
+    }
+
+    const options = {
+      format: format as 'csv' | 'excel',
+      companyId: companyId.toString(),
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined
+    };
+
+    const filePath = await ExportService.exportBookings(options);
+    const fileName = `bookings-export.${format}`;
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    // Clean up the file after streaming
+    fileStream.on('end', async () => {
+      await ExportService.cleanupTempFile(filePath);
+    });
+
+    fileStream.on('error', async (error) => {
+      console.error('Error streaming file:', error);
+      await ExportService.cleanupTempFile(filePath);
+      if (!res.headersSent) {
+        sendError(res, "Failed to export bookings", error);
+      }
+    });
+
+  } catch (error) {
+    sendError(res, "Failed to export bookings", error);
+  }
+};
+
+const exportInvoices = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { format = 'csv', startDate, endDate } = req.query;
+    const user = req.user as any;
+    const companyId = user.companyId;
+
+    if (!companyId) {
+      sendValidationError(res, "User is not associated with a company");
+      return;
+    }
+
+    const options = {
+      format: format as 'csv' | 'excel',
+      companyId: companyId.toString(),
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined
+    };
+
+    const filePath = await ExportService.exportInvoices(options);
+    const fileName = `invoices-export.${format}`;
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    // Clean up the file after streaming
+    fileStream.on('end', async () => {
+      await ExportService.cleanupTempFile(filePath);
+    });
+
+    fileStream.on('error', async (error) => {
+      console.error('Error streaming file:', error);
+      await ExportService.cleanupTempFile(filePath);
+      if (!res.headersSent) {
+        sendError(res, "Failed to export invoices", error);
+      }
+    });
+
+  } catch (error) {
+    sendError(res, "Failed to export invoices", error);
+  }
+};
+
 export {
   initializePaymentController,
   verifyPaymentController,
@@ -710,4 +902,8 @@ export {
   updateSubAccount,
   listBanks,
   getSubAccountDetails,
+  exportTransactions,
+  exportUserTransactions,
+  exportBookings,
+  exportInvoices,
 };

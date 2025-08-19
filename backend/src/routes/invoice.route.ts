@@ -11,5 +11,7 @@ router.get("/company", AuthMiddleware, RequireActiveCompany(), RequirePermission
 router.get("/me", AuthMiddleware, InvoiceController.listUserInvoices);
 router.get("/company/receipts", AuthMiddleware, RequireActiveCompany(), RequirePermissions(["viewInvoices"]), InvoiceController.listCompanyReceipts);
 router.get("/me/receipts", AuthMiddleware, InvoiceController.listUserReceipts);
+router.get("/:id/download", AuthMiddleware, InvoiceController.downloadInvoicePDF);
+router.get("/receipts/:id/download", AuthMiddleware, InvoiceController.downloadReceiptPDF);
 
 export default router;
