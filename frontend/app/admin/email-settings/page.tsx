@@ -82,9 +82,9 @@ const EmailSettingsPage = () => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["email-settings", user?.companyId],
-    queryFn: () => apiFetch(`/email/settings/${user?.companyId}`),
-    enabled: !!user?.companyId,
+    queryKey: ["email-settings", (user as any)?.companyId],
+    queryFn: () => apiFetch(`/email/settings/${(user as any)?.companyId}`),
+    enabled: !!(user as any)?.companyId,
   });
 
   // Test email configuration
@@ -128,7 +128,7 @@ const EmailSettingsPage = () => {
   // Update email settings
   const updateSettingsMutation = useMutation({
     mutationFn: (settings: EmailSettings) =>
-      apiFetch(`/email/settings/${user?.companyId}`, {
+      apiFetch(`/email/settings/${(user as any)?.companyId}`, {
         method: "PUT",
         body: JSON.stringify({ emailSettings: settings }),
       }),
@@ -172,7 +172,7 @@ const EmailSettingsPage = () => {
   });
 
   const handleSettingsUpdate = (field: keyof EmailSettings, value: any) => {
-    const currentSettings = emailSettings?.emailSettings || {};
+    const currentSettings = (emailSettings as any)?.emailSettings || {};
     const updatedSettings = { ...currentSettings, [field]: value };
     updateSettingsMutation.mutate(updatedSettings);
   };
@@ -242,7 +242,7 @@ const EmailSettingsPage = () => {
     );
   }
 
-  const settings = emailSettings?.emailSettings || {};
+  const settings = (emailSettings as any)?.emailSettings || {};
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">

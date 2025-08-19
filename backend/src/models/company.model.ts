@@ -1,7 +1,26 @@
 import { Schema, model, Model, Document } from "mongoose";
 import { Company } from "../types";
 
-interface CompanyDocument extends Document, Company {}
+interface EmailSettings {
+  sendInvoiceEmails?: boolean;
+  sendReceiptEmails?: boolean;
+  sendBookingConfirmations?: boolean;
+  sendBookingReminders?: boolean;
+  sendPaymentNotifications?: boolean;
+  sendWelcomeEmails?: boolean;
+  sendSubscriptionNotices?: boolean;
+  customFromName?: string;
+  customFromEmail?: string;
+  emailSignature?: string;
+  updatedAt?: Date;
+  updatedBy?: Schema.Types.ObjectId;
+}
+
+interface CompanyWithEmail extends Company {
+  emailSettings?: EmailSettings;
+}
+
+interface CompanyDocument extends Document, CompanyWithEmail {}
 
 const CompanySchema = new Schema<CompanyDocument>(
   {

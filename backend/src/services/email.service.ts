@@ -54,7 +54,7 @@ class EmailService {
     };
 
     if (config.auth.user && config.auth.pass) {
-      this.transporter = nodemailer.createTransporter(config);
+      this.transporter = nodemailer.createTransport(config);
     }
   }
 
@@ -1154,7 +1154,7 @@ class EmailService {
 
       const user = booking.user as any;
       const facility = booking.facility as any;
-      const company = booking.company as any;
+      const company = (booking as any).company;
 
       return this.sendEmail({
         to: user.email,
@@ -1193,7 +1193,7 @@ class EmailService {
 
       const user = booking.user as any;
       const facility = booking.facility as any;
-      const company = booking.company as any;
+      const company = (booking as any).company;
 
       return this.sendEmail({
         to: user.email,
@@ -1410,8 +1410,7 @@ class EmailService {
         template: 'base',
         context: {
           company: company || { name: 'Taurean IT Logistics' },
-          content,
-          headerSubtitle: 'Custom Message',
+          data: { content },
         },
       });
     } catch (error) {

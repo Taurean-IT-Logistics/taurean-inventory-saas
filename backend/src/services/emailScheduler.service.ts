@@ -60,7 +60,7 @@ class EmailSchedulerService {
       for (const booking of upcomingBookings) {
         try {
           const user = booking.user as any;
-          const company = booking.company as any;
+          const company = (booking as any).company;
 
           // Check if company has email reminders enabled
           if (company.emailSettings?.sendBookingReminders !== false) {

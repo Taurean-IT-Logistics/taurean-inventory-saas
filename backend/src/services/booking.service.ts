@@ -93,7 +93,7 @@ const createBooking = async (
       emitEvent(Events.BookingCreated, { id: saved._id, booking: saved });
       
       // Send booking confirmation email
-      await emailService.sendBookingConfirmation(saved._id.toString());
+      await emailService.sendBookingConfirmation((saved as any)._id.toString());
     } catch (emailError) {
       console.warn('Failed to send booking confirmation email:', emailError);
     }

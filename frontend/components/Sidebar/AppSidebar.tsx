@@ -25,6 +25,7 @@ import {
   MessageSquare,
   BarChart3,
   CreditCard,
+  Mail,
 } from "lucide-react";
 import Logo from "../logo/Logo";
 import type { Route } from "./NavMain";
@@ -149,6 +150,12 @@ const dashboardRoutes: Route[] = [
     title: "Billing",
     icon: <CreditCard className="size-4" />,
     link: "/admin/billing",
+  },
+  {
+    id: "email-settings",
+    title: "Email Settings",
+    icon: <Mail className="size-4" />,
+    link: "/admin/email-settings",
   },
 ];
 
