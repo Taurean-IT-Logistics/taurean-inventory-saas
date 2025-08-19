@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as InvoiceService from "../services/invoice.service";
+import * as PDFService from "../services/pdf.service";
 import { sendSuccess, sendError } from "../utils";
 import { InvoiceModel } from "../models/invoice.model";
 import { ReceiptModel } from "../models/receipt.model";
@@ -93,5 +94,69 @@ export async function listUserReceipts(req: Request, res: Response) {
     sendSuccess(res, "My receipts", { receipts: docs });
   } catch (e: any) {
     sendError(res, "Failed to list receipts", e.message);
+  }
+}
+
+export async function downloadInvoicePDF(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const user = req.user as any;
+
+    // Check if user has access to this invoice
+    const invoice = await InvoiceModel.findById(id);
+    if (!invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    // Check permissions - either owner or company member
+    const isOwner = invoice.customer?.toString() === user.id;
+    const isCompanyMember = invoice.company?.toString() === user.companyId;
+    
+    if (!isOwner && !isCompanyMember) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const pdfBuffer = await PDFService.generateInvoicePDF(id);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    res.send(pdfBuffer);
+  } catch (e: any) {
+    sendError(res, "Failed to generate invoice PDF", e.message);
+  }
+}
+
+export async function downloadReceiptPDF(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const user = req.user as any;
+
+    // Check if user has access to this receipt
+    const receipt = await ReceiptModel.findById(id).populate('invoice');
+    if (!receipt || !receipt.invoice) {
+      return res.status(404).json({ error: "Receipt not found" });
+    }
+
+    const invoice = receipt.invoice as any;
+    
+    // Check permissions - either owner or company member
+    const isOwner = invoice.customer?.toString() === user.id;
+    const isCompanyMember = invoice.company?.toString() === user.companyId;
+    
+    if (!isOwner && !isCompanyMember) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const pdfBuffer = await PDFService.generateReceiptPDF(id);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="receipt-${receipt._id}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    res.send(pdfBuffer);
+  } catch (e: any) {
+    sendError(res, "Failed to generate receipt PDF", e.message);
   }
 }

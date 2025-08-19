@@ -701,6 +701,7 @@ export const BookingsAPI = {
       body: JSON.stringify(payload),
     }),
   me: () => apiFetch(`/bookings/me`, { method: "GET" }),
+  getUserBookings: () => apiFetch(`/bookings/me`, { method: "GET" }),
   get: (id: string) => apiFetch(`/bookings/${id}`, { method: "GET" }),
   listAll: () => apiFetch(`/bookings`, { method: "GET" }),
   listCompany: () => apiFetch(`/bookings/company`, { method: "GET" }),
@@ -765,9 +766,13 @@ export const InvoicesAPI = {
     }),
   listCompany: () => apiFetch(`/invoices/company`, { method: "GET" }),
   listMine: () => apiFetch(`/invoices/me`, { method: "GET" }),
+  getUserInvoices: () => apiFetch(`/invoices/me`, { method: "GET" }),
   receiptsCompany: () =>
     apiFetch(`/invoices/company/receipts`, { method: "GET" }),
   receiptsMine: () => apiFetch(`/invoices/me/receipts`, { method: "GET" }),
+  getUserReceipts: () => apiFetch(`/invoices/me/receipts`, { method: "GET" }),
+  downloadInvoice: (id: string) => apiFetch(`/invoices/${id}/download`, { method: "GET" }),
+  downloadReceipt: (id: string) => apiFetch(`/invoices/receipts/${id}/download`, { method: "GET" }),
 };
 
 // Tax Schedules
@@ -801,6 +806,7 @@ export const TaxesAPI = {
 // Transactions
 export const TransactionsAPI = {
   listCompany: () => apiFetch(`/transaction`, { method: "GET" }),
+  getUserTransactions: () => apiFetch(`/transaction/user`, { method: "GET" }),
   initializePayment: (payload: any) =>
     apiFetch(`/transaction/initialize`, {
       method: "POST",
@@ -830,6 +836,16 @@ export const TransactionsAPI = {
     apiFetch(`/transaction/subaccount/${subaccountCode}`, {
       method: "GET",
     }),
+  
+  // Export methods
+  exportTransactions: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/transaction/export${qs}`, { method: "GET" });
+  },
+  exportUserTransactions: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/transaction/export/user${qs}`, { method: "GET" });
+  },
 };
 
 // Payouts
