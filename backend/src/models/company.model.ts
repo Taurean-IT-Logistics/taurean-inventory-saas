@@ -1,7 +1,26 @@
 import { Schema, model, Model, Document } from "mongoose";
 import { Company } from "../types";
 
-interface CompanyDocument extends Document, Company {}
+interface EmailSettings {
+  sendInvoiceEmails?: boolean;
+  sendReceiptEmails?: boolean;
+  sendBookingConfirmations?: boolean;
+  sendBookingReminders?: boolean;
+  sendPaymentNotifications?: boolean;
+  sendWelcomeEmails?: boolean;
+  sendSubscriptionNotices?: boolean;
+  customFromName?: string;
+  customFromEmail?: string;
+  emailSignature?: string;
+  updatedAt?: Date;
+  updatedBy?: Schema.Types.ObjectId;
+}
+
+interface CompanyWithEmail extends Company {
+  emailSettings?: EmailSettings;
+}
+
+interface CompanyDocument extends Document, CompanyWithEmail {}
 
 const CompanySchema = new Schema<CompanyDocument>(
   {
@@ -47,6 +66,20 @@ const CompanySchema = new Schema<CompanyDocument>(
     feePercent: { type: Number, default: 5 },
     paystackRecipientCode: { type: String },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    emailSettings: {
+      sendInvoiceEmails: { type: Boolean, default: true },
+      sendReceiptEmails: { type: Boolean, default: true },
+      sendBookingConfirmations: { type: Boolean, default: true },
+      sendBookingReminders: { type: Boolean, default: true },
+      sendPaymentNotifications: { type: Boolean, default: true },
+      sendWelcomeEmails: { type: Boolean, default: true },
+      sendSubscriptionNotices: { type: Boolean, default: true },
+      customFromName: { type: String },
+      customFromEmail: { type: String },
+      emailSignature: { type: String },
+      updatedAt: { type: Date },
+      updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    },
   },
   { timestamps: true }
 );

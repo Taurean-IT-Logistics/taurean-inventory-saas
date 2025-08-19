@@ -132,8 +132,8 @@ export default function PricingPage() {
       });
 
       // Redirect to payment page or handle payment
-      if (response.payment?.authorization_url) {
-        window.location.href = response.payment.authorization_url;
+      if ((response as any).payment?.authorization_url) {
+        window.location.href = (response as any).payment.authorization_url;
       }
     } catch (error: any) {
       toast({

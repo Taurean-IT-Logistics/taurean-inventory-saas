@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/components/AuthProvider";
 import { SupportAPI } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { io, Socket } from "socket.io-client";
@@ -74,7 +74,7 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
 
   // Queries
   const { data: tickets, isLoading: ticketsLoading } = useQuery({
-    queryKey: ["support-tickets", user?.id],
+    queryKey: ["support-tickets", (user as any)?._id],
     queryFn: () => {
       if (user?.isSuperAdmin) {
         return SupportAPI.getSuperAdminTickets();
@@ -152,7 +152,7 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
       });
 
       newSocket.on("user-typing", (data) => {
-        if (data.userId !== user.id) {
+        if (data.userId !== (user as any)._id) {
           if (data.isTyping) {
             setTypingUsers(prev => new Set(prev).add(data.userId));
           } else {
@@ -189,7 +189,7 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
   // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [ticketDetails?.messages]);
+  }, [(ticketDetails as any)?.messages]);
 
   // Typing indicator
   useEffect(() => {
@@ -359,14 +359,14 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {ticketDetails?.messages?.map((msg: SupportMessage) => (
+                  {(ticketDetails as any)?.messages?.map((msg: SupportMessage) => (
                     <div
                       key={msg._id}
-                      className={`flex ${msg.sender._id === user?.id ? "justify-end" : "justify-start"}`}
+                      className={`flex ${msg.sender._id === (user as any)?._id ? "justify-end" : "justify-start"}`}
                     >
                       <div
                         className={`max-w-xs px-3 py-2 rounded-lg ${
-                          msg.sender._id === user?.id
+                          msg.sender._id === (user as any)?._id
                             ? "bg-blue-600 text-white"
                             : msg.senderType === "system"
                             ? "bg-gray-200 text-gray-700"
@@ -462,14 +462,14 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center justify-center h-32">
                 <Loader2 size={24} className="animate-spin text-blue-600" />
               </div>
-            ) : tickets?.data?.length === 0 ? (
+            ) : (tickets as any)?.data?.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
                 <FileText size={48} className="mx-auto mb-2 text-gray-300" />
                 <p>No tickets found</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {tickets?.data?.map((ticket: SupportTicket) => (
+                {(tickets as any)?.data?.map((ticket: SupportTicket) => (
                   <div
                     key={ticket._id}
                     onClick={() => setSelectedTicket(ticket)}

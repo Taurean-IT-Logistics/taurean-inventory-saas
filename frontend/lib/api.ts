@@ -876,6 +876,38 @@ export const CashflowAPI = {
   anomalies: () => apiFetch(`/cashflow/anomalies`, { method: "GET" }),
 };
 
+// Email
+export const EmailAPI = {
+  testConfiguration: () => apiFetch(`/email/test-config`, { method: "GET" }),
+  sendTestEmail: (payload: { to: string; subject: string; message: string }) =>
+    apiFetch(`/email/test`, { method: "POST", body: JSON.stringify(payload) }),
+  sendWelcomeEmail: (userId: string) =>
+    apiFetch(`/email/welcome/${userId}`, { method: "POST" }),
+  sendInvoiceEmail: (invoiceId: string, attachPDF: boolean = true) =>
+    apiFetch(`/email/invoice/${invoiceId}`, { 
+      method: "POST", 
+      body: JSON.stringify({ attachPDF }) 
+    }),
+  sendReceiptEmail: (receiptId: string, attachPDF: boolean = true) =>
+    apiFetch(`/email/receipt/${receiptId}`, { 
+      method: "POST", 
+      body: JSON.stringify({ attachPDF }) 
+    }),
+  sendBookingConfirmation: (bookingId: string) =>
+    apiFetch(`/email/booking-confirmation/${bookingId}`, { method: "POST" }),
+  sendBookingReminder: (bookingId: string) =>
+    apiFetch(`/email/booking-reminder/${bookingId}`, { method: "POST" }),
+  sendBulkEmail: (payload: any) =>
+    apiFetch(`/email/bulk`, { method: "POST", body: JSON.stringify(payload) }),
+  getEmailSettings: (companyId: string) =>
+    apiFetch(`/email/settings/${companyId}`, { method: "GET" }),
+  updateEmailSettings: (companyId: string, settings: any) =>
+    apiFetch(`/email/settings/${companyId}`, { 
+      method: "PUT", 
+      body: JSON.stringify({ emailSettings: settings }) 
+    }),
+};
+
 // Notifications
 export const NotificationsAPI = {
   getUserNotifications: (params?: Record<string, string>) => {

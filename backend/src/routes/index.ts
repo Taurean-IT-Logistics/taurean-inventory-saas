@@ -20,6 +20,7 @@ import superAdminRoutes from "./superAdmin.route";
 import companyRoleRoutes from "./companyRole.route";
 import subscriptionRoutes from "./subscription.route";
 import supportRoutes from "./support.route";
+import emailRoutes from "./email.route";
 
 const router = Router();
 
@@ -44,5 +45,6 @@ router.use("/super-admin", superAdminRoutes);
 router.use("/company-roles", companyRoleRoutes);
 router.use("/subscriptions", subscriptionRoutes);
 router.use("/support", supportRoutes);
+router.use("/email", emailRoutes);
 
 export default router;

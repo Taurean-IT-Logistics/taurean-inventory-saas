@@ -63,7 +63,7 @@ const PaymentCallbackPage = () => {
         setIsVerifying(true);
         
         // Verify payment with backend
-        const response = await TransactionsAPI.verifyByReference(paymentRef!);
+        const response = await TransactionsAPI.verifyByReference(paymentRef!) as any;
         
         if (response.success) {
           setPaymentResult({
@@ -78,7 +78,7 @@ const PaymentCallbackPage = () => {
             variant: "default",
           });
         } else {
-          throw new Error(response.message || "Payment verification failed");
+          throw new Error((response as any).message || "Payment verification failed");
         }
       } catch (error: any) {
         console.error("Payment verification error:", error);

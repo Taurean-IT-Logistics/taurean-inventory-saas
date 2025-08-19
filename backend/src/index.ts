@@ -2,12 +2,14 @@ import { connectToMongoDB, disconnectFromMongoDB } from "./database";
 import { startServer, stopServer } from "./server";
 import { Logger } from "./utils";
 import { startDeletionWorker } from "./queues";
+import { emailScheduler } from "./services/emailScheduler.service";
 
 async function initApp() {
   try {
     Logger("Initializing application...", null, "api-core", "info");
     await connectToMongoDB();
     startDeletionWorker();
+    emailScheduler.initialize();
     startServer();
   } catch (error) {
     Logger("Error initializing application", null, "api-core", "error", error);

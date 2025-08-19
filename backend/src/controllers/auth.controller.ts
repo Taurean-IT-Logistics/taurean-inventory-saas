@@ -14,6 +14,7 @@ import {
   verifyPasswordToken,
 } from "../helpers";
 import { Types } from "mongoose";
+import { emailService } from "../services/email.service";
 
 // Register new user
 const register = async (req: Request, res: Response): Promise<void> => {
@@ -87,6 +88,15 @@ const register = async (req: Request, res: Response): Promise<void> => {
       loyaltyProfile: user.loyaltyProfile,
       createdAt: user.createdAt,
     };
+
+    // Send welcome email
+    try {
+      if (user.company) {
+        await emailService.sendWelcomeEmail(user._id!.toString(), (user as any).company.toString());
+      }
+    } catch (emailError) {
+      console.warn('Failed to send welcome email:', emailError);
+    }
 
     sendSuccess(
       res,

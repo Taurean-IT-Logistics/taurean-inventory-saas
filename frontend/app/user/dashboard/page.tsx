@@ -106,26 +106,26 @@ const UserDashboard = () => {
   // Calculate dashboard stats
   const dashboardStats: DashboardStats = React.useMemo(() => {
     const stats = {
-      totalBookings: bookings?.data?.length || 0,
+      totalBookings: (bookings as any)?.data?.length || 0,
       totalSpent: 0,
       pendingPayments: 0,
       completedBookings: 0,
     };
 
-    if (transactions?.data) {
-      stats.totalSpent = transactions.data
+    if ((transactions as any)?.data) {
+      stats.totalSpent = (transactions as any).data
         .filter((t: any) => t.type === "expense")
         .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     }
 
-    if (invoices?.data) {
-      stats.pendingPayments = invoices.data
+    if ((invoices as any)?.data) {
+      stats.pendingPayments = (invoices as any).data
         .filter((inv: any) => inv.status === "pending")
         .reduce((sum: number, inv: any) => sum + (inv.total || 0), 0);
     }
 
-    if (bookings?.data) {
-      stats.completedBookings = bookings.data.filter(
+    if ((bookings as any)?.data) {
+      stats.completedBookings = (bookings as any).data.filter(
         (booking: any) => booking.status === "completed"
       ).length;
     }
@@ -345,7 +345,7 @@ const UserDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {bookings?.data?.filter((b: any) => b.status === "active").length || 0}
+              {(bookings as any)?.data?.filter((b: any) => b.status === "active").length || 0}
             </div>
             <p className="text-xs text-muted-foreground">Currently in progress</p>
           </CardContent>
@@ -377,13 +377,13 @@ const UserDashboard = () => {
                   title="Error loading transactions"
                   message={transactionsError.message}
                 />
-              ) : !transactions?.data || transactions.data.length === 0 ? (
+              ) : !(transactions as any)?.data || (transactions as any).data.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No transactions found
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {transactions.data.slice(0, 5).map((transaction: any) => (
+                  {(transactions as any).data.slice(0, 5).map((transaction: any) => (
                     <div
                       key={transaction._id}
                       className="flex items-center justify-between p-4 border rounded-lg"
@@ -426,7 +426,7 @@ const UserDashboard = () => {
                   title="Error loading bookings"
                   message={bookingsError.message}
                 />
-              ) : !bookings?.data || bookings.data.length === 0 ? (
+              ) : !(bookings as any)?.data || (bookings as any).data.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No bookings found
                 </p>
@@ -444,7 +444,7 @@ const UserDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bookings.data.map((booking: any) => (
+                    {(bookings as any).data.map((booking: any) => (
                       <TableRow key={booking._id}>
                         <TableCell className="font-medium">
                           {booking.bookingNumber}
@@ -497,7 +497,7 @@ const UserDashboard = () => {
                   title="Error loading invoices"
                   message={invoicesError.message}
                 />
-              ) : !invoices?.data || invoices.data.length === 0 ? (
+              ) : !(invoices as any)?.data || (invoices as any).data.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No invoices found
                 </p>
@@ -513,7 +513,7 @@ const UserDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {invoices.data.map((invoice: any) => (
+                    {(invoices as any).data.map((invoice: any) => (
                       <TableRow key={invoice._id}>
                         <TableCell className="font-medium">
                           #{invoice.invoiceNumber}
@@ -572,7 +572,7 @@ const UserDashboard = () => {
                   title="Error loading receipts"
                   message={receiptsError.message}
                 />
-              ) : !receipts?.data || receipts.data.length === 0 ? (
+              ) : !(receipts as any)?.data || (receipts as any).data.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No receipts found
                 </p>
@@ -588,7 +588,7 @@ const UserDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {receipts.data.map((receipt: any) => (
+                    {(receipts as any).data.map((receipt: any) => (
                       <TableRow key={receipt._id}>
                         <TableCell className="font-medium">
                           {receipt._id.slice(-8)}

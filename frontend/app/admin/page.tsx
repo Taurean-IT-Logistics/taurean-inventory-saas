@@ -158,7 +158,7 @@ export default function AdminPage() {
   // Calculate dashboard stats
   const dashboardStats = React.useMemo(() => {
     const stats = {
-      totalBookings: bookings?.length || 0,
+      totalBookings: (bookings as any)?.length || 0,
       totalFacilities: facilities?.facilities?.length || 0,
       totalRevenue: 0,
       pendingInvoices: 0,
@@ -166,20 +166,20 @@ export default function AdminPage() {
       completedBookings: 0,
     };
 
-    if (transactions?.data) {
-      stats.totalRevenue = transactions.data
+    if ((transactions as any)?.data) {
+      stats.totalRevenue = (transactions as any).data
         .filter((t: any) => t.type === "income")
         .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     }
 
-    if (invoices?.invoices) {
-      stats.pendingInvoices = invoices.invoices
+    if ((invoices as any)?.invoices) {
+      stats.pendingInvoices = (invoices as any).invoices
         .filter((inv: any) => inv.status === "pending").length;
     }
 
     if (bookings) {
-      stats.activeBookings = bookings.filter((b: any) => b.status === "active").length;
-      stats.completedBookings = bookings.filter((b: any) => b.status === "completed").length;
+      stats.activeBookings = (bookings as any).filter((b: any) => b.status === "active").length;
+      stats.completedBookings = (bookings as any).filter((b: any) => b.status === "completed").length;
     }
 
     return stats;
@@ -370,13 +370,13 @@ export default function AdminPage() {
                 <CardDescription>Latest facility bookings</CardDescription>
               </CardHeader>
               <CardContent>
-                {!bookings || bookings.length === 0 ? (
+                {!bookings || (bookings as any).length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     No bookings found
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {bookings.slice(0, 5).map((booking: any) => (
+                    {(bookings as any).slice(0, 5).map((booking: any) => (
                       <div
                         key={booking._id}
                         className="flex items-center justify-between p-4 border rounded-lg"
@@ -417,13 +417,13 @@ export default function AdminPage() {
                     title="Error loading transactions"
                     message={transactionsError.message}
                   />
-                ) : !transactions?.data || transactions.data.length === 0 ? (
+                ) : !(transactions as any)?.data || (transactions as any).data.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     No transactions found
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {transactions.data.slice(0, 5).map((transaction: any) => (
+                    {(transactions as any).data.slice(0, 5).map((transaction: any) => (
                       <div
                         key={transaction._id}
                         className="flex items-center justify-between p-4 border rounded-lg"

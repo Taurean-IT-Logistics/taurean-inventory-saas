@@ -34,7 +34,7 @@ export default function CompanyJoinRequests() {
 
   const approveMutation = useMutation({
     mutationFn: ({ requestId, notes }: { requestId: string; notes?: string }) =>
-      CompanyJoinRequestAPI.approveRequest(requestId, notes),
+      CompanyJoinRequestAPI.approveRequest(requestId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-join-requests"] });
       queryClient.invalidateQueries({ queryKey: ["users-company"] });
@@ -57,7 +57,7 @@ export default function CompanyJoinRequests() {
 
   const rejectMutation = useMutation({
     mutationFn: ({ requestId, notes }: { requestId: string; notes?: string }) =>
-      CompanyJoinRequestAPI.rejectRequest(requestId, notes),
+      CompanyJoinRequestAPI.rejectRequest(requestId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-join-requests"] });
       toast({
