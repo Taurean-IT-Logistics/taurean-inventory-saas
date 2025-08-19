@@ -1,11 +1,69 @@
 openapi: 3.0.0
 info:
-  title: TAUREAN API Documentation
-  version: 1.0.0
-  description: API documentation for TAUREAN Inventory Management System
+  title: Taurean IT Logistics - Facility Management Platform API
+  version: 2.0.0
+  description: |
+    ## 🏢 Enterprise SaaS Facility Management Platform
+    
+    Comprehensive API documentation for the Taurean IT Logistics facility management platform.
+    A multi-tenant SaaS solution for facility booking, inventory management, and business operations.
+    
+    ### 🌟 Key Features
+    - **Multi-tenant Architecture** - Complete company isolation
+    - **Professional Email System** - Fortune 500-level communications
+    - **PDF Invoice Generation** - Modern, branded templates
+    - **Payment Processing** - Paystack integration with callbacks
+    - **Real-time Updates** - Socket.io for live notifications
+    - **Data Export** - CSV/Excel export capabilities
+    - **Role-based Access Control** - Granular permissions
+    - **Mobile Responsive** - Optimized for all devices
+    
+    ### 🔐 Authentication
+    Most endpoints require Bearer token authentication. Obtain tokens via `/auth/login`.
+    
+    ### 🏢 Multi-Tenant Access
+    - **Users** can access their own data and company-shared resources
+    - **Admins** can manage their company's data and users
+    - **Super Admins** can access all companies and system-wide operations
+    
+    ### 📧 Email Integration
+    The platform includes automated email workflows for:
+    - Invoice and receipt delivery
+    - Booking confirmations and reminders
+    - Payment notifications
+    - Welcome messages and system alerts
+    
+    ### 📊 Export Capabilities
+    Export data in CSV or Excel format for:
+    - Transactions and financial data
+    - Booking history and analytics
+    - Invoice and receipt records
+    - User and company information
+    
+    ### 🔄 Real-time Features
+    - Live dashboard updates
+    - Instant notifications
+    - Chat and support system
+    - Booking conflict detection
+    
+    For support, contact: support@taureanitlogistics.com
+  contact:
+    name: Taurean IT Logistics Support
+    email: support@taureanitlogistics.com
+    url: https://taureanitlogistics.com
+  license:
+    name: Proprietary
+    url: https://taureanitlogistics.com/license
 
 servers:
   - url: http://localhost:3000
+    description: Development server
+  - url: http://localhost:3001
+    description: Development API server
+  - url: https://api.yourdomain.com
+    description: Production API server
+  - url: https://yourdomain.com
+    description: Production server
 
 tags:
   - name: Authentication
@@ -26,6 +84,14 @@ tags:
     description: User notification management (Protected)
   - name: Subscriptions
     description: Subscription and license management (Partially Protected)
+  - name: Email
+    description: Email communication and settings management (Protected)
+  - name: Invoices
+    description: Invoice and receipt management with PDF generation (Protected)
+  - name: Export
+    description: Data export functionality (CSV/Excel) (Protected)
+  - name: Super Admin
+    description: Super admin multi-tenant management (Super Admin Only)
 
 paths:
   /api/v1/auth/login:
@@ -4117,3 +4183,796 @@ components:
           type: boolean
           description: Enable marketing notifications
           example: false
+
+  # ============================================
+  # EMAIL API ENDPOINTS
+  # ============================================
+  
+  /api/v1/email/test-config:
+    get:
+      summary: Test email configuration
+      tags: [Email]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Email configuration test successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Email configuration is working"
+                  data:
+                    type: object
+                    properties:
+                      configured:
+                        type: boolean
+                        example: true
+
+  /api/v1/email/test:
+    post:
+      summary: Send test email
+      tags: [Email]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to, subject, message]
+              properties:
+                to:
+                  type: string
+                  format: email
+                  example: "test@example.com"
+                subject:
+                  type: string
+                  example: "Test Email"
+                message:
+                  type: string
+                  example: "This is a test email message"
+      responses:
+        "200":
+          description: Test email sent successfully
+
+  /api/v1/email/welcome/{userId}:
+    post:
+      summary: Send welcome email to user
+      tags: [Email]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Welcome email sent successfully
+
+  /api/v1/email/invoice/{invoiceId}:
+    post:
+      summary: Send invoice email with PDF attachment
+      tags: [Email]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                attachPDF:
+                  type: boolean
+                  default: true
+      responses:
+        "200":
+          description: Invoice email sent successfully
+
+  /api/v1/email/receipt/{receiptId}:
+    post:
+      summary: Send receipt email with PDF attachment
+      tags: [Email]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: receiptId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                attachPDF:
+                  type: boolean
+                  default: true
+      responses:
+        "200":
+          description: Receipt email sent successfully
+
+  /api/v1/email/booking-confirmation/{bookingId}:
+    post:
+      summary: Send booking confirmation email
+      tags: [Email]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Booking confirmation email sent successfully
+
+  /api/v1/email/booking-reminder/{bookingId}:
+    post:
+      summary: Send booking reminder email
+      tags: [Email]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Booking reminder email sent successfully
+
+  /api/v1/email/bulk:
+    post:
+      summary: Send bulk email to multiple recipients
+      tags: [Email]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, message]
+              properties:
+                subject:
+                  type: string
+                  example: "Important Announcement"
+                message:
+                  type: string
+                  example: "This is an important message for all users"
+                recipients:
+                  type: array
+                  items:
+                    type: string
+                    format: email
+                  example: ["user1@example.com", "user2@example.com"]
+                userRole:
+                  type: string
+                  enum: [user, staff, admin]
+                  example: "user"
+      responses:
+        "200":
+          description: Bulk email sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+                      success:
+                        type: number
+                      failed:
+                        type: number
+
+  /api/v1/email/settings/{companyId}:
+    get:
+      summary: Get company email settings
+      tags: [Email]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      emailSettings:
+                        $ref: "#/components/schemas/EmailSettings"
+    put:
+      summary: Update company email settings
+      tags: [Email]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                emailSettings:
+                  $ref: "#/components/schemas/EmailSettings"
+      responses:
+        "200":
+          description: Email settings updated successfully
+
+  # ============================================
+  # INVOICE PDF DOWNLOAD ENDPOINTS
+  # ============================================
+  
+  /api/v1/invoices/{id}/download:
+    get:
+      summary: Download invoice as PDF
+      tags: [Invoices]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Invoice ID
+      responses:
+        "200":
+          description: Invoice PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Invoice not found
+        "403":
+          description: Access denied
+
+  /api/v1/invoices/receipts/{id}/download:
+    get:
+      summary: Download receipt as PDF
+      tags: [Invoices]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Receipt ID
+      responses:
+        "200":
+          description: Receipt PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Receipt not found
+        "403":
+          description: Access denied
+
+  # ============================================
+  # EXPORT ENDPOINTS
+  # ============================================
+  
+  /api/v1/transactions/export:
+    get:
+      summary: Export company transactions
+      tags: [Export]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, excel]
+            default: csv
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [income, expense, all]
+            default: all
+      responses:
+        "200":
+          description: Transactions export file
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  /api/v1/transactions/export/user:
+    get:
+      summary: Export user transactions
+      tags: [Export]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, excel]
+            default: csv
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: User transactions export file
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  /api/v1/transactions/export/bookings:
+    get:
+      summary: Export company bookings
+      tags: [Export]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, excel]
+            default: csv
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Bookings export file
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  /api/v1/transactions/export/invoices:
+    get:
+      summary: Export company invoices
+      tags: [Export]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, excel]
+            default: csv
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Invoices export file
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  # ============================================
+  # SUPER ADMIN ENDPOINTS
+  # ============================================
+  
+  /api/v1/super-admin/companies:
+    get:
+      summary: Get all companies (Super Admin)
+      tags: [Super Admin]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Companies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      companies:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Company"
+
+  /api/v1/super-admin/users:
+    get:
+      summary: Get all users (Super Admin)
+      tags: [Super Admin]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/User"
+
+  /api/v1/super-admin/statistics:
+    get:
+      summary: Get system statistics (Super Admin)
+      tags: [Super Admin]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: System statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      stats:
+                        $ref: "#/components/schemas/SystemStats"
+
+components:
+  schemas:
+    # ============================================
+    # EMAIL SCHEMAS
+    # ============================================
+    
+    EmailSettings:
+      type: object
+      properties:
+        sendInvoiceEmails:
+          type: boolean
+          default: true
+          description: Automatically send invoices via email
+        sendReceiptEmails:
+          type: boolean
+          default: true
+          description: Automatically send receipts via email
+        sendBookingConfirmations:
+          type: boolean
+          default: true
+          description: Send booking confirmation emails
+        sendBookingReminders:
+          type: boolean
+          default: true
+          description: Send booking reminder emails (24h before)
+        sendPaymentNotifications:
+          type: boolean
+          default: true
+          description: Send payment success/failure notifications
+        sendWelcomeEmails:
+          type: boolean
+          default: true
+          description: Send welcome emails to new users
+        sendSubscriptionNotices:
+          type: boolean
+          default: true
+          description: Send subscription expiry notices
+        customFromName:
+          type: string
+          example: "Your Company Name"
+          description: Custom sender name for emails
+        customFromEmail:
+          type: string
+          format: email
+          example: "noreply@yourcompany.com"
+          description: Custom sender email address
+        emailSignature:
+          type: string
+          example: "Best regards,\nYour Company Team"
+          description: Custom email signature
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: string
+          description: User ID who last updated settings
+
+    SystemStats:
+      type: object
+      properties:
+        companies:
+          type: object
+          properties:
+            total:
+              type: number
+              example: 25
+            active:
+              type: number
+              example: 23
+            inactive:
+              type: number
+              example: 2
+        users:
+          type: object
+          properties:
+            total:
+              type: number
+              example: 150
+            assigned:
+              type: number
+              example: 140
+            unassigned:
+              type: number
+              example: 10
+        facilities:
+          type: number
+          example: 75
+          description: Total facilities across all companies
+        bookings:
+          type: object
+          properties:
+            total:
+              type: number
+              example: 1250
+            thisMonth:
+              type: number
+              example: 85
+            active:
+              type: number
+              example: 12
+        revenue:
+          type: object
+          properties:
+            total:
+              type: number
+              example: 125000.50
+            thisMonth:
+              type: number
+              example: 8500.00
+            currency:
+              type: string
+              example: "GHS"
+        pendingJoinRequests:
+          type: number
+          example: 5
+
+    # ============================================
+    # ENHANCED EXISTING SCHEMAS
+    # ============================================
+    
+    Company:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+          example: "Acme Corporation"
+        logo:
+          type: object
+          properties:
+            path:
+              type: string
+            originalName:
+              type: string
+            mimetype:
+              type: string
+            size:
+              type: number
+        location:
+          type: string
+          example: "Accra, Ghana"
+        contactEmail:
+          type: string
+          format: email
+          example: "contact@acme.com"
+        contactPhone:
+          type: string
+          example: "+233 24 123 4567"
+        currency:
+          type: string
+          enum: [GHS, USD, EUR, GBP, NGN]
+          default: GHS
+        invoiceFormat:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [auto, prefix, paystack]
+            prefix:
+              type: string
+            nextNumber:
+              type: number
+            padding:
+              type: number
+        subscription:
+          type: object
+          properties:
+            plan:
+              type: string
+              enum: [free_trial, monthly, biannual, annual, triannual]
+            status:
+              type: string
+              enum: [active, expired, cancelled]
+            expiresAt:
+              type: string
+              format: date-time
+            licenseKey:
+              type: string
+        emailSettings:
+          $ref: "#/components/schemas/EmailSettings"
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+          example: "John Doe"
+        username:
+          type: string
+          example: "johndoe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        phone:
+          type: string
+          example: "+233 24 123 4567"
+        role:
+          type: string
+          enum: [user, staff, admin]
+        isSuperAdmin:
+          type: boolean
+          default: false
+        company:
+          type: string
+          description: Company ID
+        companyRole:
+          type: string
+        loyaltyProfile:
+          type: object
+          properties:
+            totalBookings:
+              type: number
+            totalSpent:
+              type: number
+            loyaltyTier:
+              type: string
+              enum: [bronze, silver, gold, platinum]
+            lastBookingDate:
+              type: string
+              format: date-time
+        cart:
+          type: array
+          items:
+            type: object
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        isDeleted:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
