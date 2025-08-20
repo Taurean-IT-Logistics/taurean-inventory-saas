@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { TanstackProvider } from "@/components/TanstackProvider";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "FacilityHub - Find Your Perfect Space",
@@ -36,15 +37,17 @@ html {
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased bg-white`}
       >
-        <TanstackProvider>
-          <ThemeProvider>
-            <Header />
-            {children}
-            <Footer />
-          </ThemeProvider>
-          <Toaster />
-          <EnhancedChatWidget />
-        </TanstackProvider>
+        <ErrorBoundary>
+          <TanstackProvider>
+            <ThemeProvider>
+              <Header />
+              {children}
+              <Footer />
+            </ThemeProvider>
+            <Toaster />
+            <EnhancedChatWidget />
+          </TanstackProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

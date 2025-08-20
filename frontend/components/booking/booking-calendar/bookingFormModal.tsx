@@ -61,12 +61,18 @@ export const BookingFormModal = ({
                 Facility <span className="text-red-500">*</span>
               </Label>
               <Select
-                value={formData.facility?.name || ""}
+                value={
+                  typeof formData.facility === 'string' 
+                    ? facilities.find(f => f._id === formData.facility)?.name || ""
+                    : (formData.facility as any)?._id 
+                      ? facilities.find(f => f._id === (formData.facility as any)._id)?.name || ""
+                      : ""
+                }
                 onValueChange={(value) => {
                   const selectedFacility = facilities.find(
                     (f) => f.name === value
                   );
-                  onFormDataChange({ ...formData, facility: selectedFacility });
+                  onFormDataChange({ ...formData, facility: selectedFacility?._id || value });
                 }}
               >
                 <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">

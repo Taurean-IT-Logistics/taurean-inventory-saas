@@ -60,25 +60,30 @@ const BookingCalendar = ({
         .filter((b) => filterStatus === "all" || b.status === filterStatus)
         .filter((b) => {
           if (filterFacility === "all") return true;
-          return b.facility && b.facility._id === filterFacility;
+          const facilityId = typeof b.facility === 'string' ? b.facility : (b.facility as any)?._id;
+          return facilityId === filterFacility;
         })
-        .map((b) => ({
-          title: `${b.facility?.name || "Unknown Facility"} - ${
-            b.user?.name || "Unknown User"
-          }`,
-          start: b.startDate
-            ? new Date(b.startDate).toISOString()
-            : new Date().toISOString(),
-          end: b.endDate
-            ? new Date(b.endDate).toISOString()
-            : new Date().toISOString(),
-          backgroundColor: getStatusColor(b.status),
-          borderColor: getStatusColor(b.status),
-          extendedProps: {
-            booking: b,
-            facility: b.facility,
-          },
-        }));
+        .map((b) => {
+          const facilityName = typeof b.facility === 'string' 
+            ? facilities.find(f => f._id === b.facility)?.name || "Unknown Facility"
+            : (b.facility as any)?.name || "Unknown Facility";
+          
+          return {
+            title: `${facilityName} - ${b.user?.name || "Unknown User"}`,
+            start: b.startDate
+              ? new Date(b.startDate).toISOString()
+              : new Date().toISOString(),
+            end: b.endDate
+              ? new Date(b.endDate).toISOString()
+              : new Date().toISOString(),
+            backgroundColor: getStatusColor(b.status),
+            borderColor: getStatusColor(b.status),
+            extendedProps: {
+              booking: b,
+              facility: b.facility,
+            },
+          };
+        });
 
       setEvents(filtered);
       setIsLoading(false);
