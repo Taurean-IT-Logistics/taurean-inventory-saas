@@ -599,23 +599,7 @@ export interface CompanyJoinRequest {
   updatedAt: Date;
 }
 
-export interface Company {
-  _id: string;
-  name: string;
-  description?: string;
-  owner: string | User;
-  subscription?: {
-    plan: string;
-    status: "active" | "inactive" | "expired";
-    activatedAt?: Date;
-    expiresAt?: Date;
-    duration?: number;
-    deactivatedAt?: Date;
-  };
-  isDeleted?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+
 
 export interface BookingEvent {
   title: string;
