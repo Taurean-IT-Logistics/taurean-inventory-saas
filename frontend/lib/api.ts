@@ -130,7 +130,7 @@ export const AuthAPI = {
 // Companies
 export const CompaniesAPI = {
   list: () =>
-    apiFetch<{ companies: Company[]; data: Company[] }>(`/companies`, {
+    apiFetch<{ companies: Company[]; data: Company[] }>(`/companies/public`, {
       method: "GET",
     }),
   onboard: (payload: FormData) =>
@@ -771,8 +771,10 @@ export const InvoicesAPI = {
     apiFetch(`/invoices/company/receipts`, { method: "GET" }),
   receiptsMine: () => apiFetch(`/invoices/me/receipts`, { method: "GET" }),
   getUserReceipts: () => apiFetch(`/invoices/me/receipts`, { method: "GET" }),
-  downloadInvoice: (id: string) => apiFetch(`/invoices/${id}/download`, { method: "GET" }),
-  downloadReceipt: (id: string) => apiFetch(`/invoices/receipts/${id}/download`, { method: "GET" }),
+  downloadInvoice: (id: string) =>
+    apiFetch(`/invoices/${id}/download`, { method: "GET" }),
+  downloadReceipt: (id: string) =>
+    apiFetch(`/invoices/receipts/${id}/download`, { method: "GET" }),
 };
 
 // Tax Schedules
@@ -836,7 +838,7 @@ export const TransactionsAPI = {
     apiFetch(`/transaction/subaccount/${subaccountCode}`, {
       method: "GET",
     }),
-  
+
   // Export methods
   exportTransactions: (params?: Record<string, string>) => {
     const qs = params ? `?${new URLSearchParams(params)}` : "";
@@ -884,14 +886,14 @@ export const EmailAPI = {
   sendWelcomeEmail: (userId: string) =>
     apiFetch(`/email/welcome/${userId}`, { method: "POST" }),
   sendInvoiceEmail: (invoiceId: string, attachPDF: boolean = true) =>
-    apiFetch(`/email/invoice/${invoiceId}`, { 
-      method: "POST", 
-      body: JSON.stringify({ attachPDF }) 
+    apiFetch(`/email/invoice/${invoiceId}`, {
+      method: "POST",
+      body: JSON.stringify({ attachPDF }),
     }),
   sendReceiptEmail: (receiptId: string, attachPDF: boolean = true) =>
-    apiFetch(`/email/receipt/${receiptId}`, { 
-      method: "POST", 
-      body: JSON.stringify({ attachPDF }) 
+    apiFetch(`/email/receipt/${receiptId}`, {
+      method: "POST",
+      body: JSON.stringify({ attachPDF }),
     }),
   sendBookingConfirmation: (bookingId: string) =>
     apiFetch(`/email/booking-confirmation/${bookingId}`, { method: "POST" }),
@@ -902,9 +904,9 @@ export const EmailAPI = {
   getEmailSettings: (companyId: string) =>
     apiFetch(`/email/settings/${companyId}`, { method: "GET" }),
   updateEmailSettings: (companyId: string, settings: any) =>
-    apiFetch(`/email/settings/${companyId}`, { 
-      method: "PUT", 
-      body: JSON.stringify({ emailSettings: settings }) 
+    apiFetch(`/email/settings/${companyId}`, {
+      method: "PUT",
+      body: JSON.stringify({ emailSettings: settings }),
     }),
 };
 

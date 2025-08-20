@@ -59,6 +59,7 @@ export function RequireActiveCompany() {
       }
 
       const companyId = (req.user as any)?.companyId;
+
       if (!companyId) {
         sendUnauthorized(res, "No company assigned");
         return;
@@ -89,7 +90,6 @@ export function RequireActiveCompany() {
 
       return next();
     } catch (e: any) {
-      console.log(e);
       sendError(res, "Company access check failed", e.message);
       return;
     }
