@@ -92,10 +92,13 @@ const register = async (req: Request, res: Response): Promise<void> => {
     // Send welcome email
     try {
       if (user.company) {
-        await emailService.sendWelcomeEmail(user._id!.toString(), (user as any).company.toString());
+        await emailService.sendWelcomeEmail(
+          user._id!.toString(),
+          (user as any).company.toString()
+        );
       }
     } catch (emailError) {
-      console.warn('Failed to send welcome email:', emailError);
+      console.warn("Failed to send welcome email:", emailError);
     }
 
     sendSuccess(
@@ -154,7 +157,7 @@ const login = async (req: Request, res: Response): Promise<void> => {
       id: user._id!.toString(),
       email: user.email,
       role: user.role,
-      companyId: (user as any).company?.toString?.(),
+      companyId: (user.company as any)?._id,
       isSuperAdmin: (user as any).isSuperAdmin === true,
     };
 

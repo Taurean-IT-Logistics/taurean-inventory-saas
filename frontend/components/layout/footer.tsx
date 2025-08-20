@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { logo } from "@/assets";
 
 export function Footer() {
   const pathname = usePathname();
@@ -17,8 +18,8 @@ export function Footer() {
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Taurean%20IT%20Logo1_vectorized-rqrFu3K2Mr6YMUklSnhrFRKrFhGNfY.png"
-                alt="FacilityHub"
+                src={logo}
+                alt="taurean-logo"
                 width={32}
                 height={32}
                 className="rounded-full"

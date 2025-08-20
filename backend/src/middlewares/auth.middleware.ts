@@ -53,6 +53,7 @@ export function RequireActiveCompany() {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Taurean IT super admins bypass company checks
+
       if ((req.user as any)?.isSuperAdmin) {
         return next();
       }
@@ -88,6 +89,7 @@ export function RequireActiveCompany() {
 
       return next();
     } catch (e: any) {
+      console.log(e);
       sendError(res, "Company access check failed", e.message);
       return;
     }

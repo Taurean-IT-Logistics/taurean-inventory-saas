@@ -35,6 +35,7 @@ import { Button } from "../ui/button";
 import { useAuth } from "../AuthProvider";
 import { getResourceUrl } from "@/lib/api";
 import { SocketStatus } from "../ui/socket-status";
+import { logo } from "@/assets";
 
 const sampleNotifications = [
   {
@@ -72,6 +73,18 @@ const dashboardRoutes: Route[] = [
     title: "Facilities",
     icon: <HouseIcon className="size-4" />,
     link: "/admin/facilities",
+    subs: [
+      {
+        title: "Manage",
+        link: "/admin/facilities",
+        icon: <HouseIcon className="size-4" />,
+      },
+      {
+        title: "Create",
+        link: "/admin/facilities/create",
+        icon: <HouseIcon className="size-4" />,
+      },
+    ],
   },
   {
     id: "inventory",
@@ -177,7 +190,11 @@ export function DashboardSidebar() {
         <a href="#" className="flex items-center gap-2">
           <Logo
             width={200}
-            logo={getResourceUrl((user?.company as any).logo?.path || "")}
+            logo={
+              (user?.company as any).path
+                ? getResourceUrl((user?.company as any).logo?.path)
+                : logo
+            }
           />
         </a>
 

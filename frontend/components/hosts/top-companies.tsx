@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, Star, Users, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CompaniesAPI, getResourceUrl } from "@/lib/api";
+import Image from "next/image";
+import { logo } from "@/assets";
+import { formatDistanceToNow } from "date-fns";
 
 interface Company {
   _id: string;
@@ -27,13 +31,7 @@ interface Company {
 export function TopCompanies() {
   const { data: companiesData, isLoading } = useQuery({
     queryKey: ["top-companies"],
-    queryFn: async () => {
-      const response = await fetch(
-        "/api/company/public?limit=6&sortBy=bookings"
-      );
-      if (!response.ok) throw new Error("Failed to fetch top companies");
-      return response.json();
-    },
+    queryFn: async () => CompaniesAPI.list(),
   });
 
   const companies = companiesData?.companies || [];
@@ -69,7 +67,6 @@ export function TopCompanies() {
       </section>
     );
   }
-
   return (
     <section className="py-16 bg-gradient-to-br from-gray-50 to-blue-50">
       <div className="container mx-auto px-4">
@@ -85,36 +82,24 @@ export function TopCompanies() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {companies.map((company: Company) => (
+          {companies.slice(0, 3).map((company: any) => (
             <Card
               key={company._id}
               className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
             >
               <CardContent className="p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    {company.logo ? (
-                      <img
-                        src={
-                          company.logo.path ||
-                          company.logo.url ||
-                          `/api/images/${company.logo._id}`
-                        }
-                        alt={`${company.name} logo`}
-                        className="w-16 h-16 rounded-lg object-cover border-2 border-gray-200 group-hover:border-blue-300 transition-colors"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "/placeholder-logo.png";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
-                        <Building2 className="h-8 w-8 text-blue-600" />
-                      </div>
-                    )}
-                  </div>
+                <div className="flex flex-col items-start space-x-4">
+                  <Image
+                    src={
+                      company.logo?.path
+                        ? getResourceUrl(company.logo.path)
+                        : logo
+                    }
+                    alt={`${company.name} logo`}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 group-hover:border-blue-300 transition-colors ml-2"
+                  />
 
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-lg font-semibold text-gray-900 truncate">
                         {company.name}
@@ -138,33 +123,7 @@ export function TopCompanies() {
                         {company.location || "Location not specified"}
                       </span>
                     </div>
-
-                    {company.subscription && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          <span className="capitalize">
-                            {company.subscription.plan}
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                          <span className="text-sm font-medium text-gray-700">
-                            Top Rated
-                          </span>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <Button
-                    variant="outline"
-                    className="w-full group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-colors"
-                  >
-                    View Company
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -180,12 +139,6 @@ export function TopCompanies() {
             <p className="text-gray-500">Check back later for top companies</p>
           </div>
         )}
-
-        <div className="text-center mt-8">
-          <Button variant="outline" size="lg">
-            View All Companies
-          </Button>
-        </div>
       </div>
     </section>
   );

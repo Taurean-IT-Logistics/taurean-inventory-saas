@@ -27,6 +27,16 @@ router.get(
   RequirePermissions(["viewBookings"]),
   BookingController.getBookingsByUser
 );
+
+// Company-specific: Get bookings for the authenticated user's company
+router.get(
+  "/company",
+  AuthMiddleware,
+  RequireActiveCompany(),
+  RequirePermissions(["viewBookings"]),
+  BookingController.getCompanyBookings
+);
+
 router.get("/:id", AuthMiddleware, BookingController.getBookingById);
 router.put(
   "/:id",
@@ -61,15 +71,6 @@ router.get(
   AuthMiddleware,
   RequirePermissions(["viewBookings"]),
   BookingController.getAllBookings
-);
-
-// Company-specific: Get bookings for the authenticated user's company
-router.get(
-  "/company",
-  AuthMiddleware,
-  RequireActiveCompany(),
-  RequirePermissions(["viewBookings"]),
-  BookingController.getCompanyBookings
 );
 
 export default router;

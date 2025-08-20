@@ -119,7 +119,7 @@ export async function updatePayoutConfig(req: Request, res: Response) {
 export async function getPublicCompanies(req: Request, res: Response) {
   try {
     const { search } = req.query;
-    let query: any = { isActive: true };
+    let query: any = {};
 
     if (search) {
       query = {

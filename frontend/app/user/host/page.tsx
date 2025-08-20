@@ -685,7 +685,9 @@ export default function CompanyOnboardingPage() {
                   )}
 
                   {banksError && (
-                    <Button onClick={() => refetchBanks()}>Retry</Button>
+                    <Button className="mt-2" onClick={() => refetchBanks()}>
+                      Retry
+                    </Button>
                   )}
                 </div>
 
@@ -721,7 +723,7 @@ export default function CompanyOnboardingPage() {
                           </span>
                         </span>
                       ) : accountDetailsError ? (
-                        <span className="text-red-500 text-sm flex flex-col items-center gap-2">
+                        <span className="text-red-500 text-sm flex flex-col items-center gap-2 mt-2">
                           <AlertCircle className="w-4 h-4" />
                           {accountDetailsError.message || "Account not found"}
                           <Button
@@ -749,6 +751,7 @@ export default function CompanyOnboardingPage() {
                     type="number"
                     min="5"
                     max="10"
+                    readOnly
                     step="0.5"
                     value={formData.feePercent}
                     onChange={(e) =>

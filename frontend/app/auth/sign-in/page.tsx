@@ -64,7 +64,7 @@ export default function Login() {
       <div className="flex flex-1 flex-col justify-center px-4 py-10 lg:px-6">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <Link href="/" className="flex justify-center mb-2">
-            <Logo width={400} />
+            <Logo />
           </Link>
           <h2 className="text-center text-xl font-semibold text-foreground">
             Log in or create account

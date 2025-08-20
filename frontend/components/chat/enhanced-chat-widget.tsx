@@ -15,14 +15,31 @@ import {
   Plus,
   MessageSquare,
 } from "lucide-react";
+import {
+  Select,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+} from "@/components/ui/select";
+import {
+  Command,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandEmpty,
+} from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { SupportAPI, CompanyAPI } from "@/lib/api";
+import { SupportAPI, CompaniesAPI } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "../AuthProvider";
+import { Textarea } from "../ui/textarea";
 
 interface Message {
   id: string;
@@ -80,6 +97,7 @@ export function EnhancedChatWidget() {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [search, setSearch] = useState("");
   const [socket, setSocket] = useState<Socket | null>(null);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -114,10 +132,14 @@ export function EnhancedChatWidget() {
   });
 
   // Fetch companies for ticket creation
-  const { data: companies } = useQuery({
+  const {
+    data: companies,
+    isLoading: isCompaniesLoading,
+    isError: isCompaniesError,
+    refetch: refetchCompanies,
+  } = useQuery({
     queryKey: ["companies"],
-    queryFn: () => CompanyAPI.getPublic(),
-    enabled: !!user && isOpen && activeMode === "support",
+    queryFn: () => CompaniesAPI.list(),
   });
 
   const { data: ticketDetails, refetch: refetchTicketDetails } = useQuery({
@@ -630,16 +652,16 @@ export function EnhancedChatWidget() {
                             <h3 className="font-medium text-sm">
                               Create Support Ticket
                             </h3>
-                            <button
+                            <Button
                               onClick={() => setShowTicketForm(false)}
                               className="text-gray-500 hover:text-gray-700 text-sm"
                             >
                               ← Back to tickets
-                            </button>
+                            </Button>
                           </div>
                           <div className="p-4 rounded-lg">
                             <div className="space-y-3">
-                              <input
+                              <Input
                                 type="text"
                                 value={newTicketForm.title}
                                 onChange={(e) =>
@@ -648,10 +670,10 @@ export function EnhancedChatWidget() {
                                     title: e.target.value,
                                   })
                                 }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border  rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Brief description of your issue"
                               />
-                              <textarea
+                              <Textarea
                                 value={newTicketForm.description}
                                 onChange={(e) =>
                                   setNewTicketForm({
@@ -664,68 +686,124 @@ export function EnhancedChatWidget() {
                                 placeholder="Detailed description"
                               />
                               <div className="space-y-2">
-                                <select
+                                <Select
                                   value={newTicketForm.companyId}
-                                  onChange={(e) =>
-                                    setNewTicketForm({
-                                      ...newTicketForm,
-                                      companyId: e.target.value,
-                                    })
-                                  }
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  required
+                                  onValueChange={(value) => {
+                                    setNewTicketForm((prev) => ({
+                                      ...prev,
+                                      companyId: value,
+                                    }));
+                                  }}
                                 >
-                                  <option value="">Select Company</option>
-                                  {(companies as any)?.data?.map(
-                                    (company: any) => (
-                                      <option
-                                        key={company._id}
-                                        value={company._id}
+                                  <SelectTrigger
+                                    className={
+                                      isCompaniesError ? "border-red-500" : ""
+                                    }
+                                  >
+                                    <SelectValue placeholder="Select company" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {isCompaniesLoading ? (
+                                      <SelectItem value="loading" disabled>
+                                        Loading companies...
+                                      </SelectItem>
+                                    ) : isCompaniesError ? (
+                                      <SelectItem
+                                        value="loading_failed"
+                                        disabled
                                       >
-                                        {company.name}
-                                      </option>
-                                    )
-                                  )}
-                                </select>
+                                        Failed to load companies.
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            refetchCompanies();
+                                          }}
+                                        >
+                                          Retry
+                                        </Button>
+                                      </SelectItem>
+                                    ) : (companies as any)?.companies &&
+                                      (companies as any).companies.length >
+                                        0 ? (
+                                      (companies as any).companies.map(
+                                        (company: {
+                                          _id: string;
+                                          name: string;
+                                        }) => (
+                                          <SelectItem
+                                            key={company._id}
+                                            value={company._id}
+                                          >
+                                            {company.name}
+                                          </SelectItem>
+                                        )
+                                      )
+                                    ) : (
+                                      <SelectItem value="" disabled>
+                                        No companies found
+                                      </SelectItem>
+                                    )}
+                                  </SelectContent>
+                                </Select>
                                 <div className="grid grid-cols-2 gap-2">
-                                  <select
+                                  <Select
                                     value={newTicketForm.category}
-                                    onChange={(e) =>
+                                    onValueChange={(value) =>
                                       setNewTicketForm({
                                         ...newTicketForm,
-                                        category: e.target.value,
+                                        category: value,
                                       })
                                     }
-                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   >
-                                    <option value="general">General</option>
-                                    <option value="technical">Technical</option>
-                                    <option value="billing">Billing</option>
-                                    <option value="feature_request">
-                                      Feature Request
-                                    </option>
-                                    <option value="bug_report">
-                                      Bug Report
-                                    </option>
-                                  </select>
-                                  <select
+                                    <SelectTrigger className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                      <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="general">
+                                        General
+                                      </SelectItem>
+                                      <SelectItem value="technical">
+                                        Technical
+                                      </SelectItem>
+                                      <SelectItem value="billing">
+                                        Billing
+                                      </SelectItem>
+                                      <SelectItem value="feature_request">
+                                        Feature Request
+                                      </SelectItem>
+                                      <SelectItem value="bug_report">
+                                        Bug Report
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <Select
                                     value={newTicketForm.priority}
-                                    onChange={(e) =>
+                                    onValueChange={(value) =>
                                       setNewTicketForm({
                                         ...newTicketForm,
-                                        priority: e.target.value,
+                                        priority: value,
                                       })
                                     }
-                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   >
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
-                                  </select>
+                                    <SelectTrigger className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                      <SelectValue placeholder="Select priority" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="low">Low</SelectItem>
+                                      <SelectItem value="medium">
+                                        Medium
+                                      </SelectItem>
+                                      <SelectItem value="high">High</SelectItem>
+                                      <SelectItem value="urgent">
+                                        Urgent
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                               </div>
-                              <button
+                              <Button
                                 onClick={handleCreateTicket}
                                 disabled={
                                   !newTicketForm.title ||
@@ -745,7 +823,7 @@ export function EnhancedChatWidget() {
                                 ) : (
                                   "Create Ticket"
                                 )}
-                              </button>
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -756,12 +834,13 @@ export function EnhancedChatWidget() {
                             <h3 className="font-medium text-sm">
                               Ticket Details
                             </h3>
-                            <button
+                            <Button
+                              variant="ghost"
                               onClick={handleBackToTickets}
                               className="text-gray-500 hover:text-gray-700 text-sm"
                             >
                               ← Back to tickets
-                            </button>
+                            </Button>
                           </div>
                           <div className="p-3 border-b border-gray-200 rounded-lg mb-3">
                             <div className="flex items-center justify-between mb-2">

@@ -1,4 +1,9 @@
-import { BookingDocument, BookingModel, InventoryItemModel } from "../models";
+import {
+  BookingDocument,
+  BookingModel,
+  FacilityModel,
+  InventoryItemModel,
+} from "../models";
 import { Types } from "mongoose";
 import { Booking } from "../types";
 import { emailService } from "./email.service";
@@ -85,17 +90,23 @@ const createBooking = async (
       (bookingData as any).items || [],
       "decrement"
     );
+
+    const facility = await FacilityModel.findById(
+      bookingData.facility
+    ).populate("company");
+
+    bookingData.company = (facility?.company as any)?._id;
     const booking = new BookingModel(bookingData);
     const saved = await booking.save();
     try {
       const { emitEvent } = await import("../realtime/socket");
       const { Events } = await import("../realtime/events");
       emitEvent(Events.BookingCreated, { id: saved._id, booking: saved });
-      
+
       // Send booking confirmation email
       await emailService.sendBookingConfirmation((saved as any)._id.toString());
     } catch (emailError) {
-      console.warn('Failed to send booking confirmation email:', emailError);
+      console.warn("Failed to send booking confirmation email:", emailError);
     }
     return saved;
   } catch (error) {
@@ -252,8 +263,8 @@ const getCompanyBookings = async (
     return await BookingModel.find(filter).populate(
       "user facility paymentDetails"
     );
-  } catch (error) {
-    throw new Error("Error fetching company bookings");
+  } catch (error: any) {
+    throw new Error(error.message);
   }
 };
 

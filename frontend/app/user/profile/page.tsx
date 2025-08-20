@@ -283,10 +283,12 @@ const UserProfilePage = () => {
               {user.company ? (
                 <div className="space-y-3">
                   <div>
-                    <p className="font-medium text-lg">{user.company}</p>
+                    <p className="font-medium text-lg">
+                      {(user.company as any)?.name}
+                    </p>
                     {user.companyRole && (
                       <Badge variant="outline" className="mt-2">
-                        {user.companyRole}
+                        {(user.companyRole as any)?.name}
                       </Badge>
                     )}
                   </div>

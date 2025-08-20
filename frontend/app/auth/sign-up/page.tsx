@@ -53,7 +53,7 @@ export default function SignUp() {
       <div className="w-full max-w-sm px-6 py-10 pt-14">
         <div className="flex flex-col items-center space-y-8 ">
           <Link href="/" className="flex justify-center">
-            <Logo width={300} />
+            <Logo />
           </Link>
 
           <div className="space-y-2 text-center">

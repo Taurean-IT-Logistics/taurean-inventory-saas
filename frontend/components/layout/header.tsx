@@ -6,13 +6,11 @@ import {
   Menu,
   Bell,
   User2,
-  Calendar,
-  MapPin,
+  PieChart,
   Home,
   LogOut,
   LogIn,
   Loader,
-  Coins,
   LockOpen,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,6 +30,8 @@ import type { User } from "@/types";
 import { useAuth } from "../AuthProvider";
 import NotificationPanel from "../notifications/NotificationPanel";
 import { NotificationsAPI } from "@/lib/api";
+import Image from "next/image";
+import { logo } from "@/assets";
 
 export function Header() {
   const pathname = usePathname();
@@ -97,11 +97,7 @@ export function Header() {
             <div className="flex items-center justify-between">
               {/* Logo */}
               <Link href="/" className="flex items-center">
-                <img
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Taurean%20IT%20Logo1_vectorized-rqrFu3K2Mr6YMUklSnhrFRKrFhGNfY.png"
-                  alt="Logo"
-                  className="h-8 w-8"
-                />
+                <Image src={logo} alt="Logo" className="h-8 w-8" />
               </Link>
 
               {/* Navigation or Minimal Search */}
@@ -208,29 +204,11 @@ export function Header() {
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link
-                          href="/user/rentals"
+                          href="/user/dashboard"
                           className="flex items-center"
                         >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          <span>My Rentals</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href="/user/transactions"
-                          className="flex items-center"
-                        >
-                          <Coins className="mr-2 h-4 w-4" />
-                          <span>My Transactions</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href="/user/bookings"
-                          className="flex items-center"
-                        >
-                          <MapPin className="mr-2 h-4 w-4" />
-                          <span>Track Active Bookings</span>
+                          <PieChart className="mr-2 h-4 w-4" />
+                          <span>Dashboard</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />

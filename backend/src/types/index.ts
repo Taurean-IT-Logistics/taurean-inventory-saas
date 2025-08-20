@@ -172,6 +172,7 @@ export interface Booking {
     refundAmount?: number;
   };
   notes?: string;
+  company: Company;
   internalNotes?: string;
   isDeleted: boolean;
   createdAt: Date;

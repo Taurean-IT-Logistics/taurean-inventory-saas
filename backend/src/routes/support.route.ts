@@ -73,6 +73,13 @@ router.get(
   SupportController.getSuperAdminTickets
 );
 
+// Staff routes (admin/staff roles)
+router.get(
+  "/tickets/staff",
+  AuthorizeRoles("admin", "staff"),
+  SupportController.getStaffTickets
+);
+
 router.get("/tickets/:ticketId", SupportController.getTicketDetails);
 router.post(
   "/tickets/:ticketId/messages",
@@ -80,12 +87,6 @@ router.post(
   SupportController.sendMessage
 );
 
-// Staff routes (admin/staff roles)
-router.get(
-  "/tickets/staff",
-  AuthorizeRoles("admin", "staff"),
-  SupportController.getStaffTickets
-);
 router.put(
   "/tickets/:ticketId/status",
   AuthorizeRoles("admin", "staff"),

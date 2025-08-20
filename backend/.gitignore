@@ -26,6 +26,8 @@ tmp/
 
 uploads/*
 
+*.env
+
 
 # Optional: If using Docker
 .dockerignore

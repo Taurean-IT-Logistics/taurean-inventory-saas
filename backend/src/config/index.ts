@@ -6,7 +6,7 @@ const CONFIG = {
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
   SALT_ROUNDS: process.env.SALT_ROUNDS || 10,
   CONFIG_LEVEL: process.env.CONFIG_LEVEL,
-  PORT: process.env.PORT || 3000,
+  PORT: process.env.PORT || 3001,
   ENV: process.env.NODE_ENV || "development",
   JWT_EXPIRATION: process.env.JWT_EXPIRATION || "1h",
   JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION || "7d",

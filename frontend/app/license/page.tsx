@@ -4,6 +4,21 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+} from "@/components/ui/select";
+import {
+  Command,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandEmpty,
+} from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +33,10 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { SubscriptionsAPI } from "@/lib/api";
+import { CompaniesAPI, SubscriptionsAPI } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
+import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
 
 interface PricingPlan {
   id: string;
@@ -33,7 +51,20 @@ interface LicenseActivation {
 }
 
 export default function LicensePage() {
+  const { user } = useAuth();
+
+  const router = useRouter();
+
+  if (!user) {
+    return router.push("/auth/sign-in");
+  }
+  const [formData, setFormData] = useState({
+    companyId: "",
+    planId: "",
+    email: user?.email,
+  });
   const [selectedPlan, setSelectedPlan] = useState<string>("");
+  const [search, setSearch] = useState("");
   const [companyId, setCompanyId] = useState<string>("");
   const [isActivating, setIsActivating] = useState(false);
 
@@ -43,66 +74,83 @@ export default function LicensePage() {
     queryFn: SubscriptionsAPI.getPlans,
   });
 
+  const {
+    data: companies,
+    isLoading: isCompaniesLoading,
+    isError: isCompaniesError,
+  } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => CompaniesAPI.list(),
+  });
+
   const plans = (pricingData as any)?.plans || [];
 
-  const handleLicenseActivation = async () => {
-    if (!selectedPlan || !companyId) {
-      toast({
-        title: "Error",
-        description: "Please select a plan and enter company ID",
-        variant: "destructive",
-      });
-      return;
-    }
+  console.log(plans);
 
-    setIsActivating(true);
-    try {
-      const selectedPlanData = plans.find(
-        (p: PricingPlan) => p.id === selectedPlan
-      );
-      if (!selectedPlanData) throw new Error("Invalid plan selected");
-
-      const response = await fetch("/api/subscriptions/initialize-payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          companyId,
-          planId: selectedPlan,
-          email: localStorage.getItem("userEmail") || "admin@company.com",
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to activate license");
-      }
-
-      const result = await response.json();
+  // Free trial mutation
+  const freeTrialMutation = useMutation({
+    mutationFn: async () => {
+      if (!companyId) throw new Error("Please select a company");
+      return SubscriptionsAPI.startFreeTrial(companyId);
+    },
+    onSuccess: () => {
       toast({
         title: "Success",
-        description: `License activated successfully! Plan: ${selectedPlanData.label}`,
+        description: "Free trial activated successfully!",
         variant: "default",
       });
-
-      // Reset form
       setSelectedPlan("");
       setCompanyId("");
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to activate free trial",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Paid license mutation
+  const paidLicenseMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedPlan || !companyId) {
+        throw new Error("Please select a plan and company");
+      }
+      return SubscriptionsAPI.initializePayment(formData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "License activated successfully!",
+        variant: "default",
+      });
+      setSelectedPlan("");
+      setCompanyId("");
+    },
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message || "Failed to activate license",
         variant: "destructive",
       });
-    } finally {
-      setIsActivating(false);
+    },
+  });
+
+  const handleLicenseActivation = () => {
+    if (!selectedPlan) return;
+    const selected = plans.find(
+      (plan: PricingPlan) => plan.id === selectedPlan
+    );
+    if (selected && selected.isTrial) {
+      freeTrialMutation.mutate();
+    } else {
+      paidLicenseMutation.mutate();
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen mt-24 ">
       <div className="container mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-16">
@@ -133,21 +181,52 @@ export default function LicensePage() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              <div>
-                <Label htmlFor="companyId" className="text-base font-medium">
-                  Company ID
-                </Label>
-                <Input
-                  id="companyId"
-                  value={companyId}
-                  onChange={(e) => setCompanyId(e.target.value)}
-                  placeholder="Enter your company ID"
-                  className="mt-2"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  This is the unique identifier for your company
-                </p>
-              </div>
+              <Select
+                value={companyId}
+                onValueChange={(value) => {
+                  setCompanyId(value);
+                  setFormData((prev) => ({ ...prev, companyId: value }));
+                }}
+              >
+                <SelectTrigger
+                  className={isCompaniesError ? "border-red-500" : ""}
+                >
+                  <SelectValue placeholder="Search and select company" />
+                </SelectTrigger>
+                <SelectContent>
+                  <Command shouldFilter={true}>
+                    <CommandInput
+                      placeholder="Search companies..."
+                      value={search}
+                      onValueChange={setSearch}
+                    />
+                    <CommandList>
+                      {isCompaniesLoading ? (
+                        <CommandItem disabled>Loading companies...</CommandItem>
+                      ) : isCompaniesError ? (
+                        <CommandItem disabled>
+                          Failed to Companies. Try again.
+                        </CommandItem>
+                      ) : (companies as any)?.companies &&
+                        (companies as any).companies.length > 0 ? (
+                        (companies as any).companies
+                          .filter((company: { name: string }) =>
+                            company.name
+                              .toLowerCase()
+                              .includes(search.toLowerCase())
+                          )
+                          .map((company: { _id: string; name: string }) => (
+                            <SelectItem key={company._id} value={company._id}>
+                              {company.name}
+                            </SelectItem>
+                          ))
+                      ) : (
+                        <CommandEmpty>No companies found</CommandEmpty>
+                      )}
+                    </CommandList>
+                  </Command>
+                </SelectContent>
+              </Select>
 
               <div>
                 <Label className="text-base font-medium">

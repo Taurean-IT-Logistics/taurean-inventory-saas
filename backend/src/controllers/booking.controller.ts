@@ -133,6 +133,7 @@ const getCompanyBookings = async (
 ): Promise<void> => {
   try {
     const showDeleted = req.query.showDeleted === "true";
+
     const bookings = await BookingService.getCompanyBookings(
       req.user?.companyId!,
       showDeleted
