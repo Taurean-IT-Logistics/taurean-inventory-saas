@@ -59,7 +59,7 @@ export function FacilityCard({ facility }: FacilityCardProps) {
             {facility.location.address}
           </p>
           <p className="text-sm text-slate-500">
-            {facility.reviews.length} reviews
+            {facility.rating?.totalReviews || 0} reviews
           </p>
           <div className="pt-1">
             <span className="font-semibold text-slate-900 text-base">

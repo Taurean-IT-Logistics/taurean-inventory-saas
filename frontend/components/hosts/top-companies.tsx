@@ -3,13 +3,10 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, Star, Users, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { CompaniesAPI, getResourceUrl } from "@/lib/api";
 import Image from "next/image";
 import { logo } from "@/assets";
-import { formatDistanceToNow } from "date-fns";
 
 interface Company {
   _id: string;
@@ -69,7 +66,7 @@ export function TopCompanies() {
     );
   }
   return (
-    <section className="py-16 bg-gradient-to-br from-gray-50 to-blue-50">
+    <section className="py-16">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -92,7 +89,7 @@ export function TopCompanies() {
                 <div className="flex flex-col items-start space-x-4">
                   <Image
                     src={
-                      company.logo?.path
+                      company?.logo?.path
                         ? getResourceUrl(company.logo.path)
                         : logo
                     }
@@ -105,12 +102,6 @@ export function TopCompanies() {
                       <h3 className="text-lg font-semibold text-gray-900 truncate">
                         {company.name}
                       </h3>
-                      <Badge
-                        variant={company.isActive ? "default" : "secondary"}
-                        className="ml-2"
-                      >
-                        {company.isActive ? "Active" : "Inactive"}
-                      </Badge>
                     </div>
 
                     <p className="text-gray-600 text-sm mb-3 line-clamp-2">

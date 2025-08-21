@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import PricingForm from "./pricingForm";
 import { getResourceUrl } from "@/lib/api";
+import { TimePicker } from "@/components/ui/time-picker";
 
 interface FacilityModalProps {
   show: boolean;
@@ -264,12 +265,18 @@ const FacilityModal = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="opening">Opening Time *</Label>
-              <Input
-                id="opening"
-                name="operationalHours.opening"
-                type="time"
+              <TimePicker
                 value={formData.operationalHours?.opening || ""}
-                onChange={handleInputChange}
+                onChange={(time) => {
+                  const event = {
+                    target: {
+                      name: "operationalHours.opening",
+                      value: time,
+                    },
+                  } as any;
+                  handleInputChange(event);
+                }}
+                placeholder="Select opening time"
                 className={
                   errors["operationalHours.opening"] ? "border-red-500" : ""
                 }
@@ -282,12 +289,18 @@ const FacilityModal = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="closing">Closing Time *</Label>
-              <Input
-                id="closing"
-                name="operationalHours.closing"
-                type="time"
+              <TimePicker
                 value={formData.operationalHours?.closing || ""}
-                onChange={handleInputChange}
+                onChange={(time) => {
+                  const event = {
+                    target: {
+                      name: "operationalHours.closing",
+                      value: time,
+                    },
+                  } as any;
+                  handleInputChange(event);
+                }}
+                placeholder="Select closing time"
                 className={
                   errors["operationalHours.closing"] ? "border-red-500" : ""
                 }

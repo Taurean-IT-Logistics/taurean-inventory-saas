@@ -103,15 +103,6 @@ export interface Facility {
     average: number;
     totalReviews: number;
   };
-  reviews: {
-    user: User;
-    booking: Booking;
-    rating: number;
-    comment: string;
-    isVerified: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-  }[];
   capacity: {
     maximum: number;
     recommended: number;
@@ -132,6 +123,17 @@ export interface Facility {
   isTaxable: boolean;
   isDeleted: boolean;
   createdBy: User;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Review {
+  _id: string;
+  user: User;
+  facility: string;
+  rating: number;
+  comment: string;
+  isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -476,7 +478,7 @@ export interface SubscriptionStatus {
   isActive: boolean;
   expiresAt: Date | null;
   plan: SubscriptionPlan | null;
-  features: SubscriptionPlan['features'] | null;
+  features: SubscriptionPlan["features"] | null;
   daysRemaining: number;
   canStartTrial: boolean;
   isTrial: boolean;
@@ -598,8 +600,6 @@ export interface CompanyJoinRequest {
   createdAt: Date;
   updatedAt: Date;
 }
-
-
 
 export interface BookingEvent {
   title: string;

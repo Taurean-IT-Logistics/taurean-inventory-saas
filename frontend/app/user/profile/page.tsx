@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { User } from "@/types";
+import type { User, Company } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,10 @@ import {
   Trash2,
   Building,
   Crown,
+  Search,
+  Plus,
+  CheckCircle,
+  Clock,
 } from "lucide-react";
 import { EditProfileModal } from "@/components/user/editProfileModal";
 import { useAuth } from "@/components/AuthProvider";
@@ -31,6 +35,20 @@ import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
 import Link from "next/link";
 import { EnhancedChatWidget } from "@/components/chat/enhanced-chat-widget";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const UserProfilePage = () => {
   const router = useRouter();
@@ -90,6 +108,34 @@ const UserProfilePage = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to delete account",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Fetch companies for join requests
+  const { data: companies } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => CompaniesAPI.list(),
+    enabled: !user?.company,
+  });
+
+  // Company join request mutation
+  const joinRequestMutation = useMutation({
+    mutationFn: (companyId: string) => 
+      CompaniesAPI.sendJoinRequest(companyId),
+    onSuccess: () => {
+      toast({
+        title: "Join Request Sent",
+        description: "Your request has been sent to the company for approval.",
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ["user", user?._id] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send join request.",
         variant: "destructive",
       });
     },
@@ -294,34 +340,83 @@ const UserProfilePage = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-center space-y-4">
-                  <div>
+                <div className="space-y-4">
+                  <div className="text-center">
                     <p className="text-muted-foreground mb-3">
                       No company associated
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      Join or create a company to access additional features
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Join a company to access team features and collaborate with others.
                     </p>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      asChild
-                      className="w-full bg-transparent"
-                    >
-                      <Link href={user.company ? "/admin" : "/user/host"}>
-                        <Building className="h-4 w-4 mr-2" />
-                        {user.company ? "Manage Company" : "Create Company"}
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleRequestCompanyApproval}
-                      className="w-full bg-transparent"
-                    >
-                      <Shield className="h-4 w-4 mr-2" />
-                      Request Approval
-                    </Button>
+                  
+                  {/* Company Join Request System */}
+                  <div className="space-y-3">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button className="w-full" variant="outline">
+                          <Search className="h-4 w-4 mr-2" />
+                          Search Companies
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search companies..." />
+                          <CommandList>
+                            <CommandEmpty>No companies found.</CommandEmpty>
+                            <CommandGroup>
+                              {companies?.data?.map((company: Company) => (
+                                <CommandItem
+                                  key={company._id}
+                                  onSelect={() => {
+                                    joinRequestMutation.mutate(company._id);
+                                  }}
+                                  className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent"
+                                >
+                                  <div className="flex-shrink-0">
+                                    {company.logo ? (
+                                      <img
+                                        src={company.logo}
+                                        alt={company.name}
+                                        className="w-10 h-10 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <Building className="h-5 w-5 text-primary" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm truncate">
+                                      {company.name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      {company.industry} • {company.location}
+                                    </p>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="flex-shrink-0"
+                                    disabled={joinRequestMutation.isPending}
+                                  >
+                                    {joinRequestMutation.isPending ? (
+                                      <Loader className="h-4 w-4" />
+                                    ) : (
+                                      <Plus className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <div className="text-xs text-muted-foreground text-center">
+                      Select a company to send a join request
+                    </div>
                   </div>
                 </div>
               )}

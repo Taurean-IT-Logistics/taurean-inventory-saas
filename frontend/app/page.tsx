@@ -1,16 +1,12 @@
 "use client";
 
-import { Header } from "@/components/layout/header";
 import { FacilityGrid } from "@/components/facilities/facility-grid";
 import { RentalGrid } from "@/components/rentals/rental-grid";
 import { TopCompanies } from "@/components/hosts/top-companies";
-import { CityInspiration } from "@/components/inspiration/city-inspiration";
 import { HostBanner } from "@/components/layout/host-banner";
-import { Footer } from "@/components/layout/footer";
 import { useFacilities } from "@/hooks/useFacilities";
 import { useInventoryItems } from "@/hooks/useInventoryItems";
 import { ErrorComponent } from "@/components/ui/error";
-import { toast } from "@/hooks/use-toast";
 import { Facility, InventoryItem } from "@/types";
 import { Loader } from "@/components/ui/loader";
 import {
@@ -22,16 +18,7 @@ import {
 } from "@/components/ui/carousel";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
-import {
-  Calendar,
-  MapPin,
-  Users,
-  Star,
-  Zap,
-  Building2,
-  CreditCard,
-  Shield,
-} from "lucide-react";
+import { Star, Zap, Building2, CreditCard, Shield } from "lucide-react";
 
 const carouselSlides = [
   {

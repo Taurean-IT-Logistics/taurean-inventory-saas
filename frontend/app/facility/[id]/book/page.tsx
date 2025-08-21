@@ -32,6 +32,7 @@ import { Booking, Facility } from "@/types";
 import { currencyFormat } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
 import { useRedirect } from "@/hooks/useRedirect";
+import { DatePicker } from "@/components/ui/date-picker";
 
 export default function BookingPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
@@ -380,42 +381,44 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="startDate">Start Date</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={
+                    <DatePicker
+                      date={
                         bookingData.startDate
                           ? typeof bookingData.startDate === "string"
-                            ? bookingData.startDate
+                            ? new Date(bookingData.startDate)
                             : bookingData.startDate instanceof Date
-                            ? bookingData.startDate.toISOString().slice(0, 10)
-                            : ""
-                          : ""
+                            ? bookingData.startDate
+                            : undefined
+                          : undefined
                       }
-                      onChange={(e) =>
-                        handleInputChange("startDate", e.target.value)
+                      onDateChange={(date) =>
+                        handleInputChange(
+                          "startDate",
+                          date ? date.toISOString().split("T")[0] : ""
+                        )
                       }
-                      className="mt-1"
+                      placeholder="Select start date"
                     />
                   </div>
                   <div>
                     <Label htmlFor="endDate">End Date</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={
+                    <DatePicker
+                      date={
                         bookingData.endDate
                           ? typeof bookingData.endDate === "string"
-                            ? bookingData.endDate
+                            ? new Date(bookingData.endDate)
                             : bookingData.endDate instanceof Date
-                            ? bookingData.endDate.toISOString().slice(0, 10)
-                            : ""
-                          : ""
+                            ? bookingData.endDate
+                            : undefined
+                          : undefined
                       }
-                      onChange={(e) =>
-                        handleInputChange("endDate", e.target.value)
+                      onDateChange={(date) =>
+                        handleInputChange(
+                          "endDate",
+                          date ? date.toISOString().split("T")[0] : ""
+                        )
                       }
-                      className="mt-1"
+                      placeholder="Select end date"
                     />
                   </div>
                 </div>

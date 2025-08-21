@@ -20,6 +20,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { Booking, Facility } from "@/types";
+import { DateTimePicker } from "@/components/ui/date-picker";
 
 interface BookingFormModalProps {
   isOpen: boolean;
@@ -62,17 +63,23 @@ export const BookingFormModal = ({
               </Label>
               <Select
                 value={
-                  typeof formData.facility === 'string' 
-                    ? facilities.find(f => f._id === formData.facility)?.name || ""
-                    : (formData.facility as any)?._id 
-                      ? facilities.find(f => f._id === (formData.facility as any)._id)?.name || ""
-                      : ""
+                  typeof formData.facility === "string"
+                    ? facilities.find((f) => f._id === formData.facility)
+                        ?.name || ""
+                    : (formData.facility as any)?._id
+                    ? facilities.find(
+                        (f) => f._id === (formData.facility as any)._id
+                      )?.name || ""
+                    : ""
                 }
                 onValueChange={(value) => {
                   const selectedFacility = facilities.find(
                     (f) => f.name === value
                   );
-                  onFormDataChange({ ...formData, facility: selectedFacility?._id || value });
+                  onFormDataChange({
+                    ...formData,
+                    facility: selectedFacility?._id || value,
+                  });
                 }}
               >
                 <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
@@ -123,24 +130,12 @@ export const BookingFormModal = ({
               >
                 Start Date & Time <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="startDate"
-                type="datetime-local"
-                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                value={
-                  formData.startDate
-                    ? new Date(
-                        formData.startDate.getTime() -
-                          formData.startDate.getTimezoneOffset() * 60000
-                      )
-                        .toISOString()
-                        .slice(0, 16)
-                    : ""
+              <DateTimePicker
+                date={formData.startDate}
+                onDateChange={(date: Date | undefined) =>
+                  onFormDataChange({ ...formData, startDate: date })
                 }
-                onChange={(e) => {
-                  const date = new Date(e.target.value);
-                  onFormDataChange({ ...formData, startDate: date });
-                }}
+                placeholder="Select start date and time"
               />
             </div>
 
@@ -151,24 +146,12 @@ export const BookingFormModal = ({
               >
                 End Date & Time <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="endDate"
-                type="datetime-local"
-                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                value={
-                  formData.endDate
-                    ? new Date(
-                        formData.endDate.getTime() -
-                          formData.endDate.getTimezoneOffset() * 60000
-                      )
-                        .toISOString()
-                        .slice(0, 16)
-                    : ""
+              <DateTimePicker
+                date={formData.endDate}
+                onDateChange={(date: Date | undefined) =>
+                  onFormDataChange({ ...formData, endDate: date })
                 }
-                onChange={(e) => {
-                  const date = new Date(e.target.value);
-                  onFormDataChange({ ...formData, endDate: date });
-                }}
+                placeholder="Select end date and time"
               />
             </div>
           </div>

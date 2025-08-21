@@ -18,13 +18,11 @@ import {
   LinkIcon,
   LogOut,
   Package2,
-  Percent,
   PieChart,
   ShoppingBag,
   Users,
   MessageSquare,
   BarChart3,
-  CreditCard,
   Mail,
 } from "lucide-react";
 import Logo from "../logo/Logo";
@@ -128,18 +126,6 @@ const dashboardRoutes: Route[] = [
     title: "Taxes",
     icon: <Coins className="size-4" />,
     link: "/admin/taxes",
-    subs: [
-      {
-        title: "Manage",
-        link: "/admin/taxes",
-        icon: <Percent className="size-4" />,
-      },
-      {
-        title: "Create Tax",
-        link: "/admin/taxes/create",
-        icon: <Percent className="size-4" />,
-      },
-    ],
   },
   {
     id: "company-profile",
@@ -186,7 +172,7 @@ export function DashboardSidebar() {
           <Logo
             width={50}
             logo={
-              (user?.company as any).logo.path
+              (user?.company as any)?.logo?.path
                 ? getResourceUrl((user?.company as any).logo?.path)
                 : logo
             }

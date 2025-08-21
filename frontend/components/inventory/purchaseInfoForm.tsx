@@ -6,6 +6,7 @@ import type { InventoryItem } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface PurchaseInfoFormProps {
   formData: Partial<InventoryItem>;
@@ -29,17 +30,18 @@ const PurchaseInfoForm = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Purchase Date</Label>
-            <Input
-              type="date"
-              name="purchaseInfo.purchaseDate"
-              value={
-                formData.purchaseInfo?.purchaseDate
-                  ? new Date(formData.purchaseInfo.purchaseDate)
-                      .toISOString()
-                      .split("T")[0]
-                  : ""
-              }
-              onChange={onInputChange}
+            <DatePicker
+              date={formData.purchaseInfo?.purchaseDate ? new Date(formData.purchaseInfo.purchaseDate) : undefined}
+              onDateChange={(date) => {
+                const event = {
+                  target: {
+                    name: "purchaseInfo.purchaseDate",
+                    value: date ? date.toISOString().split("T")[0] : ""
+                  }
+                } as any;
+                onInputChange(event);
+              }}
+              placeholder="Select purchase date"
             />
           </div>
           <div>
@@ -66,17 +68,18 @@ const PurchaseInfoForm = ({
           </div>
           <div>
             <Label>Warranty Expiry</Label>
-            <Input
-              type="date"
-              name="purchaseInfo.warrantyExpiry"
-              value={
-                formData.purchaseInfo?.warrantyExpiry
-                  ? new Date(formData.purchaseInfo.warrantyExpiry)
-                      .toISOString()
-                      .split("T")[0]
-                  : ""
-              }
-              onChange={onInputChange}
+            <DatePicker
+              date={formData.purchaseInfo?.warrantyExpiry ? new Date(formData.purchaseInfo.warrantyExpiry) : undefined}
+              onDateChange={(date) => {
+                const event = {
+                  target: {
+                    name: "purchaseInfo.warrantyExpiry",
+                    value: date ? date.toISOString().split("T")[0] : ""
+                  }
+                } as any;
+                onInputChange(event);
+              }}
+              placeholder="Select warranty expiry date"
             />
           </div>
         </div>

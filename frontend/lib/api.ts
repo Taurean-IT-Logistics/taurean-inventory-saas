@@ -142,6 +142,11 @@ export const CompaniesAPI = {
       }
     );
   },
+  sendJoinRequest: (companyId: string) =>
+    apiFetch(`/company-join-requests/request`, {
+      method: "POST",
+      body: JSON.stringify({ companyId }),
+    }),
   onboard: (payload: FormData) =>
     apiFetch(`/companies/onboard`, {
       method: "POST",
@@ -469,6 +474,27 @@ export const FacilitiesAPI = {
       method: "DELETE",
       body: JSON.stringify(payload),
     }),
+  // Review methods
+  createReview: (
+    facilityId: string,
+    payload: { rating: number; comment: string }
+  ) =>
+    apiFetch(`/reviews`, {
+      method: "POST",
+      body: JSON.stringify({ facilityId, ...payload }),
+    }),
+  updateReview: (
+    reviewId: string,
+    payload: { rating: number; comment: string }
+  ) =>
+    apiFetch(`/reviews/${reviewId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  deleteReview: (reviewId: string) =>
+    apiFetch(`/reviews/${reviewId}`, { method: "DELETE" }),
+  getUserReview: (facilityId: string) =>
+    apiFetch(`/reviews/user/${facilityId}`, { method: "GET" }),
 };
 
 // Inventory Items

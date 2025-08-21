@@ -4,11 +4,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, MapPin, Calendar, Users } from "lucide-react"
 import { motion, useScroll, useTransform } from "framer-motion"
+import { DatePicker } from "@/components/ui/date-picker"
+import { useState } from "react"
 
 export function StickySearchBar() {
   const { scrollY } = useScroll()
   const scale = useTransform(scrollY, [0, 100], [1, 0.85])
   const opacity = useTransform(scrollY, [0, 50], [1, 0.9])
+  
+  const [checkInDate, setCheckInDate] = useState<Date>()
+  const [checkOutDate, setCheckOutDate] = useState<Date>()
 
   return (
     <motion.div style={{ scale, opacity }} className="sticky top-24 z-40 px-4 sm:px-6 lg:px-8 mb-8">
@@ -35,9 +40,11 @@ export function StickySearchBar() {
               <Calendar className="h-4 w-4 text-gray-400" />
               <div>
                 <div className="text-xs font-medium text-gray-900">Check in</div>
-                <Input
+                <DatePicker
+                  date={checkInDate}
+                  onDateChange={setCheckInDate}
                   placeholder="Add dates"
-                  className="border-0 p-0 text-sm placeholder:text-gray-500 focus-visible:ring-0"
+                  className="border-0 p-0 text-sm h-8 shadow-none bg-transparent hover:bg-gray-50"
                 />
               </div>
             </div>
@@ -48,9 +55,11 @@ export function StickySearchBar() {
               <Calendar className="h-4 w-4 text-gray-400" />
               <div>
                 <div className="text-xs font-medium text-gray-900">Check out</div>
-                <Input
+                <DatePicker
+                  date={checkOutDate}
+                  onDateChange={setCheckOutDate}
                   placeholder="Add dates"
-                  className="border-0 p-0 text-sm placeholder:text-gray-500 focus-visible:ring-0"
+                  className="border-0 p-0 text-sm h-8 shadow-none bg-transparent hover:bg-gray-50"
                 />
               </div>
             </div>

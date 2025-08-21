@@ -48,6 +48,7 @@ import { Loader } from "@/components/ui/loader";
 import type { Booking, Facility } from "@/types";
 import { currencyFormat } from "@/lib/utils";
 import { useAuth } from "../AuthProvider";
+import { DateTimePicker } from "@/components/ui/date-picker";
 
 interface BookingManagementProps {
   bookings: Booking[];
@@ -762,47 +763,23 @@ const BookingManagement = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startDate">Start Date & Time *</Label>
-                <Input
-                  id="startDate"
-                  type="datetime-local"
-                  value={
-                    formData.startDate
-                      ? new Date(
-                          formData.startDate.getTime() -
-                            formData.startDate.getTimezoneOffset() * 60000
-                        )
-                          .toISOString()
-                          .slice(0, 16)
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const date = new Date(e.target.value);
+                <DateTimePicker
+                  date={formData.startDate}
+                  onDateChange={(date: Date | undefined) => {
                     setFormData((prev) => ({ ...prev, startDate: date }));
                   }}
-                  required
+                  placeholder="Select start date and time"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="endDate">End Date & Time *</Label>
-                <Input
-                  id="endDate"
-                  type="datetime-local"
-                  value={
-                    formData.endDate
-                      ? new Date(
-                          formData.endDate.getTime() -
-                            formData.endDate.getTimezoneOffset() * 60000
-                        )
-                          .toISOString()
-                          .slice(0, 16)
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const date = new Date(e.target.value);
+                <DateTimePicker
+                  date={formData.endDate}
+                  onDateChange={(date: Date | undefined) => {
                     setFormData((prev) => ({ ...prev, endDate: date }));
                   }}
-                  required
+                  placeholder="Select end date and time"
                 />
               </div>
             </div>

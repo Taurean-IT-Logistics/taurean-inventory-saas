@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Facility } from "@/types";
+import { TimePicker } from "@/components/ui/time-picker";
 
 interface AvailabilityPricingStepProps {
   formData: Partial<Facility>;
@@ -88,21 +89,21 @@ const AvailabilityPricingStep = ({
                       </Select>
                     </div>
                     <div>
-                      <Input
-                        type="time"
+                      <TimePicker
                         value={day.startTime}
-                        onChange={(e) =>
-                          updateAvailability(index, "startTime", e.target.value)
+                        onChange={(time) =>
+                          updateAvailability(index, "startTime", time)
                         }
+                        placeholder="Start time"
                       />
                     </div>
                     <div>
-                      <Input
-                        type="time"
+                      <TimePicker
                         value={day.endTime}
-                        onChange={(e) =>
-                          updateAvailability(index, "endTime", e.target.value)
+                        onChange={(time) =>
+                          updateAvailability(index, "endTime", time)
                         }
+                        placeholder="End time"
                       />
                     </div>
                     <div className="flex items-center space-x-2">

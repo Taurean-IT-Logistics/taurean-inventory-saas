@@ -87,4 +87,17 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Ensure popover content is above other elements */
+  [data-radix-popper-content-wrapper] {
+    z-index: 50 !important;
+  }
+  
+  /* Fix for any calendar components */
+  .rdp,
+  .calendar,
+  [role="dialog"] {
+    z-index: 50 !important;
+    position: relative;
+  }
 }

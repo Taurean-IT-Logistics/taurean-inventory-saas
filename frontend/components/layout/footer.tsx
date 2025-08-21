@@ -53,14 +53,6 @@ export function Footer() {
                   FAQ
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/help"
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
-                  Help Center
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -77,7 +69,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/careers"
+                  href="#"
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   Careers
@@ -85,7 +77,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/press"
+                  href="#"
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   Press

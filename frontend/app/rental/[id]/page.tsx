@@ -27,6 +27,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
 import Image from "next/image";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface PaymentResponse {
   payment: {
@@ -278,21 +279,19 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="startDate">Start Date</Label>
-                      <Input
-                        id="startDate"
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
+                      <DatePicker
+                        date={startDate ? new Date(startDate) : undefined}
+                        onDateChange={(date) => setStartDate(date ? date.toISOString().split("T")[0] : "")}
+                        placeholder="Select start date"
                         disabled={!isAvailable}
                       />
                     </div>
                     <div>
                       <Label htmlFor="endDate">End Date</Label>
-                      <Input
-                        id="endDate"
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
+                      <DatePicker
+                        date={endDate ? new Date(endDate) : undefined}
+                        onDateChange={(date) => setEndDate(date ? date.toISOString().split("T")[0] : "")}
+                        placeholder="Select end date"
                         disabled={!isAvailable}
                       />
                     </div>

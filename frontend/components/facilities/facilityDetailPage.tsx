@@ -118,47 +118,9 @@ export default function FacilityDetailPage({
         </span>
       </div>
 
-      {/* Individual Reviews */}
-      <div className="space-y-6">
-        {facility.reviews.map((review, index) => (
-          <div key={index} className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <Image
-                src={review.user.name || "/placeholder.svg"}
-                alt={review.user.name}
-                className="w-10 h-10 rounded-full object-cover"
-                width={40}
-                height={40}
-              />
-              <div>
-                <p className="font-medium text-sm">{review.user.name}</p>
-                <p className="text-xs text-gray-500">
-                  {new Date(review.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-              {review.isVerified && (
-                <Shield className="h-4 w-4 text-green-500" />
-              )}
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-gray-500">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-3 w-3 ${
-                      i < review.rating
-                        ? "text-black fill-current"
-                        : "text-gray-300"
-                    }`}
-                  />
-                ))}
-              </div>
-              <span>·</span>
-              <span>{new Date(review.createdAt).toLocaleDateString()}</span>
-            </div>
-            <p className="text-sm text-gray-700">{review.comment}</p>
-          </div>
-        ))}
+      {/* Individual Reviews - Now handled separately */}
+      <div className="text-center py-8 text-gray-500">
+        <p>Reviews are displayed on the main facility page</p>
       </div>
     </div>
   );

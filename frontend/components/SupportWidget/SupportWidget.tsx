@@ -5,6 +5,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { SupportAPI } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { io, Socket } from "socket.io-client";
+import { toast } from "@/hooks/use-toast";
 import {
   MessageCircle,
   X,
@@ -109,6 +110,18 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
         category: "general",
         priority: "medium",
       });
+      toast({
+        title: "Ticket Created",
+        description: "Your support ticket has been created successfully.",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create support ticket.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -124,6 +137,18 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
           message: message,
         });
       }
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent successfully.",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -139,6 +164,18 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
           status: selectedTicket?.status,
         });
       }
+      toast({
+        title: "Status Updated",
+        description: "Ticket status has been updated successfully.",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update ticket status.",
+        variant: "destructive",
+      });
     },
   });
 

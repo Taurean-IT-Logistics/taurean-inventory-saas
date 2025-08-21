@@ -30,6 +30,19 @@ import { cn } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
 import Image from "next/image";
+import ReviewForm from "@/components/ReviewForm";
+
+// Define Review interface locally to avoid conflicts
+interface Review {
+  _id: string;
+  user: User;
+  facility: string;
+  rating: number;
+  comment: string;
+  isVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface FacilityImageGalleryProps {
   images: { path: string }[];
@@ -239,88 +252,13 @@ const FacilityAmenities = ({ amenities }: FacilityAmenitiesProps) => (
   </div>
 );
 
-interface Review {
-  user: Partial<User>;
-  rating: number;
-  comment: string;
-  isVerified?: boolean;
-}
-
 interface ReviewFormProps {
-  facility: Partial<Facility>;
-  onClose: () => void;
-  reviewsData: Review[];
-  setReviewsData: React.Dispatch<React.SetStateAction<Review[]>>;
-  setFacility: React.Dispatch<React.SetStateAction<Partial<Facility>>>;
+  facilityId: string;
+  existingReview: Review | null;
+  onSubmit: (reviewData: { rating: number; comment: string }) => Promise<void>;
+  onCancel: () => void;
+  isSubmitting: boolean;
 }
-
-const ReviewForm = ({
-  facility,
-  onClose,
-  reviewsData,
-  setReviewsData,
-  setFacility,
-}: ReviewFormProps) => {
-  const [comment, setComment] = useState("");
-  const [rating, setRating] = useState(5);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle review submission logic here
-    onClose();
-  };
-
-  return (
-    <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle>Leave a Review</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <div className="flex items-center mb-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={cn(
-                    "h-6 w-6 cursor-pointer transition-colors",
-                    star <= rating
-                      ? "text-yellow-400 fill-current"
-                      : "text-gray-300"
-                  )}
-                  onClick={() => setRating(star)}
-                />
-              ))}
-            </div>
-            <p className="text-sm text-gray-600">{rating} out of 5 stars</p>
-          </div>
-          <div>
-            <Label htmlFor="comment">Comment</Label>
-            <Textarea
-              id="comment"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button type="submit" className="flex-1">
-              Submit Review
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 bg-transparent"
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  );
-};
 
 interface FacilityReviewsProps {
   reviews: {
@@ -343,35 +281,118 @@ const FacilityReviews = ({
 }: FacilityReviewsProps) => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewsData, setReviewsData] = useState(reviews.reviews);
+  const [existingReview, setExistingReview] = useState<Review | null>(null);
+  const queryClient = useQueryClient();
+
+  // Get user's existing review for this facility
+  const { data: userReview } = useQuery({
+    queryKey: ["userReview", facility._id],
+    queryFn: () => FacilitiesAPI.getUserReview(facility._id!),
+    enabled: !!facility._id,
+  });
+
+  // Create/Update review mutation
+  const createReviewMutation = useMutation({
+    mutationFn: (reviewData: { rating: number; comment: string }) =>
+      existingReview
+        ? FacilitiesAPI.updateReview(existingReview._id, reviewData)
+        : FacilitiesAPI.createReview(facility._id!, reviewData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["facility", facility._id] });
+      queryClient.invalidateQueries({
+        queryKey: ["facility", facility._id, "reviews"],
+      });
+      setShowReviewForm(false);
+      setExistingReview(null);
+    },
+  });
+
+  // Delete review mutation
+  const deleteReviewMutation = useMutation({
+    mutationFn: (reviewId: string) => FacilitiesAPI.deleteReview(reviewId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["facility", facility._id] });
+      queryClient.invalidateQueries({
+        queryKey: ["facility", facility._id, "reviews"],
+      });
+      setExistingReview(null);
+    },
+  });
+
+  // Helper function to check if an object is a valid Review
+  const isValidReview = (obj: any): obj is Review => {
+    return obj && typeof obj === "object" && typeof obj._id === "string";
+  };
+
+  useEffect(() => {
+    if (userReview && isValidReview(userReview)) {
+      setExistingReview(userReview);
+    }
+  }, [userReview]);
+
+  const handleSubmitReview = async (reviewData: {
+    rating: number;
+    comment: string;
+  }) => {
+    try {
+      await createReviewMutation.mutateAsync(reviewData);
+    } catch (error) {
+      console.error("Failed to submit review:", error);
+    }
+  };
+
+  const handleDeleteReview = async () => {
+    if (existingReview) {
+      try {
+        await deleteReviewMutation.mutateAsync(existingReview._id);
+      } catch (error) {
+        console.error("Failed to delete review:", error);
+      }
+    }
+  };
+
+  const handleCancelReview = () => {
+    setShowReviewForm(false);
+    setExistingReview(null);
+  };
 
   return (
     <div className="mb-8">
-      <div className="flex items-center mb-6">
-        <Star className="h-5 w-5 text-yellow-400 mr-2 fill-current" />
-        <h3 className="text-xl font-semibold">
-          {facility.rating?.average} · {facility.rating?.totalReviews} reviews
-        </h3>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Star className="h-5 w-5 text-yellow-400 mr-2 fill-current" />
+          <h3 className="text-xl font-semibold">
+            {facility.rating?.average?.toFixed(1) || "0"} ·{" "}
+            {facility.rating?.totalReviews || 0} reviews
+          </h3>
+        </div>
+        {!existingReview && (
+          <Button onClick={() => setShowReviewForm(true)}>
+            Leave a Review
+          </Button>
+        )}
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        {reviewsData.map((review: Review, idx: number) => (
-          <Card key={idx} className="bg-gray-50">
-            <CardContent className="p-4">
-              <div className="flex items-center mb-3">
+      {/* User's existing review */}
+      {existingReview && (
+        <Card className="mb-6 bg-blue-50 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center">
                 <div className="bg-blue-500 rounded-full w-10 h-10 flex items-center justify-center mr-3">
                   <span className="text-white font-bold">
-                    {review.user.name?.charAt(0)}
+                    {existingReview.user?.name?.charAt(0) || "U"}
                   </span>
                 </div>
                 <div>
-                  <div className="font-semibold">{review.user?.name}</div>
+                  <div className="font-semibold">Your Review</div>
                   <div className="flex">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
                         className={cn(
                           "h-4 w-4",
-                          i < review.rating
+                          i < existingReview.rating
                             ? "text-yellow-400 fill-current"
                             : "text-gray-300"
                         )}
@@ -380,25 +401,79 @@ const FacilityReviews = ({
                   </div>
                 </div>
               </div>
-              <p className="text-gray-600">{review.comment}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {!showReviewForm ? (
-        <Button onClick={() => setShowReviewForm(true)} className="w-full">
-          Leave a Review
-        </Button>
-      ) : (
-        <ReviewForm
-          facility={facility}
-          reviewsData={reviewsData}
-          onClose={() => setShowReviewForm(false)}
-          setReviewsData={setReviewsData}
-          setFacility={setFacility}
-        />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowReviewForm(true)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteReview}
+                  disabled={deleteReviewMutation.isPending}
+                >
+                  {deleteReviewMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              </div>
+            </div>
+            <p className="text-gray-600">{existingReview.comment}</p>
+          </CardContent>
+        </Card>
       )}
+
+      {/* Review form */}
+      {showReviewForm && (
+        <div className="mb-6">
+          <ReviewForm
+            facilityId={facility._id!}
+            existingReview={existingReview}
+            onSubmit={handleSubmitReview}
+            onCancel={handleCancelReview}
+            isSubmitting={createReviewMutation.isPending}
+          />
+        </div>
+      )}
+
+      {/* Other reviews */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {reviewsData
+          .filter((review: Review) => review._id !== existingReview?._id)
+          .map((review: Review, idx: number) => (
+            <Card key={idx} className="bg-gray-50">
+              <CardContent className="p-4">
+                <div className="flex items-center mb-3">
+                  <div className="bg-blue-500 rounded-full w-10 h-10 flex items-center justify-center mr-3">
+                    <span className="text-white font-bold">
+                      {review.user?.name?.charAt(0) || "U"}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="font-semibold">
+                      {review.user?.name || "Anonymous"}
+                    </div>
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={cn(
+                            "h-4 w-4",
+                            i < review.rating
+                              ? "text-yellow-400 fill-current"
+                              : "text-gray-300"
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-600">{review.comment}</p>
+              </CardContent>
+            </Card>
+          ))}
+      </div>
     </div>
   );
 };
@@ -521,13 +596,12 @@ const FacilityDetailPage = ({ params }: { params: { id: string } }) => {
   const defaultPricing =
     (facility as Facility).pricing.find((p: Pricing) => p.isDefault) ||
     (facility as Facility).pricing[0];
-  const hasVerifiedReviews = (facility as Facility).reviews.some(
-    (review: Review) => review.isVerified
-  );
+  // Note: hasVerifiedReviews is now calculated from the separate reviews API
+  const hasVerifiedReviews = false; // This will be updated when we have review verification logic
 
   return (
     <div className="pt-6 mt-20">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-20">
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <FacilityImageGallery

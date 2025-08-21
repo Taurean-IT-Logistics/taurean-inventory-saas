@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, X } from "lucide-react";
+import { TimePicker } from "@/components/ui/time-picker";
 import type { Facility } from "@/types";
 
 interface DetailsAmenitiesStepProps {
@@ -38,12 +39,18 @@ const DetailsAmenitiesStep = ({
             <Label htmlFor="opening" className="text-sm font-semibold">
               Opening Time *
             </Label>
-            <Input
-              id="opening"
-              type="time"
-              name="operationalHours.opening"
+            <TimePicker
               value={formData.operationalHours?.opening || ""}
-              onChange={handleInputChange}
+              onChange={(time) => {
+                const event = {
+                  target: {
+                    name: "operationalHours.opening",
+                    value: time
+                  }
+                } as any;
+                handleInputChange(event);
+              }}
+              placeholder="Select opening time"
               className="mt-1"
             />
           </div>
@@ -51,12 +58,18 @@ const DetailsAmenitiesStep = ({
             <Label htmlFor="closing" className="text-sm font-semibold">
               Closing Time *
             </Label>
-            <Input
-              id="closing"
-              type="time"
-              name="operationalHours.closing"
+            <TimePicker
               value={formData.operationalHours?.closing || ""}
-              onChange={handleInputChange}
+              onChange={(time) => {
+                const event = {
+                  target: {
+                    name: "operationalHours.closing",
+                    value: time
+                  }
+                } as any;
+                handleInputChange(event);
+              }}
+              placeholder="Select closing time"
               className="mt-1"
             />
           </div>
