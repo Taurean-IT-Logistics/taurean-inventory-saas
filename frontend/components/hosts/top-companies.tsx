@@ -32,7 +32,6 @@ export function TopCompanies() {
   });
 
   const companies = companiesData?.companies || companiesData?.data || [];
-  console.log(companies);
 
   if (isLoading) {
     return (
@@ -93,8 +92,10 @@ export function TopCompanies() {
                         ? getResourceUrl(company.logo.path)
                         : logo
                     }
+                    width={50}
+                    height={50}
                     alt={`${company.name} logo`}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 group-hover:border-blue-300 transition-colors ml-2"
+                    className="rounded-full object-cover border-2 border-gray-200 group-hover:border-blue-300 transition-colors ml-2"
                   />
 
                   <div className="min-w-0">

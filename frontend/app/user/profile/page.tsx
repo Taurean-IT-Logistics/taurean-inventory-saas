@@ -27,7 +27,7 @@ import {
 import { EditProfileModal } from "@/components/user/editProfileModal";
 import { useAuth } from "@/components/AuthProvider";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { CompaniesAPI, UsersAPI } from "@/lib/api";
+import { CompaniesAPI, UsersAPI, CompanyJoinRequestsAPI } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { currencyFormat } from "@/lib/utils";
@@ -49,6 +49,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { getResourceUrl } from "@/lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const UserProfilePage = () => {
   const router = useRouter();
@@ -120,22 +129,49 @@ const UserProfilePage = () => {
     enabled: !user?.company,
   });
 
+  // Fetch user's join requests
+  const { data: joinRequests } = useQuery({
+    queryKey: ["join-requests", user?._id],
+    queryFn: () => CompanyJoinRequestsAPI.getUserRequests(),
+    enabled: !!user && !user.company,
+  });
+
   // Company join request mutation
   const joinRequestMutation = useMutation({
-    mutationFn: (companyId: string) => 
-      CompaniesAPI.sendJoinRequest(companyId),
+    mutationFn: (companyId: string) => CompaniesAPI.sendJoinRequest(companyId),
     onSuccess: () => {
       toast({
         title: "Join Request Sent",
         description: "Your request has been sent to the company for approval.",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ["user", user?._id] });
+      queryClient.invalidateQueries({ queryKey: ["join-requests", user?._id] });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to send join request.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Cancel join request mutation
+  const cancelRequestMutation = useMutation({
+    mutationFn: (requestId: string) =>
+      CompanyJoinRequestsAPI.cancelRequest(requestId),
+    onSuccess: () => {
+      toast({
+        title: "Request Cancelled",
+        description: "Your join request has been cancelled.",
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ["join-requests", user?._id] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel request.",
         variant: "destructive",
       });
     },
@@ -213,6 +249,8 @@ const UserProfilePage = () => {
       />
     );
   }
+
+  console.log(companies);
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8 mt-20 space-y-16">
@@ -346,77 +384,118 @@ const UserProfilePage = () => {
                       No company associated
                     </p>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Join a company to access team features and collaborate with others.
+                      Join a company to access team features and collaborate
+                      with others.
                     </p>
                   </div>
-                  
+
                   {/* Company Join Request System */}
                   <div className="space-y-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button className="w-full" variant="outline">
-                          <Search className="h-4 w-4 mr-2" />
-                          Search Companies
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80 p-0" align="start">
-                        <Command>
+                    <Select
+                      onValueChange={(companyId) =>
+                        joinRequestMutation.mutate(companyId)
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Search and select company" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <Command shouldFilter={true}>
                           <CommandInput placeholder="Search companies..." />
                           <CommandList>
-                            <CommandEmpty>No companies found.</CommandEmpty>
-                            <CommandGroup>
-                              {companies?.data?.map((company: Company) => (
-                                <CommandItem
+                            {companies?.companies &&
+                            companies.companies.length > 0 ? (
+                              companies.companies.map((company: Company) => (
+                                <SelectItem
                                   key={company._id}
-                                  onSelect={() => {
-                                    joinRequestMutation.mutate(company._id);
-                                  }}
-                                  className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent"
+                                  value={company._id}
                                 >
-                                  <div className="flex-shrink-0">
-                                    {company.logo ? (
-                                      <img
-                                        src={company.logo}
-                                        alt={company.name}
-                                        className="w-10 h-10 rounded-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                        <Building className="h-5 w-5 text-primary" />
-                                      </div>
-                                    )}
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex-shrink-0">
+                                      {company.logoUrl ? (
+                                        <Image
+                                          src={company.logoUrl}
+                                          alt={company.name}
+                                          height={24}
+                                          width={24}
+                                          className="rounded-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                          <Building className="h-3 w-3 text-primary" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-sm truncate">
+                                        {company.name}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground truncate">
+                                        {company.location || "No location"}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-sm truncate">
-                                      {company.name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {company.industry} • {company.location}
-                                    </p>
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="flex-shrink-0"
-                                    disabled={joinRequestMutation.isPending}
-                                  >
-                                    {joinRequestMutation.isPending ? (
-                                      <Loader className="h-4 w-4" />
-                                    ) : (
-                                      <Plus className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <CommandEmpty>No companies found</CommandEmpty>
+                            )}
                           </CommandList>
                         </Command>
-                      </PopoverContent>
-                    </Popover>
-                    
+                      </SelectContent>
+                    </Select>
+
                     <div className="text-xs text-muted-foreground text-center">
                       Select a company to send a join request
                     </div>
+
+                    {/* Show existing join requests */}
+                    {(joinRequests as any)?.data &&
+                      (joinRequests as any).data.length > 0 && (
+                        <div className="mt-6 space-y-3">
+                          <h4 className="text-sm font-medium text-muted-foreground">
+                            Pending Join Requests
+                          </h4>
+                          <div className="space-y-2">
+                            {(joinRequests as any).data.map((request: any) => (
+                              <div
+                                key={request._id}
+                                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <Building className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      {request.company?.name || "Company"}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Status: {request.status}
+                                    </p>
+                                  </div>
+                                </div>
+                                {request.status === "pending" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      cancelRequestMutation.mutate(request._id)
+                                    }
+                                    disabled={cancelRequestMutation.isPending}
+                                  >
+                                    {cancelRequestMutation.isPending ? (
+                                      <Loader className="h-4 w-4" />
+                                    ) : (
+                                      "Cancel"
+                                    )}
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
                 </div>
               )}

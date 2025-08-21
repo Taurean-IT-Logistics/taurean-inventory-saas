@@ -2,12 +2,7 @@
 
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  CompanyJoinRequestAPI,
-  CompanyAPI,
-  getResourceUrl,
-  CompaniesAPI,
-} from "@/lib/api";
+import { CompanyAPI, getResourceUrl } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,10 +44,7 @@ import {
 
 export default function CompanyProfilePage() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCompany, setSelectedCompany] = useState<any>(null);
-  const [isSearching, setIsSearching] = useState(false);
+  const queryClient = useQueryClient()
   const [isEditMode, setIsEditMode] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
@@ -71,39 +63,6 @@ export default function CompanyProfilePage() {
   });
   const [companyImage, setCompanyImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-
-  const { data: userRequestsData, isLoading: requestsLoading } = useQuery({
-    queryKey: ["user-join-requests"],
-    queryFn: CompanyJoinRequestAPI.getUserRequests,
-  });
-
-  const userRequests =
-    (userRequestsData as any)?.requests || userRequestsData || [];
-
-  const requestToJoinMutation = useMutation({
-    mutationFn: (companyId: string) =>
-      CompanyJoinRequestAPI.requestToJoin(companyId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-join-requests"] });
-      toast({
-        title: "Success",
-        description: "Join request sent successfully!",
-        variant: "default",
-      });
-      setSelectedCompany(null);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send join request",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleRequestToJoin = (companyId: string) => {
-    requestToJoinMutation.mutate(companyId);
-  };
 
   // Company update mutation
   const updateCompanyMutation = useMutation({
@@ -260,19 +219,6 @@ export default function CompanyProfilePage() {
     }
   };
 
-  // Real company search using API
-  const { data: companiesData, isLoading: companiesLoading } = useQuery({
-    queryKey: ["public-companies", searchQuery],
-    queryFn: async () => {
-      if (!searchQuery.trim()) return { companies: [] };
-      const response = await CompaniesAPI.list({ search: searchQuery });
-      return response;
-    },
-    enabled: searchQuery.trim().length > 0,
-  });
-
-  const companies = (companiesData as any)?.companies || [];
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-6">
@@ -281,12 +227,10 @@ export default function CompanyProfilePage() {
             Company Profile Management
           </h1>
           <p className="text-gray-600">
-            Manage company information, user join requests, and company settings
+            Manage company information and company settings
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Current Company Info */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -766,134 +710,7 @@ export default function CompanyProfilePage() {
               )}
             </CardContent>
           </Card>
-
-          {/* Join Requests */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5" />
-                Your Join Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {requestsLoading ? (
-                <div className="text-center py-4">Loading...</div>
-              ) : userRequests.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <UserPlus className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>No join requests yet</p>
-                  <p className="text-sm">
-                    Your requests to join companies will appear here
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {userRequests.map((request: any) => (
-                    <div key={request._id} className="border rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">
-                          {(request.company as any)?.name || "Unknown Company"}
-                        </h4>
-                        <Badge className={getStatusColor(request.status)}>
-                          {request.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        {getStatusIcon(request.status)}
-                        <span>
-                          {format(new Date(request.createdAt), "MMM dd, yyyy")}
-                        </span>
-                      </div>
-                      {request.notes && (
-                        <p className="text-sm text-gray-600 mt-2">
-                          {request.notes}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
-
-        {/* Search Companies */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Search Companies
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Search companies by name or description..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={() => setIsSearching(true)}
-                  disabled={!searchQuery.trim()}
-                >
-                  Search
-                </Button>
-              </div>
-
-              {isSearching && (
-                <div className="space-y-3">
-                  {companiesLoading ? (
-                    <div className="text-center py-4">Loading companies...</div>
-                  ) : companies.length === 0 ? (
-                    <div className="text-center py-4 text-gray-500">
-                      No companies found
-                    </div>
-                  ) : (
-                    companies.map((company: any) => (
-                      <div
-                        key={company._id}
-                        className="border rounded-lg p-4 hover:bg-gray-50"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-lg">
-                              {company.name}
-                            </h3>
-                            <p className="text-gray-600 mt-1">
-                              {company.description}
-                            </p>
-                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-4 w-4" />
-                                {company.location}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Users className="h-4 w-4" />
-                                {company.employeeCount} employees
-                              </span>
-                            </div>
-                          </div>
-                          <Button
-                            onClick={() => handleRequestToJoin(company._id)}
-                            disabled={requestToJoinMutation.isPending}
-                            className="ml-4"
-                          >
-                            {requestToJoinMutation.isPending
-                              ? "Sending..."
-                              : "Request to Join"}
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
-    </div>
   );
 }

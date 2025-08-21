@@ -49,6 +49,7 @@ import type { Booking, Facility } from "@/types";
 import { currencyFormat } from "@/lib/utils";
 import { useAuth } from "../AuthProvider";
 import { DateTimePicker } from "@/components/ui/date-picker";
+import { toast } from "@/hooks/use-toast";
 
 interface BookingManagementProps {
   bookings: Booking[];
@@ -210,6 +211,7 @@ const BookingManagement = ({
 
   const handleStatusChange = async (booking: Booking, newStatus: string) => {
     setIsSaving(true);
+    setError(null);
     try {
       const updatedBooking = {
         ...booking,
@@ -221,10 +223,21 @@ const BookingManagement = ({
         await onUpdateBooking(updatedBooking);
         setSelectedBooking(updatedBooking);
         if (onRefresh) onRefresh();
+
+        toast({
+          title: "Success",
+          description: `Booking status updated to ${newStatus}`,
+          variant: "default",
+        });
       }
     } catch (err) {
       console.error("Error updating status:", err);
       setError("Failed to update booking status");
+      toast({
+        title: "Error",
+        description: "Failed to update booking status",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -233,6 +246,11 @@ const BookingManagement = ({
   const handleSaveBooking = async () => {
     if (!formData.facility || !formData.startDate || !formData.endDate) {
       setError("Please fill in all required fields");
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -265,6 +283,12 @@ const BookingManagement = ({
             ...bookingData,
           } as Booking);
           if (onRefresh) onRefresh();
+
+          toast({
+            title: "Success",
+            description: "Booking updated successfully",
+            variant: "default",
+          });
         }
       } else {
         // Create new booking
@@ -275,6 +299,12 @@ const BookingManagement = ({
             isDeleted: false,
           });
           if (onRefresh) onRefresh();
+
+          toast({
+            title: "Success",
+            description: "Booking created successfully",
+            variant: "default",
+          });
         }
       }
 
@@ -284,25 +314,43 @@ const BookingManagement = ({
     } catch (err) {
       console.error("Error saving booking:", err);
       setError("Failed to save booking");
+      toast({
+        title: "Error",
+        description: "Failed to save booking",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
   };
+
   const handleDeleteBooking = async (booking: Booking) => {
     if (!window.confirm("Are you sure you want to delete this booking?")) {
       return;
     }
 
     setIsSaving(true);
+    setError(null);
     try {
       if (onDeleteBooking && booking._id) {
         await onDeleteBooking(booking._id);
         setShowDetailsModal(false);
         if (onRefresh) onRefresh();
+
+        toast({
+          title: "Success",
+          description: "Booking deleted successfully",
+          variant: "default",
+        });
       }
     } catch (err) {
       console.error("Error deleting booking:", err);
       setError("Failed to delete booking");
+      toast({
+        title: "Error",
+        description: "Failed to delete booking",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -876,16 +924,17 @@ const BookingManagement = ({
             </Button>
           </DialogFooter>
         </DialogContent>
-        <BookingDetailsModal
-          booking={selectedBooking}
-          onClose={() => setShowDetailsModal(false)}
-          isOpen={showDetailsModal}
-          isSaving={isSaving}
-          onDelete={handleDeleteBooking}
-          onEdit={handleEditBooking}
-          onStatusChange={handleStatusChange}
-        />
       </Dialog>
+
+      <BookingDetailsModal
+        booking={selectedBooking}
+        onClose={() => setShowDetailsModal(false)}
+        isOpen={showDetailsModal}
+        isSaving={isSaving}
+        onDelete={handleDeleteBooking}
+        onEdit={handleEditBooking}
+        onStatusChange={handleStatusChange}
+      />
     </div>
   );
 };

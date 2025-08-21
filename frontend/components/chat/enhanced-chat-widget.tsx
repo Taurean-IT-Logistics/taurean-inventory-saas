@@ -390,7 +390,6 @@ export function EnhancedChatWidget() {
     }
   };
 
-  console.log(companies);
 
   return (
     <>

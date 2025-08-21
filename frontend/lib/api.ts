@@ -143,9 +143,9 @@ export const CompaniesAPI = {
     );
   },
   sendJoinRequest: (companyId: string) =>
-    apiFetch(`/company-join-requests/request`, {
+    apiFetch(`/companies/${companyId}/join-request`, {
       method: "POST",
-      body: JSON.stringify({ companyId }),
+      body: JSON.stringify({ message: "User requests to join company" }),
     }),
   onboard: (payload: FormData) =>
     apiFetch(`/companies/onboard`, {
@@ -176,6 +176,35 @@ export const CompaniesAPI = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+};
+
+// Company Join Requests
+export const CompanyJoinRequestsAPI = {
+  // Get user's join requests
+  getUserRequests: () =>
+    apiFetch(`/company-join-requests/user`, { method: "GET" }),
+
+  // Get company's pending requests (for company admins)
+  getCompanyRequests: () =>
+    apiFetch(`/company-join-requests/company/pending`, { method: "GET" }),
+
+  // Approve join request (for company admins)
+  approveRequest: (requestId: string, notes?: string) =>
+    apiFetch(`/company-join-requests/${requestId}/approve`, {
+      method: "PATCH",
+      body: JSON.stringify({ notes }),
+    }),
+
+  // Reject join request (for company admins)
+  rejectRequest: (requestId: string, notes?: string) =>
+    apiFetch(`/company-join-requests/${requestId}/reject`, {
+      method: "PATCH",
+      body: JSON.stringify({ notes }),
+    }),
+
+  // Cancel join request (for users)
+  cancelRequest: (requestId: string) =>
+    apiFetch(`/company-join-requests/${requestId}`, { method: "DELETE" }),
 };
 
 // Subscriptions
