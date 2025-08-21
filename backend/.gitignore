@@ -23,9 +23,11 @@ logs/
 *.log
 *.tmp
 tmp/
+temp/
 
 uploads/*
 
+dist/
 *.env
 
 
