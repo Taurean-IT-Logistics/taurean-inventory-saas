@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,24 +15,43 @@ import {
   Calendar,
   DollarSign,
 } from "lucide-react";
+import { CashflowAPI, BookingsAPI, FacilitiesAPI, UsersAPI } from "@/lib/api";
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState("30");
   const [reportType, setReportType] = useState("overview");
 
-  const mockData = {
-    totalRevenue: "GH₵45,230",
-    totalBookings: 156,
-    activeUsers: 89,
-    facilities: 23,
-    monthlyGrowth: "+12.5%",
-    conversionRate: "8.2%",
-  };
+  const { data: cashflow } = useQuery({
+    queryKey: ["cashflow", dateRange],
+    queryFn: () => CashflowAPI.summary(),
+  });
+
+  const { data: bookings } = useQuery({
+    queryKey: ["bookings-company-report"],
+    queryFn: () => BookingsAPI.listCompany(),
+  });
+
+  const { data: facilities } = useQuery({
+    queryKey: ["facilities-company-report"],
+    queryFn: () => FacilitiesAPI.listCompany(),
+  });
+
+  const { data: users } = useQuery({
+    queryKey: ["users-report"],
+    queryFn: () => UsersAPI.listCompany(),
+  });
+
+  const metrics = useMemo(() => {
+    const income = (cashflow as any)?.income || 0;
+    const totalBookings = Array.isArray(bookings) ? (bookings as any).length : ((bookings as any)?.length || (bookings as any)?.data?.length || (bookings as any)?.bookings?.length || 0);
+    const facilitiesCount = (facilities as any)?.facilities?.length || (facilities as any)?.items?.length || 0;
+    const activeUsers = (users as any)?.users?.length || 0;
+    return { income, totalBookings, facilitiesCount, activeUsers };
+  }, [cashflow, bookings, facilities, users]);
 
   const exportReport = (format: string) => {
-    // Mock export functionality
+    // TODO: wire to export endpoints if needed
     console.log(`Exporting ${reportType} report in ${format} format`);
-    // In a real implementation, this would call an API to generate and download the report
   };
 
   return (
@@ -74,10 +94,8 @@ export default function ReportsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.totalRevenue}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">{mockData.monthlyGrowth}</span> from last month
-            </p>
+            <div className="text-2xl font-bold">GH₵{metrics.income.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Based on transactions</p>
           </CardContent>
         </Card>
 
@@ -87,10 +105,8 @@ export default function ReportsPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.totalBookings}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+8.1%</span> from last month
-            </p>
+            <div className="text-2xl font-bold">{metrics.totalBookings}</div>
+            <p className="text-xs text-muted-foreground">Company bookings</p>
           </CardContent>
         </Card>
 
@@ -100,10 +116,8 @@ export default function ReportsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.activeUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+5.2%</span> from last month
-            </p>
+            <div className="text-2xl font-bold">{metrics.activeUsers}</div>
+            <p className="text-xs text-muted-foreground">Users in company</p>
           </CardContent>
         </Card>
 
@@ -113,10 +127,8 @@ export default function ReportsPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.facilities}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+2.3%</span> from last month
-            </p>
+            <div className="text-2xl font-bold">{metrics.facilitiesCount}</div>
+            <p className="text-xs text-muted-foreground">Available facilities</p>
           </CardContent>
         </Card>
       </div>
@@ -134,8 +146,7 @@ export default function ReportsPage() {
             <div className="h-64 flex items-center justify-center text-gray-500">
               <div className="text-center">
                 <BarChart3 className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                <p>Revenue chart will be displayed here</p>
-                <p className="text-sm">Integration with charting library needed</p>
+                <p>Chart integration coming soon</p>
               </div>
             </div>
           </CardContent>
@@ -152,8 +163,7 @@ export default function ReportsPage() {
             <div className="h-64 flex items-center justify-center text-gray-500">
               <div className="text-center">
                 <TrendingUp className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                <p>Booking trends chart will be displayed here</p>
-                <p className="text-sm">Integration with charting library needed</p>
+                <p>Chart integration coming soon</p>
               </div>
             </div>
           </CardContent>
@@ -226,10 +236,7 @@ export default function ReportsPage() {
             </div>
 
             <div className="pt-4 border-t">
-              <Button
-                onClick={() => exportReport("all")}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
+              <Button onClick={() => exportReport("all")} className="bg-blue-600 hover:bg-blue-700">
                 <Download className="h-4 w-4 mr-2" />
                 Export All Reports
               </Button>

@@ -2,6 +2,8 @@ import nodemailer from "nodemailer";
 import handlebars from "handlebars";
 import { CompanyModel } from "../models/company.model";
 import { UserModel } from "../models/user.model";
+import { emitEvent } from "../realtime/socket";
+import { Events } from "../realtime/events";
 
 interface EmailConfig {
   host: string;
@@ -19,6 +21,7 @@ interface EmailContext {
   recipient?: any;
   data?: any;
   baseUrl?: string;
+  content?: string;
 }
 
 interface EmailOptions {
@@ -336,8 +339,9 @@ class EmailService {
               <div class="header">
                   {{#if company.logo}}
                   <img src="{{company.logo.path}}" alt="{{company.name}}" class="company-logo">
-                  {{/if}}
+                  {{else}}
                   <div class="company-name">{{company.name}}</div>
+                  {{/if}}
                   <div class="header-subtitle">{{headerSubtitle}}</div>
               </div>
               
@@ -986,7 +990,7 @@ class EmailService {
 
       const mailOptions = {
         from: {
-          name: options.context.company?.name || "Taurean IT Logistics",
+          name: "Taurean IT Logistics",
           address:
             process.env.EMAIL_FROM ||
             process.env.EMAIL_USER ||
@@ -1000,9 +1004,41 @@ class EmailService {
 
       const info = await this.transporter.sendMail(mailOptions);
       console.log("Email sent successfully:", info.messageId);
+
+      // Emit real-time email delivery success event
+      try {
+        const companyId = (enhancedContext as any)?.company?._id || (enhancedContext as any)?.company?.id || undefined;
+        const userId = (enhancedContext as any)?.user?._id || (enhancedContext as any)?.user?.id || undefined;
+        const payload = {
+          status: "sent",
+          messageId: info.messageId,
+          to: options.to,
+          subject: options.subject,
+          template: options.template,
+          timestamp: new Date().toISOString(),
+        };
+        if (companyId) emitEvent(Events.EmailSent, payload, `company:${companyId}`);
+        if (userId) emitEvent(Events.EmailSent, payload, `user:${userId}`);
+      } catch {}
+
       return true;
     } catch (error) {
       console.error("Failed to send email:", error);
+      // Emit real-time email delivery failure event
+      try {
+        const companyId = (options.context as any)?.company?._id || (options.context as any)?.company?.id || undefined;
+        const userId = (options.context as any)?.user?._id || (options.context as any)?.user?.id || undefined;
+        const payload = {
+          status: "failed",
+          error: (error as any)?.message || "unknown",
+          to: options.to,
+          subject: options.subject,
+          template: options.template,
+          timestamp: new Date().toISOString(),
+        };
+        if (companyId) emitEvent(Events.EmailFailed, payload, `company:${companyId}`);
+        if (userId) emitEvent(Events.EmailFailed, payload, `user:${userId}`);
+      } catch {}
       return false;
     }
   }
@@ -1487,7 +1523,7 @@ class EmailService {
         template: "base",
         context: {
           company: company || { name: "Taurean IT Logistics" },
-          data: { content },
+          content,
         },
       });
     } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/AuthProvider";
 import {
@@ -50,6 +50,8 @@ import { toast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
+import { useSocket } from "@/components/SocketProvider";
+import { SocketEvents } from "@/lib/socket";
 
 interface EmailSettings {
   sendInvoiceEmails: boolean;
@@ -78,6 +80,29 @@ const EmailSettingsPage = () => {
   const [bulkSubject, setBulkSubject] = useState("");
   const [bulkMessage, setBulkMessage] = useState("");
   const [bulkUserRole, setBulkUserRole] = useState("");
+
+  const { subscribeToEvent, unsubscribeFromEvent } = useSocket();
+
+  useEffect(() => {
+    const onEmailEvent = (data: any) => {
+      if (data?.status === "sent") {
+        toast({ title: "Email sent", description: `${data.subject} delivered` });
+      } else if (data?.status === "failed") {
+        toast({
+          title: "Email failed",
+          description: `${data.subject}: ${data.error || "Unknown error"}`,
+          variant: "destructive",
+        });
+      }
+    };
+    subscribeToEvent(SocketEvents.InvoiceCreated, () => {}); // no-op to keep provider active
+    subscribeToEvent("email:sent" as any, onEmailEvent);
+    subscribeToEvent("email:failed" as any, onEmailEvent);
+    return () => {
+      unsubscribeFromEvent("email:sent" as any, onEmailEvent);
+      unsubscribeFromEvent("email:failed" as any, onEmailEvent);
+    };
+  }, [subscribeToEvent, unsubscribeFromEvent]);
 
   // Fetch email settings
   const {
