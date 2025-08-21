@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, X, Loader2 } from "lucide-react";
 import type { Facility } from "@/types";
+import Image from "next/image";
 
 interface BasicInfoStepProps {
   formData: Partial<Facility>;
@@ -75,9 +76,11 @@ const BasicInfoStep = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
               {formData.images.map((image, index) => (
                 <div key={index} className="relative">
-                  <img
+                  <Image
                     src={image.path || "/placeholder.svg"}
                     alt={image.originalName}
+                    width={128}
+                    height={64}
                     className="w-full h-32 object-cover rounded-lg"
                   />
                   <Button

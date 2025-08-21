@@ -89,9 +89,10 @@ const BookingManagement = ({
     const filtered = bookings.filter((booking) => {
       if (!booking || booking.isDeleted) return false;
 
-      const facilityName = typeof booking.facility === 'string' 
-        ? facilities?.find(f => f._id === booking.facility)?.name || ""
-        : (booking.facility as any)?.name || "";
+      const facilityName =
+        typeof booking.facility === "string"
+          ? facilities?.find((f) => f._id === booking.facility)?.name || ""
+          : (booking.facility as any)?.name || "";
 
       const matchesSearch =
         booking.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -123,7 +124,14 @@ const BookingManagement = ({
 
     setFilteredBookings(filtered);
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, paymentFilter, dateFilter, bookings]);
+  }, [
+    searchTerm,
+    statusFilter,
+    paymentFilter,
+    dateFilter,
+    bookings,
+    facilities,
+  ]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -233,7 +241,16 @@ const BookingManagement = ({
     try {
       const bookingData = {
         ...formData,
-        user: formData.user ?? user ?? undefined,
+        user:
+          (formData.user && typeof formData.user === "object"
+            ? (formData.user as any)._id
+            : formData.user) ||
+          user?._id ||
+          undefined,
+        facility:
+          (formData.facility && typeof formData.facility === "object"
+            ? (formData.facility as any)._id
+            : formData.facility) || undefined,
         duration: calculateDuration(
           formData.startDate.toISOString(),
           formData.endDate.toISOString()
@@ -580,9 +597,11 @@ const BookingManagement = ({
                         </div>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {typeof booking.facility === 'string' 
-                          ? facilities?.find(f => f._id === booking.facility)?.name || "Unknown Facility"
-                          : (booking.facility as any)?.name || "Unknown Facility"}
+                        {typeof booking.facility === "string"
+                          ? facilities?.find((f) => f._id === booking.facility)
+                              ?.name || "Unknown Facility"
+                          : (booking.facility as any)?.name ||
+                            "Unknown Facility"}
                       </TableCell>
                       <TableCell>
                         <div>
@@ -690,13 +709,16 @@ const BookingManagement = ({
                 <Label htmlFor="facility">Facility *</Label>
                 <Select
                   value={
-                    typeof formData.facility === 'string' 
-                      ? formData.facility 
+                    typeof formData.facility === "string"
+                      ? formData.facility
                       : (formData.facility as any)?._id || ""
                   }
                   onValueChange={(value) => {
                     const facility = facilities.find((f) => f._id === value);
-                    setFormData((prev) => ({ ...prev, facility: facility?._id || value }));
+                    setFormData((prev) => ({
+                      ...prev,
+                      facility: facility?._id || value,
+                    }));
                   }}
                 >
                   <SelectTrigger>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -44,11 +44,7 @@ const BookingCalendar = ({
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Booking>>({});
 
-  useEffect(() => {
-    loadBookings();
-  }, [bookings, filterStatus, filterFacility]);
-
-  const loadBookings = () => {
+  const loadBookings = useCallback(() => {
     try {
       if (!bookings || !Array.isArray(bookings)) {
         setEvents([]);
@@ -60,14 +56,19 @@ const BookingCalendar = ({
         .filter((b) => filterStatus === "all" || b.status === filterStatus)
         .filter((b) => {
           if (filterFacility === "all") return true;
-          const facilityId = typeof b.facility === 'string' ? b.facility : (b.facility as any)?._id;
+          const facilityId =
+            typeof b.facility === "string"
+              ? b.facility
+              : (b.facility as any)?._id;
           return facilityId === filterFacility;
         })
         .map((b) => {
-          const facilityName = typeof b.facility === 'string' 
-            ? facilities.find(f => f._id === b.facility)?.name || "Unknown Facility"
-            : (b.facility as any)?.name || "Unknown Facility";
-          
+          const facilityName =
+            typeof b.facility === "string"
+              ? facilities.find((f) => f._id === b.facility)?.name ||
+                "Unknown Facility"
+              : (b.facility as any)?.name || "Unknown Facility";
+
           return {
             title: `${facilityName} - ${b.user?.name || "Unknown User"}`,
             start: b.startDate
@@ -92,7 +93,11 @@ const BookingCalendar = ({
       setError("Failed to load bookings");
       setIsLoading(false);
     }
-  };
+  }, [bookings, filterStatus, filterFacility, facilities]);
+
+  useEffect(() => {
+    loadBookings();
+  }, [loadBookings]);
 
   const handleEventClick = (info: any) => {
     const booking = info.event.extendedProps.booking;
@@ -148,6 +153,14 @@ const BookingCalendar = ({
           formData.startDate!.toISOString(),
           formData.endDate!.toISOString()
         ),
+        user:
+          (formData.user && typeof formData.user === "object"
+            ? (formData.user as any)._id
+            : formData.user) || undefined,
+        facility:
+          (formData.facility && typeof formData.facility === "object"
+            ? (formData.facility as any)._id
+            : formData.facility) || undefined,
       };
 
       if (editingBooking) {

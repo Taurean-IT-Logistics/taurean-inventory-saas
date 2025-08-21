@@ -44,6 +44,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { CompaniesAPI, TransactionsAPI } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
+import Image from "next/image";
 
 interface OnboardingFormData {
   name: string;
@@ -310,7 +311,7 @@ export default function CompanyOnboardingPage() {
             Company Onboarding
           </h1>
           <p className="text-lg text-gray-600">
-            Let's get your company set up and ready to go
+            Let&apos;s get your company set up and ready to go
           </p>
         </div>
 
@@ -405,9 +406,11 @@ export default function CompanyOnboardingPage() {
                   </div>
                   {logoPreview && (
                     <div className="mt-2">
-                      <img
+                      <Image
                         src={logoPreview}
                         alt="Logo preview"
+                        width={80}
+                        height={80}
                         className="w-20 h-20 object-contain border rounded"
                       />
                     </div>

@@ -2,7 +2,12 @@
 
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CompanyJoinRequestAPI, CompanyAPI } from "@/lib/api";
+import {
+  CompanyJoinRequestAPI,
+  CompanyAPI,
+  getResourceUrl,
+  CompaniesAPI,
+} from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +38,7 @@ import {
   X,
   Image as ImageIcon,
 } from "lucide-react";
+import Image from "next/image";
 import {
   Select,
   SelectContent,
@@ -259,8 +265,8 @@ export default function CompanyProfilePage() {
     queryKey: ["public-companies", searchQuery],
     queryFn: async () => {
       if (!searchQuery.trim()) return { companies: [] };
-      const response = await CompanyAPI.getPublic(searchQuery);
-      return response as { companies: any[] };
+      const response = await CompaniesAPI.list({ search: searchQuery });
+      return response;
     },
     enabled: searchQuery.trim().length > 0,
   });
@@ -412,18 +418,14 @@ export default function CompanyProfilePage() {
                             Company Logo
                           </h3>
                           <div className="flex justify-center">
-                            <img
-                              src={
-                                (user.company as any).logo.path ||
-                                (user.company as any).logo.url ||
-                                `/api/images/${(user.company as any).logo._id}`
-                              }
+                            <Image
+                              src={getResourceUrl(
+                                (user.company as any).logo.path || ""
+                              )}
                               alt="Company logo"
+                              width={128}
+                              height={128}
                               className="w-32 h-32 object-cover rounded-lg border"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src =
-                                  "/placeholder.jpg";
-                              }}
                             />
                           </div>
                         </div>
@@ -711,9 +713,11 @@ export default function CompanyProfilePage() {
                           {/* Image Preview */}
                           {previewImage && (
                             <div className="relative group">
-                              <img
+                              <Image
                                 src={previewImage}
                                 alt="Company logo preview"
+                                width={128}
+                                height={128}
                                 className="w-32 h-32 object-cover rounded-lg border"
                               />
                               <Button

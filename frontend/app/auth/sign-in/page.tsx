@@ -120,7 +120,7 @@ export default function Login() {
             </Button>
           </form>
           <p className="mt-2 text-xs">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/auth/sign-up" className="underline underline-offset-4">
               Create an account
             </Link>

@@ -36,6 +36,7 @@ import { useAuth } from "../AuthProvider";
 import { getResourceUrl } from "@/lib/api";
 import { SocketStatus } from "../ui/socket-status";
 import { logo } from "@/assets";
+import Link from "next/link";
 
 const sampleNotifications = [
   {
@@ -159,12 +160,6 @@ const dashboardRoutes: Route[] = [
     link: "/admin/reports",
   },
   {
-    id: "billing",
-    title: "Billing",
-    icon: <CreditCard className="size-4" />,
-    link: "/admin/billing",
-  },
-  {
     id: "email-settings",
     title: "Email Settings",
     icon: <Mail className="size-4" />,
@@ -187,16 +182,16 @@ export function DashboardSidebar() {
             : "flex-row items-center justify-between"
         )}
       >
-        <a href="#" className="flex items-center gap-2">
+        <Link href="/admin" className="flex items-center gap-2">
           <Logo
-            width={200}
+            width={50}
             logo={
-              (user?.company as any).path
+              (user?.company as any).logo.path
                 ? getResourceUrl((user?.company as any).logo?.path)
                 : logo
             }
           />
-        </a>
+        </Link>
 
         <motion.div
           key={isCollapsed ? "header-collapsed" : "header-expanded"}

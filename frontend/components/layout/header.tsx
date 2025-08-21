@@ -60,12 +60,6 @@ export function Header() {
       setShowUserMenu(false);
       setShowNotifications(false);
     }
-  }, []);
-  useEffect(() => {
-    if (!user) {
-      setShowUserMenu(false);
-      setShowNotifications(false);
-    }
   }, [user]);
 
   // Create logout mutation at component level

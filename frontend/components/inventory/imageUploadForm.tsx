@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { InventoryItem } from "@/types";
+import Image from "next/image";
 
 interface ImageUploadFormProps {
   images: any[];
@@ -67,9 +68,11 @@ const ImageUploadForm = ({ images, onImagesChange }: ImageUploadFormProps) => {
             {images &&
               images.map((preview, index) => (
                 <div key={index} className="relative">
-                  <img
+                  <Image
                     src={preview || "/placeholder.svg"}
                     alt={`Preview ${index + 1}`}
+                    width={96}
+                    height={96}
                     className="w-24 h-24 object-cover rounded-lg"
                   />
                   <Button

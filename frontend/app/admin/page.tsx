@@ -2,7 +2,12 @@
 
 import React, { useState } from "react";
 import BookingCalendar from "@/components/booking/booking-calendar";
-import { BookingsAPI, FacilitiesAPI, TransactionsAPI, InvoicesAPI } from "@/lib/api";
+import {
+  BookingsAPI,
+  FacilitiesAPI,
+  TransactionsAPI,
+  InvoicesAPI,
+} from "@/lib/api";
 import { Booking, Facility } from "@/types";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
@@ -43,7 +48,12 @@ export default function AdminPage() {
 
   // Real-time updates for bookings and facilities
   useRealtimeUpdates({
-    queryKeys: ["bookings-company", "facilities-company", "transactions-company", "invoices-company"],
+    queryKeys: [
+      "bookings-company",
+      "facilities-company",
+      "transactions-company",
+      "invoices-company",
+    ],
     events: [
       "BookingCreated",
       "BookingUpdated",
@@ -173,13 +183,18 @@ export default function AdminPage() {
     }
 
     if ((invoices as any)?.invoices) {
-      stats.pendingInvoices = (invoices as any).invoices
-        .filter((inv: any) => inv.status === "pending").length;
+      stats.pendingInvoices = (invoices as any).invoices.filter(
+        (inv: any) => inv.status === "pending"
+      ).length;
     }
 
     if (bookings) {
-      stats.activeBookings = (bookings as any).filter((b: any) => b.status === "active").length;
-      stats.completedBookings = (bookings as any).filter((b: any) => b.status === "completed").length;
+      stats.activeBookings = (bookings as any).filter(
+        (b: any) => b.status === "active"
+      ).length;
+      stats.completedBookings = (bookings as any).filter(
+        (b: any) => b.status === "completed"
+      ).length;
     }
 
     return stats;
@@ -212,13 +227,19 @@ export default function AdminPage() {
     }
   };
 
-  const handleExportData = async (type: "transactions" | "bookings" | "invoices", format: "csv" | "excel") => {
+  const handleExportData = async (
+    type: "transactions" | "bookings" | "invoices",
+    format: "csv" | "excel"
+  ) => {
     try {
-      const response = await fetch(`/api/v1/transactions/export/${type}?format=${format}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
+      const response = await fetch(
+        `/api/v1/transactions/export/${type}?format=${format}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
 
       if (!response.ok) throw new Error(`Failed to export ${type}`);
 
@@ -235,7 +256,9 @@ export default function AdminPage() {
 
       toast({
         title: "Success",
-        description: `${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully`,
+        description: `${
+          type.charAt(0).toUpperCase() + type.slice(1)
+        } exported successfully`,
       });
     } catch (error) {
       toast({
@@ -246,7 +269,12 @@ export default function AdminPage() {
     }
   };
 
-  if (facilitiesLoading || bookingsLoading || transactionsLoading || invoicesLoading) {
+  if (
+    facilitiesLoading ||
+    bookingsLoading ||
+    transactionsLoading ||
+    invoicesLoading
+  ) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader text="Loading dashboard..." />
@@ -266,7 +294,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-20 space-y-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -283,16 +311,24 @@ export default function AdminPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => handleExportData("transactions", "csv")}>
+            <DropdownMenuItem
+              onClick={() => handleExportData("transactions", "csv")}
+            >
               Export Transactions (CSV)
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExportData("transactions", "excel")}>
+            <DropdownMenuItem
+              onClick={() => handleExportData("transactions", "excel")}
+            >
               Export Transactions (Excel)
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExportData("bookings", "csv")}>
+            <DropdownMenuItem
+              onClick={() => handleExportData("bookings", "csv")}
+            >
               Export Bookings (CSV)
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExportData("invoices", "csv")}>
+            <DropdownMenuItem
+              onClick={() => handleExportData("invoices", "csv")}
+            >
               Export Invoices (CSV)
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -303,25 +339,36 @@ export default function AdminPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Bookings
+            </CardTitle>
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.totalBookings}</div>
+            <div className="text-2xl font-bold">
+              {dashboardStats.totalBookings}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {dashboardStats.activeBookings} active, {dashboardStats.completedBookings} completed
+              {dashboardStats.activeBookings} active,{" "}
+              {dashboardStats.completedBookings} completed
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Facilities</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Facilities
+            </CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.totalFacilities}</div>
-            <p className="text-xs text-muted-foreground">Available for booking</p>
+            <div className="text-2xl font-bold">
+              {dashboardStats.totalFacilities}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Available for booking
+            </p>
           </CardContent>
         </Card>
 
@@ -334,24 +381,34 @@ export default function AdminPage() {
             <div className="text-2xl font-bold">
               {currencyFormat(dashboardStats.totalRevenue)}
             </div>
-            <p className="text-xs text-muted-foreground">From all transactions</p>
+            <p className="text-xs text-muted-foreground">
+              From all transactions
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Invoices</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Pending Invoices
+            </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.pendingInvoices}</div>
+            <div className="text-2xl font-bold">
+              {dashboardStats.pendingInvoices}
+            </div>
             <p className="text-xs text-muted-foreground">Awaiting payment</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="calendar">Booking Calendar</TabsTrigger>
@@ -382,9 +439,12 @@ export default function AdminPage() {
                         className="flex items-center justify-between p-4 border rounded-lg"
                       >
                         <div>
-                          <p className="font-medium">{booking.facility?.name}</p>
+                          <p className="font-medium">
+                            {booking.facility?.name}
+                          </p>
                           <p className="text-sm text-muted-foreground">
-                            {booking.user?.name} • {new Date(booking.startDate).toLocaleDateString()}
+                            {booking.user?.name} •{" "}
+                            {new Date(booking.startDate).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="text-right">
@@ -417,33 +477,47 @@ export default function AdminPage() {
                     title="Error loading transactions"
                     message={transactionsError.message}
                   />
-                ) : !(transactions as any)?.data || (transactions as any).data.length === 0 ? (
+                ) : !(transactions as any)?.data ||
+                  (transactions as any).data.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     No transactions found
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {(transactions as any).data.slice(0, 5).map((transaction: any) => (
-                      <div
-                        key={transaction._id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div>
-                          <p className="font-medium">{transaction.description}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(transaction.createdAt).toLocaleDateString()}
-                          </p>
+                    {(transactions as any).data
+                      .slice(0, 5)
+                      .map((transaction: any) => (
+                        <div
+                          key={transaction._id}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium">
+                              {transaction.description}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(
+                                transaction.createdAt
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p
+                              className={`font-medium ${
+                                transaction.type === "income"
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {transaction.type === "income" ? "+" : "-"}
+                              {currencyFormat(transaction.amount)}
+                            </p>
+                            <p className="text-sm text-muted-foreground capitalize">
+                              {transaction.status}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className={`font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                            {transaction.type === 'income' ? '+' : '-'}{currencyFormat(transaction.amount)}
-                          </p>
-                          <p className="text-sm text-muted-foreground capitalize">
-                            {transaction.status}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 )}
               </CardContent>
@@ -469,27 +543,48 @@ export default function AdminPage() {
                 <BarChart3 className="h-5 w-5" />
                 Business Analytics
               </CardTitle>
-              <CardDescription>Insights and performance metrics</CardDescription>
+              <CardDescription>
+                Insights and performance metrics
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-600">
-                    {Math.round((dashboardStats.completedBookings / Math.max(dashboardStats.totalBookings, 1)) * 100)}%
+                    {Math.round(
+                      (dashboardStats.completedBookings /
+                        Math.max(dashboardStats.totalBookings, 1)) *
+                        100
+                    )}
+                    %
                   </p>
-                  <p className="text-sm text-muted-foreground">Completion Rate</p>
+                  <p className="text-sm text-muted-foreground">
+                    Completion Rate
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-blue-600">
-                    {currencyFormat(dashboardStats.totalRevenue / Math.max(dashboardStats.totalBookings, 1))}
+                    {currencyFormat(
+                      dashboardStats.totalRevenue /
+                        Math.max(dashboardStats.totalBookings, 1)
+                    )}
                   </p>
-                  <p className="text-sm text-muted-foreground">Avg. Revenue per Booking</p>
+                  <p className="text-sm text-muted-foreground">
+                    Avg. Revenue per Booking
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-purple-600">
-                    {dashboardStats.totalFacilities > 0 ? Math.round(dashboardStats.totalBookings / dashboardStats.totalFacilities) : 0}
+                    {dashboardStats.totalFacilities > 0
+                      ? Math.round(
+                          dashboardStats.totalBookings /
+                            dashboardStats.totalFacilities
+                        )
+                      : 0}
                   </p>
-                  <p className="text-sm text-muted-foreground">Avg. Bookings per Facility</p>
+                  <p className="text-sm text-muted-foreground">
+                    Avg. Bookings per Facility
+                  </p>
                 </div>
               </div>
             </CardContent>

@@ -123,10 +123,12 @@ export default function FacilityDetailPage({
         {facility.reviews.map((review, index) => (
           <div key={index} className="space-y-3">
             <div className="flex items-center space-x-3">
-              <img
+              <Image
                 src={review.user.name || "/placeholder.svg"}
                 alt={review.user.name}
                 className="w-10 h-10 rounded-full object-cover"
+                width={40}
+                height={40}
               />
               <div>
                 <p className="font-medium text-sm">{review.user.name}</p>
@@ -164,7 +166,7 @@ export default function FacilityDetailPage({
   const LocationTab = () => (
     <div className="mb-8">
       <h3 className="text-xl font-semibold text-gray-900 mb-4">
-        Where you'll be
+        Where you&apos;ll be
       </h3>
       <p className="text-gray-600 mb-6 flex items-center">
         <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -306,7 +308,7 @@ export default function FacilityDetailPage({
           {/* Mobile Image Gallery */}
           <div className="block sm:hidden">
             <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-              <img
+              <Image
                 src={
                   facility.images[currentImageIndex]?.path || "/placeholder.svg"
                 }
@@ -315,6 +317,8 @@ export default function FacilityDetailPage({
                   facility.name
                 }
                 className="w-full h-full object-cover"
+                width={500}
+                height={500}
               />
               <button
                 onClick={() =>
@@ -355,10 +359,12 @@ export default function FacilityDetailPage({
                       key={idx}
                       className="col-span-2 relative rounded-l-xl overflow-hidden"
                     >
-                      <img
+                      <Image
                         src={getResourceUrl(image.path) || "/placeholder.svg"}
                         alt={image.originalName || facility.name}
                         className="w-full h-full object-cover hover:brightness-90 transition-all cursor-pointer"
+                        width={500}
+                        height={500}
                       />
                     </div>
                   );
@@ -383,10 +389,12 @@ export default function FacilityDetailPage({
                       gridRow: isTop ? 1 : 2,
                     }}
                   >
-                    <img
+                    <Image
                       src={getResourceUrl(image.path) || "/placeholder.svg"}
                       alt={image.originalName || facility.name}
                       className="w-full h-full object-cover hover:brightness-90 transition-all cursor-pointer"
+                      width={500}
+                      height={500}
                     />
                     {idx === 4 && (
                       <button className="absolute bottom-4 right-4 bg-white hover:bg-gray-50 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium shadow-sm flex items-center">
@@ -426,10 +434,12 @@ export default function FacilityDetailPage({
                     <p className="text-gray-600 mt-6">{facility.description}</p>
                   )}
                 </div>
-                <img
+                <Image
                   src={facility.createdBy.name || "/placeholder.svg"}
                   alt={facility.createdBy.name}
                   className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover ml-4 flex-shrink-0"
+                  width={50}
+                  height={50}
                 />
               </div>
             </div>
@@ -465,10 +475,12 @@ export default function FacilityDetailPage({
                 <div className="flex flex-col sm:flex-row items-start space-y-6 sm:space-y-0 sm:space-x-6">
                   <div className="text-center flex-shrink-0">
                     <div className="relative">
-                      <img
+                      <Image
                         src={facility.createdBy.name || "/placeholder.svg"}
                         alt={facility.createdBy.name}
                         className="w-20 h-20 rounded-full object-cover mx-auto"
+                        width={80}
+                        height={80}
                       />
                     </div>
                     <h4 className="text-2xl font-semibold mt-4">

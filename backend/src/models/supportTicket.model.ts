@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { CounterModel } from "./counter.model";
 
 export interface ISupportTicket extends Document {
   ticketNumber: string;
@@ -26,7 +27,7 @@ const supportTicketSchema = new Schema<ISupportTicket>(
   {
     ticketNumber: {
       type: String,
-      required: true,
+      // required: true,
       unique: true,
     },
     title: {
@@ -88,8 +89,20 @@ const supportTicketSchema = new Schema<ISupportTicket>(
 // Generate ticket number before saving
 supportTicketSchema.pre("save", async function (next) {
   if (this.isNew) {
-    const count = await mongoose.model("SupportTicket").countDocuments();
-    this.ticketNumber = `TICKET-${String(count + 1).padStart(6, "0")}`;
+    try {
+      const counter = await CounterModel.findByIdAndUpdate(
+        { _id: "ticketNumber" },
+        { $inc: { sequenceValue: 1 } },
+        { new: true, upsert: true }
+      );
+      this.ticketNumber = `TICKET-${String(counter.sequenceValue).padStart(
+        6,
+        "0"
+      )}`;
+    } catch (error: any) {
+      console.error("Error generating ticket number:", error);
+      return next(error);
+    }
   }
   next();
 });

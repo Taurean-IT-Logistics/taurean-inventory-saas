@@ -1,10 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Zap, Shield, Users, BarChart3, Code, Palette, Headphones, Settings, Award, GraduationCap } from "lucide-react";
+import {
+  Check,
+  Star,
+  Zap,
+  Shield,
+  Users,
+  BarChart3,
+  Code,
+  Palette,
+  Headphones,
+  Settings,
+  Award,
+  GraduationCap,
+} from "lucide-react";
 import { SubscriptionsAPI } from "@/lib/api";
 import { SubscriptionPlan, SubscriptionStatus, UsageStats } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -48,19 +61,13 @@ export default function PricingPage() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPlanIndex, setCurrentPlanIndex] = useState(0);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] =
+    useState<SubscriptionStatus | null>(null);
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
-  useEffect(() => {
-    loadPlans();
-    if (user?.company) {
-      loadSubscriptionStatus();
-    }
-  }, [user]);
-
-  const loadPlans = async () => {
+  const loadPlans = useCallback(async () => {
     try {
       const plansData = await SubscriptionsAPI.getPlans();
       setPlans(plansData);
@@ -74,11 +81,11 @@ export default function PricingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const loadSubscriptionStatus = async () => {
+  const loadSubscriptionStatus = useCallback(async () => {
     if (!user?.company) return;
-    
+
     try {
       const response = await SubscriptionsAPI.getStatus(user.company);
       setSubscriptionStatus(response.status);
@@ -86,7 +93,14 @@ export default function PricingPage() {
     } catch (error) {
       console.error("Failed to load subscription status:", error);
     }
-  };
+  }, [user?.company]);
+
+  useEffect(() => {
+    loadPlans();
+    if (user?.company) {
+      loadSubscriptionStatus();
+    }
+  }, [user, loadPlans, loadSubscriptionStatus]);
 
   const handleStartTrial = async () => {
     if (!user?.company) {
@@ -148,21 +162,26 @@ export default function PricingPage() {
     if (typeof value === "boolean") {
       return value ? "✓" : "✗";
     }
-    
+
     if (typeof value === "number") {
       if (value === -1) return "Unlimited";
       if (key.includes("max")) return `${value.toLocaleString()}`;
       return value.toString();
     }
-    
+
     if (key === "support") {
-      return supportDescriptions[value as keyof typeof supportDescriptions] || value;
+      return (
+        supportDescriptions[value as keyof typeof supportDescriptions] || value
+      );
     }
-    
+
     if (key === "analytics") {
-      return analyticsDescriptions[value as keyof typeof analyticsDescriptions] || value;
+      return (
+        analyticsDescriptions[value as keyof typeof analyticsDescriptions] ||
+        value
+      );
     }
-    
+
     return value;
   };
 
@@ -200,18 +219,21 @@ export default function PricingPage() {
             Choose the perfect plan for your business. All plans include our
             core features with no hidden fees. Scale up or down anytime.
           </p>
-          
+
           {/* Free Trial Banner */}
           {subscriptionStatus?.canStartTrial && (
             <div className="mt-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-lg max-w-2xl mx-auto">
               <div className="flex items-center justify-center gap-3 mb-3">
                 <Zap className="h-6 w-6" />
-                <h3 className="text-xl font-semibold">Start Your Free Trial Today!</h3>
+                <h3 className="text-xl font-semibold">
+                  Start Your Free Trial Today!
+                </h3>
               </div>
               <p className="mb-4 text-green-100">
-                Try our platform for 14 days with full access to all features. No credit card required.
+                Try our platform for 14 days with full access to all features.
+                No credit card required.
               </p>
-              <Button 
+              <Button
                 onClick={handleStartTrial}
                 className="bg-white text-green-600 hover:bg-green-50"
               >
@@ -224,13 +246,19 @@ export default function PricingPage() {
         {/* Current Subscription Status */}
         {subscriptionStatus?.hasSubscription && (
           <div className="mb-12 bg-white rounded-lg p-6 shadow-sm border">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Current Subscription</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Current Subscription
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <p className="text-sm text-gray-600">Plan</p>
-                <p className="text-lg font-semibold">{subscriptionStatus.plan?.label}</p>
+                <p className="text-lg font-semibold">
+                  {subscriptionStatus.plan?.label}
+                </p>
                 {subscriptionStatus.isTrial && (
-                  <Badge className="bg-orange-100 text-orange-800 mt-1">Trial</Badge>
+                  <Badge className="bg-orange-100 text-orange-800 mt-1">
+                    Trial
+                  </Badge>
                 )}
               </div>
               <div>
@@ -241,7 +269,9 @@ export default function PricingPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Days Remaining</p>
-                <p className="text-lg font-semibold">{subscriptionStatus.daysRemaining}</p>
+                <p className="text-lg font-semibold">
+                  {subscriptionStatus.daysRemaining}
+                </p>
               </div>
             </div>
           </div>
@@ -264,7 +294,7 @@ export default function PricingPage() {
           </div>
 
           <div className="relative overflow-hidden">
-            <div 
+            <div
               className="flex transition-transform duration-300 ease-in-out"
               style={{ transform: `translateX(-${currentPlanIndex * 100}%)` }}
             >
@@ -288,21 +318,35 @@ export default function PricingPage() {
                         </span>
                         {plan.price > 0 && (
                           <span className="text-gray-600 ml-2">
-                            per {plan.durationDays === 14 ? "trial" : 
-                                  plan.durationDays === 30 ? "month" :
-                                  plan.durationDays === 182 ? "6 months" :
-                                  plan.durationDays === 365 ? "year" : "3 years"}
+                            per{" "}
+                            {plan.durationDays === 14
+                              ? "trial"
+                              : plan.durationDays === 30
+                              ? "month"
+                              : plan.durationDays === 182
+                              ? "6 months"
+                              : plan.durationDays === 365
+                              ? "year"
+                              : "3 years"}
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-600 text-lg">{plan.description}</p>
+                      <p className="text-gray-600 text-lg">
+                        {plan.description}
+                      </p>
                     </CardHeader>
 
                     <CardContent className="pt-0">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         {Object.entries(plan.features).map(([key, value]) => (
                           <div key={key} className="flex items-start gap-3">
-                            <div className={`mt-1 ${isFeatureEnabled(key, value) ? 'text-green-500' : 'text-gray-400'}`}>
+                            <div
+                              className={`mt-1 ${
+                                isFeatureEnabled(key, value)
+                                  ? "text-green-500"
+                                  : "text-gray-400"
+                              }`}
+                            >
                               {isFeatureEnabled(key, value) ? (
                                 <Check className="h-5 w-5" />
                               ) : (
@@ -313,10 +357,18 @@ export default function PricingPage() {
                               <div className="flex items-center gap-2 mb-1">
                                 {getFeatureIcon(key)}
                                 <span className="font-medium text-gray-900">
-                                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                  {key
+                                    .replace(/([A-Z])/g, " $1")
+                                    .replace(/^./, (str) => str.toUpperCase())}
                                 </span>
                               </div>
-                              <p className={`text-sm ${isFeatureEnabled(key, value) ? 'text-gray-700' : 'text-gray-500'}`}>
+                              <p
+                                className={`text-sm ${
+                                  isFeatureEnabled(key, value)
+                                    ? "text-gray-700"
+                                    : "text-gray-500"
+                                }`}
+                              >
                                 {formatFeatureValue(key, value)}
                               </p>
                             </div>
@@ -331,7 +383,9 @@ export default function PricingPage() {
                             className="w-full bg-green-600 hover:bg-green-700 text-lg py-3"
                             disabled={!subscriptionStatus?.canStartTrial}
                           >
-                            {subscriptionStatus?.canStartTrial ? "Start Free Trial" : "Trial Already Used"}
+                            {subscriptionStatus?.canStartTrial
+                              ? "Start Free Trial"
+                              : "Trial Already Used"}
                           </Button>
                         ) : (
                           <Button
@@ -342,7 +396,9 @@ export default function PricingPage() {
                                 : "bg-gray-900 hover:bg-gray-800"
                             }`}
                           >
-                            {subscriptionStatus?.hasSubscription ? "Upgrade Plan" : "Get Started"}
+                            {subscriptionStatus?.hasSubscription
+                              ? "Upgrade Plan"
+                              : "Get Started"}
                           </Button>
                         )}
                       </div>
@@ -354,21 +410,47 @@ export default function PricingPage() {
 
             {/* Navigation Arrows */}
             <button
-              onClick={() => setCurrentPlanIndex(Math.max(0, currentPlanIndex - 1))}
+              onClick={() =>
+                setCurrentPlanIndex(Math.max(0, currentPlanIndex - 1))
+              }
               className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow"
               disabled={currentPlanIndex === 0}
             >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                className="w-6 h-6 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
             <button
-              onClick={() => setCurrentPlanIndex(Math.min(plans.length - 1, currentPlanIndex + 1))}
+              onClick={() =>
+                setCurrentPlanIndex(
+                  Math.min(plans.length - 1, currentPlanIndex + 1)
+                )
+              }
               className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow"
               disabled={currentPlanIndex === plans.length - 1}
             >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-6 h-6 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>
@@ -391,7 +473,9 @@ export default function PricingPage() {
                       {key.charAt(0).toUpperCase() + key.slice(1)}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {stats.unlimited ? "Unlimited" : `of ${stats.limit.toLocaleString()}`}
+                      {stats.unlimited
+                        ? "Unlimited"
+                        : `of ${stats.limit.toLocaleString()}`}
                     </div>
                   </CardContent>
                 </Card>
@@ -454,7 +538,7 @@ export default function PricingPage() {
               </h3>
               <p className="text-gray-600">
                 Yes! You can upgrade or downgrade your plan at any time. Changes
-                take effect immediately and we'll prorate any differences.
+                take effect immediately and we&apos;ll prorate any differences.
               </p>
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm">
@@ -462,8 +546,9 @@ export default function PricingPage() {
                 Is there a free trial?
               </h3>
               <p className="text-gray-600">
-                We offer a 14-day free trial for all new companies. No credit card
-                required to start. You can upgrade to a paid plan anytime during or after the trial.
+                We offer a 14-day free trial for all new companies. No credit
+                card required to start. You can upgrade to a paid plan anytime
+                during or after the trial.
               </p>
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm">
@@ -480,7 +565,9 @@ export default function PricingPage() {
                 What happens when I reach my limits?
               </h3>
               <p className="text-gray-600">
-                You'll receive notifications as you approach your limits. You can upgrade your plan at any time to increase your limits or get unlimited access.
+                You&apos;ll receive notifications as you approach your limits.
+                You can upgrade your plan at any time to increase your limits or
+                get unlimited access.
               </p>
             </div>
           </div>
@@ -495,8 +582,8 @@ export default function PricingPage() {
             Join thousands of businesses already using our platform
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="bg-blue-600 hover:bg-blue-700"
               onClick={handleStartTrial}
               disabled={!subscriptionStatus?.canStartTrial}

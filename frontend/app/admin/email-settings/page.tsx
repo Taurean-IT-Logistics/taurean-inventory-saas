@@ -68,8 +68,12 @@ const EmailSettingsPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [testEmail, setTestEmail] = useState("");
-  const [testSubject, setTestSubject] = useState("Test Email from " + user?.company);
-  const [testMessage, setTestMessage] = useState("This is a test email to verify email configuration.");
+  const [testSubject, setTestSubject] = useState(
+    "Test Email from " + user?.company
+  );
+  const [testMessage, setTestMessage] = useState(
+    "This is a test email to verify email configuration."
+  );
   const [bulkEmailRecipients, setBulkEmailRecipients] = useState("");
   const [bulkSubject, setBulkSubject] = useState("");
   const [bulkMessage, setBulkMessage] = useState("");
@@ -211,9 +215,9 @@ const EmailSettingsPage = () => {
 
     if (bulkEmailRecipients.trim()) {
       data.recipients = bulkEmailRecipients
-        .split(',')
-        .map(email => email.trim())
-        .filter(email => email.length > 0);
+        .split(",")
+        .map((email) => email.trim())
+        .filter((email) => email.length > 0);
     } else if (bulkUserRole) {
       data.userRole = bulkUserRole;
     } else {
@@ -404,7 +408,7 @@ const EmailSettingsPage = () => {
                     }
                   />
                   <p className="text-sm text-muted-foreground">
-                    Name that appears in the "From" field
+                    Name that appears in the &quot;From&quot; field
                   </p>
                 </div>
 
@@ -420,7 +424,7 @@ const EmailSettingsPage = () => {
                     }
                   />
                   <p className="text-sm text-muted-foreground">
-                    Email address that appears in the "From" field
+                    Email address that appears in the &quot;From&quot; field
                   </p>
                 </div>
 
@@ -573,7 +577,10 @@ const EmailSettingsPage = () => {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    disabled={bulkEmailMutation.isPending || (!bulkEmailRecipients.trim() && !bulkUserRole)}
+                    disabled={
+                      bulkEmailMutation.isPending ||
+                      (!bulkEmailRecipients.trim() && !bulkUserRole)
+                    }
                     className="w-full"
                   >
                     {bulkEmailMutation.isPending ? (
@@ -590,9 +597,11 @@ const EmailSettingsPage = () => {
                     <AlertDialogDescription>
                       Are you sure you want to send this email to{" "}
                       {bulkEmailRecipients.trim()
-                        ? `${bulkEmailRecipients.split(',').length} specified recipients`
-                        : `all ${bulkUserRole} users`}?
-                      This action cannot be undone.
+                        ? `${
+                            bulkEmailRecipients.split(",").length
+                          } specified recipients`
+                        : `all ${bulkUserRole} users`}
+                      ? This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -612,7 +621,9 @@ const EmailSettingsPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Configuration Status</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Configuration Status
+            </CardTitle>
             <Settings className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -620,12 +631,16 @@ const EmailSettingsPage = () => {
               {testConfigMutation.data ? (
                 <>
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-600">Configured</span>
+                  <span className="text-sm font-medium text-green-600">
+                    Configured
+                  </span>
                 </>
               ) : (
                 <>
                   <AlertCircle className="h-4 w-4 text-yellow-600" />
-                  <span className="text-sm font-medium text-yellow-600">Unknown</span>
+                  <span className="text-sm font-medium text-yellow-600">
+                    Unknown
+                  </span>
                 </>
               )}
             </div>
@@ -637,7 +652,9 @@ const EmailSettingsPage = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Notifications</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Notifications
+            </CardTitle>
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -652,7 +669,9 @@ const EmailSettingsPage = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Email Templates</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Email Templates
+            </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>

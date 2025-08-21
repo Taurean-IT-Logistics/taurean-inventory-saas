@@ -49,7 +49,7 @@ export default function PrivacyPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-slate-900 mb-4">4. Multi-Tenant Data Isolation</h2>
               <p className="text-slate-600 mb-4">
-                Our multi-tenant architecture ensures that each organization's data is completely isolated and secure
+                Our multi-tenant architecture ensures that each organization&apos;s data is completely isolated and secure
                 from other tenants on the platform.
               </p>
             </section>

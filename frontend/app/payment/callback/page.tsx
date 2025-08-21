@@ -38,7 +38,9 @@ interface PaymentResult {
 const PaymentCallbackPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
+  const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -61,33 +63,39 @@ const PaymentCallbackPage = () => {
 
       try {
         setIsVerifying(true);
-        
+
         // Verify payment with backend
-        const response = await TransactionsAPI.verifyByReference(paymentRef!) as any;
-        
+        const response = (await TransactionsAPI.verifyByReference(
+          paymentRef!
+        )) as any;
+
         if (response.success) {
           setPaymentResult({
             success: true,
             message: "Payment verified successfully!",
             data: response.data,
           });
-          
+
           toast({
             title: "Payment Successful",
             description: "Your payment has been processed successfully.",
             variant: "default",
           });
         } else {
-          throw new Error((response as any).message || "Payment verification failed");
+          throw new Error(
+            (response as any).message || "Payment verification failed"
+          );
         }
       } catch (error: any) {
         console.error("Payment verification error:", error);
-        
+
         setPaymentResult({
           success: false,
-          message: error.message || "Payment verification failed. Please contact support.",
+          message:
+            error.message ||
+            "Payment verification failed. Please contact support.",
         });
-        
+
         toast({
           title: "Payment Verification Failed",
           description: error.message || "Unable to verify payment status.",
@@ -189,10 +197,13 @@ const PaymentCallbackPage = () => {
               <Loader className="mx-auto" />
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {isVerifying ? "Verifying Payment..." : "Processing Payment..."}
+                  {isVerifying
+                    ? "Verifying Payment..."
+                    : "Processing Payment..."}
                 </h2>
                 <p className="text-gray-600 mt-2">
-                  Please wait while we confirm your payment with our secure payment processor.
+                  Please wait while we confirm your payment with our secure
+                  payment processor.
                 </p>
               </div>
             </div>
@@ -224,19 +235,21 @@ const PaymentCallbackPage = () => {
 
         <CardContent className="space-y-6">
           <div className="text-center">
-            <p className="text-gray-600 text-lg">
-              {paymentResult?.message}
-            </p>
+            <p className="text-gray-600 text-lg">{paymentResult?.message}</p>
           </div>
 
           {paymentResult?.success && paymentResult.data && (
             <div className="space-y-6">
               {/* Payment Details */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h3 className="font-semibold text-green-900 mb-3">Payment Details</h3>
+                <h3 className="font-semibold text-green-900 mb-3">
+                  Payment Details
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-green-700">Transaction Reference</p>
+                    <p className="text-sm text-green-700">
+                      Transaction Reference
+                    </p>
                     <p className="font-mono text-sm font-medium text-green-900">
                       {paymentResult.data.reference}
                     </p>
@@ -244,7 +257,8 @@ const PaymentCallbackPage = () => {
                   <div>
                     <p className="text-sm text-green-700">Amount Paid</p>
                     <p className="font-semibold text-green-900">
-                      {paymentResult.data.currency} {paymentResult.data.amount.toFixed(2)}
+                      {paymentResult.data.currency}{" "}
+                      {paymentResult.data.amount.toFixed(2)}
                     </p>
                   </div>
                   <div>
@@ -273,7 +287,7 @@ const PaymentCallbackPage = () => {
                     Download Receipt
                   </Button>
                 )}
-                
+
                 {paymentResult.data.invoice && (
                   <Button
                     onClick={handleDownloadInvoice}
@@ -302,7 +316,9 @@ const PaymentCallbackPage = () => {
                 <div className="flex items-start">
                   <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 mr-3" />
                   <div>
-                    <h3 className="font-semibold text-red-900">What happened?</h3>
+                    <h3 className="font-semibold text-red-900">
+                      What happened?
+                    </h3>
                     <p className="text-red-700 mt-1">
                       Your payment could not be processed. This could be due to:
                     </p>
@@ -318,7 +334,7 @@ const PaymentCallbackPage = () => {
 
               <div className="text-center">
                 <p className="text-gray-600 mb-4">
-                  Don't worry! No charges have been made to your account.
+                  Don&apos;t worry! No charges have been made to your account.
                 </p>
                 <Button
                   onClick={() => window.history.back()}
@@ -341,7 +357,7 @@ const PaymentCallbackPage = () => {
                   View My Transactions
                 </Link>
               </Button>
-              
+
               <Button asChild variant="outline">
                 <Link href="/">
                   <Home className="w-4 h-4 mr-2" />
@@ -355,13 +371,17 @@ const PaymentCallbackPage = () => {
           <div className="text-center text-sm text-gray-500">
             <p>
               Need help? Contact our support team at{" "}
-              <a href="mailto:support@company.com" className="text-blue-600 hover:underline">
+              <a
+                href="mailto:support@company.com"
+                className="text-blue-600 hover:underline"
+              >
                 support@company.com
               </a>
             </p>
             {reference && (
               <p className="mt-1">
-                Reference this transaction: <span className="font-mono">{reference}</span>
+                Reference this transaction:{" "}
+                <span className="font-mono">{reference}</span>
               </p>
             )}
           </div>

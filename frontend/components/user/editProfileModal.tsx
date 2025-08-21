@@ -341,8 +341,8 @@ export function EditProfileModal({
               </div>
 
               <p className="text-sm text-muted-foreground">
-                Leave password fields empty if you don't want to change your
-                password
+                Leave password fields empty if you don&apos;t want to change
+                your password
               </p>
             </div>
           </div>

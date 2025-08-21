@@ -12,7 +12,7 @@ export function HostBanner() {
             Become a host
           </h2>
           <p className="text-slate-600">
-            It's easy to start hosting and earn extra income.
+            It&apos;s easy to start hosting and earn extra income.
           </p>
 
           <div className="pt-4">

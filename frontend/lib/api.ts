@@ -129,10 +129,19 @@ export const AuthAPI = {
 
 // Companies
 export const CompaniesAPI = {
-  list: () =>
-    apiFetch<{ companies: Company[]; data: Company[] }>(`/companies/public`, {
-      method: "GET",
-    }),
+  list: (params?: Record<string, string | number | boolean>) => {
+    const qs = params
+      ? `?${new URLSearchParams(
+          Object.entries(params).map(([k, v]) => [k, String(v)])
+        )}`
+      : "";
+    return apiFetch<{ companies: Company[]; data: Company[] }>(
+      `/companies/public`,
+      {
+        method: "GET",
+      }
+    );
+  },
   onboard: (payload: FormData) =>
     apiFetch(`/companies/onboard`, {
       method: "POST",

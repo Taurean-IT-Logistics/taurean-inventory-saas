@@ -127,7 +127,7 @@ const EditUserModal = ({ user, show, onHide, onSave }: EditUserModalProps) => {
               <div className="space-y-2">
                 <Label htmlFor="role">System Role</Label>
                 <Select
-                  value={formData.role || "user"}
+                  value={formData.role || user?.role}
                   onValueChange={handleRoleChange}
                 >
                   <SelectTrigger className="border-gray-300">
@@ -151,7 +151,7 @@ const EditUserModal = ({ user, show, onHide, onSave }: EditUserModalProps) => {
                     <SelectValue placeholder="Select company role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Company Role</SelectItem>
+                    <SelectItem value="_no_roles">No Company Role</SelectItem>
                     {roles.map((role: CompanyRole) => (
                       <SelectItem key={role._id} value={role._id}>
                         {role.name}

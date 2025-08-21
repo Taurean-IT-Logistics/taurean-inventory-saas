@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { SupportAPI } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -55,8 +55,12 @@ interface SupportWidgetProps {
 const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"chat" | "tickets" | "new-ticket">("chat");
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [activeTab, setActiveTab] = useState<"chat" | "tickets" | "new-ticket">(
+    "chat"
+  );
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(
+    null
+  );
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -99,12 +103,18 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
       setActiveTab("chat");
-      setNewTicketForm({ title: "", description: "", category: "general", priority: "medium" });
+      setNewTicketForm({
+        title: "",
+        description: "",
+        category: "general",
+        priority: "medium",
+      });
     },
   });
 
   const sendMessageMutation = useMutation({
-    mutationFn: (formData: FormData) => SupportAPI.sendMessage(selectedTicket!._id, formData),
+    mutationFn: (formData: FormData) =>
+      SupportAPI.sendMessage(selectedTicket!._id, formData),
     onSuccess: () => {
       refetchTicketDetails();
       setMessage("");
@@ -135,11 +145,14 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
   // Socket connection
   useEffect(() => {
     if (isOpen && user) {
-      const newSocket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000", {
-        auth: {
-          token: localStorage.getItem("accessToken"),
-        },
-      });
+      const newSocket = io(
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000",
+        {
+          auth: {
+            token: localStorage.getItem("accessToken"),
+          },
+        }
+      );
 
       newSocket.on("connect", () => {
         console.log("Support socket connected");
@@ -152,11 +165,12 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
       });
 
       newSocket.on("user-typing", (data) => {
-        if (data.userId !== (user as any)._id) {
+        const isCurrentUserTyping = data.userId === (user as any)._id;
+        if (!isCurrentUserTyping) {
           if (data.isTyping) {
-            setTypingUsers(prev => new Set(prev).add(data.userId));
+            setTypingUsers((prev) => new Set(prev).add(data.userId));
           } else {
-            setTypingUsers(prev => {
+            setTypingUsers((prev) => {
               const newSet = new Set(prev);
               newSet.delete(data.userId);
               return newSet;
@@ -177,7 +191,7 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
         newSocket.close();
       };
     }
-  }, [isOpen, user, selectedTicket?._id]);
+  }, [isOpen, user, selectedTicket?._id, refetchTicketDetails]);
 
   // Join ticket room when selected
   useEffect(() => {
@@ -187,15 +201,19 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
   }, [socket, selectedTicket]);
 
   // Auto-scroll to bottom of messages
+  const messages = (ticketDetails as any)?.messages;
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [(ticketDetails as any)?.messages]);
+  }, [messages]);
 
   // Typing indicator
   useEffect(() => {
     if (socket && selectedTicket) {
       const timeout = setTimeout(() => {
-        socket.emit("typing", { ticketId: selectedTicket._id, isTyping: false });
+        socket.emit("typing", {
+          ticketId: selectedTicket._id,
+          isTyping: false,
+        });
         setIsTyping(false);
       }, 1000);
 
@@ -334,7 +352,10 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
             {!selectedTicket ? (
               <div className="flex-1 flex items-center justify-center text-gray-500">
                 <div className="text-center">
-                  <MessageCircle size={48} className="mx-auto mb-2 text-gray-300" />
+                  <MessageCircle
+                    size={48}
+                    className="mx-auto mb-2 text-gray-300"
+                  />
                   <p>Select a ticket to start chatting</p>
                 </div>
               </div>
@@ -343,26 +364,42 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                 {/* Ticket Info */}
                 <div className="p-4 border-b border-gray-200 bg-gray-50">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-sm">{selectedTicket.title}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
+                    <h3 className="font-semibold text-sm">
+                      {selectedTicket.title}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        selectedTicket.status
+                      )}`}
+                    >
                       {selectedTicket.status.replace("_", " ")}
                     </span>
                   </div>
                   <div className="flex items-center space-x-4 text-xs text-gray-600">
-                    <span className={`px-2 py-1 rounded-full ${getPriorityColor(selectedTicket.priority)}`}>
+                    <span
+                      className={`px-2 py-1 rounded-full ${getPriorityColor(
+                        selectedTicket.priority
+                      )}`}
+                    >
                       {selectedTicket.priority}
                     </span>
                     <span>#{selectedTicket.ticketNumber}</span>
-                    <span>{new Date(selectedTicket.createdAt).toLocaleDateString()}</span>
+                    <span>
+                      {new Date(selectedTicket.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {(ticketDetails as any)?.messages?.map((msg: SupportMessage) => (
+                  {messages?.map((msg: SupportMessage) => (
                     <div
                       key={msg._id}
-                      className={`flex ${msg.sender._id === (user as any)?._id ? "justify-end" : "justify-start"}`}
+                      className={`flex ${
+                        msg.sender._id === (user as any)?._id
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
                     >
                       <div
                         className={`max-w-xs px-3 py-2 rounded-lg ${
@@ -382,7 +419,10 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                         {msg.attachments && msg.attachments.length > 0 && (
                           <div className="mt-2 space-y-1">
                             {msg.attachments.map((attachment, index) => (
-                              <div key={index} className="flex items-center space-x-2 text-xs">
+                              <div
+                                key={index}
+                                className="flex items-center space-x-2 text-xs"
+                              >
                                 <Paperclip size={12} />
                                 <span className="underline cursor-pointer">
                                   {attachment.split("/").pop()}
@@ -397,7 +437,7 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                   ))}
-                  
+
                   {/* Typing indicator */}
                   {typingUsers.size > 0 && (
                     <div className="flex justify-start">
@@ -406,7 +446,7 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                   )}
-                  
+
                   <div ref={messagesEndRef} />
                 </div>
 
@@ -420,7 +460,9 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                         setMessage(e.target.value);
                         handleTyping();
                       }}
-                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" && handleSendMessage()
+                      }
                       placeholder="Type your message..."
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -432,7 +474,9 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                     </button>
                     <button
                       onClick={handleSendMessage}
-                      disabled={!message.trim() || sendMessageMutation.isPending}
+                      disabled={
+                        !message.trim() || sendMessageMutation.isPending
+                      }
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {sendMessageMutation.isPending ? (
@@ -480,19 +524,31 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-sm truncate">{ticket.title}</h4>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
+                      <h4 className="font-medium text-sm truncate">
+                        {ticket.title}
+                      </h4>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                          ticket.status
+                        )}`}
+                      >
                         {ticket.status.replace("_", " ")}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2 text-xs text-gray-600 mb-2">
-                      <span className={`px-2 py-1 rounded-full ${getPriorityColor(ticket.priority)}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full ${getPriorityColor(
+                          ticket.priority
+                        )}`}
+                      >
                         {ticket.priority}
                       </span>
                       <span>#{ticket.ticketNumber}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                      <span>
+                        {new Date(ticket.createdAt).toLocaleDateString()}
+                      </span>
                       {ticket.assignedTo && (
                         <span className="flex items-center space-x-1">
                           <User size={12} />
@@ -517,7 +573,12 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                 <input
                   type="text"
                   value={newTicketForm.title}
-                  onChange={(e) => setNewTicketForm({ ...newTicketForm, title: e.target.value })}
+                  onChange={(e) =>
+                    setNewTicketForm({
+                      ...newTicketForm,
+                      title: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Brief description of your issue"
                 />
@@ -529,7 +590,12 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                 </label>
                 <textarea
                   value={newTicketForm.description}
-                  onChange={(e) => setNewTicketForm({ ...newTicketForm, description: e.target.value })}
+                  onChange={(e) =>
+                    setNewTicketForm({
+                      ...newTicketForm,
+                      description: e.target.value,
+                    })
+                  }
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Detailed description of your issue"
@@ -543,7 +609,12 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                   </label>
                   <select
                     value={newTicketForm.category}
-                    onChange={(e) => setNewTicketForm({ ...newTicketForm, category: e.target.value })}
+                    onChange={(e) =>
+                      setNewTicketForm({
+                        ...newTicketForm,
+                        category: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="general">General</option>
@@ -560,7 +631,12 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
                   </label>
                   <select
                     value={newTicketForm.priority}
-                    onChange={(e) => setNewTicketForm({ ...newTicketForm, priority: e.target.value })}
+                    onChange={(e) =>
+                      setNewTicketForm({
+                        ...newTicketForm,
+                        priority: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="low">Low</option>
@@ -573,7 +649,11 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ isOpen, onClose }) => {
 
               <button
                 onClick={handleCreateTicket}
-                disabled={!newTicketForm.title || !newTicketForm.description || createTicketMutation.isPending}
+                disabled={
+                  !newTicketForm.title ||
+                  !newTicketForm.description ||
+                  createTicketMutation.isPending
+                }
                 className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {createTicketMutation.isPending ? (

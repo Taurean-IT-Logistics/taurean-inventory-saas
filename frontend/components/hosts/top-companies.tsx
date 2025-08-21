@@ -30,11 +30,12 @@ interface Company {
 
 export function TopCompanies() {
   const { data: companiesData, isLoading } = useQuery({
-    queryKey: ["top-companies"],
+    queryKey: ["companies"],
     queryFn: async () => CompaniesAPI.list(),
   });
 
-  const companies = companiesData?.companies || [];
+  const companies = companiesData?.companies || companiesData?.data || [];
+  console.log(companies);
 
   if (isLoading) {
     return (

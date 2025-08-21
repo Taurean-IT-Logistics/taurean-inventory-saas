@@ -156,6 +156,8 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
   }
 );
 
+InvoiceTemplate.displayName = "InvoiceTemplate";
+
 const TransactionTable = ({
   transactions,
   onView,

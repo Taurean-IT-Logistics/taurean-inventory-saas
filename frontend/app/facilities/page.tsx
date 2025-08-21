@@ -31,6 +31,7 @@ import {
 import { FacilityCard } from "@/components/facilities/facility-card";
 import { FacilitiesAPI, getResourceUrl } from "@/lib/api";
 import type { Facility } from "@/types";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 
 interface FilterOptions {
@@ -760,9 +761,11 @@ function FacilityListItem({ facility }: { facility: Facility }) {
     <Card className="p-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
         <div className="md:col-span-1">
-          <img
+          <Image
             src={getResourceUrl(facilityImage) || "/placeholder.svg"}
             alt={facilityName}
+            width={200}
+            height={150}
             className="w-full h-40 object-cover rounded-lg"
             onError={(e) => {
               const target = e.target as HTMLImageElement;

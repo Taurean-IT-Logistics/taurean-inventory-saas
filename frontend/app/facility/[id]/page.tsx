@@ -29,6 +29,7 @@ import { FacilitiesAPI, getResourceUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
+import Image from "next/image";
 
 interface FacilityImageGalleryProps {
   images: { path: string }[];
@@ -53,13 +54,15 @@ const FacilityImageGallery = ({
     <Card className="mb-6">
       <CardContent className="p-0">
         <div className="relative">
-          <img
+          <Image
             src={
               getResourceUrl(images[selectedImage]?.path) ||
               "/placeholder.svg?height=400&width=800"
             }
-            alt={facility.name}
+            alt={facility.name || ""}
             className="w-full h-96 object-cover rounded-t-lg"
+            width={800}
+            height={400}
           />
           <div className="absolute top-4 left-4">
             {getStatusBadge(!!facility.isActive)}
@@ -68,7 +71,7 @@ const FacilityImageGallery = ({
         {images.length > 1 && (
           <div className="grid grid-cols-4 gap-2 p-4">
             {images.map((image, index) => (
-              <img
+              <Image
                 key={index}
                 src={
                   getResourceUrl(image.path) ||
@@ -82,6 +85,8 @@ const FacilityImageGallery = ({
                     : "border-gray-200 hover:border-gray-300"
                 )}
                 onClick={() => setSelectedImage(index)}
+                width={120}
+                height={80}
               />
             ))}
           </div>
@@ -440,7 +445,7 @@ const FacilityBookingCard = ({
       </Button>
 
       <div className="text-center mb-4">
-        <small className="text-gray-600">You won't be charged yet</small>
+        <small className="text-gray-600">You won&apos;t be charged yet</small>
       </div>
 
       <hr className="border-gray-200 mb-4" />

@@ -67,6 +67,11 @@ export default function SupportPage() {
     description: "",
     category: "general",
     priority: "medium",
+    companyId: user?.company
+      ? typeof user.company === "object"
+        ? (user.company as { _id: string })._id
+        : user.company
+      : "",
   });
 
   // Queries
@@ -104,6 +109,11 @@ export default function SupportPage() {
         description: "",
         category: "general",
         priority: "medium",
+        companyId: user?.company
+          ? typeof user.company === "object"
+            ? (user.company as { _id: string })._id
+            : user.company
+          : "",
       });
     },
   });
@@ -132,6 +142,7 @@ export default function SupportPage() {
     formData.append("description", newTicketForm.description);
     formData.append("category", newTicketForm.category);
     formData.append("priority", newTicketForm.priority);
+    formData.append("companyId", newTicketForm.companyId);
 
     createTicketMutation.mutate(formData);
   };

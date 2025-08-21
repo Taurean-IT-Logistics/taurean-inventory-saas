@@ -1,5 +1,5 @@
-import { Header } from "@/components/layout/header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Header } from "@/components/layout/header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function FAQPage() {
   const faqs = [
@@ -51,9 +51,9 @@ export default function FAQPage() {
     {
       question: "How secure is my data?",
       answer:
-        "We implement bank-level security with encryption, audit trails, and compliance features. Each tenant's data is completely isolated with comprehensive access controls.",
+        "We implement bank-level security with encryption, audit trails, and compliance features. Each tenant&apos;s data is completely isolated with comprehensive access controls.",
     },
-  ]
+  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -62,9 +62,12 @@ export default function FAQPage() {
       <main className="pt-24 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h1 className="text-4xl font-bold text-slate-900 mb-6">Frequently Asked Questions</h1>
+            <h1 className="text-4xl font-bold text-slate-900 mb-6">
+              Frequently Asked Questions
+            </h1>
             <p className="text-xl text-slate-600">
-              Find answers to common questions about FacilityHub and our platform features.
+              Find answers to common questions about FacilityHub and our
+              platform features.
             </p>
           </div>
 
@@ -72,7 +75,9 @@ export default function FAQPage() {
             {faqs.map((faq, index) => (
               <Card key={index}>
                 <CardHeader>
-                  <CardTitle className="text-lg text-slate-900">{faq.question}</CardTitle>
+                  <CardTitle className="text-lg text-slate-900">
+                    {faq.question}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-600">{faq.answer}</p>
@@ -82,9 +87,12 @@ export default function FAQPage() {
           </div>
 
           <div className="mt-16 text-center bg-slate-50 rounded-lg p-8">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Still have questions?</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Still have questions?
+            </h2>
             <p className="text-slate-600 mb-6">
-              Can't find the answer you're looking for? Our support team is here to help.
+              Can&apos;t find the answer you&apos;re looking for? Our support
+              team is here to help.
             </p>
             <a
               href="/contact"
@@ -96,5 +104,5 @@ export default function FAQPage() {
         </div>
       </main>
     </div>
-  )
+  );
 }

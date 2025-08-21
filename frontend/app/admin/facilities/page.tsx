@@ -118,7 +118,8 @@ const FacilityManagement = () => {
 
   // Filter facilities
   const filteredFacilities = useMemo(() => {
-    return facilities.filter((facility) => {
+    const currentFacilities = data?.facilities || [];
+    return currentFacilities.filter((facility) => {
       const matchesSearch =
         facility.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         facility.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -134,7 +135,7 @@ const FacilityManagement = () => {
 
       return matchesSearch && matchesStatus;
     });
-  }, [facilities, searchTerm, statusFilter]);
+  }, [data?.facilities, searchTerm, statusFilter]);
 
   // Loading and error states
   if (isLoading) {

@@ -7,6 +7,12 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
     const bookingData = req.body;
 
+    if (!req.user || !req.user.id) {
+      sendError(res, "User not authenticated");
+      return;
+    }
+
+    // Prioritize user from bookingData if provided, otherwise use authenticated user
     if (bookingData.user) {
       const user = await UserService.getUserById(bookingData.user);
       if (!user) {
@@ -14,13 +20,21 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
         return;
       }
       bookingData.user = user._id;
+    } else {
+      bookingData.user = req.user.id;
     }
 
-    if (!req.user || !req.user.id) {
-      sendError(res, "User not authenticated");
-      return;
+    // Ensure facility is an ObjectId
+    if (bookingData.facility) {
+      // Assuming facility is sent as an ID from frontend, no need to fetch full object
+      // If it's an object, extract _id
+      if (
+        typeof bookingData.facility === "object" &&
+        bookingData.facility._id
+      ) {
+        bookingData.facility = bookingData.facility._id;
+      }
     }
-    bookingData.user = req.user.id;
     const newBooking = await BookingService.createBooking(bookingData);
     sendSuccess(res, "Booking created successfully", newBooking);
   } catch (error: any) {

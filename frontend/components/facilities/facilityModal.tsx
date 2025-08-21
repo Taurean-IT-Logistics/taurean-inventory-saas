@@ -5,6 +5,7 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import { X, Plus, Upload } from "lucide-react";
 import type { Facility } from "@/types";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -157,9 +158,11 @@ const FacilityModal = ({
                     const isExisting = index < existingImages.length;
                     return (
                       <div key={index} className="relative">
-                        <img
+                        <Image
                           src={getResourceUrl(preview) || "/placeholder.svg"}
                           alt={`Preview ${index + 1}`}
+                          width={100}
+                          height={40}
                           className="w-full h-24 object-cover rounded-lg"
                         />
                         <Button

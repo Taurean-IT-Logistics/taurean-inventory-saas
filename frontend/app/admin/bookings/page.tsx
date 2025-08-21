@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { Booking, Facility } from "@/types";
 import { currencyFormat } from "@/lib/utils";
@@ -149,7 +149,7 @@ const BookingDashboard = () => {
     return date instanceof Date && !isNaN(date.getTime());
   };
 
-  const parseDate = (dateValue: any): Date | null => {
+  const parseDate = useCallback((dateValue: any): Date | null => {
     if (!dateValue) return null;
 
     if (dateValue instanceof Date) {
@@ -162,7 +162,7 @@ const BookingDashboard = () => {
     }
 
     return null;
-  };
+  }, []);
 
   const getDateRange = (days: number): { start: Date; end: Date } => {
     const end = new Date();
@@ -173,120 +173,125 @@ const BookingDashboard = () => {
     return { start, end };
   };
 
-  const calculateStats = (data: Booking[]): void => {
-    if (!Array.isArray(data) || data.length === 0) {
+  const calculateStats = useCallback(
+    (data: Booking[]): void => {
+      if (!Array.isArray(data) || data.length === 0) {
+        setStats({
+          totalBookings: 0,
+          confirmedBookings: 0,
+          pendingBookings: 0,
+          totalRevenue: 0,
+          todayBookings: 0,
+          weeklyGrowth: 0,
+          monthlyRevenue: 0,
+          weeklyRevenue: 0,
+          averageBookingValue: 0,
+        });
+        return;
+      }
+
+      // Filter out deleted bookings and validate data
+      const validBookings = data.filter(
+        (booking) =>
+          booking &&
+          !booking.isDeleted &&
+          typeof booking.totalPrice === "number" &&
+          !isNaN(booking.totalPrice) &&
+          booking.totalPrice >= 0
+      );
+
+      const totalBookings = validBookings.length;
+      const confirmedBookings = validBookings.filter(
+        (b) => b.status === "confirmed" || b.status === "completed"
+      ).length;
+      const pendingBookings = validBookings.filter(
+        (b) => b.status === "pending"
+      ).length;
+
+      // Calculate total revenue (only from confirmed and completed bookings)
+      const revenueGeneratingStatuses = ["confirmed", "completed"];
+      const totalRevenue = validBookings
+        .filter((b) => revenueGeneratingStatuses.includes(b.status))
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+
+      // Today's bookings
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const todayBookings = validBookings.filter((b) => {
+        const startDate = parseDate(b.startDate);
+        return startDate && startDate >= today && startDate < tomorrow;
+      }).length;
+
+      // Weekly revenue (last 7 days)
+      const { start: weekStart, end: weekEnd } = getDateRange(7);
+      const weeklyRevenue = validBookings
+        .filter((b) => {
+          const startDate = parseDate(b.startDate);
+          return (
+            startDate &&
+            startDate >= weekStart &&
+            startDate <= weekEnd &&
+            revenueGeneratingStatuses.includes(b.status)
+          );
+        })
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+
+      // Monthly revenue (last 30 days)
+      const { start: monthStart, end: monthEnd } = getDateRange(30);
+      const monthlyRevenue = validBookings
+        .filter((b) => {
+          const startDate = parseDate(b.startDate);
+          return (
+            startDate &&
+            startDate >= monthStart &&
+            startDate <= monthEnd &&
+            revenueGeneratingStatuses.includes(b.status)
+          );
+        })
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+
+      const { start: prevWeekStart } = getDateRange(14);
+      const prevWeekRevenue = validBookings
+        .filter((b) => {
+          const startDate = parseDate(b.startDate);
+          return (
+            startDate &&
+            startDate >= prevWeekStart &&
+            startDate < weekStart &&
+            revenueGeneratingStatuses.includes(b.status)
+          );
+        })
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+
+      const weeklyGrowth =
+        prevWeekRevenue > 0
+          ? ((weeklyRevenue - prevWeekRevenue) / prevWeekRevenue) * 100
+          : weeklyRevenue > 0
+          ? 100
+          : 0;
+
+      const averageBookingValue =
+        totalRevenue > 0 && totalBookings > 0
+          ? totalRevenue / totalBookings
+          : 0;
+
       setStats({
-        totalBookings: 0,
-        confirmedBookings: 0,
-        pendingBookings: 0,
-        totalRevenue: 0,
-        todayBookings: 0,
-        weeklyGrowth: 0,
-        monthlyRevenue: 0,
-        weeklyRevenue: 0,
-        averageBookingValue: 0,
+        totalBookings,
+        confirmedBookings,
+        pendingBookings,
+        totalRevenue,
+        todayBookings,
+        weeklyGrowth: Math.round(weeklyGrowth * 100) / 100, // Round to 2 decimal places
+        monthlyRevenue,
+        weeklyRevenue,
+        averageBookingValue,
       });
-      return;
-    }
-
-    // Filter out deleted bookings and validate data
-    const validBookings = data.filter(
-      (booking) =>
-        booking &&
-        !booking.isDeleted &&
-        typeof booking.totalPrice === "number" &&
-        !isNaN(booking.totalPrice) &&
-        booking.totalPrice >= 0
-    );
-
-    const totalBookings = validBookings.length;
-    const confirmedBookings = validBookings.filter(
-      (b) => b.status === "confirmed" || b.status === "completed"
-    ).length;
-    const pendingBookings = validBookings.filter(
-      (b) => b.status === "pending"
-    ).length;
-
-    // Calculate total revenue (only from confirmed and completed bookings)
-    const revenueGeneratingStatuses = ["confirmed", "completed"];
-    const totalRevenue = validBookings
-      .filter((b) => revenueGeneratingStatuses.includes(b.status))
-      .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-
-    // Today's bookings
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const todayBookings = validBookings.filter((b) => {
-      const startDate = parseDate(b.startDate);
-      return startDate && startDate >= today && startDate < tomorrow;
-    }).length;
-
-    // Weekly revenue (last 7 days)
-    const { start: weekStart, end: weekEnd } = getDateRange(7);
-    const weeklyRevenue = validBookings
-      .filter((b) => {
-        const startDate = parseDate(b.startDate);
-        return (
-          startDate &&
-          startDate >= weekStart &&
-          startDate <= weekEnd &&
-          revenueGeneratingStatuses.includes(b.status)
-        );
-      })
-      .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-
-    // Monthly revenue (last 30 days)
-    const { start: monthStart, end: monthEnd } = getDateRange(30);
-    const monthlyRevenue = validBookings
-      .filter((b) => {
-        const startDate = parseDate(b.startDate);
-        return (
-          startDate &&
-          startDate >= monthStart &&
-          startDate <= monthEnd &&
-          revenueGeneratingStatuses.includes(b.status)
-        );
-      })
-      .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-
-    const { start: prevWeekStart } = getDateRange(14);
-    const prevWeekRevenue = validBookings
-      .filter((b) => {
-        const startDate = parseDate(b.startDate);
-        return (
-          startDate &&
-          startDate >= prevWeekStart &&
-          startDate < weekStart &&
-          revenueGeneratingStatuses.includes(b.status)
-        );
-      })
-      .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-
-    const weeklyGrowth =
-      prevWeekRevenue > 0
-        ? ((weeklyRevenue - prevWeekRevenue) / prevWeekRevenue) * 100
-        : weeklyRevenue > 0
-        ? 100
-        : 0;
-
-    const averageBookingValue =
-      totalRevenue > 0 && totalBookings > 0 ? totalRevenue / totalBookings : 0;
-
-    setStats({
-      totalBookings,
-      confirmedBookings,
-      pendingBookings,
-      totalRevenue,
-      todayBookings,
-      weeklyGrowth: Math.round(weeklyGrowth * 100) / 100, // Round to 2 decimal places
-      monthlyRevenue,
-      weeklyRevenue,
-      averageBookingValue,
-    });
-  };
+    },
+    [parseDate, setStats]
+  );
 
   // Update stats and recent bookings when bookings change
   useEffect(() => {
@@ -303,7 +308,7 @@ const BookingDashboard = () => {
           .slice(0, 10)
       );
     }
-  }, [bookings]);
+  }, [bookings, calculateStats, parseDate]);
 
   // Handlers using mutations
   const handleDeleteBooking = async (bookingId: string) => {

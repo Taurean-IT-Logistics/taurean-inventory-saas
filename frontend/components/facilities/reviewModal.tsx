@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, X, Star } from "lucide-react";
 import {
   Dialog,
@@ -47,29 +47,32 @@ const ReviewModal = ({ show, onHide, facility }: ReviewModalProps) => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchReviews = async (page = 1) => {
-    if (!facility) return;
+  const fetchReviews = useCallback(
+    async (page = 1) => {
+      if (!facility) return;
 
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
 
-    try {
-      const response = await fetch(
-        `/api/facilities/${facility._id}/reviews?page=${page}`
-      );
-      if (!response.ok) throw new Error("Failed to fetch reviews");
+      try {
+        const response = await fetch(
+          `/api/facilities/${facility._id}/reviews?page=${page}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch reviews");
 
-      const data = await response.json();
-      setReviews(data.reviews || []);
-      setPagination(data.pagination);
-    } catch (err) {
-      setError("Failed to load reviews. Please try again.");
-      setReviews([]);
-      setPagination(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const data = await response.json();
+        setReviews(data.reviews || []);
+        setPagination(data.pagination);
+      } catch (err) {
+        setError("Failed to load reviews. Please try again.");
+        setReviews([]);
+        setPagination(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [facility]
+  );
 
   useEffect(() => {
     if (facility?._id && show) {
@@ -83,7 +86,7 @@ const ReviewModal = ({ show, onHide, facility }: ReviewModalProps) => {
       setError(null);
       setCurrentPage(1);
     }
-  }, [facility?._id, show]);
+  }, [facility?._id, show, fetchReviews]);
 
   const renderStars = (rating: number) => {
     return (
@@ -151,7 +154,7 @@ const ReviewModal = ({ show, onHide, facility }: ReviewModalProps) => {
               <AlertDescription className="text-center">
                 <div className="py-8">
                   <h5 className="text-lg font-semibold mb-2">No Reviews Yet</h5>
-                  <p>This facility hasn't received any reviews yet.</p>
+                  <p>This facility hasn&apos;t received any reviews yet.</p>
                 </div>
               </AlertDescription>
             </Alert>

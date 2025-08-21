@@ -33,7 +33,7 @@ const SimplePaginatedList = <T,>({
     if (currentPage > totalPages) {
       setCurrentPage(1);
     }
-  }, [data.length, totalPages]);
+  }, [data.length, totalPages, currentPage]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;

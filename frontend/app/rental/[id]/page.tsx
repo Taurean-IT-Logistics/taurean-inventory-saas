@@ -26,6 +26,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
+import Image from "next/image";
 
 interface PaymentResponse {
   payment: {
@@ -202,10 +203,12 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
             <Card className="mb-4">
               <CardContent className="p-0">
                 <div className="relative">
-                  <img
+                  <Image
                     src={getResourceUrl(images[selectedImage])}
                     alt={(item as InventoryItem).name}
                     className="w-full h-96 object-cover rounded-t-lg"
+                    width={800}
+                    height={400}
                   />
                   <div className="absolute top-3 left-3">
                     {getStatusBadge((item as InventoryItem).status)}
@@ -214,7 +217,7 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                 {images.length > 1 && (
                   <div className="grid grid-cols-4 gap-2 p-3">
                     {images.map((image: any, index: number) => (
-                      <img
+                      <Image
                         key={index}
                         src={getResourceUrl(image)}
                         alt={`${(item as InventoryItem).name} ${index + 1}`}
@@ -224,6 +227,8 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                             : "border-gray-200"
                         }`}
                         onClick={() => setSelectedImage(index)}
+                        width={160}
+                        height={80}
                       />
                     ))}
                   </div>

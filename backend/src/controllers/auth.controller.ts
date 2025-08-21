@@ -64,7 +64,7 @@ const register = async (req: Request, res: Response): Promise<void> => {
       id: user._id!.toString(),
       email: user.email,
       role: user.role,
-      companyId: (user as any).company?.toString?.(),
+      companyId: (user.company as any)?._id,
       isSuperAdmin: (user as any).isSuperAdmin === true,
     };
 
@@ -180,6 +180,8 @@ const login = async (req: Request, res: Response): Promise<void> => {
       cart: user.cart,
       loyaltyProfile: user.loyaltyProfile,
       createdAt: user.createdAt,
+      company: (user as any).company,
+      companyRole: (user as any).companyRole,
     };
 
     sendSuccess(res, "Login successful", {

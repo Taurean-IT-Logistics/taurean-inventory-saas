@@ -19,7 +19,13 @@ const Logo = ({
 }: LogoProps) => {
   return (
     <div className={`${className} d-flex align-items-center`}>
-      <Image src={logo} alt="taurean logo" width={width} height={height} />
+      <Image
+        className="rounded-full"
+        src={logo}
+        alt="taurean logo"
+        width={width}
+        height={height}
+      />
     </div>
   );
 };

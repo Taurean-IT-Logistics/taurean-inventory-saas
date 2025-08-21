@@ -233,12 +233,20 @@ export function EnhancedChatWidget() {
         newSocket.close();
       };
     }
-  }, [isOpen, user, activeMode, selectedTicket?._id]);
+  }, [
+    isOpen,
+    user,
+    activeMode,
+    selectedTicket?._id,
+    refetchTicketDetails,
+    refetchTickets,
+  ]);
 
   // Auto-scroll to bottom of messages
+  const ticketDetailsMessages = (ticketDetails as any)?.messages;
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, (ticketDetails as any)?.messages]);
+  }, [messages, ticketDetailsMessages]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -381,6 +389,8 @@ export function EnhancedChatWidget() {
         return <div className="w-2 h-2 bg-gray-500 rounded-full"></div>;
     }
   };
+
+  console.log(companies);
 
   return (
     <>

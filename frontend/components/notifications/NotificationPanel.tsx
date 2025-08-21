@@ -335,7 +335,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
                 <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                 <p>No notifications yet</p>
                 <p className="text-sm">
-                  We'll notify you when something important happens
+                  We&apos;ll notify you when something important happens
                 </p>
               </div>
             ) : (

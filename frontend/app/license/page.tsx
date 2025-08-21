@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,13 +55,10 @@ export default function LicensePage() {
 
   const router = useRouter();
 
-  if (!user) {
-    return router.push("/auth/sign-in");
-  }
   const [formData, setFormData] = useState({
     companyId: "",
     planId: "",
-    email: user?.email,
+    email: user?.email || "",
   });
   const [selectedPlan, setSelectedPlan] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -82,10 +79,6 @@ export default function LicensePage() {
     queryKey: ["companies"],
     queryFn: () => CompaniesAPI.list(),
   });
-
-  const plans = (pricingData as any)?.plans || [];
-
-  console.log(plans);
 
   // Free trial mutation
   const freeTrialMutation = useMutation({
@@ -137,6 +130,16 @@ export default function LicensePage() {
     },
   });
 
+  useEffect(() => {
+    if (!user) {
+      router.push("/auth/sign-in");
+    }
+  }, [user, router]);
+
+  const plans = (pricingData as any)?.plans || [];
+
+  console.log(plans);
+
   const handleLicenseActivation = () => {
     if (!selectedPlan) return;
     const selected = plans.find(
@@ -161,9 +164,9 @@ export default function LicensePage() {
             License Activation
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Activate your company's license by selecting a subscription plan.
-            Choose the plan that best fits your business needs and activate it
-            instantly.
+            Activate your company&apos;s license by selecting a subscription
+            plan. Choose the plan that best fits your business needs and
+            activate it instantly.
           </p>
         </div>
 
@@ -292,7 +295,7 @@ export default function LicensePage() {
         {/* Plan Features */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
-            What's Included in Your License
+            What&apos;s Included in Your License
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">

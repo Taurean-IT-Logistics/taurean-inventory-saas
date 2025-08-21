@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import type { InventoryItem } from "@/types";
 import { Upload, X, Plus } from "lucide-react";
 import { getResourceUrl } from "@/lib/api";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -382,10 +383,11 @@ const EditInventoryModal = ({
                     const isExisting = index < existingImages.length;
                     return (
                       <div key={index} className="relative">
-                        <img
+                        <Image
                           src={getResourceUrl(preview) || "/placeholder.svg"}
                           alt={`Preview ${index + 1}`}
-                          className="w-24 h-24 object-cover rounded-lg"
+                          width={96}
+                          height={96}
                         />
                         <Button
                           type="button"
