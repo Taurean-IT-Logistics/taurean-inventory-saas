@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 export interface CartItem {
   type: string;
   itemId: string;
@@ -181,7 +183,7 @@ export interface Booking {
 
 export interface Transaction {
   booking?: Booking;
-  user: User;
+  user: mongoose.Types.ObjectId | string;
   account?: Account;
   type: string;
   category: string;
@@ -215,7 +217,7 @@ export interface Transaction {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
-  company?: string; // Company owning this transaction
+  company?: mongoose.Types.ObjectId | string;
   isPlatformRevenue?: boolean;
 }
 
@@ -484,8 +486,8 @@ export interface CompanyRole {
 }
 
 export interface Notification {
-  company?: string;
-  user?: string;
+  company?: mongoose.Types.ObjectId | string;
+  user?: mongoose.Types.ObjectId | string;
   type: "info" | "warning" | "success" | "error";
   title: string;
   message: string;

@@ -24,6 +24,13 @@ router.get("/public", CompanyController.getPublicCompanies);
 // Public pricing
 router.get("/pricing", CompanyController.pricing);
 
+// Join request route - users can request to join a company
+router.post(
+  "/:companyId/join-request",
+  AuthMiddleware,
+  CompanyController.handleJoinRequest
+);
+
 // All routes below require authentication
 router.use(AuthMiddleware);
 

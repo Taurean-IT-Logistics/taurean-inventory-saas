@@ -60,17 +60,6 @@ const FacilitySchema = new Schema<FacilityDocument>(
       average: { type: Number, default: 0 },
       totalReviews: { type: Number, default: 0 },
     },
-    reviews: [
-      {
-        user: { type: Schema.Types.ObjectId, ref: "User" },
-        booking: { type: Schema.Types.ObjectId, ref: "Booking" },
-        rating: { type: Number, required: true },
-        comment: { type: String, trim: true },
-        isVerified: { type: Boolean, default: false },
-        updatedAt: { type: Date, default: Date.now },
-        createdAt: { type: Date, default: Date.now },
-      },
-    ],
     capacity: {
       maximum: { type: Number, required: true },
       recommended: { type: Number, required: true },

@@ -1,64 +1,43 @@
-import mongoose, { Document, Schema } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
 export interface ICompanyJoinRequest extends Document {
-  user: mongoose.Types.ObjectId;
-  company: mongoose.Types.ObjectId;
+  user: Schema.Types.ObjectId;
+  company: Schema.Types.ObjectId;
   status: "pending" | "approved" | "rejected";
-  requestedBy: mongoose.Types.ObjectId; // The user who made the request
-  approvedBy?: mongoose.Types.ObjectId; // Admin who approved/rejected
+  message?: string;
+  approvedBy?: Schema.Types.ObjectId;
   approvedAt?: Date;
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  rejectedBy?: Schema.Types.ObjectId;
+  rejectedAt?: Date;
+  rejectionReason?: string;
 }
 
 const CompanyJoinRequestSchema = new Schema<ICompanyJoinRequest>(
   {
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    company: {
-      type: Schema.Types.ObjectId,
-      ref: "Company",
-      required: true,
-    },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    company: { type: Schema.Types.ObjectId, ref: "Company", required: true },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
-    requestedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    approvedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
-    approvedAt: {
-      type: Date,
-    },
-    notes: {
-      type: String,
-      trim: true,
-    },
+    message: { type: String, trim: true },
+    approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    approvedAt: { type: Date },
+    rejectedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    rejectedAt: { type: Date },
+    rejectionReason: { type: String, trim: true },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Ensure unique user-company combinations
-CompanyJoinRequestSchema.index({ user: 1, company: 1 }, { unique: true });
+// Ensure one pending request per user per company
+CompanyJoinRequestSchema.index(
+  { user: 1, company: 1, status: 1 },
+  { unique: true, partialFilterExpression: { status: "pending" } }
+);
 
-// Index for efficient queries
-CompanyJoinRequestSchema.index({ status: 1, company: 1 });
-CompanyJoinRequestSchema.index({ user: 1, status: 1 });
-
-export const CompanyJoinRequestModel = mongoose.model<ICompanyJoinRequest>(
+export const CompanyJoinRequestModel = model<ICompanyJoinRequest>(
   "CompanyJoinRequest",
   CompanyJoinRequestSchema
 );

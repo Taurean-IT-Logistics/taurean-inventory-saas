@@ -132,7 +132,7 @@ export async function getPublicCompanies(req: Request, res: Response) {
     }
 
     const companies = await CompanyModel.find(query)
-      .select("_id name contactEmail contactPhone location")
+      .select("_id name contactEmail contactPhone location logo")
       .sort({ createdAt: -1 })
       .limit(10);
 
@@ -283,6 +283,78 @@ export async function updateCompany(req: Request, res: Response) {
   }
 }
 
+export async function handleJoinRequest(req: Request, res: Response) {
+  try {
+    const { companyId } = req.params;
+    const userId = (req.user as any)?.id;
+
+    if (!userId) {
+      sendError(res, "User not authenticated", null, 401);
+      return;
+    }
+
+    if (!companyId) {
+      sendError(res, "Company ID is required", null, 400);
+      return;
+    }
+
+    // Check if company exists
+    const company = await CompanyModel.findById(companyId);
+    if (!company) {
+      sendError(res, "Company not found", null, 404);
+      return;
+    }
+
+    // Check if user is already associated with a company
+    const UserModel = (await import("../models/user.model")).UserModel;
+    const user = await UserModel.findById(userId);
+
+    if (user?.company) {
+      sendError(res, "User is already associated with a company", null, 400);
+      return;
+    }
+
+    // Check if join request already exists
+    const JoinRequestModel = (
+      await import("../models/companyJoinRequest.model")
+    ).CompanyJoinRequestModel;
+    const existingRequest = await JoinRequestModel.findOne({
+      user: userId,
+      company: companyId,
+      status: { $in: ["pending", "approved"] },
+    });
+
+    if (existingRequest) {
+      if (existingRequest.status === "pending") {
+        sendError(res, "Join request already pending", null, 400);
+        return;
+      } else if (existingRequest.status === "approved") {
+        sendError(
+          res,
+          "User is already approved to join this company",
+          null,
+          400
+        );
+        return;
+      }
+    }
+
+    // Create join request
+    const joinRequest = new JoinRequestModel({
+      user: userId,
+      company: companyId,
+      status: "pending",
+      message: req.body.message || "User requests to join company",
+    });
+
+    await joinRequest.save();
+
+    sendSuccess(res, "Join request sent successfully", { joinRequest });
+  } catch (e: any) {
+    sendError(res, "Failed to send join request", e.message);
+  }
+}
+
 export const CompanyController = {
   pricing,
   activateSubscription,
@@ -291,4 +363,5 @@ export const CompanyController = {
   getAllCompanies,
   updateCompany,
   getPublicCompanies,
+  handleJoinRequest,
 };

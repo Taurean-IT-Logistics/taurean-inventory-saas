@@ -44,7 +44,11 @@ const updateRatings = async (
       return null;
     }
 
-    const reviews = facility.reviews;
+    // Import ReviewModel dynamically to avoid circular dependencies
+    const { ReviewModel } = await import("../models/review.model");
+
+    // Fetch reviews from the Review model
+    const reviews = await ReviewModel.find({ facility: facilityId });
     const totalReviews = reviews.length;
 
     let averageRating = 0;
@@ -69,7 +73,10 @@ const updateRatings = async (
 
     return updatedFacility;
   } catch (error) {
-    throw error;
+    // If there's an error updating ratings, return the original facility
+    console.error("Error updating facility ratings:", error);
+    // Fetch the facility again to return it
+    return await FacilityModel.findById(facilityId);
   }
 };
 

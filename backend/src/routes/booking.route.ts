@@ -11,8 +11,6 @@ const router = Router();
 router.post(
   "/",
   AuthMiddleware,
-  RequireActiveCompany(),
-  RequirePermissions(["createRecords"]),
   BookingController.createBooking
 );
 router.post(

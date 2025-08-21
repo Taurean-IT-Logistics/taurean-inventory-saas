@@ -12,7 +12,7 @@ export class CompanyJoinRequestService {
   static async createRequest(
     userId: string,
     companyId: string,
-    requestedBy: string
+    message?: string
   ) {
     try {
       // Check if user is already in a company
@@ -25,6 +25,7 @@ export class CompanyJoinRequestService {
       const existingRequest = await CompanyJoinRequestModel.findOne({
         user: userId,
         company: companyId,
+        status: { $in: ["pending", "approved"] },
       });
 
       if (existingRequest) {
@@ -36,7 +37,8 @@ export class CompanyJoinRequestService {
       const request = await CompanyJoinRequestModel.create({
         user: userId,
         company: companyId,
-        requestedBy,
+        message: message || "User requests to join company",
+        status: "pending",
       });
 
       return request;
@@ -62,6 +64,7 @@ export class CompanyJoinRequestService {
       const existingRequest = await CompanyJoinRequestModel.findOne({
         user: userId,
         company: companyId,
+        status: { $in: ["pending", "approved"] },
       });
 
       if (existingRequest) {
@@ -73,7 +76,7 @@ export class CompanyJoinRequestService {
       const request = await CompanyJoinRequestModel.create({
         user: userId,
         company: companyId,
-        requestedBy: invitedBy,
+        message: `Invited by ${invitedBy}`,
         status: "pending",
       });
 
@@ -101,9 +104,8 @@ export class CompanyJoinRequestService {
 
       // Update request status
       request.status = "approved";
-      request.approvedBy = new Types.ObjectId(approvedBy);
+      request.approvedBy = approvedBy as any;
       request.approvedAt = new Date();
-      if (notes) request.notes = notes;
       await request.save();
 
       // Assign user to company
@@ -135,9 +137,9 @@ export class CompanyJoinRequestService {
       }
 
       request.status = "rejected";
-      request.approvedBy = new Types.ObjectId(rejectedBy);
-      request.approvedAt = new Date();
-      if (notes) request.notes = notes;
+      request.rejectedBy = rejectedBy as any;
+      request.rejectedAt = new Date();
+      if (notes) request.rejectionReason = notes;
       await request.save();
 
       return request;
@@ -154,7 +156,6 @@ export class CompanyJoinRequestService {
         status: "pending",
       })
         .populate("user", "name email username")
-        .populate("requestedBy", "name email")
         .sort({ createdAt: -1 });
 
       return requests;
@@ -187,7 +188,6 @@ export class CompanyJoinRequestService {
       })
         .populate("user", "name email username")
         .populate("company", "name description")
-        .populate("requestedBy", "name email")
         .sort({ createdAt: -1 });
 
       return requests;

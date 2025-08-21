@@ -3,11 +3,19 @@
   "version": "1.0.0",
   "main": "src/index.ts",
   "description": "",
+  "_moduleAliases": {
+    "@models": "dist/models",
+    "@services": "dist/services",
+    "@controllers": "dist/controllers",
+    "@routes": "dist/routes",
+    "@middleware": "dist/middlewares",
+    "@utils": "dist/utils"
+  },
   "scripts": {
     "start": "npm run seed && npm run build && node dist/index.js",
     "seed": "npx ts-node src/scripts/seedAdmin.ts",
     "build": "tsc",
-    "dev": "nodemon --exec ts-node src/index.ts",
+    "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
     "lint": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -38,6 +46,7 @@
     "mime-types": "^3.0.1",
     "mjml": "^4.15.3",
     "mjml-react": "^2.0.8",
+    "module-alias": "^2.2.3",
     "mongoose": "^8.15.1",
     "ms": "^2.1.3",
     "multer": "^2.0.1",
@@ -48,6 +57,7 @@
     "socket.io": "^4.7.5",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "tsconfig-paths": "^4.2.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "xlsx": "^0.18.5",

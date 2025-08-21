@@ -1,3 +1,5 @@
+require("module-alias/register");
+
 import { connectToMongoDB, disconnectFromMongoDB } from "./database";
 import { startServer, stopServer } from "./server";
 import { Logger } from "./utils";
