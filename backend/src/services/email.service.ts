@@ -1038,7 +1038,9 @@ class EmailService {
         };
         if (companyId) emitEvent(Events.EmailFailed, payload, `company:${companyId}`);
         if (userId) emitEvent(Events.EmailFailed, payload, `user:${userId}`);
-      } catch {}
+      } catch (emitError) {
+        console.error("Failed to emit email failure event:", emitError);
+      }
       return false;
     }
   }
