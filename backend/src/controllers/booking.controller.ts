@@ -7,6 +7,12 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
     const bookingData = req.body;
 
+    if (!req.user || !req.user.id) {
+      sendError(res, "User not authenticated");
+      return;
+    }
+
+    // Prioritize user from bookingData if provided, otherwise use authenticated user
     if (bookingData.user) {
       const user = await UserService.getUserById(bookingData.user);
       if (!user) {
@@ -14,13 +20,21 @@ const createBooking = async (req: Request, res: Response): Promise<void> => {
         return;
       }
       bookingData.user = user._id;
+    } else {
+      bookingData.user = req.user.id;
     }
 
-    if (!req.user || !req.user.id) {
-      sendError(res, "User not authenticated");
-      return;
+    // Ensure facility is an ObjectId
+    if (bookingData.facility) {
+      // Assuming facility is sent as an ID from frontend, no need to fetch full object
+      // If it's an object, extract _id
+      if (
+        typeof bookingData.facility === "object" &&
+        bookingData.facility._id
+      ) {
+        bookingData.facility = bookingData.facility._id;
+      }
     }
-    bookingData.user = req.user.id;
     const newBooking = await BookingService.createBooking(bookingData);
     sendSuccess(res, "Booking created successfully", newBooking);
   } catch (error: any) {
@@ -127,6 +141,23 @@ const getAllBookings = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+const getCompanyBookings = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const showDeleted = req.query.showDeleted === "true";
+
+    const bookings = await BookingService.getCompanyBookings(
+      req.user?.companyId!,
+      showDeleted
+    );
+    sendSuccess(res, "Company bookings fetched successfully", bookings);
+  } catch (error: any) {
+    sendError(res, error.message || "Failed to fetch company bookings");
+  }
+};
+
 const getAuthUserBookings = async (
   req: Request,
   res: Response
@@ -153,10 +184,18 @@ const checkIn = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     const doc = await BookingModel.findByIdAndUpdate(
       id,
-      { $set: { status: "confirmed", checkIn: { time: new Date(), verifiedBy: (req.user as any)?.id } } },
+      {
+        $set: {
+          status: "confirmed",
+          checkIn: { time: new Date(), verifiedBy: (req.user as any)?.id },
+        },
+      },
       { new: true }
     );
-    if (!doc) { sendNotFound(res, "Booking not found"); return; }
+    if (!doc) {
+      sendNotFound(res, "Booking not found");
+      return;
+    }
     sendSuccess(res, "Checked in", doc);
   } catch (e: any) {
     sendError(res, e.message || "Failed to check in");
@@ -168,13 +207,58 @@ const checkOut = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     const doc = await BookingModel.findByIdAndUpdate(
       id,
-      { $set: { status: "completed", checkOut: { time: new Date(), verifiedBy: (req.user as any)?.id, condition: req.body?.condition || "good", notes: req.body?.notes } } },
+      {
+        $set: {
+          status: "completed",
+          checkOut: {
+            time: new Date(),
+            verifiedBy: (req.user as any)?.id,
+            condition: req.body?.condition || "good",
+            notes: req.body?.notes,
+          },
+        },
+      },
       { new: true }
     );
-    if (!doc) { sendNotFound(res, "Booking not found"); return; }
+    if (!doc) {
+      sendNotFound(res, "Booking not found");
+      return;
+    }
     sendSuccess(res, "Checked out", doc);
   } catch (e: any) {
     sendError(res, e.message || "Failed to check out");
+  }
+};
+
+const checkAvailability = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { facilityId, startDate, endDate } = req.body;
+
+    if (!facilityId || !startDate || !endDate) {
+      sendError(res, "Facility ID, start date, and end date are required");
+      return;
+    }
+
+    const isAvailable = await BookingService.checkAvailability(
+      facilityId,
+      new Date(startDate),
+      new Date(endDate)
+    );
+    const suggestedDates = await BookingService.getSuggestedDates(
+      facilityId,
+      new Date(startDate),
+      new Date(endDate)
+    );
+
+    sendSuccess(res, "Availability checked successfully", {
+      isAvailable,
+      suggestedDates,
+    });
+  } catch (error: any) {
+    sendError(res, error.message || "Failed to check availability");
   }
 };
 
@@ -185,7 +269,9 @@ export {
   updateBooking,
   deleteBooking,
   getAllBookings,
+  getCompanyBookings,
   getAuthUserBookings,
   checkIn,
   checkOut,
+  checkAvailability,
 };

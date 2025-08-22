@@ -76,6 +76,35 @@ const getAllUsers = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// Get company-specific users with pagination and filtering
+const getCompanyUsers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      page = "1",
+      limit = "10",
+      role,
+      search,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query;
+
+    const options = {
+      page: parseInt(page as string),
+      limit: parseInt(limit as string),
+      role: role as string,
+      search: search as string,
+      sortBy: sortBy as string,
+      sortOrder: sortOrder as "asc" | "desc",
+      companyId: req.user?.companyId,
+    };
+
+    const result = await UserService.getCompanyUsers(options);
+    sendSuccess(res, "Company users fetched successfully", result);
+  } catch (error: any) {
+    sendError(res, "Failed to fetch company users", error.message);
+  }
+};
+
 // Get a user by ID
 const getUserById = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -365,12 +394,13 @@ const updateUserLoyalty = async (
 export {
   createUser,
   getAllUsers,
+  getCompanyUsers,
   getUserById,
   getUserByIdentifier,
+  searchUsers,
   updateUser,
   updateUserRole,
   deleteUser,
   getUserStatistics,
-  searchUsers,
   updateUserLoyalty,
 };

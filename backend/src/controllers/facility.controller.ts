@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { isValidObjectId } from "mongoose";
 import { FacilityService } from "../services";
+import { FacilityModel } from "../models";
 import {
   sendSuccess,
   sendError,
@@ -23,11 +24,68 @@ const getFacilities = async (req: Request, res: Response): Promise<void> => {
         ? req.query.showDeleted === "true"
         : false;
 
+    // Use aggregation to filter by company subscription status
+    const facilities = await FacilityModel.aggregate([
+      {
+        $lookup: {
+          from: "companies",
+          localField: "company",
+          foreignField: "_id",
+          as: "company",
+        },
+      },
+      { $unwind: "$company" },
+      {
+        $match: {
+          isDeleted: showDeleted ? { $in: [true, false] } : false,
+          "company.isActive": true,
+          $or: [
+            { "company.subscription.expiresAt": { $gt: new Date() } },
+            { "company.name": "Taurean IT" }, // Taurean IT is always active
+          ],
+        },
+      },
+    ]);
+
+    // Add pagination support
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = facilities.length;
+    const paginatedFacilities = facilities.slice(skip, skip + limit);
+
+    sendSuccess(res, "Facilities fetched successfully", {
+      facilities: paginatedFacilities,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: limit,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching facilities:", error);
+    sendError(res, "Failed to fetch facilities", error.message);
+  }
+};
+
+const getCompanyFacilities = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const showDeleted =
+      req.user?.role === "admin" || req.user?.role === "staff"
+        ? req.query.showDeleted === "true"
+        : false;
+
     // Enhanced filter parsing with validation
-    let filter = {};
+    let filter = { company: req.user?.companyId };
     if (req.query.filter) {
       try {
-        filter = JSON.parse(req.query.filter as string);
+        const queryFilter = JSON.parse(req.query.filter as string);
+        filter = { ...filter, ...queryFilter };
       } catch (parseError) {
         sendValidationError(res, "Invalid filter format. Must be valid JSON.");
         return;
@@ -44,7 +102,7 @@ const getFacilities = async (req: Request, res: Response): Promise<void> => {
       limit,
     });
 
-    sendSuccess(res, "Facilities fetched successfully", {
+    sendSuccess(res, "Company facilities fetched successfully", {
       facilities: result.facilities,
       pagination: {
         currentPage: page,
@@ -54,8 +112,8 @@ const getFacilities = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error: any) {
-    console.error("Error fetching facilities:", error);
-    sendError(res, "Failed to fetch facilities", error.message);
+    console.error("Error fetching company facilities:", error);
+    sendError(res, "Failed to fetch company facilities", error.message);
   }
 };
 
@@ -131,8 +189,9 @@ const createFacility = async (req: Request, res: Response): Promise<void> => {
       ];
     }
 
-    // Add creator information
+    // Add creator information and ensure company is only the ID
     data.createdBy = req.user?.id;
+    data.company = req.user?.companyId;
 
     const facility = await FacilityService.createFacility(data);
     sendSuccess(res, "Facility created successfully", facility);
@@ -434,6 +493,7 @@ const getFacilityReviews = async (
 
 export {
   getFacilities,
+  getCompanyFacilities,
   getFacilityById,
   createFacility,
   updateFacility,

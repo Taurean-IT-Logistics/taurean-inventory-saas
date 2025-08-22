@@ -22,6 +22,14 @@ const router = Router();
 // Public: Get list of facilities (with pagination, filtering, and sorting), no authentication required
 router.get("/", FacilityController.getFacilities);
 
+// Company-specific: Get facilities for the authenticated user's company
+router.get(
+  "/company",
+  AuthMiddleware,
+  RequireActiveCompany(),
+  FacilityController.getCompanyFacilities
+);
+
 // Public: Get facility by ID
 router.get("/:id", FacilityController.getFacilityById);
 
@@ -45,13 +53,11 @@ router.get("/:id/calendar", async (req, res) => {
       data: { bookings },
     });
   } catch (e: any) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch calendar",
-        errors: e.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch calendar",
+      errors: e.message,
+    });
   }
 });
 

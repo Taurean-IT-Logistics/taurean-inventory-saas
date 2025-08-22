@@ -6,6 +6,7 @@ import {
   BookingService,
   FacilityService,
 } from "../services";
+import * as ExportService from "../services/export.service";
 import {
   sendSuccess,
   sendError,
@@ -14,11 +15,14 @@ import {
 } from "../utils";
 import {
   BookingDocument,
+  CompanyModel,
   InventoryItemModel,
   TransactionDocument,
 } from "../models";
 import { Transaction } from "../types";
 import { isValidObjectId } from "mongoose";
+import fs from "fs";
+import { emailService } from "../services/email.service";
 
 // Initialize payment and create transaction document
 const initializePaymentController = async (
@@ -235,10 +239,35 @@ const verifyPaymentController = async (
             }
           );
         }
-      } else if (updatedDoc.category === "account" && updatedDoc.account) {
-        // Optionally, update account balance or reconciliation status
-        // e.g., AccountService.reconcileAccount(updatedDoc.account as any)
+      } else if (updatedDoc.category === "activation" && transaction.company) {
+        await CompanyModel.findByIdAndUpdate(
+          transaction.company,
+          { isActive: true },
+          { new: true }
+        );
       }
+    }
+
+    // Send email notification based on payment status
+    try {
+      if (verificationResponse.data.status === "success" && transaction.user) {
+        await emailService.sendPaymentSuccessEmail(doc._id!.toString());
+      } else if (verificationResponse.data.status === "failed" && transaction.user) {
+        const userDoc = await UserService.getUserByIdentifier(transaction.user.toString());
+        if (userDoc) {
+          await emailService.sendPaymentFailedEmail(
+            {
+              reference: verificationResponse.data.reference,
+              amount: verificationResponse.data.amount / 100,
+              currency: verificationResponse.data.currency,
+            },
+            userDoc.email,
+            transaction.company?.toString() || ''
+          );
+        }
+      }
+    } catch (emailError) {
+      console.warn('Failed to send payment notification email:', emailError);
     }
 
     // Format the response
@@ -353,11 +382,14 @@ const handlePaystackWebhookController = async (
                 );
               }
             } else if (
-              updatedDoc.category === "account" &&
-              updatedDoc.account
+              updatedDoc.category === "activation" &&
+              transaction.company
             ) {
-              // Optionally, update account balance or reconciliation status
-              // e.g., AccountService.reconcileAccount(updatedDoc.account as any)
+              await CompanyModel.findByIdAndUpdate(
+                transaction.company,
+                { isActive: true },
+                { new: true }
+              );
             }
           }
         }
@@ -547,7 +579,16 @@ const getAllTransactions = async (
   res: Response
 ): Promise<void> => {
   try {
-    const transactions = await TransactionService.getAllTransactions();
+    // Company-scoped transactions for the authenticated user
+    const companyId = (req.user?.companyId ||
+      (req.user as any)?.company) as any;
+    if (!companyId) {
+      sendValidationError(res, "User is not associated with a company");
+      return;
+    }
+    const transactions = await TransactionService.getCompanyTransactions(
+      companyId.toString()
+    );
 
     if (!transactions) {
       throw new Error("No transactions found");
@@ -606,6 +647,271 @@ const updateTransaction = async (
   }
 };
 
+const listBanks = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { country, currency, type } = req.query;
+    let countryCode = (country as string) || "Ghana";
+    const banks = await PaymentService.getAllBanks(
+      countryCode as string,
+      currency as string,
+      type as string
+    );
+
+    if (!banks) {
+      throw new Error("No banks found");
+    }
+
+    sendSuccess(res, "Banks retrieved successfully", banks);
+  } catch (error) {
+    sendError(res, "Failed to retrieve banks", error);
+  }
+};
+
+const getBankMomoDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { bankCode, accountNumber } = req.params;
+
+    const momoDetails = await PaymentService.getMomoBankDetails(
+      bankCode,
+      accountNumber
+    );
+
+    sendSuccess(res, "Momo bank details retrieved successfully", momoDetails);
+  } catch (error) {
+    sendError(res, "Failed to retrieve momo bank details", error);
+  }
+};
+
+const updateSubAccount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { subaccountCode } = req.params;
+    const data = req.body;
+
+    const updatedSubAccount = await PaymentService.updateSubAccount(
+      subaccountCode,
+      data
+    );
+
+    sendSuccess(res, "Subaccount updated successfully", updatedSubAccount);
+  } catch (error) {
+    sendError(res, "Failed to update subaccount", error);
+  }
+};
+
+const getSubAccountDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { subaccountCode } = req.params;
+
+    const subaccountDetails = await PaymentService.getSubaccountDetails(
+      subaccountCode
+    );
+
+    sendSuccess(
+      res,
+      "Subaccount details retrieved successfully",
+      subaccountDetails
+    );
+  } catch (error) {
+    sendError(res, "Failed to retrieve subaccount details", error);
+  }
+};
+
+const exportTransactions = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { format = 'csv', startDate, endDate, type = 'all' } = req.query;
+    const user = req.user as any;
+    const companyId = user.companyId;
+
+    if (!companyId) {
+      sendValidationError(res, "User is not associated with a company");
+      return;
+    }
+
+    const options = {
+      format: format as 'csv' | 'excel',
+      companyId: companyId.toString(),
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+      type: type as 'income' | 'expense' | 'all'
+    };
+
+    const filePath = await ExportService.exportTransactions(options);
+    const fileName = `transactions-export.${format}`;
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    // Clean up the file after streaming
+    fileStream.on('end', async () => {
+      await ExportService.cleanupTempFile(filePath);
+    });
+
+    fileStream.on('error', async (error) => {
+      console.error('Error streaming file:', error);
+      await ExportService.cleanupTempFile(filePath);
+      if (!res.headersSent) {
+        sendError(res, "Failed to export transactions", error);
+      }
+    });
+
+  } catch (error) {
+    sendError(res, "Failed to export transactions", error);
+  }
+};
+
+const exportUserTransactions = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { format = 'csv', startDate, endDate } = req.query;
+    const user = req.user as any;
+    const userId = user.id;
+
+    if (!userId) {
+      sendValidationError(res, "User not authenticated");
+      return;
+    }
+
+    const options = {
+      format: format as 'csv' | 'excel',
+      userId: userId.toString(),
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+      type: 'all' as const
+    };
+
+    const filePath = await ExportService.exportTransactions(options);
+    const fileName = `my-transactions-export.${format}`;
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    // Clean up the file after streaming
+    fileStream.on('end', async () => {
+      await ExportService.cleanupTempFile(filePath);
+    });
+
+    fileStream.on('error', async (error) => {
+      console.error('Error streaming file:', error);
+      await ExportService.cleanupTempFile(filePath);
+      if (!res.headersSent) {
+        sendError(res, "Failed to export transactions", error);
+      }
+    });
+
+  } catch (error) {
+    sendError(res, "Failed to export user transactions", error);
+  }
+};
+
+const exportBookings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { format = 'csv', startDate, endDate } = req.query;
+    const user = req.user as any;
+    const companyId = user.companyId;
+
+    if (!companyId) {
+      sendValidationError(res, "User is not associated with a company");
+      return;
+    }
+
+    const options = {
+      format: format as 'csv' | 'excel',
+      companyId: companyId.toString(),
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined
+    };
+
+    const filePath = await ExportService.exportBookings(options);
+    const fileName = `bookings-export.${format}`;
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    // Clean up the file after streaming
+    fileStream.on('end', async () => {
+      await ExportService.cleanupTempFile(filePath);
+    });
+
+    fileStream.on('error', async (error) => {
+      console.error('Error streaming file:', error);
+      await ExportService.cleanupTempFile(filePath);
+      if (!res.headersSent) {
+        sendError(res, "Failed to export bookings", error);
+      }
+    });
+
+  } catch (error) {
+    sendError(res, "Failed to export bookings", error);
+  }
+};
+
+const exportInvoices = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { format = 'csv', startDate, endDate } = req.query;
+    const user = req.user as any;
+    const companyId = user.companyId;
+
+    if (!companyId) {
+      sendValidationError(res, "User is not associated with a company");
+      return;
+    }
+
+    const options = {
+      format: format as 'csv' | 'excel',
+      companyId: companyId.toString(),
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined
+    };
+
+    const filePath = await ExportService.exportInvoices(options);
+    const fileName = `invoices-export.${format}`;
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    // Clean up the file after streaming
+    fileStream.on('end', async () => {
+      await ExportService.cleanupTempFile(filePath);
+    });
+
+    fileStream.on('error', async (error) => {
+      console.error('Error streaming file:', error);
+      await ExportService.cleanupTempFile(filePath);
+      if (!res.headersSent) {
+        sendError(res, "Failed to export invoices", error);
+      }
+    });
+
+  } catch (error) {
+    sendError(res, "Failed to export invoices", error);
+  }
+};
+
 export {
   initializePaymentController,
   verifyPaymentController,
@@ -615,4 +921,12 @@ export {
   getAllTransactions,
   updateTransaction,
   getUserTransactions,
+  getBankMomoDetails,
+  updateSubAccount,
+  listBanks,
+  getSubAccountDetails,
+  exportTransactions,
+  exportUserTransactions,
+  exportBookings,
+  exportInvoices,
 };

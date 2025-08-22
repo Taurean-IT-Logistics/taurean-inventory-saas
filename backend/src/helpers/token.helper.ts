@@ -7,6 +7,7 @@ export interface TokenPayload {
   email: string;
   role: string;
   companyId?: string;
+  isSuperAdmin?: boolean;
 }
 
 /**

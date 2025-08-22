@@ -14,6 +14,7 @@ import {
   verifyPasswordToken,
 } from "../helpers";
 import { Types } from "mongoose";
+import { emailService } from "../services/email.service";
 
 // Register new user
 const register = async (req: Request, res: Response): Promise<void> => {
@@ -63,7 +64,7 @@ const register = async (req: Request, res: Response): Promise<void> => {
       id: user._id!.toString(),
       email: user.email,
       role: user.role,
-      companyId: (user as any).company?.toString?.(),
+      companyId: (user.company as any)?._id,
       isSuperAdmin: (user as any).isSuperAdmin === true,
     };
 
@@ -87,6 +88,18 @@ const register = async (req: Request, res: Response): Promise<void> => {
       loyaltyProfile: user.loyaltyProfile,
       createdAt: user.createdAt,
     };
+
+    // Send welcome email
+    try {
+      if (user.company) {
+        await emailService.sendWelcomeEmail(
+          user._id!.toString(),
+          (user as any).company.toString()
+        );
+      }
+    } catch (emailError) {
+      console.warn("Failed to send welcome email:", emailError);
+    }
 
     sendSuccess(
       res,
@@ -144,7 +157,7 @@ const login = async (req: Request, res: Response): Promise<void> => {
       id: user._id!.toString(),
       email: user.email,
       role: user.role,
-      companyId: (user as any).company?.toString?.(),
+      companyId: (user.company as any)?._id,
       isSuperAdmin: (user as any).isSuperAdmin === true,
     };
 
@@ -167,6 +180,8 @@ const login = async (req: Request, res: Response): Promise<void> => {
       cart: user.cart,
       loyaltyProfile: user.loyaltyProfile,
       createdAt: user.createdAt,
+      company: (user as any).company,
+      companyRole: (user as any).companyRole,
     };
 
     sendSuccess(res, "Login successful", {
@@ -275,6 +290,9 @@ const getProfile = async (req: Request, res: Response): Promise<void> => {
       analytics: (fullUser as any).analytics,
       createdAt: fullUser.createdAt,
       updatedAt: fullUser.updatedAt,
+      isSuperAdmin: (fullUser as any).isSuperAdmin,
+      company: (fullUser as any).company,
+      companyRole: (fullUser as any).companyRole,
     };
 
     sendSuccess(res, "Profile retrieved successfully", userResponse);
@@ -316,6 +334,9 @@ const updateProfile = async (req: Request, res: Response): Promise<void> => {
       cart: updatedUser.cart,
       loyaltyProfile: updatedUser.loyaltyProfile,
       updatedAt: updatedUser.updatedAt,
+      isSuperAdmin: (updatedUser as any).isSuperAdmin,
+      company: (updatedUser as any).company,
+      companyRole: (updatedUser as any).companyRole,
     };
 
     sendSuccess(res, "Profile updated successfully", userResponse);

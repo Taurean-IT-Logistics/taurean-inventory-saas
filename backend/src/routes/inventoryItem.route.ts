@@ -1,12 +1,11 @@
 import { Router } from "express";
 import { InventoryItemController } from "../controllers";
-import {
-  AuthMiddleware,
-  fileFilter,
-  storage,
-} from "../middlewares";
+import { AuthMiddleware, fileFilter, storage } from "../middlewares";
 import multer from "multer";
-import { RequireActiveCompany, RequirePermissions } from "../middlewares/auth.middleware";
+import {
+  RequireActiveCompany,
+  RequirePermissions,
+} from "../middlewares/auth.middleware";
 
 const uploadConfig = {
   storage,
@@ -21,6 +20,15 @@ const router = Router();
 
 // Get all inventory items (public listing)
 router.get("/", InventoryItemController.getAllInventoryItems);
+
+// Company-specific: Get inventory items for the authenticated user's company
+router.get(
+  "/company",
+  AuthMiddleware,
+  RequireActiveCompany(),
+  RequirePermissions(["manageInventory"]),
+  InventoryItemController.getCompanyInventoryItems
+);
 
 // Low stock (internal)
 router.get(
