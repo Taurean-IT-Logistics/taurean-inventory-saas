@@ -251,6 +251,49 @@ const getCompanyTransactions = async (
   }
 };
 
+// Fix existing transactions by setting company field based on user's company
+const fixTransactionCompanyFields = async (): Promise<{
+  fixed: number;
+  errors: number;
+}> => {
+  try {
+    let fixed = 0;
+    let errors = 0;
+
+    // Find all transactions without company field
+    const transactionsWithoutCompany = await TransactionModel.find({
+      company: { $exists: false },
+    }).populate("user", "company");
+
+    console.log(
+      `Found ${transactionsWithoutCompany.length} transactions without company field`
+    );
+
+    for (const transaction of transactionsWithoutCompany) {
+      try {
+        if (transaction.user && (transaction.user as any).company) {
+          await TransactionModel.findByIdAndUpdate(transaction._id, {
+            company: (transaction.user as any).company,
+          });
+          fixed++;
+        } else {
+          console.log(
+            `Transaction ${transaction._id} has no user or user has no company`
+          );
+          errors++;
+        }
+      } catch (error) {
+        console.error(`Error fixing transaction ${transaction._id}:`, error);
+        errors++;
+      }
+    }
+
+    return { fixed, errors };
+  } catch (error) {
+    throw new Error("Error fixing transaction company fields");
+  }
+};
+
 export {
   createTransaction,
   getAllTransactions,
@@ -263,4 +306,5 @@ export {
   getTransactionsByFacilityId,
   getTransactionByReference,
   getCompanyTransactions,
+  fixTransactionCompanyFields,
 };

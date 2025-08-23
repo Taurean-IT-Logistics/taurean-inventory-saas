@@ -386,10 +386,7 @@ const BookingDashboard = () => {
 
   const safeGetFacilityName = (booking: Booking): string => {
     // Find the facility in the facilities array
-    const facility = facilities?.facilities?.find(
-      (f: any) => f._id === booking.facility
-    );
-    return facility?.name || "Unknown Facility";
+    return (booking?.facility as any)?.name || "Unknown Facility";
   };
 
   const handleRetry = () => {

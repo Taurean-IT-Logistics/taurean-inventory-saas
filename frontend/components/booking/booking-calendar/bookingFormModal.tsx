@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,6 @@ interface BookingFormModalProps {
   facilities: Facility[];
   onClose: () => void;
   onSave: () => void;
-  onFormDataChange: (data: Partial<Booking>) => void;
 }
 
 export const BookingFormModal = ({
@@ -41,8 +41,62 @@ export const BookingFormModal = ({
   facilities,
   onClose,
   onSave,
-  onFormDataChange,
 }: BookingFormModalProps) => {
+  // Local state for form editing - prevents infinite loops
+  const [localFormData, setLocalFormData] = useState<Partial<Booking>>({});
+
+  // Initialize local form data when modal opens or editing booking changes
+  useEffect(() => {
+    if (isOpen && formData) {
+      setLocalFormData(formData);
+    }
+  }, [isOpen, formData]);
+
+  // Reset local form data when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setLocalFormData({});
+    }
+  }, [isOpen]);
+
+  // Early return if not open to prevent any rendering issues
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleFacilityChange = (value: string) => {
+    const selectedFacility = facilities.find((f) => f.name === value);
+    setLocalFormData({
+      ...localFormData,
+      facility: selectedFacility?._id || value,
+    });
+  };
+
+  const handleDateChange = (
+    field: "startDate" | "endDate",
+    value: Date | undefined
+  ) => {
+    if (value) {
+      setLocalFormData({
+        ...localFormData,
+        [field]: value,
+      });
+    }
+  };
+
+  const handleInputChange = (field: keyof Booking, value: any) => {
+    setLocalFormData({
+      ...localFormData,
+      [field]: value,
+    });
+  };
+
+  const handleSave = () => {
+    // Update the parent formData before calling onSave
+    Object.assign(formData, localFormData);
+    onSave();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl border-0 shadow-xl">
@@ -63,24 +117,16 @@ export const BookingFormModal = ({
               </Label>
               <Select
                 value={
-                  typeof formData.facility === "string"
-                    ? facilities.find((f) => f._id === formData.facility)
+                  typeof localFormData.facility === "string"
+                    ? facilities.find((f) => f._id === localFormData.facility)
                         ?.name || ""
-                    : (formData.facility as any)?._id
+                    : (localFormData.facility as any)?._id
                     ? facilities.find(
-                        (f) => f._id === (formData.facility as any)._id
+                        (f) => f._id === (localFormData.facility as any)._id
                       )?.name || ""
                     : ""
                 }
-                onValueChange={(value) => {
-                  const selectedFacility = facilities.find(
-                    (f) => f.name === value
-                  );
-                  onFormDataChange({
-                    ...formData,
-                    facility: selectedFacility?._id || value,
-                  });
-                }}
+                onValueChange={handleFacilityChange}
               >
                 <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue placeholder="Select a facility" />
@@ -100,13 +146,11 @@ export const BookingFormModal = ({
                 htmlFor="status"
                 className="text-sm font-medium text-gray-700"
               >
-                Booking Status
+                Status
               </Label>
               <Select
-                value={formData.status || "pending"}
-                onValueChange={(value: any) =>
-                  onFormDataChange({ ...formData, status: value })
-                }
+                value={localFormData.status || "pending"}
+                onValueChange={(value) => handleInputChange("status", value)}
               >
                 <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue />
@@ -114,28 +158,26 @@ export const BookingFormModal = ({
                 <SelectContent>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="no_show">No Show</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label
                 htmlFor="startDate"
                 className="text-sm font-medium text-gray-700"
               >
-                Start Date & Time <span className="text-red-500">*</span>
+                Start Date <span className="text-red-500">*</span>
               </Label>
               <DateTimePicker
-                date={formData.startDate}
-                onDateChange={(date: Date | undefined) =>
-                  onFormDataChange({ ...formData, startDate: date })
+                date={localFormData.startDate}
+                onDateChange={(value: Date | undefined) =>
+                  handleDateChange("startDate", value)
                 }
-                placeholder="Select start date and time"
+                className="w-full"
               />
             </div>
 
@@ -144,19 +186,17 @@ export const BookingFormModal = ({
                 htmlFor="endDate"
                 className="text-sm font-medium text-gray-700"
               >
-                End Date & Time <span className="text-red-500">*</span>
+                End Date <span className="text-red-500">*</span>
               </Label>
               <DateTimePicker
-                date={formData.endDate}
-                onDateChange={(date: Date | undefined) =>
-                  onFormDataChange({ ...formData, endDate: date })
+                date={localFormData.endDate}
+                onDateChange={(value: Date | undefined) =>
+                  handleDateChange("endDate", value)
                 }
-                placeholder="Select end date and time"
+                className="w-full"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label
                 htmlFor="paymentStatus"
@@ -165,9 +205,9 @@ export const BookingFormModal = ({
                 Payment Status
               </Label>
               <Select
-                value={formData.paymentStatus || "pending"}
-                onValueChange={(value: any) =>
-                  onFormDataChange({ ...formData, paymentStatus: value })
+                value={localFormData.paymentStatus || "pending"}
+                onValueChange={(value) =>
+                  handleInputChange("paymentStatus", value)
                 }
               >
                 <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
@@ -195,12 +235,12 @@ export const BookingFormModal = ({
                 type="number"
                 step="0.01"
                 className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                value={formData.totalPrice || 0}
+                value={localFormData.totalPrice || 0}
                 onChange={(e) =>
-                  onFormDataChange({
-                    ...formData,
-                    totalPrice: Number.parseFloat(e.target.value) || 0,
-                  })
+                  handleInputChange(
+                    "totalPrice",
+                    Number.parseFloat(e.target.value) || 0
+                  )
                 }
               />
             </div>
@@ -217,10 +257,8 @@ export const BookingFormModal = ({
               id="notes"
               rows={3}
               className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 resize-none"
-              value={formData.notes || ""}
-              onChange={(e) =>
-                onFormDataChange({ ...formData, notes: e.target.value })
-              }
+              value={localFormData.notes || ""}
+              onChange={(e) => handleInputChange("notes", e.target.value)}
               placeholder="Add any customer notes or special requests..."
             />
           </div>
@@ -236,9 +274,9 @@ export const BookingFormModal = ({
               id="internalNotes"
               rows={2}
               className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 resize-none"
-              value={formData.internalNotes || ""}
+              value={localFormData.internalNotes || ""}
               onChange={(e) =>
-                onFormDataChange({ ...formData, internalNotes: e.target.value })
+                handleInputChange("internalNotes", e.target.value)
               }
               placeholder="Internal staff notes (not visible to customer)..."
             />
@@ -254,12 +292,12 @@ export const BookingFormModal = ({
             Cancel
           </Button>
           <Button
-            onClick={onSave}
+            onClick={handleSave}
             disabled={
               isSaving ||
-              !formData.facility ||
-              !formData.startDate ||
-              !formData.endDate
+              !localFormData.facility ||
+              !localFormData.startDate ||
+              !localFormData.endDate
             }
             className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
           >

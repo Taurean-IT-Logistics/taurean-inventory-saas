@@ -147,9 +147,14 @@ const getCompanyBookings = async (
 ): Promise<void> => {
   try {
     const showDeleted = req.query.showDeleted === "true";
+    
+    if (!req.user?.companyId) {
+      sendError(res, "Company ID not found. User must be associated with a company.");
+      return;
+    }
 
     const bookings = await BookingService.getCompanyBookings(
-      req.user?.companyId!,
+      req.user.companyId,
       showDeleted
     );
     sendSuccess(res, "Company bookings fetched successfully", bookings);

@@ -39,27 +39,6 @@ export default function BookingPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { redirectToLogin } = useRedirect();
 
-  const bookingsMutation = useMutation({
-    mutationFn: async (bookingData: Partial<Booking>) => {
-      return BookingsAPI.create(bookingData);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Booking Created",
-        description: "Your booking has been sent to facility for confirmation",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      console.error("Booking creation error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create booking",
-        variant: "destructive",
-      });
-    },
-  });
-
   const createTransaction = useMutation({
     mutationFn: async (transactionData: any) => {
       return TransactionsAPI.initializePayment(transactionData);
@@ -88,6 +67,41 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       toast({
         title: "Error",
         description: error.message || "Failed to create transaction",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bookingsMutation = useMutation({
+    mutationFn: async (bookingData: Partial<Booking>) => {
+      return BookingsAPI.create(bookingData);
+    },
+    onSuccess: (_, variables) => {
+      toast({
+        title: "Booking Created",
+        description: "Your booking has been sent to facility for confirmation",
+        variant: "default",
+      });
+
+      // Create transaction data from the booking
+      const transactionData = {
+        email: user?.email || "",
+        amount: calculateTotal().total,
+        category: "facility",
+        description: `Booking for ${
+          (facilityData as Facility)?.name || "Facility"
+        } - ${calculateDurationString(variables.startDate, variables.endDate)}`,
+        facility: (facilityData as Facility)?._id || "",
+        currency: "GHS",
+      };
+
+      createTransaction.mutate(transactionData);
+    },
+    onError: (error: Error) => {
+      console.error("Booking creation error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create booking",
         variant: "destructive",
       });
     },
@@ -142,7 +156,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
     try {
       const response = await BookingsAPI.checkAvailability({
-        facilityId: facility._id,
+        facilityId: (facilityData as Facility)?._id || "",
         startDate: bookingData.startDate as string,
         endDate: bookingData.endDate as string,
       });
@@ -291,7 +305,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
     const finalBookingData: Partial<Booking> = {
       ...bookingData,
-      facility: facility._id,
+      facility: (facilityData as Facility)?._id || "",
       totalPrice: total,
       duration: calculateDurationString(
         bookingData.startDate,
@@ -309,19 +323,17 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       email: user?.email || "",
       amount: total,
       category: "facility",
-      description: `Booking for ${facility.name} - ${calculateDurationString(
+      description: `Booking for ${
+        (facilityData as Facility)?.name || "Facility"
+      } - ${calculateDurationString(
         bookingData.startDate,
         bookingData.endDate
       )}`,
-      facility: facility._id,
+      facility: (facilityData as Facility)?._id || "",
       currency: "GHS",
     };
 
     bookingsMutation.mutate(finalBookingData);
-
-    if (bookingsMutation.isSuccess) {
-      createTransaction.mutate(transactionData);
-    }
   };
 
   return (

@@ -45,6 +45,11 @@ export const getCompanyTaxes = async (
   res: Response
 ): Promise<void> => {
   try {
+    if (!req.user?.companyId) {
+      sendError(res, "Company ID not found. User must be associated with a company.");
+      return;
+    }
+
     const filters = {
       active:
         req.query.active === "true"
@@ -54,7 +59,7 @@ export const getCompanyTaxes = async (
           : undefined,
       type: req.query.type as string,
       appliesTo: req.query.appliesTo as string,
-      companyId: req.user?.companyId,
+      companyId: req.user.companyId,
     };
 
     const taxes = await TaxService.getCompanyTaxes(filters);

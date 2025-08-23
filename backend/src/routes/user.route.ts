@@ -74,4 +74,10 @@ router.post(
   UserController.updateUserLoyalty
 );
 
+// Get user loyalty profile
+router.get("/loyalty", AuthMiddleware, UserController.getLoyaltyProfile);
+
+// Get loyalty tier information
+router.get("/loyalty/tiers", AuthMiddleware, UserController.getLoyaltyTierInfo);
+
 export default router;

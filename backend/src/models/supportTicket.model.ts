@@ -63,7 +63,7 @@ const supportTicketSchema = new Schema<ISupportTicket>(
     company: {
       type: Schema.Types.ObjectId,
       ref: "Company",
-      required: true,
+      required: false, // Allow general tickets without company
     },
     user: {
       type: Schema.Types.ObjectId,

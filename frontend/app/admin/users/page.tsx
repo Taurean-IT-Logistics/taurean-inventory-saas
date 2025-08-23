@@ -9,6 +9,7 @@ import EditUserModal from "@/components/user/editUserModal";
 import CompanyJoinRequests from "@/components/admin/CompanyJoinRequests";
 import InviteUserModal from "@/components/admin/InviteUserModal";
 import CompanyRoleManagement from "@/components/admin/CompanyRoleManagement";
+import { EnhancedChatWidget } from "@/components/chat/enhanced-chat-widget";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UsersAPI, TransactionsAPI } from "@/lib/api";
@@ -18,6 +19,14 @@ import { toast } from "@/hooks/use-toast";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import { useAuth } from "@/components/AuthProvider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { MessageSquare, HelpCircle } from "lucide-react";
 
 const UserManagement = () => {
   const queryClient = useQueryClient();
@@ -95,19 +104,18 @@ const UserManagement = () => {
   });
 
   const deleteUserMutation = useMutation({
-    mutationFn: (userId: string) =>
-      UsersAPI.update(userId, { isDeleted: true }),
+    mutationFn: (userId: string) => UsersAPI.removeUserFromCompany(userId),
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "User deleted successfully",
+        description: "User removed from company successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["users-company"] });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to delete user",
+        description: "Failed to remove user from company",
       });
     },
   });
@@ -157,7 +165,11 @@ const UserManagement = () => {
   };
 
   const handleDelete = async (userId: string) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to remove this user from the company? This will revoke their access to company resources."
+      )
+    ) {
       return;
     }
     deleteUserMutation.mutate(userId);
@@ -182,10 +194,11 @@ const UserManagement = () => {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>
             <TabsTrigger value="requests">Join Requests</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
@@ -236,7 +249,90 @@ const UserManagement = () => {
           <TabsContent value="requests" className="space-y-6">
             <CompanyJoinRequests />
           </TabsContent>
+
+          {/* Support Tab */}
+          <TabsContent value="support" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5" />
+                  Support Management
+                </CardTitle>
+                <CardDescription>
+                  Manage support tickets and provide customer assistance through
+                  the integrated chat widget
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <div className="mb-4">
+                    <MessageSquare className="h-16 w-16 mx-auto text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">
+                    Enhanced Support System
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    The chat widget provides comprehensive support management
+                    including:
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left max-w-2xl mx-auto">
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                      <div>
+                        <h4 className="font-medium text-sm">
+                          Ticket Management
+                        </h4>
+                        <p className="text-xs text-gray-600">
+                          View and respond to support tickets
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                      <div>
+                        <h4 className="font-medium text-sm">
+                          Staff Assignment
+                        </h4>
+                        <p className="text-xs text-gray-600">
+                          Assign tickets to team members
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
+                      <div>
+                        <h4 className="font-medium text-sm">
+                          Real-time Updates
+                        </h4>
+                        <p className="text-xs text-gray-600">
+                          Live status updates and notifications
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full mt-2"></div>
+                      <div>
+                        <h4 className="font-medium text-sm">File Handling</h4>
+                        <p className="text-xs text-gray-600">
+                          Manage attachments and documents
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    <p className="text-sm text-gray-500">
+                      Use the chat widget in the bottom-right corner to access
+                      the full support dashboard
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        {/* Enhanced Chat Widget - Always visible */}
+        <EnhancedChatWidget />
       </div>
     </div>
   );

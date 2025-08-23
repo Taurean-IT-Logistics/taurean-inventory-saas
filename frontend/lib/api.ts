@@ -180,9 +180,23 @@ export const CompaniesAPI = {
 
 // Company Join Requests
 export const CompanyJoinRequestsAPI = {
+  // User requests to join a company
+  requestToJoin: (companyId: string) =>
+    apiFetch(`/company-join-requests/request`, {
+      method: "POST",
+      body: JSON.stringify({ companyId }),
+    }),
+
   // Get user's join requests
   getUserRequests: () =>
     apiFetch(`/company-join-requests/user`, { method: "GET" }),
+
+  // Admin invites user to company
+  inviteUser: (email: string, companyId: string) =>
+    apiFetch(`/company-join-requests/invite`, {
+      method: "POST",
+      body: JSON.stringify({ email, companyId }),
+    }),
 
   // Get company's pending requests (for company admins)
   getCompanyRequests: () =>
@@ -192,19 +206,33 @@ export const CompanyJoinRequestsAPI = {
   approveRequest: (requestId: string, notes?: string) =>
     apiFetch(`/company-join-requests/${requestId}/approve`, {
       method: "PATCH",
-      body: JSON.stringify({ notes }),
+      body: notes ? JSON.stringify({ notes }) : undefined,
     }),
 
   // Reject join request (for company admins)
   rejectRequest: (requestId: string, notes?: string) =>
     apiFetch(`/company-join-requests/${requestId}/reject`, {
       method: "PATCH",
-      body: JSON.stringify({ notes }),
+      body: notes ? JSON.stringify({ notes }) : undefined,
     }),
 
   // Cancel join request (for users)
   cancelRequest: (requestId: string) =>
-    apiFetch(`/company-join-requests/${requestId}`, { method: "DELETE" }),
+    apiFetch(`/company-join-requests/${requestId}/cancel`, {
+      method: "DELETE",
+    }),
+
+  // Accept invitation (for users)
+  acceptRequest: (requestId: string) =>
+    apiFetch(`/company-join-requests/${requestId}/accept`, {
+      method: "PATCH",
+    }),
+
+  // Decline invitation (for users)
+  declineRequest: (requestId: string) =>
+    apiFetch(`/company-join-requests/${requestId}/decline`, {
+      method: "PATCH",
+    }),
 };
 
 // Subscriptions
@@ -801,6 +829,10 @@ export const UsersAPI = {
     }),
   stats: () => apiFetch(`/users/statistics`, { method: "GET" }),
 
+  // Remove user from company
+  removeUserFromCompany: (userId: string) =>
+    apiFetch(`/company-join-requests/user/${userId}`, { method: "DELETE" }),
+
   // Subaccount methods
   getSubaccounts: () => apiFetch(`/users/subaccounts`, { method: "GET" }),
 };
@@ -835,10 +867,35 @@ export const InvoicesAPI = {
     apiFetch(`/invoices/company/receipts`, { method: "GET" }),
   receiptsMine: () => apiFetch(`/invoices/me/receipts`, { method: "GET" }),
   getUserReceipts: () => apiFetch(`/invoices/me/receipts`, { method: "GET" }),
-  downloadInvoice: (id: string) =>
-    apiFetch(`/invoices/${id}/download`, { method: "GET" }),
-  downloadReceipt: (id: string) =>
-    apiFetch(`/invoices/receipts/${id}/download`, { method: "GET" }),
+
+  // Download functions that handle binary data
+  downloadInvoice: async (id: string): Promise<Blob> => {
+    const url = `${API_BASE}/invoices/${id}/download`;
+    const headers: Record<string, string> = {
+      Accept: "application/pdf",
+    };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+      throw new Error(`Failed to download invoice: ${response.status}`);
+    }
+    return response.blob();
+  },
+
+  downloadReceipt: async (id: string): Promise<Blob> => {
+    const url = `${API_BASE}/invoices/receipts/${id}/download`;
+    const headers: Record<string, string> = {
+      Accept: "application/pdf",
+    };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+      throw new Error(`Failed to download receipt: ${response.status}`);
+    }
+    return response.blob();
+  },
 };
 
 // Tax Schedules
@@ -899,9 +956,7 @@ export const TransactionsAPI = {
       body: JSON.stringify(payload),
     }),
   getSubAccountDetails: (subaccountCode: string) =>
-    apiFetch(`/transaction/subaccount/${subaccountCode}`, {
-      method: "GET",
-    }),
+    apiFetch(`/transaction/subaccount/${subaccountCode}`, { method: "GET" }),
 
   // Export methods
   exportTransactions: (params?: Record<string, string>) => {
@@ -1002,65 +1057,6 @@ export const NotificationsAPI = {
     apiFetch(`/notifications/unread-count`, { method: "GET" }),
 };
 
-// Company Join Requests
-export const CompanyJoinRequestAPI = {
-  requestToJoin: (companyId: string) =>
-    apiFetch(`/company-join-requests/request`, {
-      method: "POST",
-      body: JSON.stringify({ companyId }),
-    }),
-  getUserRequests: () =>
-    apiFetch(`/company-join-requests/user`, { method: "GET" }),
-  inviteUser: (userId: string, companyId: string) =>
-    apiFetch(`/company-join-requests/invite`, {
-      method: "POST",
-      body: JSON.stringify({ userId, companyId }),
-    }),
-  getCompanyPendingRequests: () =>
-    apiFetch(`/company-join-requests/company/pending`, { method: "GET" }),
-  approveRequest: (requestId: string) =>
-    apiFetch(`/company-join-requests/${requestId}/approve`, {
-      method: "POST",
-    }),
-  rejectRequest: (requestId: string) =>
-    apiFetch(`/company-join-requests/${requestId}/reject`, {
-      method: "POST",
-    }),
-  removeUserFromCompany: (userId: string) =>
-    apiFetch(`/company-join-requests/user/${userId}`, { method: "DELETE" }),
-};
-
-// Support API
-export const SupportAPI = {
-  createTicket: (formData: FormData) =>
-    apiFetch(`/support/tickets`, {
-      method: "POST",
-      body: formData,
-    }),
-  getUserTickets: () => apiFetch(`/support/tickets/user`, { method: "GET" }),
-  getStaffTickets: () => apiFetch(`/support/tickets/staff`, { method: "GET" }),
-  getSuperAdminTickets: () =>
-    apiFetch(`/support/tickets/super-admin`, { method: "GET" }),
-  getTicketDetails: (ticketId: string) =>
-    apiFetch(`/support/tickets/${ticketId}`, { method: "GET" }),
-  sendMessage: (ticketId: string, formData: FormData) =>
-    apiFetch(`/support/tickets/${ticketId}/messages`, {
-      method: "POST",
-      body: formData,
-    }),
-  updateTicketStatus: (
-    ticketId: string,
-    data: { status: string; assignedTo?: string }
-  ) =>
-    apiFetch(`/support/tickets/${ticketId}/status`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-      headers: { "Content-Type": "application/json" },
-    }),
-  getAvailableStaff: () =>
-    apiFetch(`/support/staff/available`, { method: "GET" }),
-};
-
 // Company API
 export const CompanyAPI = {
   update: (companyId: string, formData: FormData) =>
@@ -1127,6 +1123,65 @@ export const CompanyRoleAPI = {
 
   initializeDefaultRoles: () =>
     apiFetch(`/company-roles/initialize-defaults`, { method: "POST" }),
+};
+
+// Support API
+export const SupportAPI = {
+  // Create a new support ticket
+  createTicket: (formData: FormData) =>
+    apiFetch(`/support/tickets`, {
+      method: "POST",
+      body: formData,
+    }),
+
+  // Get user's own tickets
+  getUserTickets: () => apiFetch(`/support/tickets/user`, { method: "GET" }),
+
+  // Get staff tickets (for admin/staff users)
+  getStaffTickets: () => apiFetch(`/support/tickets/staff`, { method: "GET" }),
+
+  // Get super admin tickets (for Taurean IT)
+  getSuperAdminTickets: () =>
+    apiFetch(`/support/tickets/super-admin`, { method: "GET" }),
+
+  // Get ticket details with messages
+  getTicketDetails: (ticketId: string) =>
+    apiFetch(`/support/tickets/${ticketId}`, { method: "GET" }),
+
+  // Send a message to a ticket
+  sendMessage: (ticketId: string, formData: FormData) =>
+    apiFetch(`/support/tickets/${ticketId}/messages`, {
+      method: "POST",
+      body: formData,
+    }),
+
+  // Update ticket status (admin/staff only)
+  updateTicketStatus: (
+    ticketId: string,
+    data: { status: string; assignedTo?: string }
+  ) =>
+    apiFetch(`/support/tickets/${ticketId}/status`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  // Get available staff for assignment
+  getAvailableStaff: () =>
+    apiFetch(`/support/staff/available`, { method: "GET" }),
+
+  // Get support statistics
+  getSupportStats: (companyId?: string) => {
+    const qs = companyId ? `?companyId=${companyId}` : "";
+    return apiFetch(`/support/stats${qs}`, { method: "GET" });
+  },
+
+  // Get support categories
+  getSupportCategories: () =>
+    apiFetch(`/support/categories`, { method: "GET" }),
+
+  // Get support priorities
+  getSupportPriorities: () =>
+    apiFetch(`/support/priorities`, { method: "GET" }),
 };
 
 // Super Admin

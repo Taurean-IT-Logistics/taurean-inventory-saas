@@ -119,6 +119,7 @@ export interface Facility {
     opening: string;
     closing: string;
   };
+  company: string; // Company ObjectId string
   isActive: boolean;
   isTaxable: boolean;
   isDeleted: boolean;
@@ -616,7 +617,6 @@ export interface BookingEvent {
 export interface BookingCalendarProps {
   bookings: Booking[];
   facilities: Facility[];
-  onRefresh?: () => void;
   onUpdateBooking?: (booking: Booking) => Promise<void>;
   onDeleteBooking?: (bookingId: string) => Promise<void>;
   onCreateBooking?: (booking: Partial<Booking>) => Promise<void>;

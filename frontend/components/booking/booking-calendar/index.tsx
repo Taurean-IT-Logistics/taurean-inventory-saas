@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   BookingCalendarProps,
   Booking,
@@ -19,86 +20,139 @@ import { BookingFormModal } from "./bookingFormModal";
 const BookingCalendar = ({
   bookings,
   facilities,
-  onRefresh,
   onUpdateBooking,
   onDeleteBooking,
   onCreateBooking,
 }: BookingCalendarProps) => {
-  const [events, setEvents] = useState<BookingEvent[]>([]);
-  const [refresh, setRefresh] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Local UI state only
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
-  const [selectedDateRange, setSelectedDateRange] = useState<{
-    start: string;
-    end: string;
-  } | null>(null);
+  const [formData, setFormData] = useState<Partial<Booking>>({});
   const [viewType, setViewType] = useState<
     "dayGridMonth" | "timeGridWeek" | "timeGridDay"
   >("dayGridMonth");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterFacility, setFilterFacility] = useState<string>("all");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Partial<Booking>>({});
 
-  const loadBookings = useCallback(() => {
-    try {
-      if (!bookings || !Array.isArray(bookings)) {
-        setEvents([]);
-        setIsLoading(false);
-        return;
+  // Transform bookings to calendar events
+  const events: BookingEvent[] = (bookings || [])
+    .filter((b) => filterStatus === "all" || b.status === filterStatus)
+    .filter((b) => {
+      if (filterFacility === "all") return true;
+      const facilityId =
+        typeof b.facility === "string" ? b.facility : (b.facility as any)?._id;
+      return facilityId === filterFacility;
+    })
+    .map((b) => {
+      const facilityName =
+        typeof b.facility === "string"
+          ? facilities.find((f) => f._id === b.facility)?.name ||
+            "Unknown Facility"
+          : (b.facility as any)?.name || "Unknown Facility";
+
+      return {
+        title: `${facilityName} - ${b.user?.name || "Unknown User"}`,
+        start: b.startDate
+          ? new Date(b.startDate).toISOString()
+          : new Date().toISOString(),
+        end: b.endDate
+          ? new Date(b.endDate).toISOString()
+          : new Date().toISOString(),
+        backgroundColor: getStatusColor(b.status),
+        borderColor: getStatusColor(b.status),
+        extendedProps: {
+          booking: b,
+          facility: b.facility,
+        },
+      };
+    });
+
+  // Mutations
+  const updateBookingMutation = useMutation({
+    mutationFn: async (booking: Booking) => {
+      if (onUpdateBooking) {
+        return await onUpdateBooking(booking);
       }
+      throw new Error("Update function not provided");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      setShowEditModal(false);
+      setFormData({});
+      setEditingBooking(null);
+    },
+    onError: (error: any) => {
+      console.error("Error updating booking:", error);
+    },
+  });
 
-      const filtered = bookings
-        .filter((b) => filterStatus === "all" || b.status === filterStatus)
-        .filter((b) => {
-          if (filterFacility === "all") return true;
-          const facilityId =
-            typeof b.facility === "string"
-              ? b.facility
-              : (b.facility as any)?._id;
-          return facilityId === filterFacility;
-        })
-        .map((b) => {
-          const facilityName =
-            typeof b.facility === "string"
-              ? facilities.find((f) => f._id === b.facility)?.name ||
-                "Unknown Facility"
-              : (b.facility as any)?.name || "Unknown Facility";
+  const createBookingMutation = useMutation({
+    mutationFn: async (booking: Partial<Booking>) => {
+      if (onCreateBooking) {
+        return await onCreateBooking(booking);
+      }
+      throw new Error("Create function not provided");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      setShowEditModal(false);
+      setFormData({});
+      setEditingBooking(null);
+    },
+    onError: (error: any) => {
+      console.error("Error creating booking:", error);
+    },
+  });
 
-          return {
-            title: `${facilityName} - ${b.user?.name || "Unknown User"}`,
-            start: b.startDate
-              ? new Date(b.startDate).toISOString()
-              : new Date().toISOString(),
-            end: b.endDate
-              ? new Date(b.endDate).toISOString()
-              : new Date().toISOString(),
-            backgroundColor: getStatusColor(b.status),
-            borderColor: getStatusColor(b.status),
-            extendedProps: {
-              booking: b,
-              facility: b.facility,
-            },
-          };
-        });
+  const deleteBookingMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      if (onDeleteBooking) {
+        return await onDeleteBooking(bookingId);
+      }
+      throw new Error("Delete function not provided");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      setShowBookingModal(false);
+    },
+    onError: (error: any) => {
+      console.error("Error deleting booking:", error);
+    },
+  });
 
-      setEvents(filtered);
-      setIsLoading(false);
-    } catch (err) {
-      console.error("Error loading bookings:", err);
-      setError("Failed to load bookings");
-      setIsLoading(false);
-    }
-  }, [bookings, filterStatus, filterFacility, facilities]);
+  const statusChangeMutation = useMutation({
+    mutationFn: async ({
+      booking,
+      newStatus,
+    }: {
+      booking: Booking;
+      newStatus: string;
+    }) => {
+      if (onUpdateBooking) {
+        const updatedBooking = {
+          ...booking,
+          status: newStatus as Booking["status"],
+          updatedAt: new Date(),
+        };
+        await onUpdateBooking(updatedBooking);
+        return updatedBooking;
+      }
+      throw new Error("Update function not provided");
+    },
+    onSuccess: (updatedBooking) => {
+      queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      setSelectedBooking(updatedBooking);
+    },
+    onError: (error: any) => {
+      console.error("Error updating status:", error);
+    },
+  });
 
-  useEffect(() => {
-    loadBookings();
-  }, [loadBookings]);
-
+  // Event handlers
   const handleEventClick = (info: any) => {
     const booking = info.event.extendedProps.booking;
     if (booking) {
@@ -108,10 +162,6 @@ const BookingCalendar = ({
   };
 
   const handleDateSelect = (selectInfo: any) => {
-    setSelectedDateRange({
-      start: selectInfo.startStr,
-      end: selectInfo.endStr,
-    });
     setFormData({
       startDate: new Date(selectInfo.startStr),
       endDate: new Date(selectInfo.endStr),
@@ -139,58 +189,36 @@ const BookingCalendar = ({
 
   const handleSaveBooking = async () => {
     if (!formData.facility || !formData.startDate || !formData.endDate) {
-      setError("Please fill in all required fields");
       return;
     }
 
-    setIsSaving(true);
-    setError(null);
+    const bookingData = {
+      ...formData,
+      duration: calculateDuration(
+        formData.startDate!.toISOString(),
+        formData.endDate!.toISOString()
+      ),
+      user:
+        (formData.user && typeof formData.user === "object"
+          ? (formData.user as any)._id
+          : formData.user) || undefined,
+      facility:
+        (formData.facility && typeof formData.facility === "object"
+          ? (formData.facility as any)._id
+          : formData.facility) || undefined,
+    };
 
-    try {
-      const bookingData = {
-        ...formData,
-        duration: calculateDuration(
-          formData.startDate!.toISOString(),
-          formData.endDate!.toISOString()
-        ),
-        user:
-          (formData.user && typeof formData.user === "object"
-            ? (formData.user as any)._id
-            : formData.user) || undefined,
-        facility:
-          (formData.facility && typeof formData.facility === "object"
-            ? (formData.facility as any)._id
-            : formData.facility) || undefined,
-      };
-
-      if (editingBooking) {
-        if (onUpdateBooking) {
-          await onUpdateBooking({
-            ...editingBooking,
-            ...bookingData,
-          } as Booking);
-          if (onRefresh) onRefresh();
-        }
-      } else {
-        if (onCreateBooking) {
-          await onCreateBooking({
-            ...bookingData,
-            createdAt: new Date(),
-            isDeleted: false,
-          });
-          if (onRefresh) onRefresh();
-        }
-      }
-
-      setShowEditModal(false);
-      setFormData({});
-      setEditingBooking(null);
-      loadBookings();
-    } catch (err) {
-      console.error("Error saving booking:", err);
-      setError("Failed to save booking");
-    } finally {
-      setIsSaving(false);
+    if (editingBooking) {
+      updateBookingMutation.mutate({
+        ...editingBooking,
+        ...bookingData,
+      } as Booking);
+    } else {
+      createBookingMutation.mutate({
+        ...bookingData,
+        createdAt: new Date(),
+        isDeleted: false,
+      });
     }
   };
 
@@ -199,43 +227,13 @@ const BookingCalendar = ({
       return;
     }
 
-    setIsSaving(true);
-    try {
-      if (onDeleteBooking && booking._id) {
-        await onDeleteBooking(booking._id);
-        setShowBookingModal(false);
-        if (onRefresh) onRefresh();
-        loadBookings();
-      }
-    } catch (err) {
-      console.error("Error deleting booking:", err);
-      setError("Failed to delete booking");
-    } finally {
-      setIsSaving(false);
+    if (booking._id) {
+      deleteBookingMutation.mutate(booking._id);
     }
   };
 
   const handleStatusChange = async (booking: Booking, newStatus: string) => {
-    setIsSaving(true);
-    try {
-      const updatedBooking = {
-        ...booking,
-        status: newStatus as Booking["status"],
-        updatedAt: new Date(),
-      };
-
-      if (onUpdateBooking) {
-        await onUpdateBooking(updatedBooking);
-        setSelectedBooking(updatedBooking);
-        loadBookings();
-        if (onRefresh) onRefresh();
-      }
-    } catch (err) {
-      console.error("Error updating status:", err);
-      setError("Failed to update booking status");
-    } finally {
-      setIsSaving(false);
-    }
+    statusChangeMutation.mutate({ booking, newStatus });
   };
 
   const handleNewBooking = () => {
@@ -254,26 +252,41 @@ const BookingCalendar = ({
   };
 
   const handleRefresh = () => {
-    setRefresh(!refresh);
-    if (onRefresh) onRefresh();
+    queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
   };
 
   const handleExport = () => {
     console.log("Export functionality to be implemented");
   };
 
+  // Loading states
+  const isLoading =
+    updateBookingMutation.isPending ||
+    createBookingMutation.isPending ||
+    deleteBookingMutation.isPending ||
+    statusChangeMutation.isPending;
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {error && (
+        {/* Error handling */}
+        {(updateBookingMutation.error ||
+          createBookingMutation.error ||
+          deleteBookingMutation.error ||
+          statusChangeMutation.error) && (
           <Alert className="mb-6 border-red-100 bg-red-50/50 rounded-xl">
             <AlertDescription className="text-red-700 font-medium">
-              {error}
+              An error occurred. Please try again.
               <Button
                 variant="ghost"
                 size="sm"
                 className="ml-2 h-auto p-0 text-red-500 hover:text-red-700"
-                onClick={() => setError(null)}
+                onClick={() => {
+                  updateBookingMutation.reset();
+                  createBookingMutation.reset();
+                  deleteBookingMutation.reset();
+                  statusChangeMutation.reset();
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -301,7 +314,7 @@ const BookingCalendar = ({
         <CalendarView
           viewType={viewType}
           events={events}
-          isLoading={isLoading}
+          isLoading={false}
           onEventClick={handleEventClick}
           onDateSelect={handleDateSelect}
         />
@@ -309,7 +322,7 @@ const BookingCalendar = ({
         <BookingDetailsModal
           booking={selectedBooking}
           isOpen={showBookingModal}
-          isSaving={isSaving}
+          isSaving={isLoading}
           onClose={() => setShowBookingModal(false)}
           onEdit={handleEditBooking}
           onDelete={handleDeleteBooking}
@@ -318,13 +331,12 @@ const BookingCalendar = ({
 
         <BookingFormModal
           isOpen={showEditModal}
-          isSaving={isSaving}
+          isSaving={isLoading}
           editingBooking={editingBooking}
           formData={formData}
           facilities={facilities}
           onClose={() => setShowEditModal(false)}
           onSave={handleSaveBooking}
-          onFormDataChange={setFormData}
         />
       </div>
     </div>

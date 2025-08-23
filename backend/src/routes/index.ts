@@ -22,8 +22,12 @@ import subscriptionRoutes from "./subscription.route";
 import supportRoutes from "./support.route";
 import emailRoutes from "./email.route";
 import reviewRoutes from "./review.routes";
+import healthRoutes from "./health.route";
 
 const router = Router();
+
+// Health check route (no authentication required)
+router.use("/health", healthRoutes);
 
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Star } from "lucide-react";
 import { Review } from "../types";
+import { Textarea } from "./ui/textarea";
 
 interface ReviewFormProps {
   facilityId: string;
@@ -77,7 +78,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           >
             Comment
           </label>
-          <textarea
+          <Textarea
             id="comment"
             rows={4}
             value={comment}

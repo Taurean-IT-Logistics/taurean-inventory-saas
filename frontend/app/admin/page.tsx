@@ -2,18 +2,14 @@
 
 import React, { useState } from "react";
 import BookingCalendar from "@/components/booking/booking-calendar";
-import {
-  BookingsAPI,
-  FacilitiesAPI,
-  TransactionsAPI,
-  InvoicesAPI,
-} from "@/lib/api";
-import { Booking, Facility } from "@/types";
+import { FacilitiesAPI, TransactionsAPI, InvoicesAPI } from "@/lib/api";
+import { Facility } from "@/types";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
+import { useBookings } from "@/hooks/useBookings";
 import {
   Card,
   CardContent,
@@ -32,9 +28,7 @@ import {
 import {
   CalendarDays,
   Building2,
-  Users,
   DollarSign,
-  TrendingUp,
   Download,
   FileText,
   Receipt,
@@ -45,6 +39,18 @@ import { currencyFormat } from "@/lib/utils";
 export default function AdminPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Use the bookings hook for all booking operations
+  const {
+    bookings,
+    isLoadingBookings,
+    createBooking,
+    updateBooking,
+    deleteBooking,
+    isCreating,
+    isUpdating,
+    isDeleting,
+  } = useBookings();
 
   // Real-time updates for bookings and facilities
   useRealtimeUpdates({
@@ -71,21 +77,9 @@ export default function AdminPage() {
     isError: facilitiesError,
     isLoading: facilitiesLoading,
     error: facilitiesErrorMessage,
-    refetch: facilitiesRefetch,
   } = useQuery({
     queryKey: ["facilities-company"],
     queryFn: () => FacilitiesAPI.listCompany(),
-  });
-
-  const {
-    data: bookings,
-    isError: bookingsError,
-    error: bookingsErrorMessage,
-    isLoading: bookingsLoading,
-    refetch: bookingsRefetch,
-  } = useQuery({
-    queryKey: ["bookings-company"],
-    queryFn: () => BookingsAPI.listCompany(),
   });
 
   const {
@@ -104,65 +98,6 @@ export default function AdminPage() {
   } = useQuery({
     queryKey: ["invoices-company"],
     queryFn: () => InvoicesAPI.listCompany(),
-  });
-
-  // Mutations with toast notifications
-  const deleteBookingMutation = useMutation({
-    mutationFn: (bookingId: string) => BookingsAPI.remove(bookingId),
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Booking deleted successfully",
-        variant: "default",
-      });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete booking",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateBookingMutation = useMutation({
-    mutationFn: (booking: Partial<Booking>) =>
-      BookingsAPI.update(booking._id!, booking),
-    onSuccess: (data) => {
-      toast({
-        title: "Success",
-        description: "Booking updated successfully",
-        variant: "default",
-      });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update booking",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const createBookingMutation = useMutation({
-    mutationFn: (booking: Partial<Booking>) => BookingsAPI.create(booking),
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Booking created successfully",
-        variant: "default",
-      });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create booking",
-        variant: "destructive",
-      });
-    },
   });
 
   // Calculate dashboard stats
@@ -201,12 +136,14 @@ export default function AdminPage() {
   }, [bookings, facilities, transactions, invoices]);
 
   const handleDeleteBooking = async (bookingId: string) => {
-    deleteBookingMutation.mutate(bookingId);
+    deleteBooking(bookingId);
   };
 
   const handleUpdateBooking = async (booking: Partial<Booking>) => {
     try {
-      await BookingsAPI.update(booking._id!, booking);
+      if (booking._id) {
+        updateBooking({ id: booking._id, payload: booking });
+      }
     } catch (error) {
       console.error("Error updating booking:", error);
     }
@@ -220,11 +157,7 @@ export default function AdminPage() {
     if (payload.user) {
       payload.user = (payload.user as any)._id;
     }
-    try {
-      await createBookingMutation.mutateAsync(payload);
-    } catch (error) {
-      console.error("Error creating booking:", error);
-    }
+    createBooking(payload);
   };
 
   const handleExportData = async (
@@ -271,7 +204,7 @@ export default function AdminPage() {
 
   if (
     facilitiesLoading ||
-    bookingsLoading ||
+    isLoadingBookings ||
     transactionsLoading ||
     invoicesLoading
   ) {
@@ -282,12 +215,10 @@ export default function AdminPage() {
     );
   }
 
-  if (facilitiesError || bookingsError) {
+  if (facilitiesError) {
     return (
       <ErrorComponent
-        message={
-          facilitiesErrorMessage?.message || bookingsErrorMessage?.message
-        }
+        message={facilitiesErrorMessage?.message}
         showGoHome={true}
       />
     );
@@ -449,7 +380,7 @@ export default function AdminPage() {
                         </div>
                         <div className="text-right">
                           <p className="font-medium">
-                            {currencyFormat(booking.totalAmount)}
+                            {currencyFormat(booking.totalPrice)}
                           </p>
                           <p className="text-sm text-muted-foreground capitalize">
                             {booking.status}
@@ -527,9 +458,8 @@ export default function AdminPage() {
 
         <TabsContent value="calendar" className="space-y-6">
           <BookingCalendar
-            onRefresh={bookingsRefetch}
             facilities={facilities?.facilities as Facility[]}
-            bookings={bookings as Booking[]}
+            bookings={bookings as any}
             onUpdateBooking={handleUpdateBooking}
             onDeleteBooking={handleDeleteBooking}
             onCreateBooking={handleCreateBooking}

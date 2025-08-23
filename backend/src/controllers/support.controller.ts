@@ -9,7 +9,13 @@ export class SupportController {
   // Create a new support ticket
   static async createTicket(req: Request, res: Response): Promise<void> {
     try {
-      const { title, description, category, priority, companyId: requestedCompanyId } = req.body;
+      const {
+        title,
+        description,
+        category,
+        priority,
+        companyId: requestedCompanyId,
+      } = req.body;
       const userId = (req.user as any)?.id;
       const userCompanyId = (req.user as any)?.companyId;
       const userRole = (req.user as any)?.role;
@@ -23,14 +29,40 @@ export class SupportController {
 
       // Determine which company the ticket belongs to
       let targetCompanyId = requestedCompanyId;
-      
-      // If user is admin/staff/super admin, they can create tickets for their company
-      if (["admin", "staff"].includes(userRole) || isSuperAdmin) {
+
+      // If user is admin/staff, they can create tickets for their company
+      if (["admin", "staff"].includes(userRole) && userCompanyId) {
         targetCompanyId = userCompanyId;
-      } else if (!requestedCompanyId) {
-        // Normal users must specify which company they're creating a ticket for
+      }
+
+      // For regular users:
+      // - If they specify a company, use that company
+      // - If they don't specify a company, create a general ticket (no company assigned)
+      // - If they have a company, use their company as default
+      if (!targetCompanyId && userCompanyId) {
+        targetCompanyId = userCompanyId;
+      }
+
+      // Super admins can create tickets for any company
+      if (isSuperAdmin && !targetCompanyId) {
         sendError(res, "Company ID is required for support tickets", null, 400);
         return;
+      }
+
+      // For regular users, if no company is specified, allow general tickets
+      // These will be handled by Taurean IT support
+      if (!targetCompanyId && !["admin", "staff"].includes(userRole)) {
+        // This is a general support ticket - no company assigned
+        targetCompanyId = null;
+      }
+
+      // If a company is specified, verify it exists
+      if (targetCompanyId) {
+        const company = await CompanyModel.findById(targetCompanyId);
+        if (!company) {
+          sendError(res, "Company not found", null, 404);
+          return;
+        }
       }
 
       const ticketData = {
@@ -38,7 +70,7 @@ export class SupportController {
         description,
         category: category || "general",
         priority: priority || "medium",
-        company: targetCompanyId,
+        company: targetCompanyId, // Can be null for general tickets
         user: userId,
       };
 
@@ -51,6 +83,9 @@ export class SupportController {
         sender: userId,
         senderType: "system",
         message: `Support ticket ${ticket.ticketNumber} has been created. A staff member will respond shortly.`,
+        messageType: "text",
+        isRead: false,
+        readBy: [],
       });
       await systemMessage.save();
 
@@ -64,6 +99,8 @@ export class SupportController {
           message: "Initial ticket with attachments",
           messageType: "file",
           attachments: attachmentPaths,
+          isRead: false,
+          readBy: [],
         });
         await attachmentMessage.save();
       }
@@ -73,6 +110,28 @@ export class SupportController {
         { path: "user", select: "username email firstName lastName" },
         { path: "company", select: "name" },
       ]);
+
+      // Emit socket event for real-time updates
+      try {
+        const { emitToCompany, emitToSuperAdmin } = await import(
+          "../realtime/socket"
+        );
+        if (targetCompanyId) {
+          // Emit to specific company
+          emitToCompany(targetCompanyId, "ticket-created", {
+            ticket: ticket.toObject(),
+            message: "New support ticket created",
+          });
+        } else {
+          // Emit to super admin for general tickets
+          emitToSuperAdmin("ticket-created", {
+            ticket: ticket.toObject(),
+            message: "New general support ticket created",
+          });
+        }
+      } catch (socketError) {
+        console.log("Socket not available for real-time updates");
+      }
 
       sendSuccess(res, "Support ticket created successfully", ticket);
     } catch (error) {
@@ -314,6 +373,8 @@ export class SupportController {
         message,
         messageType: finalMessageType,
         attachments,
+        isRead: false,
+        readBy: [],
       };
 
       const newMessage = new SupportMessageModel(messageData);
@@ -331,6 +392,18 @@ export class SupportController {
 
       // Populate sender details
       await newMessage.populate("sender", "username firstName lastName");
+
+      // Emit socket event for real-time updates
+      try {
+        const { emitToTicket } = await import("../realtime/socket");
+        emitToTicket(ticketId, "message-received", {
+          ticketId,
+          message: newMessage.toObject(),
+          sender: newMessage.sender,
+        });
+      } catch (socketError) {
+        console.log("Socket not available for real-time updates");
+      }
 
       sendSuccess(res, "Message sent successfully", newMessage);
     } catch (error) {
@@ -438,6 +511,180 @@ export class SupportController {
     } catch (error) {
       console.error("Error fetching staff:", error);
       sendError(res, "Failed to fetch staff", error);
+    }
+  }
+
+  // Get support statistics
+  static async getSupportStats(req: Request, res: Response): Promise<void> {
+    try {
+      const companyId = (req.user as any)?.companyId;
+      const isSuperAdmin = (req.user as any)?.isSuperAdmin;
+      const requestedCompanyId = req.query.companyId as string;
+
+      let targetCompanyId = companyId;
+      if (isSuperAdmin && requestedCompanyId) {
+        targetCompanyId = requestedCompanyId;
+      }
+
+      if (!targetCompanyId && !isSuperAdmin) {
+        sendError(res, "Company context required", null, 400);
+        return;
+      }
+
+      let query: any = { isDeleted: false };
+      if (targetCompanyId) {
+        query.company = targetCompanyId;
+      }
+
+      const [
+        totalTickets,
+        openTickets,
+        inProgressTickets,
+        resolvedTickets,
+        closedTickets,
+        urgentTickets,
+        highPriorityTickets,
+        avgResolutionTime,
+      ] = await Promise.all([
+        SupportTicketModel.countDocuments(query),
+        SupportTicketModel.countDocuments({ ...query, status: "open" }),
+        SupportTicketModel.countDocuments({ ...query, status: "in_progress" }),
+        SupportTicketModel.countDocuments({ ...query, status: "resolved" }),
+        SupportTicketModel.countDocuments({ ...query, status: "closed" }),
+        SupportTicketModel.countDocuments({ ...query, priority: "urgent" }),
+        SupportTicketModel.countDocuments({ ...query, priority: "high" }),
+        SupportTicketModel.aggregate([
+          {
+            $match: {
+              ...query,
+              status: "resolved",
+              resolvedAt: { $exists: true },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              avgTime: {
+                $avg: {
+                  $subtract: ["$resolvedAt", "$createdAt"],
+                },
+              },
+            },
+          },
+        ]),
+      ]);
+
+      const avgResolutionHours = avgResolutionTime[0]?.avgTime
+        ? Math.round(avgResolutionTime[0].avgTime / (1000 * 60 * 60))
+        : 0;
+
+      const stats = {
+        totalTickets,
+        openTickets,
+        inProgressTickets,
+        resolvedTickets,
+        closedTickets,
+        urgentTickets,
+        highPriorityTickets,
+        avgResolutionHours,
+        resolutionRate:
+          totalTickets > 0
+            ? (
+                ((resolvedTickets + closedTickets) / totalTickets) *
+                100
+              ).toFixed(1)
+            : "0",
+      };
+
+      sendSuccess(res, "Support statistics retrieved successfully", stats);
+    } catch (error) {
+      console.error("Error fetching support statistics:", error);
+      sendError(res, "Failed to fetch support statistics", error);
+    }
+  }
+
+  // Get support categories
+  static async getSupportCategories(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      const categories = [
+        {
+          value: "technical",
+          label: "Technical Issue",
+          description: "Software, hardware, or system problems",
+        },
+        {
+          value: "billing",
+          label: "Billing & Payment",
+          description: "Invoice, payment, or subscription issues",
+        },
+        {
+          value: "feature_request",
+          label: "Feature Request",
+          description: "New functionality or improvements",
+        },
+        {
+          value: "bug_report",
+          label: "Bug Report",
+          description: "System errors or unexpected behavior",
+        },
+        {
+          value: "general",
+          label: "General Inquiry",
+          description: "Other questions or support needs",
+        },
+      ];
+
+      sendSuccess(res, "Support categories retrieved successfully", {
+        categories,
+      });
+    } catch (error) {
+      console.error("Error fetching support categories:", error);
+      sendError(res, "Failed to fetch support categories", error);
+    }
+  }
+
+  // Get support priorities
+  static async getSupportPriorities(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      const priorities = [
+        {
+          value: "low",
+          label: "Low",
+          description: "Minor issues, non-urgent",
+          color: "text-green-600",
+        },
+        {
+          value: "medium",
+          label: "Medium",
+          description: "Standard priority issues",
+          color: "text-yellow-600",
+        },
+        {
+          value: "high",
+          label: "High",
+          description: "Important issues affecting work",
+          color: "text-orange-600",
+        },
+        {
+          value: "urgent",
+          label: "Urgent",
+          description: "Critical issues requiring immediate attention",
+          color: "text-red-600",
+        },
+      ];
+
+      sendSuccess(res, "Support priorities retrieved successfully", {
+        priorities,
+      });
+    } catch (error) {
+      console.error("Error fetching support priorities:", error);
+      sendError(res, "Failed to fetch support priorities", error);
     }
   }
 }

@@ -24,6 +24,7 @@ const nextConfig = {
     NEXT_PUBLIC_FRONTEND_URL: process.env.NEXT_PUBLIC_FRONTEND_URL,
     NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY:
       process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+    NEXT_PUBLIC_SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL,
   },
 
   // Webpack configuration

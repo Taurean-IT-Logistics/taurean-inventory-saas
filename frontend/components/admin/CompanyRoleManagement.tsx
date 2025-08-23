@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { CompanyRoleAPI } from "@/lib/api";
 import { CompanyRole } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -35,6 +34,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 
 interface CompanyRoleManagementProps {
   companyId: string;
@@ -63,6 +63,26 @@ export default function CompanyRoleManagement({
   });
 
   const queryClient = useQueryClient();
+
+  // Don't render if no companyId
+  if (!companyId) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Roles & Permissions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4 text-gray-500">
+            Company ID not available. Please ensure you are associated with a
+            company.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const { data: rolesData, isLoading } = useQuery({
     queryKey: ["company-roles"],
@@ -287,15 +307,17 @@ export default function CompanyRoleManagement({
             Company Roles ({roles.length})
           </CardTitle>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleInitializeDefaults}
-              disabled={initializeDefaultRolesMutation.isPending}
-            >
-              {initializeDefaultRolesMutation.isPending
-                ? "Initializing..."
-                : "Initialize Defaults"}
-            </Button>
+            {roles.length === 0 && (
+              <Button
+                variant="outline"
+                onClick={handleInitializeDefaults}
+                disabled={initializeDefaultRolesMutation.isPending}
+              >
+                {initializeDefaultRolesMutation.isPending
+                  ? "Initializing..."
+                  : "Initialize Default Roles"}
+              </Button>
+            )}
             <Dialog
               open={isCreateModalOpen}
               onOpenChange={setIsCreateModalOpen}

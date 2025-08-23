@@ -98,6 +98,26 @@ const createBooking = async (
     bookingData.company = (facility?.company as any)?._id;
     const booking = new BookingModel(bookingData);
     const saved = await booking.save();
+
+    // Update user loyalty profile to increment total bookings
+    try {
+      const { updateUserLoyaltyProfile } = await import("./user.service");
+      await updateUserLoyaltyProfile(
+        saved.user.toString(),
+        0, // No amount for booking creation, just increment count
+        saved.facility?.toString(),
+        true // This is a booking creation
+      );
+      console.log(
+        `Updated loyalty profile for user ${saved.user} - booking created`
+      );
+    } catch (loyaltyError) {
+      console.warn(
+        "Failed to update user loyalty profile for booking creation:",
+        loyaltyError
+      );
+    }
+
     try {
       const { emitEvent } = await import("../realtime/socket");
       const { Events } = await import("../realtime/events");
@@ -256,6 +276,11 @@ const getCompanyBookings = async (
   showDeleted = false
 ): Promise<BookingDocument[]> => {
   try {
+    // Validate companyId is a valid ObjectId
+    if (!Types.ObjectId.isValid(companyId)) {
+      throw new Error("Invalid company ID format");
+    }
+
     const filter: any = { company: companyId };
     if (!showDeleted) {
       filter.isDeleted = false;

@@ -25,12 +25,18 @@ import {
 import { currencyFormat } from "@/lib/utils";
 import type { Facility, User } from "@/types";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { FacilitiesAPI, getResourceUrl } from "@/lib/api";
+import {
+  FacilitiesAPI,
+  getResourceUrl,
+  CompanyJoinRequestsAPI,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
 import Image from "next/image";
 import ReviewForm from "@/components/ReviewForm";
+import { useAuth } from "@/components/AuthProvider";
+import { toast } from "@/hooks/use-toast";
 
 // Define Review interface locally to avoid conflicts
 interface Review {
@@ -492,56 +498,135 @@ interface FacilityBookingCardProps {
 const FacilityBookingCard = ({
   facility,
   defaultPricing,
-}: FacilityBookingCardProps) => (
-  <Card className="shadow-lg mb-4">
-    <CardContent className="p-6">
-      <div className="flex items-baseline mb-4">
-        <span className="text-3xl font-bold">
-          {currencyFormat(defaultPricing.amount || 0)}
-        </span>
-        <span className="text-gray-600 ml-2">per {defaultPricing.unit}</span>
-      </div>
+}: FacilityBookingCardProps) => {
+  const { user } = useAuth();
+  const [isJoining, setIsJoining] = useState(false);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
-      {facility.pricing.length > 1 && (
-        <div className="mb-4">
-          <small className="text-gray-600">Other pricing options:</small>
-          {facility.pricing
-            .filter((p: Pricing) => !p.isDefault)
-            .map((pricing: Pricing, idx: number) => (
-              <div key={idx} className="text-sm text-gray-600">
-                {currencyFormat(pricing?.amount || 0)} per {pricing.unit}
-              </div>
-            ))}
+  // Check if user already has a pending request
+  const { data: userRequests } = useQuery({
+    queryKey: ["user-join-requests"],
+    queryFn: CompanyJoinRequestsAPI.getUserRequests,
+    enabled: !!user && !user.company,
+  });
+
+  useEffect(() => {
+    if (userRequests && user) {
+      const pendingRequest = (userRequests as any)?.requests?.find(
+        (req: any) =>
+          req.company === facility.company && req.status === "pending"
+      );
+      setHasPendingRequest(!!pendingRequest);
+    }
+  }, [userRequests, user, facility.company]);
+
+  const handleJoinCompany = async () => {
+    if (!user) {
+      toast({
+        title: "You must be logged in to join a company.",
+        description: "Please log in to your account.",
+      });
+      return;
+    }
+
+    setIsJoining(true);
+    try {
+      await CompanyJoinRequestsAPI.requestToJoin(facility.company!);
+      setHasPendingRequest(true);
+      toast({
+        title: "Join request sent!",
+        description: `Your join request for ${facility.name} has been sent.`,
+      });
+    } catch (error: any) {
+      console.error("Failed to send join request:", error);
+      toast({
+        title: "Failed to join company",
+        description:
+          error.message || "Could not send join request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  return (
+    <Card className="shadow-lg mb-4">
+      <CardContent className="p-6">
+        <div className="flex items-baseline mb-4">
+          <span className="text-3xl font-bold">
+            {currencyFormat(defaultPricing.amount || 0)}
+          </span>
+          <span className="text-gray-600 ml-2">per {defaultPricing.unit}</span>
         </div>
-      )}
 
-      <Button asChild className="w-full mb-4 text-lg py-3">
-        <Link href={`/facility/${facility._id}/book`}>Book Now</Link>
-      </Button>
+        {facility.pricing.length > 1 && (
+          <div className="mb-4">
+            <small className="text-gray-600">Other pricing options:</small>
+            {facility.pricing
+              .filter((p: Pricing) => !p.isDefault)
+              .map((pricing: Pricing, idx: number) => (
+                <div key={idx} className="text-sm text-gray-600">
+                  {currencyFormat(pricing?.amount || 0)} per {pricing.unit}
+                </div>
+              ))}
+          </div>
+        )}
 
-      <div className="text-center mb-4">
-        <small className="text-gray-600">You won&apos;t be charged yet</small>
-      </div>
+        <Button asChild className="w-full mb-4 text-lg py-3">
+          <Link href={`/facility/${facility._id}/book`}>Book Now</Link>
+        </Button>
 
-      <hr className="border-gray-200 mb-4" />
-
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-gray-600">Response time:</span>
-          <span>Within 1 hour</span>
+        <div className="text-center mb-4">
+          <small className="text-gray-600">You won&apos;t be charged yet</small>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">Cancellation:</span>
-          <span>Free until 24h before</span>
+
+        <hr className="border-gray-200 mb-4" />
+
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Response time:</span>
+            <span>Within 1 hour</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Cancellation:</span>
+            <span>Free until 24h before</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Languages:</span>
+            <span>English, Spanish</span>
+          </div>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">Languages:</span>
-          <span>English, Spanish</span>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+
+        {user && !user.company && !hasPendingRequest && (
+          <Button
+            variant="outline"
+            className="w-full mt-4"
+            onClick={handleJoinCompany}
+            disabled={isJoining}
+          >
+            {isJoining ? "Joining..." : "Join Company"}
+          </Button>
+        )}
+
+        {user && !user.company && hasPendingRequest && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+            <p className="text-sm text-blue-800">
+              ✓ Join request sent! Waiting for approval.
+            </p>
+            <Button
+              variant="link"
+              className="text-blue-600 p-0 h-auto text-sm mt-1"
+              asChild
+            >
+              <Link href="/user/join-requests">View Request Status</Link>
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 const FacilityContactCard = () => (
   <Card className="shadow-lg">

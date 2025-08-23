@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CompanyJoinRequestAPI } from "@/lib/api";
+import { CompanyJoinRequestsAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +28,7 @@ export default function InviteUserModal({ companyId }: InviteUserModalProps) {
 
   const inviteMutation = useMutation({
     mutationFn: ({ email }: { email: string }) =>
-      CompanyJoinRequestAPI.inviteUser("", companyId), // We'll need to get userId from email
+      CompanyJoinRequestsAPI.inviteUser(email, companyId), // We'll need to get userId from email
     onSuccess: () => {
       toast({
         title: "Success",

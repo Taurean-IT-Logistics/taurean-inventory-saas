@@ -735,6 +735,178 @@ export async function updateUserLoyalty(
   }
 }
 
+/**
+ * Update user loyalty profile after successful payment or booking
+ */
+export async function updateUserLoyaltyProfile(
+  userId: string,
+  amount: number = 0,
+  facilityId?: string,
+  isBookingCreation: boolean = false
+): Promise<UserDocument | null> {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Invalid user ID");
+    }
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Only update loyalty profile for regular users
+    if (user.role !== "user") {
+      return user;
+    }
+
+    // Initialize loyalty profile if it doesn't exist
+    if (!user.loyaltyProfile) {
+      user.loyaltyProfile = {
+        totalBookings: 0,
+        totalSpent: 0,
+        preferredFacilities: [],
+        loyaltyTier: "bronze",
+      };
+    }
+
+    // Update total spending if this is a payment
+    if (amount > 0) {
+      user.loyaltyProfile.totalSpent += amount;
+    }
+
+    // Update total bookings if this is a booking creation
+    if (isBookingCreation) {
+      user.loyaltyProfile.totalBookings += 1;
+    }
+
+    // Update preferred facilities if facility is provided
+    if (
+      facilityId &&
+      !user.loyaltyProfile.preferredFacilities.includes(facilityId as any)
+    ) {
+      user.loyaltyProfile.preferredFacilities.push(facilityId as any);
+
+      // Keep only the last 5 preferred facilities
+      if (user.loyaltyProfile.preferredFacilities.length > 5) {
+        user.loyaltyProfile.preferredFacilities =
+          user.loyaltyProfile.preferredFacilities.slice(-5);
+      }
+    }
+
+    // Calculate and update loyalty tier based on total spending
+    const newTier = calculateLoyaltyTier(user.loyaltyProfile.totalSpent);
+    if (newTier !== user.loyaltyProfile.loyaltyTier) {
+      user.loyaltyProfile.loyaltyTier = newTier;
+      console.log(`User ${user.email} upgraded to ${newTier} tier!`);
+    }
+
+    // Update last activity date
+    user.loyaltyProfile.lastBookingDate = new Date();
+
+    const updatedUser = await user.save();
+    return updatedUser;
+  } catch (error: any) {
+    throw new Error("Error updating user loyalty profile: " + error.message);
+  }
+}
+
+/**
+ * Calculate loyalty tier based on total spending
+ */
+function calculateLoyaltyTier(
+  totalSpent: number
+): "bronze" | "silver" | "gold" | "platinum" {
+  if (totalSpent >= 10000) {
+    return "platinum";
+  } else if (totalSpent >= 5000) {
+    return "gold";
+  } else if (totalSpent >= 2000) {
+    return "silver";
+  } else {
+    return "bronze";
+  }
+}
+
+/**
+ * Get user loyalty profile information
+ */
+export async function getUserLoyaltyProfile(userId: string): Promise<any> {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Invalid user ID");
+    }
+
+    const user = await UserModel.findById(userId)
+      .select("loyaltyProfile")
+      .lean();
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return (
+      user.loyaltyProfile || {
+        totalBookings: 0,
+        totalSpent: 0,
+        preferredFacilities: [],
+        loyaltyTier: "bronze",
+      }
+    );
+  } catch (error: any) {
+    throw new Error("Error fetching user loyalty profile: " + error.message);
+  }
+}
+
+/**
+ * Get loyalty tier benefits and requirements
+ */
+export function getLoyaltyTierInfo() {
+  return {
+    bronze: {
+      name: "Bronze",
+      minSpending: 0,
+      benefits: ["Basic support", "Standard booking"],
+      nextTier: "silver",
+      nextTierRequirement: 2000,
+    },
+    silver: {
+      name: "Silver",
+      minSpending: 2000,
+      benefits: [
+        "Priority support",
+        "Faster booking",
+        "5% discount on selected facilities",
+      ],
+      nextTier: "gold",
+      nextTierRequirement: 5000,
+    },
+    gold: {
+      name: "Gold",
+      minSpending: 5000,
+      benefits: [
+        "VIP support",
+        "Instant booking",
+        "10% discount on all facilities",
+        "Free cancellation",
+      ],
+      nextTier: "platinum",
+      nextTierRequirement: 10000,
+    },
+    platinum: {
+      name: "Platinum",
+      minSpending: 10000,
+      benefits: [
+        "Dedicated support",
+        "Premium facilities access",
+        "15% discount on all facilities",
+        "Free upgrades",
+        "Exclusive events",
+      ],
+      nextTier: null,
+      nextTierRequirement: null,
+    },
+  };
+}
+
 // Export a service object for backward compatibility
 export const UserService = {
   createUser,
@@ -748,4 +920,7 @@ export const UserService = {
   getUserStatistics,
   searchUsers,
   updateUserLoyalty,
+  updateUserLoyaltyProfile,
+  getUserLoyaltyProfile,
+  getLoyaltyTierInfo,
 };

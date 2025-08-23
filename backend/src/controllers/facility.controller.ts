@@ -75,13 +75,18 @@ const getCompanyFacilities = async (
   res: Response
 ): Promise<void> => {
   try {
+    if (!req.user?.companyId) {
+      sendError(res, "Company ID not found. User must be associated with a company.");
+      return;
+    }
+
     const showDeleted =
       req.user?.role === "admin" || req.user?.role === "staff"
         ? req.query.showDeleted === "true"
         : false;
 
     // Enhanced filter parsing with validation
-    let filter = { company: req.user?.companyId };
+    let filter = { company: req.user.companyId };
     if (req.query.filter) {
       try {
         const queryFilter = JSON.parse(req.query.filter as string);

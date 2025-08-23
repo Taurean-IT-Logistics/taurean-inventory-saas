@@ -41,12 +41,22 @@ import {
   XCircle,
   AlertCircle,
   DollarSign,
+  Building2,
+  Home,
+  Users,
+  Calendar,
+  Activity,
+  MessageSquare,
+  HelpCircle,
 } from "lucide-react";
 import { InvoicesAPI, TransactionsAPI, BookingsAPI } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { currencyFormat } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
+import Link from "next/link";
+import UserInvitations from "@/components/user/UserInvitations";
+import { EnhancedChatWidget } from "@/components/chat/enhanced-chat-widget";
 
 interface DashboardStats {
   totalBookings: number;
@@ -133,7 +143,10 @@ const UserDashboard = () => {
     return stats;
   }, [transactions, invoices, bookings]);
 
-  const handleDownloadInvoice = async (invoiceId: string, invoiceNumber: string) => {
+  const handleDownloadInvoice = async (
+    invoiceId: string,
+    invoiceNumber: string
+  ) => {
     try {
       const response = await fetch(`/api/v1/invoices/${invoiceId}/download`, {
         headers: {
@@ -169,11 +182,14 @@ const UserDashboard = () => {
 
   const handleDownloadReceipt = async (receiptId: string) => {
     try {
-      const response = await fetch(`/api/v1/invoices/receipts/${receiptId}/download`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
+      const response = await fetch(
+        `/api/v1/invoices/receipts/${receiptId}/download`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to download receipt");
 
@@ -203,11 +219,14 @@ const UserDashboard = () => {
 
   const handleExportTransactions = async (format: "csv" | "excel") => {
     try {
-      const response = await fetch(`/api/v1/transactions/export/user?format=${format}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
+      const response = await fetch(
+        `/api/v1/transactions/export/user?format=${format}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to export transactions");
 
@@ -265,7 +284,12 @@ const UserDashboard = () => {
     }
   };
 
-  if (transactionsLoading || invoicesLoading || receiptsLoading || bookingsLoading) {
+  if (
+    transactionsLoading ||
+    invoicesLoading ||
+    receiptsLoading ||
+    bookingsLoading
+  ) {
     return <Loader text="Loading dashboard..." className="pt-20" />;
   }
 
@@ -301,11 +325,15 @@ const UserDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Bookings
+            </CardTitle>
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.totalBookings}</div>
+            <div className="text-2xl font-bold">
+              {dashboardStats.totalBookings}
+            </div>
             <p className="text-xs text-muted-foreground">
               {dashboardStats.completedBookings} completed
             </p>
@@ -327,41 +355,164 @@ const UserDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Pending Payments
+            </CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {currencyFormat(dashboardStats.pendingPayments)}
             </div>
-            <p className="text-xs text-muted-foreground">Outstanding invoices</p>
+            <p className="text-xs text-muted-foreground">
+              Outstanding invoices
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Bookings</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Bookings
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(bookings as any)?.data?.filter((b: any) => b.status === "active").length || 0}
+              {(bookings as any)?.data?.filter(
+                (b: any) => b.status === "active"
+              ).length || 0}
             </div>
-            <p className="text-xs text-muted-foreground">Currently in progress</p>
+            <p className="text-xs text-muted-foreground">
+              Currently in progress
+            </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Quick Access Section */}
+      {!user?.company && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Company Access
+            </CardTitle>
+            <CardDescription>
+              Join a company to access business features and manage facilities
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  You&apos;re not currently associated with any company
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Request to join a company or become a host to get started
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button asChild variant="outline">
+                  <Link href="/user/join-requests">
+                    <Building2 className="h-4 w-4 mr-2" />
+                    View Join Requests
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/user/host">
+                    <Home className="h-4 w-4 mr-2" />
+                    Become a Host
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Company Status Section */}
+      {user?.company && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Company Status
+            </CardTitle>
+            <CardDescription>
+              You are currently associated with a company
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  Company: {(user.company as any)?.name || "Unknown Company"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Role: {user.role || "User"}
+                </p>
+              </div>
+              <Button asChild>
+                <Link href="/admin">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Go to Dashboard
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="receipts">Receipts</TabsTrigger>
+          <TabsTrigger value="invitations">Invitations</TabsTrigger>
+          <TabsTrigger value="support">Support</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          {/* Recent Join Requests */}
+          {!user?.company && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Recent Join Requests
+                </CardTitle>
+                <CardDescription>
+                  Your latest company join requests
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* This will be populated by the UserJoinRequests component */}
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">
+                      Loading join requests...
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href="/user/join-requests">
+                      <Building2 className="h-4 w-4 mr-2" />
+                      View All Join Requests
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Recent Transactions */}
           <Card>
             <CardHeader>
@@ -377,34 +528,41 @@ const UserDashboard = () => {
                   title="Error loading transactions"
                   message={transactionsError.message}
                 />
-              ) : !(transactions as any)?.data || (transactions as any).data.length === 0 ? (
+              ) : !(transactions as any)?.data ||
+                (transactions as any).data.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No transactions found
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {(transactions as any).data.slice(0, 5).map((transaction: any) => (
-                    <div
-                      key={transaction._id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        {getStatusIcon(transaction.status)}
-                        <div>
-                          <p className="font-medium">{transaction.description}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(transaction.createdAt).toLocaleDateString()}
+                  {(transactions as any).data
+                    .slice(0, 5)
+                    .map((transaction: any) => (
+                      <div
+                        key={transaction._id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          {getStatusIcon(transaction.status)}
+                          <div>
+                            <p className="font-medium">
+                              {transaction.description}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(
+                                transaction.createdAt
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">
+                            {currencyFormat(transaction.amount)}
                           </p>
+                          {getStatusBadge(transaction.status)}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          {currencyFormat(transaction.amount)}
-                        </p>
-                        {getStatusBadge(transaction.status)}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </CardContent>
@@ -426,7 +584,8 @@ const UserDashboard = () => {
                   title="Error loading bookings"
                   message={bookingsError.message}
                 />
-              ) : !(bookings as any)?.data || (bookings as any).data.length === 0 ? (
+              ) : !(bookings as any)?.data ||
+                (bookings as any).data.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No bookings found
                 </p>
@@ -468,7 +627,9 @@ const UserDashboard = () => {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem>View Details</DropdownMenuItem>
                               {booking.status === "pending" && (
-                                <DropdownMenuItem>Cancel Booking</DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  Cancel Booking
+                                </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -497,7 +658,8 @@ const UserDashboard = () => {
                   title="Error loading invoices"
                   message={invoicesError.message}
                 />
-              ) : !(invoices as any)?.data || (invoices as any).data.length === 0 ? (
+              ) : !(invoices as any)?.data ||
+                (invoices as any).data.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No invoices found
                 </p>
@@ -535,7 +697,10 @@ const UserDashboard = () => {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={() =>
-                                  handleDownloadInvoice(invoice._id, invoice.invoiceNumber)
+                                  handleDownloadInvoice(
+                                    invoice._id,
+                                    invoice.invoiceNumber
+                                  )
                                 }
                               >
                                 <Download className="mr-2 h-4 w-4" />
@@ -564,7 +729,9 @@ const UserDashboard = () => {
                 <Receipt className="h-5 w-5" />
                 My Receipts
               </CardTitle>
-              <CardDescription>Payment receipts for your transactions</CardDescription>
+              <CardDescription>
+                Payment receipts for your transactions
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {receiptsError ? (
@@ -572,7 +739,8 @@ const UserDashboard = () => {
                   title="Error loading receipts"
                   message={receiptsError.message}
                 />
-              ) : !(receipts as any)?.data || (receipts as any).data.length === 0 ? (
+              ) : !(receipts as any)?.data ||
+                (receipts as any).data.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No receipts found
                 </p>
@@ -597,9 +765,7 @@ const UserDashboard = () => {
                         <TableCell>
                           {new Date(receipt.timestamp).toLocaleDateString()}
                         </TableCell>
-                        <TableCell>
-                          {currencyFormat(receipt.amount)}
-                        </TableCell>
+                        <TableCell>{currencyFormat(receipt.amount)}</TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -609,7 +775,9 @@ const UserDashboard = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => handleDownloadReceipt(receipt._id)}
+                                onClick={() =>
+                                  handleDownloadReceipt(receipt._id)
+                                }
                               >
                                 <Download className="mr-2 h-4 w-4" />
                                 Download PDF
@@ -626,7 +794,60 @@ const UserDashboard = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="invitations" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                My Invitations
+              </CardTitle>
+              <CardDescription>
+                Invitations you have received to join companies
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UserInvitations />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="support" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Home className="h-5 w-5" />
+                Support
+              </CardTitle>
+              <CardDescription>
+                Get help and support from our team
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-gray-500">
+                <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>Support assistance available</p>
+                <p className="text-sm">
+                  Use the chat widget in the bottom-right corner for immediate
+                  support
+                </p>
+                <div className="mt-4">
+                  <Button
+                    onClick={() => setActiveTab("chat")}
+                    className="flex items-center gap-2"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Open Support Chat
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Enhanced Chat Widget - Always visible */}
+      <EnhancedChatWidget />
     </div>
   );
 };

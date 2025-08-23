@@ -12,6 +12,7 @@ import {
   LogIn,
   Loader,
   LockOpen,
+  Building2,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -203,6 +204,15 @@ export function Header() {
                         >
                           <PieChart className="mr-2 h-4 w-4" />
                           <span>Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/user/join-requests"
+                          className="flex items-center"
+                        >
+                          <Building2 className="mr-2 h-4 w-4" />
+                          <span>Join Requests</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
