@@ -88,17 +88,46 @@ router.get(
 );
 
 router.get("/tickets/:ticketId", SupportController.getTicketDetails);
+
+// Get ticket messages
+router.get("/tickets/:ticketId/messages", SupportController.getTicketMessages);
+
 router.post(
   "/tickets/:ticketId/messages",
   upload.array("attachments", 5),
   SupportController.sendMessage
 );
 
+// Typing indicator route
+router.post("/tickets/:ticketId/typing", SupportController.updateTypingStatus);
+
+// Close ticket (users can close their own tickets, staff can close any)
+router.put("/tickets/:ticketId/close", SupportController.closeTicket);
+
+// Reopen ticket (users can reopen their own tickets, staff can reopen any)
+router.put("/tickets/:ticketId/reopen", SupportController.reopenTicket);
+
+// Update ticket status (staff only)
 router.put(
   "/tickets/:ticketId/status",
   AuthorizeRoles("admin", "staff"),
   SupportController.updateTicketStatus
 );
+
+// Assign ticket to staff member
+router.put(
+  "/tickets/:ticketId/assign",
+  AuthorizeRoles("admin", "staff"),
+  SupportController.assignTicket
+);
+
+// Reassign ticket to another staff member
+router.put(
+  "/tickets/:ticketId/reassign",
+  AuthorizeRoles("admin", "staff"),
+  SupportController.reassignTicket
+);
+
 router.get(
   "/staff/available",
   AuthorizeRoles("admin", "staff"),

@@ -480,6 +480,8 @@ export interface CompanyRole {
     manageFacilities?: boolean;
     manageInventory?: boolean;
     manageTransactions?: boolean;
+    manageEmails?: boolean;
+    manageSettings?: boolean;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -493,5 +495,6 @@ export interface Notification {
   message: string;
   data?: any;
   isRead: boolean;
+  isDeleted: boolean;
   createdAt: Date;
 }

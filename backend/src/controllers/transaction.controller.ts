@@ -6,7 +6,7 @@ import {
   BookingService,
   FacilityService,
 } from "../services";
-import * as ExportService from "../services/export.service";
+
 import {
   sendSuccess,
   sendError,
@@ -61,6 +61,14 @@ const initializePaymentController = async (
       return;
     }
 
+    if (
+      paymentData.inventoryItem &&
+      !isValidObjectId(paymentData.inventoryItem)
+    ) {
+      sendValidationError(res, "Invalid inventory item ID");
+      return;
+    }
+
     const userDoc = await UserService.getUserByIdentifier(req.user?.id!);
 
     if (!userDoc) {
@@ -95,9 +103,51 @@ const initializePaymentController = async (
       }
     }
 
+    // Get company from facility for rentals/bookings, not from user
+    let companyId: string | undefined;
+    if (facility) {
+      const facilityDoc = await FacilityService.getFacilityById(facility);
+      if (facilityDoc?.company) {
+        companyId = facilityDoc.company.toString();
+      }
+    } else if (paymentData.booking) {
+      // If no facility but there's a booking, get company from booking
+      const bookingDoc = await BookingService.getBookingById(
+        paymentData.booking
+      );
+      if (bookingDoc?.company) {
+        companyId = bookingDoc.company.toString();
+      } else if (bookingDoc?.facility) {
+        // Fallback: get company from facility in booking
+        const facilityDoc = await FacilityService.getFacilityById(
+          bookingDoc.facility.toString()
+        );
+        if (facilityDoc?.company) {
+          companyId = facilityDoc.company.toString();
+        }
+      }
+    } else if (paymentData.inventoryItem) {
+      // If no facility/booking but there's an inventory item, get company from item
+      const inventoryItemDoc = await InventoryItemModel.findById(
+        paymentData.inventoryItem
+      );
+      if (inventoryItemDoc?.company) {
+        companyId = inventoryItemDoc.company.toString();
+      } else if (inventoryItemDoc?.associatedFacility) {
+        // Fallback: get company from associated facility
+        const facilityDoc = await FacilityService.getFacilityById(
+          inventoryItemDoc.associatedFacility.toString()
+        );
+        if (facilityDoc?.company) {
+          companyId = facilityDoc.company.toString();
+        }
+      }
+    }
+
     // Initialize payment with Paystack
     const paymentResponse = await PaymentService.initializePayment(
-      formattedPaymentData
+      formattedPaymentData,
+      { companyId }
     );
 
     // Create transaction document
@@ -115,7 +165,7 @@ const initializePaymentController = async (
       accessCode: paymentResponse.data.access_code,
       description: description || `Payment for ${email}`,
       reconciled: false,
-      company: userDoc.company, // Add company field
+      company: companyId, // Use company from facility/booking, not from user
       ...paymentData,
     };
 
@@ -694,6 +744,19 @@ const getAllTransactions = async (
       transactionsWithoutCompany.length
     );
 
+    // Try to fix transactions without company field first
+    if (transactionsWithoutCompany.length > 0) {
+      try {
+        const { fixTransactionCompanyFields } = await import(
+          "../services/transaction.service"
+        );
+        const result = await fixTransactionCompanyFields();
+        console.log("Fixed transactions:", result);
+      } catch (fixError) {
+        console.warn("Failed to fix transaction company fields:", fixError);
+      }
+    }
+
     const transactions = await TransactionService.getCompanyTransactions(
       companyId.toString()
     );
@@ -838,218 +901,6 @@ const getSubAccountDetails = async (
   }
 };
 
-const exportTransactions = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { format = "csv", startDate, endDate, type = "all" } = req.query;
-    const user = req.user as any;
-    const companyId = user.companyId;
-
-    if (!companyId) {
-      sendValidationError(res, "User is not associated with a company");
-      return;
-    }
-
-    const options = {
-      format: format as "csv" | "excel",
-      companyId: companyId.toString(),
-      startDate: startDate ? new Date(startDate as string) : undefined,
-      endDate: endDate ? new Date(endDate as string) : undefined,
-      type: type as "income" | "expense" | "all",
-    };
-
-    const filePath = await ExportService.exportTransactions(options);
-    const fileName = `transactions-export.${format}`;
-
-    // Set appropriate headers
-    res.setHeader(
-      "Content-Type",
-      format === "csv"
-        ? "text/csv"
-        : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-
-    // Clean up the file after streaming
-    fileStream.on("end", async () => {
-      await ExportService.cleanupTempFile(filePath);
-    });
-
-    fileStream.on("error", async (error) => {
-      console.error("Error streaming file:", error);
-      await ExportService.cleanupTempFile(filePath);
-      if (!res.headersSent) {
-        sendError(res, "Failed to export transactions", error);
-      }
-    });
-  } catch (error) {
-    sendError(res, "Failed to export transactions", error);
-  }
-};
-
-const exportUserTransactions = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { format = "csv", startDate, endDate } = req.query;
-    const user = req.user as any;
-    const userId = user.id;
-
-    if (!userId) {
-      sendValidationError(res, "User not authenticated");
-      return;
-    }
-
-    const options = {
-      format: format as "csv" | "excel",
-      userId: userId.toString(),
-      startDate: startDate ? new Date(startDate as string) : undefined,
-      endDate: endDate ? new Date(endDate as string) : undefined,
-      type: "all" as const,
-    };
-
-    const filePath = await ExportService.exportTransactions(options);
-    const fileName = `my-transactions-export.${format}`;
-
-    // Set appropriate headers
-    res.setHeader(
-      "Content-Type",
-      format === "csv"
-        ? "text/csv"
-        : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-
-    // Clean up the file after streaming
-    fileStream.on("end", async () => {
-      await ExportService.cleanupTempFile(filePath);
-    });
-
-    fileStream.on("error", async (error) => {
-      console.error("Error streaming file:", error);
-      await ExportService.cleanupTempFile(filePath);
-      if (!res.headersSent) {
-        sendError(res, "Failed to export transactions", error);
-      }
-    });
-  } catch (error) {
-    sendError(res, "Failed to export user transactions", error);
-  }
-};
-
-const exportBookings = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { format = "csv", startDate, endDate } = req.query;
-    const user = req.user as any;
-    const companyId = user.companyId;
-
-    if (!companyId) {
-      sendValidationError(res, "User is not associated with a company");
-      return;
-    }
-
-    const options = {
-      format: format as "csv" | "excel",
-      companyId: companyId.toString(),
-      startDate: startDate ? new Date(startDate as string) : undefined,
-      endDate: endDate ? new Date(endDate as string) : undefined,
-    };
-
-    const filePath = await ExportService.exportBookings(options);
-    const fileName = `bookings-export.${format}`;
-
-    // Set appropriate headers
-    res.setHeader(
-      "Content-Type",
-      format === "csv"
-        ? "text/csv"
-        : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-
-    // Clean up the file after streaming
-    fileStream.on("end", async () => {
-      await ExportService.cleanupTempFile(filePath);
-    });
-
-    fileStream.on("error", async (error) => {
-      console.error("Error streaming file:", error);
-      await ExportService.cleanupTempFile(filePath);
-      if (!res.headersSent) {
-        sendError(res, "Failed to export bookings", error);
-      }
-    });
-  } catch (error) {
-    sendError(res, "Failed to export bookings", error);
-  }
-};
-
-const exportInvoices = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { format = "csv", startDate, endDate } = req.query;
-    const user = req.user as any;
-    const companyId = user.companyId;
-
-    if (!companyId) {
-      sendValidationError(res, "User is not associated with a company");
-      return;
-    }
-
-    const options = {
-      format: format as "csv" | "excel",
-      companyId: companyId.toString(),
-      startDate: startDate ? new Date(startDate as string) : undefined,
-      endDate: endDate ? new Date(endDate as string) : undefined,
-    };
-
-    const filePath = await ExportService.exportInvoices(options);
-    const fileName = `invoices-export.${format}`;
-
-    // Set appropriate headers
-    res.setHeader(
-      "Content-Type",
-      format === "csv"
-        ? "text/csv"
-        : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-
-    // Clean up the file after streaming
-    fileStream.on("end", async () => {
-      await ExportService.cleanupTempFile(filePath);
-    });
-
-    fileStream.on("error", async (error) => {
-      console.error("Error streaming file:", error);
-      await ExportService.cleanupTempFile(filePath);
-      if (!res.headersSent) {
-        sendError(res, "Failed to export invoices", error);
-      }
-    });
-  } catch (error) {
-    sendError(res, "Failed to export invoices", error);
-  }
-};
-
 export {
   initializePaymentController,
   verifyPaymentController,
@@ -1063,8 +914,4 @@ export {
   updateSubAccount,
   listBanks,
   getSubAccountDetails,
-  exportTransactions,
-  exportUserTransactions,
-  exportBookings,
-  exportInvoices,
 };

@@ -38,7 +38,6 @@ export class CompanyRoleService {
     roleData: {
       name: string;
       permissions: {
-        viewInvoices?: boolean;
         accessFinancials?: boolean;
         viewBookings?: boolean;
         viewInventory?: boolean;
@@ -48,6 +47,8 @@ export class CompanyRoleService {
         manageFacilities?: boolean;
         manageInventory?: boolean;
         manageTransactions?: boolean;
+        manageEmails?: boolean;
+        manageSettings?: boolean;
       };
     }
   ) {
@@ -90,6 +91,8 @@ export class CompanyRoleService {
         manageFacilities?: boolean;
         manageInventory?: boolean;
         manageTransactions?: boolean;
+        manageEmails?: boolean;
+        manageSettings?: boolean;
       };
     }
   ) {
@@ -214,7 +217,6 @@ export class CompanyRoleService {
       {
         name: "Admin",
         permissions: {
-          viewInvoices: true,
           accessFinancials: true,
           viewBookings: true,
           viewInventory: true,
@@ -224,12 +226,13 @@ export class CompanyRoleService {
           manageFacilities: true,
           manageInventory: true,
           manageTransactions: true,
+          manageEmails: true,
+          manageSettings: true,
         },
       },
       {
         name: "Staff",
         permissions: {
-          viewInvoices: false,
           accessFinancials: false,
           viewBookings: true,
           viewInventory: true,
@@ -239,12 +242,13 @@ export class CompanyRoleService {
           manageFacilities: false,
           manageInventory: false,
           manageTransactions: false,
+          manageEmails: false,
+          manageSettings: false,
         },
       },
       {
         name: "User",
         permissions: {
-          viewInvoices: false,
           accessFinancials: false,
           viewBookings: true,
           viewInventory: true,
@@ -254,6 +258,8 @@ export class CompanyRoleService {
           manageFacilities: false,
           manageInventory: false,
           manageTransactions: false,
+          manageEmails: false,
+          manageSettings: false,
         },
       },
     ];

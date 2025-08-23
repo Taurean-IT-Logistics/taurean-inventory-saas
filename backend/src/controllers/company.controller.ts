@@ -2,6 +2,13 @@ import { Request, Response } from "express";
 import { CompanyModel } from "../models/company.model";
 import { sendSuccess, sendError } from "../utils";
 import crypto from "crypto";
+import {
+  createSubaccount,
+  getSubaccountDetails,
+  updateSubAccount,
+} from "../services/payment.service";
+import { Company } from "../types";
+import { Types } from "mongoose";
 
 const plans = [
   { id: "monthly", label: "Monthly", durationDays: 30 },
@@ -196,17 +203,18 @@ export async function updateCompany(req: Request, res: Response) {
       return;
     }
 
-    // Handle uploaded image (single image)
-    if (req.file) {
-      const imageData = {
-        path: req.file.path,
-        originalName: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-      };
+    // Handle file uploads
+    const logoFile = (req as any).file;
+    let logoData = null;
 
-      // Replace the existing image with the new one
-      (company as any).logo = imageData;
+    if (logoFile) {
+      // Structure logo data according to company model
+      logoData = {
+        path: logoFile.path,
+        originalName: logoFile.originalname,
+        mimetype: logoFile.mimetype,
+        size: logoFile.size,
+      };
     }
 
     // Update company fields
@@ -355,6 +363,498 @@ export async function handleJoinRequest(req: Request, res: Response) {
   }
 }
 
+// Get pending join requests for a company
+export async function getPendingJoinRequests(req: Request, res: Response) {
+  try {
+    const companyId = (req.user as any)?.companyId;
+    const userRole = (req.user as any)?.role;
+
+    if (!companyId) {
+      sendError(res, "Company context required", null, 400);
+      return;
+    }
+
+    // Only admins can view join requests
+    if (userRole !== "admin") {
+      sendError(res, "Insufficient permissions", null, 403);
+      return;
+    }
+
+    const JoinRequestModel = (
+      await import("../models/companyJoinRequest.model")
+    ).CompanyJoinRequestModel;
+
+    const joinRequests = await JoinRequestModel.find({
+      company: companyId,
+      status: "pending",
+    })
+      .populate("user", "firstName lastName email username")
+      .sort({ createdAt: -1 });
+
+    sendSuccess(res, "Pending join requests retrieved successfully", {
+      joinRequests,
+    });
+  } catch (e: any) {
+    sendError(res, "Failed to retrieve join requests", e.message);
+  }
+}
+
+// Approve or reject join request
+export async function handleJoinRequestResponse(req: Request, res: Response) {
+  try {
+    const { requestId } = req.params;
+    const { action, reason } = req.body; // action: "approve" or "reject"
+    const companyId = (req.user as any)?.companyId;
+    const userRole = (req.user as any)?.role;
+
+    if (!companyId || userRole !== "admin") {
+      sendError(res, "Insufficient permissions", null, 403);
+      return;
+    }
+
+    const JoinRequestModel = (
+      await import("../models/companyJoinRequest.model")
+    ).CompanyJoinRequestModel;
+
+    const joinRequest = await JoinRequestModel.findById(requestId)
+      .populate("user", "firstName lastName email")
+      .populate("company", "name");
+
+    if (!joinRequest) {
+      sendError(res, "Join request not found", null, 404);
+      return;
+    }
+
+    if ((joinRequest.company as any)._id.toString() !== companyId) {
+      sendError(res, "Access denied", null, 403);
+      return;
+    }
+
+    if (joinRequest.status !== "pending") {
+      sendError(res, "Join request is not pending", null, 400);
+      return;
+    }
+
+    if (action === "approve") {
+      // Approve the request
+      joinRequest.status = "approved";
+      joinRequest.approvedBy = (req.user as any)?.id;
+      joinRequest.approvedAt = new Date();
+      await joinRequest.save();
+
+      // Add user to company
+      const UserModel = (await import("../models/user.model")).UserModel;
+      await UserModel.findByIdAndUpdate(
+        (joinRequest.user as any)._id.toString(),
+        {
+          company: companyId,
+          role: "user", // Default role for new members
+        }
+      );
+
+      sendSuccess(res, "Join request approved successfully", { joinRequest });
+    } else if (action === "reject") {
+      // Reject the request
+      joinRequest.status = "rejected";
+      joinRequest.rejectedBy = (req.user as any)?.id;
+      joinRequest.rejectedAt = new Date();
+      joinRequest.rejectionReason = reason || "Request rejected by admin";
+      await joinRequest.save();
+
+      sendSuccess(res, "Join request rejected successfully", { joinRequest });
+    } else {
+      sendError(res, "Invalid action. Use 'approve' or 'reject'", null, 400);
+    }
+  } catch (e: any) {
+    sendError(res, "Failed to handle join request", e.message);
+  }
+}
+
+// Get user's join requests
+export async function getUserJoinRequests(req: Request, res: Response) {
+  try {
+    const userId = (req.user as any)?.id;
+
+    if (!userId) {
+      sendError(res, "User not authenticated", null, 401);
+      return;
+    }
+
+    const JoinRequestModel = (
+      await import("../models/companyJoinRequest.model")
+    ).CompanyJoinRequestModel;
+
+    const joinRequests = await JoinRequestModel.find({
+      user: userId,
+    })
+      .populate("company", "name logo")
+      .sort({ createdAt: -1 });
+
+    sendSuccess(res, "User join requests retrieved successfully", {
+      joinRequests,
+    });
+  } catch (e: any) {
+    sendError(res, "Failed to retrieve user join requests", e.message);
+  }
+}
+
+// Get company subaccount details
+export async function getCompanySubaccount(req: Request, res: Response) {
+  try {
+    const { companyId } = req.params;
+    const userCompanyId = (req.user as any)?.companyId;
+    const userRole = (req.user as any)?.role;
+
+    if (
+      !companyId ||
+      (userCompanyId !== companyId && userRole !== "super_admin")
+    ) {
+      sendError(res, "Access denied", null, 403);
+      return;
+    }
+
+    const company = await CompanyModel.findById(companyId)
+      .select("name paystackSubaccountCode feePercent")
+      .lean();
+
+    if (!company) {
+      sendError(res, "Company not found", null, 404);
+      return;
+    }
+
+    // If company has Paystack subaccount code, fetch details
+    let subaccountDetails = null;
+    if ((company as any).paystackSubaccountCode) {
+      try {
+        const { getSubaccountDetails } = await import(
+          "../services/payment.service"
+        );
+        subaccountDetails = await getSubaccountDetails(
+          (company as any).paystackSubaccountCode
+        );
+      } catch (error) {
+        console.warn("Failed to fetch Paystack subaccount details:", error);
+      }
+    }
+
+    const response = {
+      company: {
+        name: company.name,
+        paystackSubaccountCode: (company as any).paystackSubaccountCode,
+        feePercent: (company as any).feePercent,
+      },
+      subaccountDetails,
+    };
+
+    sendSuccess(
+      res,
+      "Company subaccount details retrieved successfully",
+      response
+    );
+  } catch (e: any) {
+    sendError(res, "Failed to retrieve company subaccount details", e.message);
+  }
+}
+
+// Update company subaccount details
+export async function updateCompanySubaccount(req: Request, res: Response) {
+  try {
+    const { companyId } = req.params;
+    const { settlement_bank, account_number, description, percentage_charge } =
+      req.body;
+    const userCompanyId = (req.user as any)?.companyId;
+    const userRole = (req.user as any)?.role;
+
+    if (
+      !companyId ||
+      (userCompanyId !== companyId && userRole !== "super_admin")
+    ) {
+      sendError(res, "Access denied", null, 403);
+      return;
+    }
+
+    const company = await CompanyModel.findById(companyId);
+    if (!company) {
+      sendError(res, "Company not found", null, 404);
+      return;
+    }
+
+    // Create or update Paystack subaccount
+    let subaccountDetails = null;
+    try {
+      const { updateSubAccount, createSubaccount } = await import(
+        "../services/payment.service"
+      );
+
+      if ((company as any).paystackSubaccountCode) {
+        // Update existing subaccount
+        subaccountDetails = await updateSubAccount(
+          (company as any).paystackSubaccountCode,
+          {
+            business_name: company.name,
+            settlement_bank,
+            account_number,
+            description,
+            percentage_charge,
+          }
+        );
+      } else {
+        // Create new subaccount
+        subaccountDetails = await createSubaccount({
+          business_name: company.name,
+          settlement_bank,
+          account_number,
+          description,
+          percentage_charge,
+        });
+
+        // Update company with subaccount code
+        (company as any).paystackSubaccountCode =
+          subaccountDetails.subaccount_code;
+      }
+
+      // Update company fee percentage
+      if (percentage_charge !== undefined) {
+        (company as any).feePercent = parseFloat(percentage_charge);
+      }
+
+      await company.save();
+
+      sendSuccess(res, "Company subaccount updated successfully", {
+        company: {
+          name: company.name,
+          paystackSubaccountCode: (company as any).paystackSubaccountCode,
+          feePercent: (company as any).feePercent,
+        },
+        subaccountDetails: subaccountDetails.data || subaccountDetails,
+      });
+    } catch (error) {
+      console.error("Failed to update Paystack subaccount:", error);
+      sendError(res, "Failed to update Paystack subaccount", error);
+    }
+  } catch (e: any) {
+    sendError(res, "Failed to update company subaccount", e.message);
+  }
+}
+
+// Company onboarding - create company and subaccount
+export async function onboardCompany(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      sendError(res, "User not authenticated", null, 401);
+      return;
+    }
+
+    const {
+      name,
+      description,
+      location,
+      contactEmail,
+      contactPhone,
+      currency,
+      settlement_bank,
+      account_number,
+      business_name,
+      percentage_charge,
+      invoiceFormat,
+      registrationDocs,
+    } = req.body;
+
+    // Handle file uploads
+    const logoFile = (req as any).file;
+    let logoData = null;
+
+    if (logoFile) {
+      // Structure logo data according to company model
+      logoData = {
+        path: logoFile.path,
+        originalName: logoFile.originalname,
+        mimetype: logoFile.mimetype,
+        size: logoFile.size,
+      };
+    }
+
+    // Parse registration docs if provided
+    let parsedRegistrationDocs = [];
+    if (registrationDocs) {
+      try {
+        parsedRegistrationDocs = JSON.parse(registrationDocs);
+      } catch (parseError) {
+        console.warn("Failed to parse registration docs:", parseError);
+      }
+    }
+
+    // Validate required fields
+    if (
+      !name ||
+      !settlement_bank ||
+      !account_number ||
+      !business_name ||
+      !percentage_charge
+    ) {
+      sendError(
+        res,
+        "Missing required fields: name, settlement_bank, account_number, business_name, percentage_charge",
+        null,
+        400
+      );
+      return;
+    }
+
+    // Check if user already has a company
+    const existingCompany = await CompanyModel.findOne({ owner: userId });
+    if (existingCompany) {
+      sendError(res, "User already has a company", null, 400);
+      return;
+    }
+
+    // Create Paystack subaccount
+    const subaccountData = {
+      business_name,
+      settlement_bank,
+      account_number,
+      percentage_charge: parseFloat(percentage_charge),
+      description: description || `Subaccount for ${business_name}`,
+    };
+
+    let subaccountCode: string;
+    try {
+      const subaccount = await createSubaccount(subaccountData);
+      subaccountCode = subaccount.subaccount_code;
+    } catch (subaccountError: any) {
+      console.error("Failed to create Paystack subaccount:", subaccountError);
+      sendError(
+        res,
+        `Failed to create Paystack subaccount: ${subaccountError.message}`,
+        null,
+        500
+      );
+      return;
+    }
+
+    // Parse invoice format if provided
+    let parsedInvoiceFormat = {
+      type: "prefix",
+      prefix: name.substring(0, 3).toUpperCase(),
+      nextNumber: 1,
+      padding: 4,
+    };
+
+    if (invoiceFormat) {
+      try {
+        parsedInvoiceFormat = JSON.parse(invoiceFormat);
+      } catch (parseError) {
+        console.warn("Failed to parse invoice format:", parseError);
+      }
+    }
+
+    // Create company with subaccount code and file paths
+    const companyData = {
+      name,
+      description,
+      location,
+      contactEmail: contactEmail || (req.user as any)?.email,
+      contactPhone,
+      currency: currency || "GHS",
+      owner: userId,
+      isActive: true,
+      paystackSubaccountCode: subaccountCode,
+      feePercent: parseFloat(percentage_charge),
+      logo: logoData,
+      registrationDocs: parsedRegistrationDocs,
+      invoiceFormat: parsedInvoiceFormat,
+      subscription: {
+        plan: "free_trial",
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
+        status: "active",
+        hasUsedTrial: false,
+        isTrial: true,
+      },
+    };
+
+    const company = new CompanyModel(companyData);
+    await company.save();
+
+    // Update user's company field
+
+    // Create admin company role for the user
+    const CompanyRoleModel = (await import("../models/companyRole.model"))
+      .CompanyRoleModel;
+    const adminRole = new CompanyRoleModel({
+      company: company._id,
+      name: "Admin",
+      permissions: {
+        viewInvoices: true,
+        accessFinancials: true,
+        viewBookings: true,
+        viewInventory: true,
+        createRecords: true,
+        editRecords: true,
+        manageUsers: true,
+        manageFacilities: true,
+        manageInventory: true,
+        manageTransactions: true,
+        manageEmails: true,
+        manageSettings: true,
+      },
+    });
+    await adminRole.save();
+
+    const UserModel = (await import("../models/user.model")).UserModel;
+    await UserModel.findByIdAndUpdate(userId, {
+      company: company._id,
+      companyRole: adminRole._id,
+      role: "admin",
+    });
+
+    sendSuccess(res, "Company onboarded successfully", {
+      company: {
+        id: company._id,
+        name: company.name,
+        paystackSubaccountCode: company.paystackSubaccountCode,
+        feePercent: company.feePercent,
+        logo: company.logo,
+        registrationDocs: company.registrationDocs,
+      },
+      subaccount: {
+        code: subaccountCode,
+        business_name,
+        settlement_bank,
+        account_number,
+        percentage_charge,
+      },
+      userRole: {
+        role: "admin",
+        permissions: {
+          viewInvoices: true,
+          accessFinancials: true,
+          viewBookings: true,
+          viewInventory: true,
+          createRecords: true,
+          editRecords: true,
+          manageUsers: true,
+          manageFacilities: true,
+          manageInventory: true,
+          manageTransactions: true,
+          manageEmails: true,
+          manageSettings: true,
+        },
+        isActive: true,
+      },
+    });
+  } catch (error: any) {
+    console.error("Company onboarding error:", error);
+    console.error("Error stack:", error.stack);
+    console.error("Request body:", req.body);
+    console.error("Request file:", (req as any).file);
+    sendError(res, "Failed to onboard company", error.message);
+  }
+}
+
 export const CompanyController = {
   pricing,
   activateSubscription,
@@ -364,4 +864,10 @@ export const CompanyController = {
   updateCompany,
   getPublicCompanies,
   handleJoinRequest,
+  getPendingJoinRequests,
+  handleJoinRequestResponse,
+  getUserJoinRequests,
+  getCompanySubaccount,
+  updateCompanySubaccount,
+  onboardCompany,
 };

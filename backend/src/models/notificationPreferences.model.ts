@@ -1,7 +1,7 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model, Document, Types } from "mongoose";
 
 interface INotificationPreferences extends Document {
-  userId: string;
+  user: Types.ObjectId;
   email: boolean;
   push: boolean;
   sms: boolean;
@@ -15,8 +15,9 @@ interface INotificationPreferences extends Document {
 
 const NotificationPreferencesSchema = new Schema<INotificationPreferences>(
   {
-    userId: {
-      type: String,
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
       unique: true,
     },
@@ -54,7 +55,7 @@ const NotificationPreferencesSchema = new Schema<INotificationPreferences>(
   }
 );
 
-NotificationPreferencesSchema.index({ userId: 1 });
+NotificationPreferencesSchema.index({ user: 1 });
 
 export const NotificationPreferencesModel = model<INotificationPreferences>(
   "NotificationPreferences",

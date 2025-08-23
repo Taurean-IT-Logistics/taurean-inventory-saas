@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { UserController } from "../controllers";
-import { AuthMiddleware, AuthorizeRoles } from "../middlewares";
+import {
+  AuthMiddleware,
+  AuthorizeRoles,
+  RequireActiveCompany,
+  RequirePermissions,
+} from "../middlewares";
 
 const router = Router();
 
@@ -37,7 +42,8 @@ router.get(
 router.get(
   "/company",
   AuthMiddleware,
-  AuthorizeRoles("admin", "staff"),
+  RequireActiveCompany(),
+  RequirePermissions(["manageUsers"]),
   UserController.getCompanyUsers
 );
 

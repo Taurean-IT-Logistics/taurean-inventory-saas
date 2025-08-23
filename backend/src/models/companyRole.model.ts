@@ -15,6 +15,8 @@ interface CompanyRoleDocument extends Document {
     manageFacilities?: boolean;
     manageInventory?: boolean;
     manageTransactions?: boolean;
+    manageEmails?: boolean;
+    manageSettings?: boolean;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -35,6 +37,8 @@ const CompanyRoleSchema = new Schema<CompanyRoleDocument>(
       manageFacilities: { type: Boolean, default: false },
       manageInventory: { type: Boolean, default: false },
       manageTransactions: { type: Boolean, default: false },
+      manageEmails: { type: Boolean, default: false },
+      manageSettings: { type: Boolean, default: false },
     },
   },
   { timestamps: true }

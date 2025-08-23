@@ -14,11 +14,11 @@ export async function notifyUser(userId: string, payload: {
     message: payload.message,
     data: payload.data,
     isRead: false,
-  } as any);
+  });
   try {
     emitEvent("notification:user", { id: doc._id, notification: doc }, `user:${userId}`);
   } catch {}
-  return doc as any;
+  return doc;
 }
 
 export async function notifyCompany(companyId: string, payload: {
@@ -34,9 +34,9 @@ export async function notifyCompany(companyId: string, payload: {
     message: payload.message,
     data: payload.data,
     isRead: false,
-  } as any);
+  });
   try {
     emitEvent("notification:company", { id: doc._id, notification: doc }, `company:${companyId}`);
   } catch {}
-  return doc as any;
+  return doc;
 }

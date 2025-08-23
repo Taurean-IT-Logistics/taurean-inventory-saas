@@ -13,8 +13,8 @@ export async function getUserNotifications(req: Request, res: Response) {
     }
 
     const notifications = await NotificationModel.find({
-      userId,
-      isDeleted: { $ne: true },
+      user: userId,
+      isDeleted: false,
     })
       .sort({ createdAt: -1 })
       .limit(50);
@@ -32,7 +32,7 @@ export async function markAsRead(req: Request, res: Response) {
     const userId = (req.user as any)?.id;
 
     const notification = await NotificationModel.findOneAndUpdate(
-      { _id: id, userId, isDeleted: { $ne: true } },
+      { _id: id, user: userId, isDeleted: false },
       { isRead: true },
       { new: true }
     );
@@ -54,7 +54,7 @@ export async function markAllAsRead(req: Request, res: Response) {
     const userId = (req.user as any)?.id;
 
     await NotificationModel.updateMany(
-      { userId, isRead: false, isDeleted: { $ne: true } },
+      { user: userId, isRead: false, isDeleted: false },
       { isRead: true }
     );
 
@@ -71,7 +71,7 @@ export async function deleteNotification(req: Request, res: Response) {
     const userId = (req.user as any)?.id;
 
     const notification = await NotificationModel.findOneAndUpdate(
-      { _id: id, userId, isDeleted: { $ne: true } },
+      { _id: id, user: userId, isDeleted: false },
       { isDeleted: true },
       { new: true }
     );
@@ -96,12 +96,12 @@ export async function getPreferences(req: Request, res: Response) {
       return;
     }
 
-    let preferences = await NotificationPreferencesModel.findOne({ userId });
+    let preferences = await NotificationPreferencesModel.findOne({ user: userId });
 
     if (!preferences) {
       // Create default preferences if none exist
       preferences = await NotificationPreferencesModel.create({
-        userId,
+        user: userId,
         email: true,
         push: true,
         sms: false,
@@ -130,7 +130,7 @@ export async function updatePreferences(req: Request, res: Response) {
     const updateData = req.body;
 
     const preferences = await NotificationPreferencesModel.findOneAndUpdate(
-      { userId },
+      { user: userId },
       { $set: updateData },
       { new: true, upsert: true }
     );
@@ -151,9 +151,9 @@ export async function getUnreadCount(req: Request, res: Response) {
     }
 
     const count = await NotificationModel.countDocuments({
-      userId,
+      user: userId,
       isRead: false,
-      isDeleted: { $ne: true },
+      isDeleted: false,
     });
 
     sendSuccess(res, "Unread count retrieved", { count });

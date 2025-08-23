@@ -61,7 +61,25 @@ export class CompanyRoleController {
   static async updateRole(req: Request, res: Response): Promise<void> {
     try {
       const { roleId } = req.params;
+      const companyId = (req.user as any)?.companyId;
       const updates = req.body;
+
+      if (!companyId) {
+        sendError(res, "Company ID not found", null, 400);
+        return;
+      }
+
+      // Verify the role belongs to the user's company
+      const existingRole = await CompanyRoleService.getRoleById(roleId);
+      if (!existingRole) {
+        sendError(res, "Role not found", null, 404);
+        return;
+      }
+
+      if ((existingRole as any).company?.toString() !== companyId) {
+        sendError(res, "Access denied: Role does not belong to your company", null, 403);
+        return;
+      }
 
       const role = await CompanyRoleService.updateRole(roleId, updates);
       sendSuccess(res, "Role updated successfully", { role });
@@ -74,6 +92,25 @@ export class CompanyRoleController {
   static async deleteRole(req: Request, res: Response): Promise<void> {
     try {
       const { roleId } = req.params;
+      const companyId = (req.user as any)?.companyId;
+
+      if (!companyId) {
+        sendError(res, "Company ID not found", null, 400);
+        return;
+      }
+
+      // Verify the role belongs to the user's company
+      const existingRole = await CompanyRoleService.getRoleById(roleId);
+      if (!existingRole) {
+        sendError(res, "Role not found", null, 404);
+        return;
+      }
+
+      if ((existingRole as any).company?.toString() !== companyId) {
+        sendError(res, "Access denied: Role does not belong to your company", null, 403);
+        return;
+      }
+
       const result = await CompanyRoleService.deleteRole(roleId);
       sendSuccess(res, "Role deleted successfully", result);
     } catch (error: any) {

@@ -12,6 +12,7 @@ const NotificationSchema = new Schema<NotificationDocument>(
     message: { type: String, required: true, trim: true },
     data: { type: Schema.Types.Mixed },
     isRead: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

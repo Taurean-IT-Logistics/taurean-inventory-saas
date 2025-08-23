@@ -4,6 +4,9 @@ import { SupportMessageModel } from "../models/supportMessage.model";
 import { UserModel } from "../models/user.model";
 import { CompanyModel } from "../models/company.model";
 import { sendError, sendSuccess } from "../utils";
+import { emailService } from "../services/email.service";
+import { emitToTicket } from "../realtime/socket";
+import { isValidObjectId } from "mongoose";
 
 export class SupportController {
   // Create a new support ticket
@@ -14,6 +17,7 @@ export class SupportController {
         description,
         category,
         priority,
+        ticketType,
         companyId: requestedCompanyId,
       } = req.body;
       const userId = (req.user as any)?.id;
@@ -30,30 +34,32 @@ export class SupportController {
       // Determine which company the ticket belongs to
       let targetCompanyId = requestedCompanyId;
 
-      // If user is admin/staff, they can create tickets for their company
-      if (["admin", "staff"].includes(userRole) && userCompanyId) {
-        targetCompanyId = userCompanyId;
-      }
-
-      // For regular users:
-      // - If they specify a company, use that company
-      // - If they don't specify a company, create a general ticket (no company assigned)
-      // - If they have a company, use their company as default
-      if (!targetCompanyId && userCompanyId) {
-        targetCompanyId = userCompanyId;
-      }
-
-      // Super admins can create tickets for any company
-      if (isSuperAdmin && !targetCompanyId) {
-        sendError(res, "Company ID is required for support tickets", null, 400);
-        return;
-      }
-
-      // For regular users, if no company is specified, allow general tickets
-      // These will be handled by Taurean IT support
-      if (!targetCompanyId && !["admin", "staff"].includes(userRole)) {
-        // This is a general support ticket - no company assigned
+      // If ticketType is "general", no company should be assigned
+      if (ticketType === "general") {
         targetCompanyId = null;
+      } else if (ticketType === "company") {
+        // If user is admin/staff, they can create tickets for their company
+        if (["admin", "staff"].includes(userRole) && userCompanyId) {
+          targetCompanyId = userCompanyId;
+        }
+
+        // For regular users:
+        // - If they specify a company, use that company
+        // - If they don't specify a company, use their company as default
+        if (!targetCompanyId && userCompanyId) {
+          targetCompanyId = userCompanyId;
+        }
+
+        // Super admins can create tickets for any company
+        if (isSuperAdmin && !targetCompanyId) {
+          sendError(
+            res,
+            "Company ID is required for company-specific support tickets",
+            null,
+            400
+          );
+          return;
+        }
       }
 
       // If a company is specified, verify it exists
@@ -111,26 +117,47 @@ export class SupportController {
         { path: "company", select: "name" },
       ]);
 
-      // Emit socket event for real-time updates
+      // Send email notifications
       try {
-        const { emitToCompany, emitToSuperAdmin } = await import(
-          "../realtime/socket"
-        );
         if (targetCompanyId) {
-          // Emit to specific company
-          emitToCompany(targetCompanyId, "ticket-created", {
-            ticket: ticket.toObject(),
-            message: "New support ticket created",
-          });
+          // Send notification to company admins/staff
+          const companyStaff = await UserModel.find({
+            company: targetCompanyId,
+            role: { $in: ["admin", "staff"] },
+            isDeleted: false,
+          }).select("email firstName lastName");
+
+          for (const staff of companyStaff) {
+            await emailService.sendSupportTicketCreatedEmail(
+              ticket._id.toString(),
+              ticket.title,
+              ticket.category,
+              ticket.priority,
+              staff._id.toString()
+            );
+          }
         } else {
-          // Emit to super admin for general tickets
-          emitToSuperAdmin("ticket-created", {
-            ticket: ticket.toObject(),
-            message: "New general support ticket created",
-          });
+          // Send notification to super admins for general tickets
+          const superAdmins = await UserModel.find({
+            isSuperAdmin: true,
+            isDeleted: false,
+          }).select("email firstName lastName");
+
+          for (const admin of superAdmins) {
+            await emailService.sendSupportTicketCreatedEmail(
+              ticket._id.toString(),
+              ticket.title,
+              ticket.category,
+              ticket.priority,
+              admin._id.toString()
+            );
+          }
         }
-      } catch (socketError) {
-        console.log("Socket not available for real-time updates");
+      } catch (emailError) {
+        console.warn(
+          "Failed to send support ticket email notifications:",
+          emailError
+        );
       }
 
       sendSuccess(res, "Support ticket created successfully", ticket);
@@ -154,16 +181,6 @@ export class SupportController {
       }
 
       let query: any = { user: userId, isDeleted: false };
-
-      // If user is admin/staff/super admin, show tickets from their company
-      if (["admin", "staff"].includes(userRole) || isSuperAdmin) {
-        if (userCompanyId) {
-          query.company = userCompanyId;
-        }
-      } else {
-        // Normal users can see tickets they created for any company
-        // No company filter needed
-      }
 
       const tickets = await SupportTicketModel.find(query)
         .populate("company", "name")
@@ -243,12 +260,13 @@ export class SupportController {
     }
   }
 
-  // Get ticket details with messages
+  // Get ticket details by ID
   static async getTicketDetails(req: Request, res: Response): Promise<void> {
     try {
       const { ticketId } = req.params;
       const userId = (req.user as any)?.id;
-      const companyId = (req.user as any)?.companyId;
+      const userCompanyId = (req.user as any)?.companyId;
+      const userRole = (req.user as any)?.role;
       const isSuperAdmin = (req.user as any)?.isSuperAdmin;
 
       if (!userId) {
@@ -256,33 +274,46 @@ export class SupportController {
         return;
       }
 
-      const ticket = await SupportTicketModel.findOne({
-        _id: ticketId,
-        isDeleted: false,
-      }).populate([
-        { path: "user", select: "username firstName lastName email" },
-        { path: "company", select: "name" },
-        { path: "assignedTo", select: "username firstName lastName" },
-      ]);
+      const ticket = await SupportTicketModel.findById(ticketId)
+        .populate("user", "username firstName lastName email")
+        .populate("company", "name")
+        .populate("assignedTo", "username firstName lastName");
 
-      if (!ticket) {
+      if (!ticket || ticket.isDeleted) {
         sendError(res, "Ticket not found", null, 404);
         return;
       }
 
       // Check access permissions
-      const canAccess =
-        isSuperAdmin ||
-        ticket.company._id.toString() === companyId ||
-        ticket.user._id.toString() === userId ||
-        ticket.assignedTo?._id.toString() === userId;
+      let hasAccess = false;
 
-      if (!canAccess) {
+      // Ticket creator always has access
+      if (ticket.user._id.toString() === userId) {
+        hasAccess = true;
+      }
+
+      // Company staff have access to company tickets
+      if (
+        userCompanyId &&
+        ticket.company &&
+        ticket.company._id.toString() === userCompanyId
+      ) {
+        if (["admin", "staff"].includes(userRole)) {
+          hasAccess = true;
+        }
+      }
+
+      // Super admins have access to all tickets
+      if (isSuperAdmin) {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
         sendError(res, "Access denied", null, 403);
         return;
       }
 
-      // Get messages
+      // Get messages for this ticket
       const messages = await SupportMessageModel.find({
         ticket: ticketId,
         isDeleted: false,
@@ -290,120 +321,127 @@ export class SupportController {
         .populate("sender", "username firstName lastName")
         .sort({ createdAt: 1 });
 
-      // Mark messages as read for the current user
-      const unreadMessages = messages.filter(
-        (msg) => !msg.readBy.includes(userId as any)
-      );
-
-      if (unreadMessages.length > 0) {
-        await SupportMessageModel.updateMany(
-          { _id: { $in: unreadMessages.map((msg) => msg._id) } },
-          { $addToSet: { readBy: userId } }
-        );
-      }
-
-      sendSuccess(res, "Ticket details retrieved successfully", {
-        ticket,
+      const ticketWithMessages = {
+        ...ticket.toObject(),
         messages,
-      });
+      };
+
+      sendSuccess(
+        res,
+        "Ticket details retrieved successfully",
+        ticketWithMessages
+      );
     } catch (error) {
       console.error("Error fetching ticket details:", error);
       sendError(res, "Failed to fetch ticket details", error);
     }
   }
 
-  // Send a message to a ticket
+  // Send a message to a support ticket
   static async sendMessage(req: Request, res: Response): Promise<void> {
     try {
       const { ticketId } = req.params;
-      const { message, messageType = "text" } = req.body;
+      const { message } = req.body;
       const userId = (req.user as any)?.id;
-      const companyId = (req.user as any)?.companyId;
+      const userRole = (req.user as any)?.role;
       const isSuperAdmin = (req.user as any)?.isSuperAdmin;
       const files = (req as any).files;
 
-      if (!userId || !message) {
-        sendError(res, "Missing required fields", null, 400);
+      if (!userId) {
+        sendError(res, "User not authenticated", null, 401);
         return;
       }
 
-      // Verify ticket exists and user has access
-      const ticket = await SupportTicketModel.findOne({
-        _id: ticketId,
-        isDeleted: false,
-      });
+      if (!message && (!files || files.length === 0)) {
+        sendError(res, "Message or attachment is required", null, 400);
+        return;
+      }
 
-      if (!ticket) {
+      // Get ticket details
+      const ticket = await SupportTicketModel.findById(ticketId);
+      if (!ticket || ticket.isDeleted) {
         sendError(res, "Ticket not found", null, 404);
         return;
       }
 
       // Check access permissions
-      const canAccess =
-        isSuperAdmin ||
-        ticket.company.toString() === companyId ||
-        ticket.user.toString() === userId ||
-        ticket.assignedTo?.toString() === userId;
+      let hasAccess = false;
 
-      if (!canAccess) {
+      // Ticket creator always has access
+      if (ticket.user.toString() === userId) {
+        hasAccess = true;
+      }
+
+      // Company staff have access to company tickets
+      if (ticket.company) {
+        const user = await UserModel.findById(userId);
+        if (
+          user &&
+          user.company &&
+          user.company.toString() === ticket.company.toString()
+        ) {
+          if (["admin", "staff"].includes(userRole)) {
+            hasAccess = true;
+          }
+        }
+      }
+
+      // Super admins have access to all tickets
+      if (isSuperAdmin) {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
         sendError(res, "Access denied", null, 403);
         return;
       }
 
       // Determine sender type
-      const user = await UserModel.findById(userId);
-      const senderType =
-        user?.isSuperAdmin || ["admin", "staff"].includes(user?.role || "")
-          ? "staff"
-          : "user";
-
-      // Determine message type based on content and files
-      let finalMessageType = messageType;
-      let attachments: string[] | undefined;
-
-      if (files && files.length > 0) {
-        finalMessageType = "file";
-        attachments = files.map((file: any) => file.path);
+      let senderType: "user" | "staff" | "system" = "user";
+      if (["admin", "staff"].includes(userRole) || isSuperAdmin) {
+        senderType = "staff";
       }
 
-      const messageData = {
+      const messageData: any = {
         ticket: ticketId,
         sender: userId,
         senderType,
-        message,
-        messageType: finalMessageType,
-        attachments,
+        message: message || "Message with attachment",
+        messageType: files && files.length > 0 ? "file" : "text",
         isRead: false,
         readBy: [],
       };
 
+      // Add attachments if files were uploaded
+      if (files && files.length > 0) {
+        messageData.attachments = files.map((file: any) => file.path);
+      }
+
       const newMessage = new SupportMessageModel(messageData);
       await newMessage.save();
 
-      // Update ticket status if it was closed and a new message is sent
-      if (ticket.status === "closed") {
-        ticket.status = "open";
+      // Update ticket status to in_progress if it was open
+      if (ticket.status === "open") {
+        ticket.status = "in_progress";
         await ticket.save();
       }
-
-      // Update ticket updatedAt
-      ticket.updatedAt = new Date();
-      await ticket.save();
 
       // Populate sender details
       await newMessage.populate("sender", "username firstName lastName");
 
-      // Emit socket event for real-time updates
-      try {
-        const { emitToTicket } = await import("../realtime/socket");
-        emitToTicket(ticketId, "message-received", {
-          ticketId,
-          message: newMessage.toObject(),
-          sender: newMessage.sender,
-        });
-      } catch (socketError) {
-        console.log("Socket not available for real-time updates");
-      }
+      // Emit real-time event to all users in the ticket room
+      emitToTicket(ticketId, "new-message", {
+        message: newMessage,
+        ticketId,
+        sender: newMessage.sender,
+        timestamp: new Date(),
+      });
+
+      // Emit typing stop event
+      emitToTicket(ticketId, "typing-stopped", {
+        userId,
+        ticketId,
+      });
 
       sendSuccess(res, "Message sent successfully", newMessage);
     } catch (error) {
@@ -418,7 +456,7 @@ export class SupportController {
       const { ticketId } = req.params;
       const { status, assignedTo } = req.body;
       const userId = (req.user as any)?.id;
-      const companyId = (req.user as any)?.companyId;
+      const userRole = (req.user as any)?.role;
       const isSuperAdmin = (req.user as any)?.isSuperAdmin;
 
       if (!userId) {
@@ -426,31 +464,50 @@ export class SupportController {
         return;
       }
 
-      const ticket = await SupportTicketModel.findOne({
-        _id: ticketId,
-        isDeleted: false,
-      });
+      // Check if user has permission to update status
+      if (!["admin", "staff"].includes(userRole) && !isSuperAdmin) {
+        sendError(res, "Insufficient permissions", null, 403);
+        return;
+      }
 
-      if (!ticket) {
+      const ticket = await SupportTicketModel.findById(ticketId);
+      if (!ticket || ticket.isDeleted) {
         sendError(res, "Ticket not found", null, 404);
         return;
       }
 
-      // Check permissions
-      const canUpdate = isSuperAdmin || ticket.company.toString() === companyId;
+      // Check if user has access to this ticket
+      let hasAccess = false;
 
-      if (!canUpdate) {
+      // Company staff have access to company tickets
+      if (ticket.company) {
+        const user = await UserModel.findById(userId);
+        if (
+          user &&
+          user.company &&
+          user.company.toString() === ticket.company.toString()
+        ) {
+          hasAccess = true;
+        }
+      }
+
+      // Super admins have access to all tickets
+      if (isSuperAdmin) {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
         sendError(res, "Access denied", null, 403);
         return;
       }
 
       // Update ticket
       const updateData: any = { status };
-
       if (assignedTo) {
         updateData.assignedTo = assignedTo;
       }
 
+      // Set resolved/closed timestamps
       if (status === "resolved") {
         updateData.resolvedAt = new Date();
       } else if (status === "closed") {
@@ -467,73 +524,136 @@ export class SupportController {
         { path: "assignedTo", select: "username firstName lastName" },
       ]);
 
-      // Create system message for status change
-      const systemMessage = new SupportMessageModel({
-        ticket: ticketId,
-        sender: userId,
-        senderType: "system",
-        message: `Ticket status updated to ${status}${
-          assignedTo ? ` and assigned to staff` : ""
-        }.`,
-      });
-      await systemMessage.save();
-
-      sendSuccess(res, "Ticket updated successfully", updatedTicket);
+      sendSuccess(res, "Ticket status updated successfully", updatedTicket);
     } catch (error) {
-      console.error("Error updating ticket:", error);
-      sendError(res, "Failed to update ticket", error);
+      console.error("Error updating ticket status:", error);
+      sendError(res, "Failed to update ticket status", error);
+    }
+  }
+
+  // Update typing status for a ticket
+  static async updateTypingStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const { ticketId } = req.params;
+      const { isTyping } = req.body;
+      const userId = (req.user as any)?.id;
+
+      if (!userId) {
+        sendError(res, "User not authenticated", null, 401);
+        return;
+      }
+
+      // Get ticket details
+      const ticket = await SupportTicketModel.findById(ticketId);
+      if (!ticket || ticket.isDeleted) {
+        sendError(res, "Ticket not found", null, 404);
+        return;
+      }
+
+      // Check access permissions
+      let hasAccess = false;
+
+      // Ticket creator always has access
+      if (ticket.user.toString() === userId) {
+        hasAccess = true;
+      }
+
+      // Company staff have access to company tickets
+      if (ticket.company) {
+        const user = await UserModel.findById(userId);
+        if (
+          user &&
+          user.company &&
+          user.company.toString() === ticket.company.toString()
+        ) {
+          hasAccess = true;
+        }
+      }
+
+      // Super admins have access to all tickets
+      if ((req.user as any)?.isSuperAdmin) {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
+        sendError(res, "Access denied", null, 403);
+        return;
+      }
+
+      // Emit typing event to all users in the ticket room
+      emitToTicket(ticketId, "user-typing", {
+        userId,
+        isTyping,
+        ticketId,
+      });
+
+      sendSuccess(res, "Typing status updated", { isTyping });
+    } catch (error) {
+      console.error("Error updating typing status:", error);
+      sendError(res, "Failed to update typing status", error);
     }
   }
 
   // Get available staff for assignment
   static async getAvailableStaff(req: Request, res: Response): Promise<void> {
     try {
-      const companyId = (req.user as any)?.companyId;
+      const userId = (req.user as any)?.id;
+      const userCompanyId = (req.user as any)?.companyId;
+      const userRole = (req.user as any)?.role;
       const isSuperAdmin = (req.user as any)?.isSuperAdmin;
 
-      if (!companyId && !isSuperAdmin) {
+      if (!userId) {
         sendError(res, "User not authenticated", null, 401);
         return;
       }
 
-      let query: any = { isDeleted: false };
-
-      if (!isSuperAdmin) {
-        query.company = companyId;
+      // Check if user has permission
+      if (!["admin", "staff"].includes(userRole) && !isSuperAdmin) {
+        sendError(res, "Insufficient permissions", null, 403);
+        return;
       }
 
-      const staff = await UserModel.find({
-        ...query,
+      let query: any = {
         role: { $in: ["admin", "staff"] },
-      }).select("username firstName lastName email role");
+        isDeleted: false,
+      };
 
-      sendSuccess(res, "Staff retrieved successfully", staff);
+      // If not super admin, only show staff from user's company
+      if (!isSuperAdmin && userCompanyId) {
+        query.company = userCompanyId;
+      }
+
+      const staff = await UserModel.find(query)
+        .select("username firstName lastName email role")
+        .sort({ firstName: 1, lastName: 1 });
+
+      sendSuccess(res, "Available staff retrieved successfully", staff);
     } catch (error) {
-      console.error("Error fetching staff:", error);
-      sendError(res, "Failed to fetch staff", error);
+      console.error("Error fetching available staff:", error);
+      sendError(res, "Failed to fetch available staff", error);
     }
   }
 
   // Get support statistics
   static async getSupportStats(req: Request, res: Response): Promise<void> {
     try {
-      const companyId = (req.user as any)?.companyId;
+      const userId = (req.user as any)?.id;
+      const userCompanyId =
+        typeof (req.user as any)?.companyId == "object"
+          ? (req.user as any)?.companyId?._id
+          : (req.user as any)?.companyId;
       const isSuperAdmin = (req.user as any)?.isSuperAdmin;
-      const requestedCompanyId = req.query.companyId as string;
 
-      let targetCompanyId = companyId;
-      if (isSuperAdmin && requestedCompanyId) {
-        targetCompanyId = requestedCompanyId;
-      }
-
-      if (!targetCompanyId && !isSuperAdmin) {
-        sendError(res, "Company context required", null, 400);
+      if (!userId) {
+        sendError(res, "User not authenticated", null, 401);
         return;
       }
 
       let query: any = { isDeleted: false };
-      if (targetCompanyId) {
-        query.company = targetCompanyId;
+
+      // If not super admin, only show stats for user's company
+      if (!isSuperAdmin && userCompanyId) {
+        query.company = userCompanyId;
       }
 
       const [
@@ -542,58 +662,20 @@ export class SupportController {
         inProgressTickets,
         resolvedTickets,
         closedTickets,
-        urgentTickets,
-        highPriorityTickets,
-        avgResolutionTime,
       ] = await Promise.all([
         SupportTicketModel.countDocuments(query),
         SupportTicketModel.countDocuments({ ...query, status: "open" }),
         SupportTicketModel.countDocuments({ ...query, status: "in_progress" }),
         SupportTicketModel.countDocuments({ ...query, status: "resolved" }),
         SupportTicketModel.countDocuments({ ...query, status: "closed" }),
-        SupportTicketModel.countDocuments({ ...query, priority: "urgent" }),
-        SupportTicketModel.countDocuments({ ...query, priority: "high" }),
-        SupportTicketModel.aggregate([
-          {
-            $match: {
-              ...query,
-              status: "resolved",
-              resolvedAt: { $exists: true },
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              avgTime: {
-                $avg: {
-                  $subtract: ["$resolvedAt", "$createdAt"],
-                },
-              },
-            },
-          },
-        ]),
       ]);
 
-      const avgResolutionHours = avgResolutionTime[0]?.avgTime
-        ? Math.round(avgResolutionTime[0].avgTime / (1000 * 60 * 60))
-        : 0;
-
       const stats = {
-        totalTickets,
-        openTickets,
-        inProgressTickets,
-        resolvedTickets,
-        closedTickets,
-        urgentTickets,
-        highPriorityTickets,
-        avgResolutionHours,
-        resolutionRate:
-          totalTickets > 0
-            ? (
-                ((resolvedTickets + closedTickets) / totalTickets) *
-                100
-              ).toFixed(1)
-            : "0",
+        total: totalTickets,
+        open: openTickets,
+        inProgress: inProgressTickets,
+        resolved: resolvedTickets,
+        closed: closedTickets,
       };
 
       sendSuccess(res, "Support statistics retrieved successfully", stats);
@@ -610,36 +692,14 @@ export class SupportController {
   ): Promise<void> {
     try {
       const categories = [
-        {
-          value: "technical",
-          label: "Technical Issue",
-          description: "Software, hardware, or system problems",
-        },
-        {
-          value: "billing",
-          label: "Billing & Payment",
-          description: "Invoice, payment, or subscription issues",
-        },
-        {
-          value: "feature_request",
-          label: "Feature Request",
-          description: "New functionality or improvements",
-        },
-        {
-          value: "bug_report",
-          label: "Bug Report",
-          description: "System errors or unexpected behavior",
-        },
-        {
-          value: "general",
-          label: "General Inquiry",
-          description: "Other questions or support needs",
-        },
+        { value: "technical", label: "Technical Issue" },
+        { value: "billing", label: "Billing & Payment" },
+        { value: "feature_request", label: "Feature Request" },
+        { value: "bug_report", label: "Bug Report" },
+        { value: "general", label: "General Inquiry" },
       ];
 
-      sendSuccess(res, "Support categories retrieved successfully", {
-        categories,
-      });
+      sendSuccess(res, "Support categories retrieved successfully", categories);
     } catch (error) {
       console.error("Error fetching support categories:", error);
       sendError(res, "Failed to fetch support categories", error);
@@ -653,38 +713,440 @@ export class SupportController {
   ): Promise<void> {
     try {
       const priorities = [
-        {
-          value: "low",
-          label: "Low",
-          description: "Minor issues, non-urgent",
-          color: "text-green-600",
-        },
-        {
-          value: "medium",
-          label: "Medium",
-          description: "Standard priority issues",
-          color: "text-yellow-600",
-        },
-        {
-          value: "high",
-          label: "High",
-          description: "Important issues affecting work",
-          color: "text-orange-600",
-        },
-        {
-          value: "urgent",
-          label: "Urgent",
-          description: "Critical issues requiring immediate attention",
-          color: "text-red-600",
-        },
+        { value: "low", label: "Low", color: "green" },
+        { value: "medium", label: "Medium", color: "yellow" },
+        { value: "high", label: "High", color: "orange" },
+        { value: "urgent", label: "Urgent", color: "red" },
       ];
 
-      sendSuccess(res, "Support priorities retrieved successfully", {
-        priorities,
-      });
+      sendSuccess(res, "Support priorities retrieved successfully", priorities);
     } catch (error) {
       console.error("Error fetching support priorities:", error);
       sendError(res, "Failed to fetch support priorities", error);
+    }
+  }
+
+  // Close ticket
+  static async closeTicket(req: Request, res: Response): Promise<void> {
+    try {
+      const { ticketId } = req.params;
+      const userId = (req.user as any)?.id;
+      const userRole = (req.user as any)?.role;
+      const isSuperAdmin = (req.user as any)?.isSuperAdmin;
+
+      if (!userId) {
+        sendError(res, "User not authenticated", null, 401);
+        return;
+      }
+
+      const ticket = await SupportTicketModel.findById(ticketId);
+      if (!ticket || ticket.isDeleted) {
+        sendError(res, "Ticket not found", null, 404);
+        return;
+      }
+
+      // Check if user has access to this ticket
+      let hasAccess = false;
+
+      // Users can close their own tickets
+      if (ticket.user && ticket.user.toString() === userId) {
+        hasAccess = true;
+      }
+
+      // Company staff have access to company tickets
+      if (ticket.company) {
+        const user = await UserModel.findById(userId);
+        if (
+          user &&
+          user.company &&
+          user.company.toString() === ticket.company.toString()
+        ) {
+          hasAccess = true;
+        }
+      }
+
+      // Super admins have access to all tickets
+      if (isSuperAdmin) {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
+        sendError(res, "Access denied", null, 403);
+        return;
+      }
+
+      // Update ticket status to closed
+      ticket.status = "closed";
+      ticket.closedAt = new Date();
+      await ticket.save();
+
+      // Create system message for ticket closure
+      const systemMessage = new SupportMessageModel({
+        ticket: ticketId,
+        sender: userId,
+        senderType: "system",
+        message:
+          ticket.user.toString() === userId
+            ? "Ticket has been closed by the user."
+            : "Ticket has been closed by staff.",
+        messageType: "text",
+        isRead: false,
+        readBy: [],
+      });
+      await systemMessage.save();
+
+      sendSuccess(res, "Ticket closed successfully");
+    } catch (error) {
+      console.error("Error closing ticket:", error);
+      sendError(res, "Failed to close ticket", error);
+    }
+  }
+
+  // Reopen ticket
+  static async reopenTicket(req: Request, res: Response): Promise<void> {
+    try {
+      const { ticketId } = req.params;
+      const userId = (req.user as any)?.id;
+      const userRole = (req.user as any)?.role;
+      const isSuperAdmin = (req.user as any)?.isSuperAdmin;
+
+      if (!userId) {
+        sendError(res, "User not authenticated", null, 401);
+        return;
+      }
+
+      const ticket = await SupportTicketModel.findById(ticketId);
+      if (!ticket || ticket.isDeleted) {
+        sendError(res, "Ticket not found", null, 404);
+        return;
+      }
+
+      // Check if user has access to this ticket
+      let hasAccess = false;
+
+      // Users can reopen their own tickets
+      if (ticket.user && ticket.user.toString() === userId) {
+        hasAccess = true;
+      }
+
+      // Company staff have access to company tickets
+      if (ticket.company) {
+        const user = await UserModel.findById(userId);
+        if (
+          user &&
+          user.company &&
+          user.company.toString() === ticket.company.toString()
+        ) {
+          hasAccess = true;
+        }
+      }
+
+      // Super admins have access to all tickets
+      if (isSuperAdmin) {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
+        sendError(res, "Access denied", null, 403);
+        return;
+      }
+
+      // Update ticket status to open
+      ticket.status = "open";
+      ticket.closedAt = undefined;
+      await ticket.save();
+
+      // Create system message for ticket reopening
+      const systemMessage = new SupportMessageModel({
+        ticket: ticketId,
+        sender: userId,
+        senderType: "system",
+        message:
+          ticket.user.toString() === userId
+            ? "Ticket has been reopened by the user."
+            : "Ticket has been reopened by staff.",
+        messageType: "text",
+        isRead: false,
+        readBy: [],
+      });
+      await systemMessage.save();
+
+      sendSuccess(res, "Ticket reopened successfully");
+    } catch (error) {
+      console.error("Error reopening ticket:", error);
+      sendError(res, "Failed to reopen ticket", error);
+    }
+  }
+
+  // Assign ticket to staff member
+  static async assignTicket(req: Request, res: Response): Promise<void> {
+    try {
+      const { ticketId } = req.params;
+      const { staffId } = req.body;
+      const userId = (req.user as any)?.id;
+      const userRole = (req.user as any)?.role;
+      const isSuperAdmin = (req.user as any)?.isSuperAdmin;
+
+      if (!userId) {
+        sendError(res, "User not authenticated", null, 401);
+        return;
+      }
+
+      // Check if user has permission to assign tickets
+      if (!["admin", "staff"].includes(userRole) && !isSuperAdmin) {
+        sendError(res, "Insufficient permissions", null, 403);
+        return;
+      }
+
+      const ticket = await SupportTicketModel.findById(ticketId);
+      if (!ticket || ticket.isDeleted) {
+        sendError(res, "Ticket not found", null, 404);
+        return;
+      }
+
+      // Check if user has access to this ticket
+      let hasAccess = false;
+
+      // Company staff have access to company tickets
+      if (ticket.company) {
+        const user = await UserModel.findById(userId);
+        if (
+          user &&
+          user.company &&
+          user.company.toString() === ticket.company.toString()
+        ) {
+          hasAccess = true;
+        }
+      }
+
+      // Super admins have access to all tickets
+      if (isSuperAdmin) {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
+        sendError(res, "Access denied", null, 403);
+        return;
+      }
+
+      // Check if the target staff member exists and has appropriate permissions
+      const targetStaff = await UserModel.findById(staffId);
+      if (!targetStaff || !["admin", "staff"].includes(targetStaff.role)) {
+        sendError(res, "Invalid staff member", null, 400);
+        return;
+      }
+
+      // Check if target staff is from the same company (for company tickets)
+      if (ticket.company && targetStaff.company) {
+        if (ticket.company.toString() !== targetStaff.company.toString()) {
+          sendError(
+            res,
+            "Staff member must be from the same company",
+            null,
+            400
+          );
+          return;
+        }
+      }
+
+      // Update ticket assignment
+      ticket.assignedTo = staffId;
+      ticket.status = "in_progress";
+      await ticket.save();
+
+      // Create system message for assignment
+      const systemMessage = new SupportMessageModel({
+        ticket: ticketId,
+        sender: userId,
+        senderType: "system",
+        message: `Ticket has been assigned to ${targetStaff.name}.`,
+        messageType: "text",
+        isRead: false,
+        readBy: [],
+      });
+      await systemMessage.save();
+
+      sendSuccess(res, "Ticket assigned successfully");
+    } catch (error) {
+      console.error("Error assigning ticket:", error);
+      sendError(res, "Failed to assign ticket", error);
+    }
+  }
+
+  // Reassign ticket to another staff member
+  static async reassignTicket(req: Request, res: Response): Promise<void> {
+    try {
+      const { ticketId } = req.params;
+      const { newStaffId, reason } = req.body;
+      const userId = (req.user as any)?.id;
+      const userRole = (req.user as any)?.role;
+      const isSuperAdmin = (req.user as any)?.isSuperAdmin;
+
+      if (!userId) {
+        sendError(res, "User not authenticated", null, 401);
+        return;
+      }
+
+      // Check if user has permission to reassign tickets
+      if (!["admin", "staff"].includes(userRole) && !isSuperAdmin) {
+        sendError(res, "Insufficient permissions", null, 403);
+        return;
+      }
+
+      const ticket = await SupportTicketModel.findById(ticketId);
+      if (!ticket || ticket.isDeleted) {
+        sendError(res, "Ticket not found", null, 404);
+        return;
+      }
+
+      // Check if user has access to this ticket
+      let hasAccess = false;
+
+      // Company staff have access to company tickets
+      if (ticket.company) {
+        const user = await UserModel.findById(userId);
+        if (
+          user &&
+          user.company &&
+          user.company.toString() === ticket.company.toString()
+        ) {
+          hasAccess = true;
+        }
+      }
+
+      // Super admins have access to all tickets
+      if (isSuperAdmin) {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
+        sendError(res, "Access denied", null, 403);
+        return;
+      }
+
+      // Check if the new staff member exists and has appropriate permissions
+      const newStaff = await UserModel.findById(newStaffId);
+      if (!newStaff || !["admin", "staff"].includes(newStaff.role)) {
+        sendError(res, "Invalid staff member", null, 400);
+        return;
+      }
+
+      // Check if new staff is from the same company (for company tickets)
+      if (ticket.company && newStaff.company) {
+        if (ticket.company.toString() !== newStaff.company.toString()) {
+          sendError(
+            res,
+            "Staff member must be from the same company",
+            null,
+            400
+          );
+          return;
+        }
+      }
+
+      // Get the previous assignee name
+      const previousAssignee = ticket.assignedTo
+        ? await UserModel.findById(ticket.assignedTo)
+        : null;
+      const previousAssigneeName = previousAssignee
+        ? `${(previousAssignee as any).firstName} ${
+            (previousAssignee as any).lastName
+          }`
+        : "Unassigned";
+
+      // Update ticket assignment
+      ticket.assignedTo = newStaffId;
+      await ticket.save();
+
+      // Create system message for reassignment
+      const reassignmentMessage = reason
+        ? `Ticket reassigned from ${previousAssigneeName} to ${
+            (newStaff as any).firstName
+          } ${(newStaff as any).lastName}. Reason: ${reason}`
+        : `Ticket reassigned from ${previousAssigneeName} to ${
+            (newStaff as any).firstName
+          } ${(newStaff as any).lastName}.`;
+
+      const systemMessage = new SupportMessageModel({
+        ticket: ticketId,
+        sender: userId,
+        senderType: "system",
+        message: reassignmentMessage,
+        messageType: "text",
+        isRead: false,
+        readBy: [],
+      });
+      await systemMessage.save();
+
+      sendSuccess(res, "Ticket reassigned successfully");
+    } catch (error) {
+      console.error("Error reassigning ticket:", error);
+      sendError(res, "Failed to reassign ticket", error);
+    }
+  }
+
+  // Get ticket messages
+  static async getTicketMessages(req: Request, res: Response): Promise<void> {
+    try {
+      const { ticketId } = req.params;
+      const userId = (req.user as any)?.id;
+      const userCompanyId = (req.user as any)?.companyId;
+      const userRole = (req.user as any)?.role;
+      const isSuperAdmin = (req.user as any)?.isSuperAdmin;
+
+      if (!userId) {
+        sendError(res, "User not authenticated", null, 401);
+        return;
+      }
+
+      // Get ticket details to check access
+      const ticket = await SupportTicketModel.findById(ticketId);
+      if (!ticket || ticket.isDeleted) {
+        sendError(res, "Ticket not found", null, 404);
+        return;
+      }
+
+      // Check access permissions
+      let hasAccess = false;
+
+      // Ticket creator always has access
+      if (ticket.user.toString() === userId) {
+        hasAccess = true;
+      }
+
+      // Company staff have access to company tickets
+      if (
+        userCompanyId &&
+        ticket.company &&
+        ticket.company.toString() === userCompanyId
+      ) {
+        if (["admin", "staff"].includes(userRole)) {
+          hasAccess = true;
+        }
+      }
+
+      // Super admins have access to all tickets
+      if (isSuperAdmin) {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
+        sendError(res, "Access denied", null, 403);
+        return;
+      }
+
+      // Get all messages for the ticket
+      const messages = await SupportMessageModel.find({
+        ticket: ticketId,
+        isDeleted: false,
+      })
+        .populate("sender", "username firstName lastName")
+        .sort({ createdAt: 1 });
+
+      sendSuccess(res, "Messages retrieved successfully", messages);
+    } catch (error) {
+      console.error("Error fetching ticket messages:", error);
+      sendError(res, "Failed to fetch messages", error);
     }
   }
 }

@@ -30,12 +30,15 @@ const getAllTransactions = async (
   try {
     const filter = showDeleted ? {} : { isDeleted: false };
     return await TransactionModel.find(filter)
-      .populate("user")
-      .populate("booking")
+      .populate("user", "name email phone address")
+      .populate("booking", "startDate endDate duration totalPrice items")
       .populate("account")
-      .populate("facility")
-      .populate("approvedBy")
-      .populate("company");
+      .populate("facility", "name description location pricing")
+      .populate("approvedBy", "name")
+      .populate(
+        "company",
+        "name logo contactEmail contactPhone location currency invoiceFormat"
+      );
   } catch (error) {
     throw new Error("Error fetching transactions");
   }
@@ -50,12 +53,15 @@ const getAllUserTransactions = async (
       ? { user: user }
       : { isDeleted: false, user: user };
     return await TransactionModel.find(filter)
-      .populate("user")
-      .populate("booking")
+      .populate("user", "name email phone address")
+      .populate("booking", "startDate endDate duration totalPrice items")
       .populate("account")
-      .populate("facility")
-      .populate("approvedBy")
-      .populate("company");
+      .populate("facility", "name description location pricing")
+      .populate("approvedBy", "name")
+      .populate(
+        "company",
+        "name logo contactEmail contactPhone location currency invoiceFormat"
+      );
   } catch (error) {
     throw new Error("Error fetching transactions");
   }
@@ -72,12 +78,15 @@ const getTransactionById = async (
     }
     const filter = showDeleted ? { _id: id } : { _id: id, isDeleted: false };
     return await TransactionModel.findOne(filter)
-      .populate("user")
-      .populate("booking")
+      .populate("user", "name email phone address")
+      .populate("booking", "startDate endDate duration totalPrice items")
       .populate("account")
-      .populate("facility")
-      .populate("approvedBy")
-      .populate("company");
+      .populate("facility", "name description location pricing")
+      .populate("approvedBy", "name")
+      .populate(
+        "company",
+        "name logo contactEmail contactPhone location currency invoiceFormat"
+      );
   } catch (error) {
     throw new Error("Error fetching transaction");
   }
@@ -101,12 +110,15 @@ const updateTransaction = async (
         new: true,
       }
     )
-      .populate("user")
-      .populate("booking")
+      .populate("user", "name email phone address")
+      .populate("booking", "startDate endDate duration totalPrice items")
       .populate("account")
-      .populate("facility")
-      .populate("approvedBy")
-      .populate("company");
+      .populate("facility", "name description location pricing")
+      .populate("approvedBy", "name")
+      .populate(
+        "company",
+        "name logo contactEmail contactPhone location currency invoiceFormat"
+      );
     if (updated) {
       try {
         const { emitEvent } = await import("../realtime/socket");
@@ -172,12 +184,15 @@ const getTransactionsByUserId = async (
       ? { user: userId }
       : { user: userId, isDeleted: false };
     return await TransactionModel.find(filter)
-      .populate("user")
-      .populate("booking")
+      .populate("user", "name email phone address")
+      .populate("booking", "startDate endDate duration totalPrice items")
       .populate("account")
-      .populate("facility")
-      .populate("approvedBy")
-      .populate("company");
+      .populate("facility", "name description location pricing")
+      .populate("approvedBy", "name")
+      .populate(
+        "company",
+        "name logo contactEmail contactPhone location currency invoiceFormat"
+      );
   } catch (error) {
     throw new Error("Error fetching transactions by user ID");
   }
@@ -196,12 +211,15 @@ const getTransactionsByFacilityId = async (
       ? { facility: facilityId }
       : { facility: facilityId, isDeleted: false };
     return await TransactionModel.find(filter)
-      .populate("user")
-      .populate("booking")
+      .populate("user", "name email phone address")
+      .populate("booking", "startDate endDate duration totalPrice items")
       .populate("account")
-      .populate("facility")
-      .populate("approvedBy")
-      .populate("company");
+      .populate("facility", "name description location pricing")
+      .populate("approvedBy", "name")
+      .populate(
+        "company",
+        "name logo contactEmail location currency invoiceFormat"
+      );
   } catch (error) {
     throw new Error("Error fetching transactions by facility ID");
   }
@@ -217,12 +235,15 @@ const getTransactionByReference = async (
       ? { ref: reference }
       : { ref: reference, isDeleted: false };
     return await TransactionModel.findOne(filter)
-      .populate("user")
-      .populate("booking")
+      .populate("user", "name email phone address")
+      .populate("booking", "startDate endDate duration totalPrice items")
       .populate("account")
-      .populate("facility")
-      .populate("approvedBy")
-      .populate("company");
+      .populate("facility", "name description location pricing")
+      .populate("approvedBy", "name")
+      .populate(
+        "company",
+        "name logo contactEmail contactPhone location currency invoiceFormat"
+      );
   } catch (error) {
     throw new Error("Error fetching transaction by Paystack reference");
   }
@@ -239,12 +260,15 @@ const getCompanyTransactions = async (
       filter.isDeleted = false;
     }
     return await TransactionModel.find(filter)
-      .populate("user")
-      .populate("booking")
+      .populate("user", "name email phone address")
+      .populate("booking", "startDate endDate duration totalPrice items")
       .populate("account")
-      .populate("facility")
-      .populate("approvedBy")
-      .populate("company")
+      .populate("facility", "name description location pricing")
+      .populate("approvedBy", "name")
+      .populate(
+        "company",
+        "name logo contactEmail contactPhone location currency invoiceFormat"
+      )
       .sort({ createdAt: -1 });
   } catch (error) {
     throw new Error("Error fetching company transactions");

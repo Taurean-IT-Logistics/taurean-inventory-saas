@@ -6,10 +6,17 @@ import { UserModel } from "../models/user.model";
 
 export async function testEmailConfiguration(req: Request, res: Response) {
   try {
+    const user = req.user as any;
+
+    // Allow both super admins and company admins to test email configuration
     const isConfigured = await emailService.testEmailConfiguration();
-    
+
     if (isConfigured) {
-      sendSuccess(res, "Email configuration is working", { configured: true });
+      sendSuccess(res, "Email configuration is working", {
+        configured: true,
+        userType: user.isSuperAdmin ? "superAdmin" : "companyAdmin",
+        companyId: user.companyId,
+      });
     } else {
       sendError(res, "Email configuration test failed", null, 500);
     }
@@ -18,11 +25,52 @@ export async function testEmailConfiguration(req: Request, res: Response) {
   }
 }
 
+export async function testCompanyEmailConfiguration(
+  req: Request,
+  res: Response
+) {
+  try {
+    const { companyId } = req.params;
+    const user = req.user as any;
+
+    // Allow company admins to test their own company's email configuration
+    // Super admins can test any company's configuration
+    if (user.companyId !== companyId && !user.isSuperAdmin) {
+      sendError(
+        res,
+        "Unauthorized to test company email configuration",
+        null,
+        403
+      );
+      return;
+    }
+
+    const result = await emailService.testCompanyEmailConfiguration(companyId);
+
+    if (result.configured) {
+      sendSuccess(res, "Company email configuration test completed", {
+        ...result,
+        testedBy: user.name || user.email,
+        userType: user.isSuperAdmin ? "superAdmin" : "companyAdmin",
+      });
+    } else {
+      sendError(
+        res,
+        "Company email configuration test failed",
+        result.error,
+        500
+      );
+    }
+  } catch (error: any) {
+    sendError(res, "Failed to test company email configuration", error.message);
+  }
+}
+
 export async function sendTestEmail(req: Request, res: Response) {
   try {
     const { to, subject, message } = req.body;
     const user = req.user as any;
-    
+
     if (!to || !subject || !message) {
       sendValidationError(res, "To, subject, and message are required");
       return;
@@ -49,7 +97,7 @@ export async function sendWelcomeEmail(req: Request, res: Response) {
   try {
     const { userId } = req.params;
     const user = req.user as any;
-    
+
     const success = await emailService.sendWelcomeEmail(userId, user.companyId);
 
     if (success) {
@@ -62,48 +110,16 @@ export async function sendWelcomeEmail(req: Request, res: Response) {
   }
 }
 
-export async function sendInvoiceEmail(req: Request, res: Response) {
-  try {
-    const { invoiceId } = req.params;
-    const { attachPDF = true } = req.body;
-    
-    const success = await emailService.sendInvoiceEmail(invoiceId, attachPDF);
-
-    if (success) {
-      sendSuccess(res, "Invoice email sent successfully", { sent: true });
-    } else {
-      sendError(res, "Failed to send invoice email", null, 500);
-    }
-  } catch (error: any) {
-    sendError(res, "Failed to send invoice email", error.message);
-  }
-}
-
-export async function sendReceiptEmail(req: Request, res: Response) {
-  try {
-    const { receiptId } = req.params;
-    const { attachPDF = true } = req.body;
-    
-    const success = await emailService.sendReceiptEmail(receiptId, attachPDF);
-
-    if (success) {
-      sendSuccess(res, "Receipt email sent successfully", { sent: true });
-    } else {
-      sendError(res, "Failed to send receipt email", null, 500);
-    }
-  } catch (error: any) {
-    sendError(res, "Failed to send receipt email", error.message);
-  }
-}
-
 export async function sendBookingConfirmation(req: Request, res: Response) {
   try {
     const { bookingId } = req.params;
-    
+
     const success = await emailService.sendBookingConfirmation(bookingId);
 
     if (success) {
-      sendSuccess(res, "Booking confirmation email sent successfully", { sent: true });
+      sendSuccess(res, "Booking confirmation email sent successfully", {
+        sent: true,
+      });
     } else {
       sendError(res, "Failed to send booking confirmation email", null, 500);
     }
@@ -115,11 +131,13 @@ export async function sendBookingConfirmation(req: Request, res: Response) {
 export async function sendBookingReminder(req: Request, res: Response) {
   try {
     const { bookingId } = req.params;
-    
+
     const success = await emailService.sendBookingReminder(bookingId);
 
     if (success) {
-      sendSuccess(res, "Booking reminder email sent successfully", { sent: true });
+      sendSuccess(res, "Booking reminder email sent successfully", {
+        sent: true,
+      });
     } else {
       sendError(res, "Failed to send booking reminder email", null, 500);
     }
@@ -132,7 +150,7 @@ export async function sendBulkEmail(req: Request, res: Response) {
   try {
     const { recipients, subject, message, userRole } = req.body;
     const user = req.user as any;
-    
+
     if (!subject || !message) {
       sendValidationError(res, "Subject and message are required");
       return;
@@ -148,11 +166,16 @@ export async function sendBulkEmail(req: Request, res: Response) {
         company: user.companyId,
         role: userRole,
         isDeleted: false,
-      }).select('email').lean();
-      
-      emailList = users.map(u => u.email);
+      })
+        .select("email")
+        .lean();
+
+      emailList = users.map((u) => u.email);
     } else {
-      sendValidationError(res, "Either recipients array or userRole is required");
+      sendValidationError(
+        res,
+        "Either recipients array or userRole is required"
+      );
       return;
     }
 
@@ -172,14 +195,14 @@ export async function sendBulkEmail(req: Request, res: Response) {
     let failureCount = 0;
 
     for (const batch of batches) {
-      const promises = batch.map(email => 
+      const promises = batch.map((email) =>
         emailService.sendCustomEmail(email, subject, message, user.companyId)
       );
-      
+
       const results = await Promise.allSettled(promises);
-      
-      results.forEach(result => {
-        if (result.status === 'fulfilled' && result.value) {
+
+      results.forEach((result) => {
+        if (result.status === "fulfilled" && result.value) {
           successCount++;
         } else {
           failureCount++;
@@ -188,7 +211,7 @@ export async function sendBulkEmail(req: Request, res: Response) {
 
       // Small delay between batches
       if (batches.indexOf(batch) < batches.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 
@@ -208,22 +231,37 @@ export async function updateEmailSettings(req: Request, res: Response) {
     const { emailSettings } = req.body;
     const user = req.user as any;
 
-    // Check if user has permission to update company settings
+    // Allow company admins to update their own company's email settings
+    // Super admins can update any company's settings
     if (user.companyId !== companyId && !user.isSuperAdmin) {
-      sendError(res, "Unauthorized to update company settings", null, 403);
+      sendError(
+        res,
+        "Unauthorized to update company email settings",
+        null,
+        403
+      );
+      return;
+    }
+
+    // Validate email settings
+    if (
+      emailSettings.customFromEmail &&
+      !isValidEmail(emailSettings.customFromEmail)
+    ) {
+      sendValidationError(res, "Invalid custom from email address");
       return;
     }
 
     const company = await CompanyModel.findByIdAndUpdate(
       companyId,
-      { 
-        $set: { 
+      {
+        $set: {
           emailSettings: {
             ...emailSettings,
             updatedAt: new Date(),
             updatedBy: user.id,
-          }
-        }
+          },
+        },
       },
       { new: true }
     );
@@ -233,12 +271,20 @@ export async function updateEmailSettings(req: Request, res: Response) {
       return;
     }
 
-    sendSuccess(res, "Email settings updated successfully", { 
-      emailSettings: (company as any).emailSettings 
+    sendSuccess(res, "Email settings updated successfully", {
+      emailSettings: (company as any).emailSettings,
+      updatedBy: user.name || user.email,
+      userType: user.isSuperAdmin ? "superAdmin" : "companyAdmin",
     });
   } catch (error: any) {
     sendError(res, "Failed to update email settings", error.message);
   }
+}
+
+// Helper function to validate email format
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 }
 
 export async function getEmailSettings(req: Request, res: Response) {
@@ -252,22 +298,22 @@ export async function getEmailSettings(req: Request, res: Response) {
       return;
     }
 
-    const company = await CompanyModel.findById(companyId).select('emailSettings').lean();
+    const company = await CompanyModel.findById(companyId)
+      .select("emailSettings")
+      .lean();
 
     if (!company) {
       sendError(res, "Company not found", null, 404);
       return;
     }
 
-    sendSuccess(res, "Email settings retrieved successfully", { 
+    sendSuccess(res, "Email settings retrieved successfully", {
       emailSettings: (company as any).emailSettings || {
-        sendInvoiceEmails: true,
-        sendReceiptEmails: true,
         sendBookingConfirmations: true,
         sendBookingReminders: true,
         sendPaymentNotifications: true,
         sendWelcomeEmails: true,
-      }
+      },
     });
   } catch (error: any) {
     sendError(res, "Failed to get email settings", error.message);

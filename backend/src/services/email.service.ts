@@ -34,6 +34,7 @@ interface EmailOptions {
     content: Buffer;
     contentType: string;
   }>;
+  companyId?: string; // For company-specific email configurations
 }
 
 class EmailService {
@@ -65,8 +66,7 @@ class EmailService {
     // Register all email templates
     this.templates.set("base", this.getBaseTemplate());
     this.templates.set("welcome", this.getWelcomeTemplate());
-    this.templates.set("invoice", this.getInvoiceTemplate());
-    this.templates.set("receipt", this.getReceiptTemplate());
+
     this.templates.set(
       "booking-confirmation",
       this.getBookingConfirmationTemplate()
@@ -84,6 +84,32 @@ class EmailService {
       "account-verification",
       this.getAccountVerificationTemplate()
     );
+    this.templates.set(
+      "support-ticket-created",
+      this.getSupportTicketCreatedTemplate()
+    );
+    this.templates.set(
+      "support-ticket-updated",
+      this.getSupportTicketUpdatedTemplate()
+    );
+    this.templates.set(
+      "support-message-received",
+      this.getSupportMessageReceivedTemplate()
+    );
+    this.templates.set(
+      "company-invitation",
+      this.getCompanyInvitationTemplate()
+    );
+    this.templates.set(
+      "company-invitation-rejected",
+      this.getCompanyInvitationRejectedTemplate()
+    );
+    this.templates.set(
+      "company-registered",
+      this.getCompanyRegisteredTemplate()
+    );
+    this.templates.set("license-activated", this.getLicenseActivatedTemplate());
+    this.templates.set("license-expiring", this.getLicenseExpiringTemplate());
   }
 
   private getBaseTemplate(): handlebars.TemplateDelegate {
@@ -116,7 +142,7 @@ class EmailService {
               }
               
               .header {
-                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  background: linear-gradient(135deg, hsl(220 70% 35%) 0%, hsl(25 95% 53%) 100%);
                   padding: 40px 30px;
                   text-align: center;
                   color: white;
@@ -167,20 +193,20 @@ class EmailService {
               
               .cta-button {
                   display: inline-block;
-                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  background: linear-gradient(135deg, hsl(220 70% 35%) 0%, hsl(25 95% 53%) 100%);
                   color: white;
                   text-decoration: none;
                   padding: 16px 32px;
                   border-radius: 8px;
                   font-weight: 600;
                   font-size: 16px;
-                  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                  box-shadow: 0 4px 15px rgba(34, 70, 53, 0.3);
                   transition: all 0.3s ease;
               }
               
               .cta-button:hover {
                   transform: translateY(-2px);
-                  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+                  box-shadow: 0 6px 20px rgba(34, 70, 53, 0.4);
               }
               
               .info-card {
@@ -242,14 +268,14 @@ class EmailService {
               }
               
               .footer-link {
-                  color: #667eea;
+                  color: hsl(220 70% 35%);
                   text-decoration: none;
                   margin: 0 15px;
                   font-weight: 500;
               }
               
               .footer-link:hover {
-                  color: #764ba2;
+                  color: hsl(25 95% 53%);
               }
               
               .social-links {
@@ -270,8 +296,8 @@ class EmailService {
               }
               
               .highlight {
-                  background: linear-gradient(135deg, #667eea15, #764ba215);
-                  border-left: 4px solid #667eea;
+                  background: linear-gradient(135deg, hsl(220 70% 35% 0.1), hsl(25 95% 53% 0.1));
+                  border-left: 4px solid hsl(220 70% 35%);
                   padding: 16px 20px;
                   border-radius: 0 8px 8px 0;
                   margin: 20px 0;
@@ -368,7 +394,7 @@ class EmailService {
                       <p style="font-size: 12px; color: #718096;">
                           You received this email because you have an account with {{company.name}}.
                           <br>If you no longer wish to receive these emails, you can 
-                          <a href="{{baseUrl}}/unsubscribe" style="color: #667eea;">unsubscribe here</a>.
+                          <a href="{{baseUrl}}/unsubscribe" style="color: hsl(220 70% 35%);">unsubscribe here</a>.
                       </p>
                       
                       <p style="font-size: 12px; color: #718096; margin-top: 15px;">
@@ -386,10 +412,17 @@ class EmailService {
 
   private getWelcomeTemplate(): handlebars.TemplateDelegate {
     const content = `
+      <!-- Taurean IT Header -->
+      <div class="taurean-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Taurean IT</h1>
+        <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">Creator and operator of the Taurean Inventory SaaS platform</p>
+        <p style="margin: 5px 0; font-size: 12px; opacity: 0.8;">Ghana | admin@taureanit.com | +233000000000</p>
+      </div>
+      
       <div class="greeting">Welcome to {{company.name}}, {{user.name}}!</div>
       
       <div class="message">
-          We're thrilled to have you join our facility management platform. Your account has been successfully created and is ready to use.
+          We're thrilled to have you join our facility management platform powered by Taurean IT. Your account has been successfully created and is ready to use.
       </div>
       
       <div class="info-card">
@@ -434,88 +467,20 @@ class EmailService {
     return handlebars.compile(content);
   }
 
-  private getInvoiceTemplate(): handlebars.TemplateDelegate {
-    const content = `
-      <div class="greeting">Invoice {{data.invoiceNumber}} from {{company.name}}</div>
-      
-      <div class="message">
-          {{#if user.name}}Dear {{user.name}},{{else}}Dear Valued Customer,{{/if}}<br><br>
-          We've generated a new invoice for your recent booking. Please find the details below and complete payment at your earliest convenience.
-      </div>
-      
-      <div class="info-card">
-          <div class="info-card-title">Invoice Summary</div>
-          <div class="info-grid">
-              <div class="info-item">
-                  <div class="info-label">Invoice Number</div>
-                  <div class="info-value">#{{data.invoiceNumber}}</div>
-              </div>
-              <div class="info-item">
-                  <div class="info-label">Issue Date</div>
-                  <div class="info-value">{{data.issueDate}}</div>
-              </div>
-              <div class="info-item">
-                  <div class="info-label">Due Date</div>
-                  <div class="info-value">{{data.dueDate}}</div>
-              </div>
-              <div class="info-item">
-                  <div class="info-label">Amount Due</div>
-                  <div class="info-value" style="font-size: 18px; color: #667eea; font-weight: 700;">{{data.currency}} {{data.total}}</div>
-              </div>
-          </div>
-      </div>
-      
-      {{#if data.lines}}
-      <div class="info-card">
-          <div class="info-card-title">Invoice Items</div>
-          <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                  <tr style="background: #f7fafc; border-bottom: 2px solid #e2e8f0;">
-                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #4a5568;">Description</th>
-                      <th style="padding: 12px; text-align: center; font-weight: 600; color: #4a5568;">Qty</th>
-                      <th style="padding: 12px; text-align: right; font-weight: 600; color: #4a5568;">Amount</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  {{#each data.lines}}
-                  <tr style="border-bottom: 1px solid #e2e8f0;">
-                      <td style="padding: 12px;">
-                          <div style="font-weight: 600; color: #2d3748;">{{description}}</div>
-                          {{#if sku}}<div style="font-size: 12px; color: #718096;">SKU: {{sku}}</div>{{/if}}
-                      </td>
-                      <td style="padding: 12px; text-align: center;">{{quantity}}</td>
-                      <td style="padding: 12px; text-align: right; font-weight: 600;">{{../data.currency}} {{amount}}</td>
-                  </tr>
-                  {{/each}}
-              </tbody>
-          </table>
-      </div>
-      {{/if}}
-      
-      <div class="cta-section">
-          <a href="{{baseUrl}}/payment?invoice={{data.id}}" class="cta-button">Pay Invoice Now</a>
-      </div>
-      
-      <div class="highlight">
-          <strong>Payment Methods Accepted:</strong><br>
-          Credit/Debit Cards • Mobile Money • Bank Transfer
-      </div>
-      
-      <div class="message">
-          Questions about this invoice? Reply to this email or contact our billing department.
-      </div>
-    `;
-
-    return handlebars.compile(content);
-  }
-
   private getReceiptTemplate(): handlebars.TemplateDelegate {
     const content = `
+      <!-- Taurean IT Header -->
+      <div class="taurean-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Taurean IT</h1>
+        <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">Creator and operator of the Taurean Inventory SaaS platform</p>
+        <p style="margin: 5px 0; font-size: 12px; opacity: 0.8;">Ghana | admin@taureanit.com | +233000000000</p>
+      </div>
+      
       <div class="greeting">Payment Receipt - {{data.receiptId}}</div>
       
       <div class="message">
           {{#if user.name}}Dear {{user.name}},{{else}}Dear Valued Customer,{{/if}}<br><br>
-          Thank you for your payment! We've successfully processed your transaction. Here are the details:
+          Thank you for your payment through the Taurean platform! We've successfully processed your transaction. Here are the details:
       </div>
       
       <div class="info-card" style="background: #f0fff4; border-color: #9ae6b4;">
@@ -567,11 +532,18 @@ class EmailService {
 
   private getBookingConfirmationTemplate(): handlebars.TemplateDelegate {
     const content = `
+      <!-- Taurean IT Header -->
+      <div class="taurean-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Taurean IT</h1>
+        <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">Creator and operator of the Taurean Inventory SaaS platform</p>
+        <p style="margin: 5px 0; font-size: 12px; opacity: 0.8;">Ghana | admin@taureanit.com | +233000000000</p>
+      </div>
+      
       <div class="greeting">Booking Confirmed - {{data.bookingNumber}}</div>
       
       <div class="message">
           {{#if user.name}}Dear {{user.name}},{{else}}Dear Valued Customer,{{/if}}<br><br>
-          Excellent news! Your facility booking has been confirmed. We look forward to hosting you.
+          Excellent news! Your facility booking has been confirmed through the Taurean platform. We look forward to hosting you.
       </div>
       
       <div class="info-card">
@@ -677,11 +649,18 @@ class EmailService {
 
   private getPaymentSuccessTemplate(): handlebars.TemplateDelegate {
     const content = `
+      <!-- Taurean IT Header -->
+      <div class="taurean-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Taurean IT</h1>
+        <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">Creator and operator of the Taurean Inventory SaaS platform</p>
+        <p style="margin: 5px 0; font-size: 12px; opacity: 0.8;">Ghana | admin@taureanit.com | +233000000000</p>
+      </div>
+      
       <div class="greeting">Payment Received - Thank You!</div>
       
       <div class="message">
           {{#if user.name}}Dear {{user.name}},{{else}}Dear Valued Customer,{{/if}}<br><br>
-          We've successfully received your payment. Your transaction has been processed and your booking is now confirmed.
+          We've successfully received your payment through the Taurean platform. Your transaction has been processed and your booking is now confirmed.
       </div>
       
       <div class="info-card" style="background: #f0fff4; border-color: #9ae6b4;">
@@ -725,11 +704,18 @@ class EmailService {
 
   private getPaymentFailedTemplate(): handlebars.TemplateDelegate {
     const content = `
+      <!-- Taurean IT Header -->
+      <div class="taurean-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Taurean IT</h1>
+        <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">Creator and operator of the Taurean Inventory SaaS platform</p>
+        <p style="margin: 5px 0; font-size: 12px; opacity: 0.8;">Ghana | admin@taureanit.com | +233000000000</p>
+      </div>
+      
       <div class="greeting">Payment Issue - Action Required</div>
       
       <div class="message">
           {{#if user.name}}Dear {{user.name}},{{else}}Dear Valued Customer,{{/if}}<br><br>
-          We encountered an issue processing your recent payment. Don't worry - no charges have been made to your account.
+          We encountered an issue processing your recent payment through the Taurean platform. Don't worry - no charges have been made to your account.
       </div>
       
       <div class="info-card" style="background: #fef5e7; border-color: #f6e05e;">
@@ -826,11 +812,18 @@ class EmailService {
 
   private getSubscriptionExpiryTemplate(): handlebars.TemplateDelegate {
     const content = `
+      <!-- Taurean IT Header -->
+      <div class="taurean-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Taurean IT</h1>
+        <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">Creator and operator of the Taurean Inventory SaaS platform</p>
+        <p style="margin: 5px 0; font-size: 12px; opacity: 0.8;">Ghana | admin@taureanit.com | +233000000000</p>
+      </div>
+      
       <div class="greeting">Subscription Expiring Soon</div>
       
       <div class="message">
           Dear {{user.name}},<br><br>
-          Your {{company.name}} subscription will expire in {{data.daysRemaining}} days. To ensure uninterrupted service, please renew your subscription.
+          Your {{company.name}} subscription on the Taurean platform will expire in {{data.daysRemaining}} days. To ensure uninterrupted service, please renew your subscription.
       </div>
       
       <div class="info-card" style="background: #fffbeb; border-color: #f6e05e;">
@@ -877,11 +870,18 @@ class EmailService {
 
   private getPasswordResetTemplate(): handlebars.TemplateDelegate {
     const content = `
+      <!-- Taurean IT Header -->
+      <div class="taurean-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Taurean IT</h1>
+        <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">Creator and operator of the Taurean Inventory SaaS platform</p>
+        <p style="margin: 5px 0; font-size: 12px; opacity: 0.8;">Ghana | admin@taureanit.com | +233000000000</p>
+      </div>
+      
       <div class="greeting">Password Reset Request</div>
       
       <div class="message">
           {{#if user.name}}Hello {{user.name}},{{else}}Hello,{{/if}}<br><br>
-          We received a request to reset the password for your {{company.name}} account. If you made this request, click the button below to create a new password.
+          We received a request to reset the password for your {{company.name}} account on the Taurean platform. If you made this request, click the button below to create a new password.
       </div>
       
       <div class="info-card" style="background: #fef5e7; border-color: #f6e05e;">
@@ -950,6 +950,390 @@ class EmailService {
     return handlebars.compile(content);
   }
 
+  private getSupportTicketCreatedTemplate(): handlebars.TemplateDelegate {
+    const content = `
+      <div class="greeting">New Support Ticket Created</div>
+      
+      <div class="message">
+          A new support ticket has been created by {{data.user.name}}. Please review and respond as soon as possible.
+      </div>
+      
+      <div class="info-card">
+          <div class="info-card-title">Ticket Details</div>
+          <div class="info-grid">
+              <div class="info-item">
+                  <div class="info-label">Subject</div>
+                  <div class="info-value">{{data.subject}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Type</div>
+                  <div class="info-value">{{data.type}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Priority</div>
+                  <div class="info-value">{{data.priority}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Created By</div>
+                  <div class="info-value">{{data.user.name}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Created At</div>
+                  <div class="info-value">{{data.createdAt}}</div>
+              </div>
+          </div>
+      </div>
+      
+      <div class="cta-section">
+          <a href="{{baseUrl}}/admin/support/tickets/{{data.id}}" class="cta-button">View Ticket</a>
+      </div>
+      
+      <div class="message">
+          Thank you for your attention to this matter.
+      </div>
+    `;
+
+    return handlebars.compile(content);
+  }
+
+  private getSupportTicketUpdatedTemplate(): handlebars.TemplateDelegate {
+    const content = `
+      <div class="greeting">Support Ticket Updated</div>
+      
+      <div class="message">
+          The status of support ticket #{{data.id}} has been updated.
+      </div>
+      
+      <div class="info-card">
+          <div class="info-card-title">Ticket Details</div>
+          <div class="info-grid">
+              <div class="info-item">
+                  <div class="info-label">Subject</div>
+                  <div class="info-value">{{data.subject}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Status</div>
+                  <div class="info-value">{{data.status}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Last Updated By</div>
+                  <div class="info-value">{{data.lastUpdatedBy}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Last Updated At</div>
+                  <div class="info-value">{{data.lastUpdatedAt}}</div>
+              </div>
+          </div>
+      </div>
+      
+      <div class="cta-section">
+          <a href="{{baseUrl}}/admin/support/tickets/{{data.id}}" class="cta-button">View Ticket</a>
+      </div>
+      
+      <div class="message">
+          Thank you for your attention to this matter.
+      </div>
+    `;
+
+    return handlebars.compile(content);
+  }
+
+  private getSupportMessageReceivedTemplate(): handlebars.TemplateDelegate {
+    const content = `
+      <div class="greeting">New Message in Support Ticket #{{data.ticketId}}</div>
+      
+      <div class="message">
+          A new message has been received in support ticket #{{data.ticketId}} from {{data.user.name}}.
+      </div>
+      
+      <div class="info-card">
+          <div class="info-card-title">Message Details</div>
+          <div class="info-grid">
+              <div class="info-item">
+                  <div class="info-label">Subject</div>
+                  <div class="info-value">{{data.subject}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Message</div>
+                  <div class="info-value">{{data.message}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Received By</div>
+                  <div class="info-value">{{data.user.name}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Received At</div>
+                  <div class="info-value">{{data.receivedAt}}</div>
+              </div>
+          </div>
+      </div>
+      
+      <div class="cta-section">
+          <a href="{{baseUrl}}/admin/support/tickets/{{data.ticketId}}" class="cta-button">View Ticket</a>
+      </div>
+      
+      <div class="message">
+          Thank you for your attention to this matter.
+      </div>
+    `;
+
+    return handlebars.compile(content);
+  }
+
+  private getCompanyInvitationTemplate(): handlebars.TemplateDelegate {
+    const content = `
+      <div class="greeting">You're Invited to Join {{data.companyName}}!</div>
+      
+      <div class="message">
+          {{#if data.invitedBy.name}}Hello {{data.invitedBy.name}},{{else}}Hello,{{/if}}<br><br>
+          You have been invited to join <strong>{{data.companyName}}</strong> on the {{company.name}} platform. This is an exciting opportunity to collaborate with a great team!
+      </div>
+      
+      <div class="info-card">
+          <div class="info-card-title">Invitation Details</div>
+          <div class="info-grid">
+              <div class="info-item">
+                  <div class="info-label">Company</div>
+                  <div class="info-value">{{data.companyName}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Invited By</div>
+                  <div class="info-value">{{data.invitedBy.name}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Role</div>
+                  <div class="info-value">{{data.role}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Invitation Date</div>
+                  <div class="info-value">{{data.invitationDate}}</div>
+              </div>
+          </div>
+      </div>
+      
+      <div class="highlight">
+          <strong>What this means:</strong><br>
+          • You'll have access to {{data.companyName}}'s facilities and services<br>
+          • You can collaborate with team members<br>
+          • You'll receive company-specific notifications<br>
+          • Your account will be linked to the company
+      </div>
+      
+      <div class="cta-section">
+          <a href="{{baseUrl}}/company/join/{{data.invitationId}}" class="cta-button">Accept Invitation</a>
+      </div>
+      
+      <div class="message">
+          If you have any questions about this invitation, please contact {{data.invitedBy.name}} or our support team.
+      </div>
+    `;
+
+    return handlebars.compile(content);
+  }
+
+  private getCompanyInvitationRejectedTemplate(): handlebars.TemplateDelegate {
+    const content = `
+      <div class="greeting">Company Invitation Update</div>
+      
+      <div class="message">
+          {{#if data.invitedBy.name}}Hello {{data.invitedBy.name}},{{else}}Hello,{{/if}}<br><br>
+          Your invitation to join <strong>{{data.companyName}}</strong> has been reviewed by the company administrators.
+      </div>
+      
+      <div class="info-card" style="background: #fef5e7; border-color: #f6e05e;">
+          <div class="info-card-title" style="color: #92400e;">Invitation Status</div>
+          <div class="info-grid">
+              <div class="info-item">
+                  <div class="info-label">Company</div>
+                  <div class="info-value">{{data.companyName}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Status</div>
+                  <div class="info-value"><span class="status-badge status-warning">Not Approved</span></div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Reviewed By</div>
+                  <div class="info-value">{{data.reviewedBy.name}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Review Date</div>
+                  <div class="info-value">{{data.reviewDate}}</div>
+              </div>
+          </div>
+      </div>
+      
+      {{#if data.reason}}
+      <div class="highlight" style="background: #fef5e7; border-color: #f6e05e;">
+          <strong>Reason for Decision:</strong><br>
+          {{data.reason}}
+      </div>
+      {{/if}}
+      
+      <div class="message">
+          While this invitation wasn't approved, you can still explore other opportunities on our platform. Feel free to browse available companies or contact our support team for assistance.
+      </div>
+      
+      <div class="cta-section">
+          <a href="{{baseUrl}}/companies" class="cta-button">Explore Companies</a>
+      </div>
+    `;
+
+    return handlebars.compile(content);
+  }
+
+  private getCompanyRegisteredTemplate(): handlebars.TemplateDelegate {
+    const content = `
+      <div class="greeting">Welcome to {{company.name}}, {{data.companyName}}!</div>
+      
+      <div class="message">
+          Congratulations! Your company has been successfully registered on our platform. You now have access to all the tools and features needed to manage your facilities and services.
+      </div>
+      
+      <div class="info-card">
+          <div class="info-card-title">Company Account Details</div>
+          <div class="info-grid">
+              <div class="info-item">
+                  <div class="info-label">Company Name</div>
+                  <div class="info-value">{{data.companyName}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Account Status</div>
+                  <div class="info-value"><span class="status-badge status-success">Active</span></div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Subscription Plan</div>
+                  <div class="info-value">{{data.subscriptionPlan}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Trial Expires</div>
+                  <div class="info-value">{{data.trialExpiry}}</div>
+              </div>
+          </div>
+      </div>
+      
+      <div class="highlight">
+          <strong>What's Next:</strong><br>
+          • Set up your facilities and inventory<br>
+          • Configure your billing and tax settings<br>
+          • Invite team members to your company<br>
+          • Start accepting bookings from customers<br>
+          • Customize your company profile and branding
+      </div>
+      
+      <div class="cta-section">
+          <a href="{{baseUrl}}/admin" class="cta-button">Access Admin Dashboard</a>
+      </div>
+      
+      <div class="message">
+          Welcome to the {{company.name}} family! We're excited to support your business growth and success.
+      </div>
+    `;
+
+    return handlebars.compile(content);
+  }
+
+  private getLicenseActivatedTemplate(): handlebars.TemplateDelegate {
+    const content = `
+      <div class="greeting">License Activated Successfully!</div>
+      
+      <div class="message">
+          {{#if user.name}}Dear {{user.name}},{{else}}Dear Valued Customer,{{/if}}<br><br>
+          Great news! Your {{company.name}} license has been activated and your account is now fully operational.
+      </div>
+      
+      <div class="info-card" style="background: #f0fff4; border-color: #9ae6b4;">
+          <div class="info-card-title" style="color: #22543d;">License Details</div>
+          <div class="info-grid">
+              <div class="info-item">
+                  <div class="info-label">License Key</div>
+                  <div class="info-value" style="font-family: monospace;">{{data.licenseKey}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Plan</div>
+                  <div class="info-value">{{data.plan}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Activation Date</div>
+                  <div class="info-value">{{data.activationDate}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Expiry Date</div>
+                  <div class="info-value">{{data.expiryDate}}</div>
+              </div>
+          </div>
+      </div>
+      
+      <div class="highlight" style="background: #f0fff4; border-color: #68d391;">
+          <strong>✓ Your Account is Now:</strong><br>
+          • Fully activated with all features<br>
+          • Ready to accept bookings and payments<br>
+          • Configured with your chosen plan<br>
+          • Supported by our technical team
+      </div>
+      
+      <div class="cta-section">
+          <a href="{{baseUrl}}/admin" class="cta-button" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);">Access Dashboard</a>
+      </div>
+      
+      <div class="message">
+          Thank you for choosing {{company.name}}. We're committed to providing you with the best facility management experience.
+      </div>
+    `;
+
+    return handlebars.compile(content);
+  }
+
+  private getLicenseExpiringTemplate(): handlebars.TemplateDelegate {
+    const content = `
+      <div class="greeting">License Expiring Soon</div>
+      
+      <div class="message">
+          {{#if user.name}}Dear {{user.name}},{{else}}Dear Valued Customer,{{/if}}<br><br>
+          Your {{company.name}} license will expire in {{data.daysRemaining}} days. To ensure uninterrupted service, please renew your license.
+      </div>
+      
+      <div class="info-card" style="background: #fffbeb; border-color: #f6e05e;">
+          <div class="info-card-title" style="color: #92400e;">License Details</div>
+          <div class="info-grid">
+              <div class="info-item">
+                  <div class="info-label">License Key</div>
+                  <div class="info-value" style="font-family: monospace;">{{data.licenseKey}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Current Plan</div>
+                  <div class="info-value">{{data.currentPlan}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Expiry Date</div>
+                  <div class="info-value">{{data.expiryDate}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Days Remaining</div>
+                  <div class="info-value"><span class="status-badge status-warning">{{data.daysRemaining}} days</span></div>
+              </div>
+          </div>
+      </div>
+      
+      <div class="highlight" style="background: #fffbeb; border-color: #f6e05e;">
+          <strong>What happens if you don't renew:</strong><br>
+          • Access to your dashboard will be suspended<br>
+          • New bookings will be disabled<br>
+          • Customer access will be restricted<br>
+          • Data will be preserved for 30 days
+      </div>
+      
+      <div class="cta-section">
+          <a href="{{baseUrl}}/admin/billing/renew" class="cta-button">Renew License</a>
+      </div>
+      
+      <div class="message">
+          Questions about your license? Our billing team is available to help you choose the best plan for your needs.
+      </div>
+    `;
+
+    return handlebars.compile(content);
+  }
+
   public async sendEmail(options: EmailOptions): Promise<boolean> {
     if (!this.transporter) {
       console.warn("Email transporter not configured. Email not sent.");
@@ -988,13 +1372,36 @@ class EmailService {
         });
       }
 
+      // Get company-specific email settings if companyId is provided
+      let fromName = "Taurean IT Logistics";
+      let fromEmail =
+        process.env.EMAIL_FROM ||
+        process.env.EMAIL_USER ||
+        "noreply@taureanitlogistics.com";
+
+      if (options.companyId) {
+        try {
+          const company = await CompanyModel.findById(options.companyId)
+            .select("emailSettings name")
+            .lean();
+          if (company && (company as any).emailSettings) {
+            const emailSettings = (company as any).emailSettings;
+            if (emailSettings.customFromName) {
+              fromName = emailSettings.customFromName;
+            }
+            if (emailSettings.customFromEmail) {
+              fromEmail = emailSettings.customFromEmail;
+            }
+          }
+        } catch (error) {
+          console.warn("Failed to get company email settings:", error);
+        }
+      }
+
       const mailOptions = {
         from: {
-          name: "Taurean IT Logistics",
-          address:
-            process.env.EMAIL_FROM ||
-            process.env.EMAIL_USER ||
-            "noreply@taureanitlogistics.com",
+          name: fromName,
+          address: fromEmail,
         },
         to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
         subject: options.subject,
@@ -1007,8 +1414,14 @@ class EmailService {
 
       // Emit real-time email delivery success event
       try {
-        const companyId = (enhancedContext as any)?.company?._id || (enhancedContext as any)?.company?.id || undefined;
-        const userId = (enhancedContext as any)?.user?._id || (enhancedContext as any)?.user?.id || undefined;
+        const companyId =
+          (enhancedContext as any)?.company?._id ||
+          (enhancedContext as any)?.company?.id ||
+          undefined;
+        const userId =
+          (enhancedContext as any)?.user?._id ||
+          (enhancedContext as any)?.user?.id ||
+          undefined;
         const payload = {
           status: "sent",
           messageId: info.messageId,
@@ -1017,7 +1430,8 @@ class EmailService {
           template: options.template,
           timestamp: new Date().toISOString(),
         };
-        if (companyId) emitEvent(Events.EmailSent, payload, `company:${companyId}`);
+        if (companyId)
+          emitEvent(Events.EmailSent, payload, `company:${companyId}`);
         if (userId) emitEvent(Events.EmailSent, payload, `user:${userId}`);
       } catch {}
 
@@ -1026,8 +1440,14 @@ class EmailService {
       console.error("Failed to send email:", error);
       // Emit real-time email delivery failure event
       try {
-        const companyId = (options.context as any)?.company?._id || (options.context as any)?.company?.id || undefined;
-        const userId = (options.context as any)?.user?._id || (options.context as any)?.user?.id || undefined;
+        const companyId =
+          (options.context as any)?.company?._id ||
+          (options.context as any)?.company?.id ||
+          undefined;
+        const userId =
+          (options.context as any)?.user?._id ||
+          (options.context as any)?.user?.id ||
+          undefined;
         const payload = {
           status: "failed",
           error: (error as any)?.message || "unknown",
@@ -1036,7 +1456,8 @@ class EmailService {
           template: options.template,
           timestamp: new Date().toISOString(),
         };
-        if (companyId) emitEvent(Events.EmailFailed, payload, `company:${companyId}`);
+        if (companyId)
+          emitEvent(Events.EmailFailed, payload, `company:${companyId}`);
         if (userId) emitEvent(Events.EmailFailed, payload, `user:${userId}`);
       } catch (emitError) {
         console.error("Failed to emit email failure event:", emitError);
@@ -1048,8 +1469,6 @@ class EmailService {
   private getHeaderSubtitle(template: string): string {
     const subtitles: Record<string, string> = {
       welcome: "Welcome to Our Platform",
-      invoice: "Invoice & Billing",
-      receipt: "Payment Confirmation",
       "booking-confirmation": "Booking Confirmed",
       "booking-reminder": "Upcoming Booking",
       "payment-success": "Payment Successful",
@@ -1058,6 +1477,9 @@ class EmailService {
       "subscription-expiry": "Subscription Notice",
       "password-reset": "Account Security",
       "account-verification": "Email Verification",
+      "support-ticket-created": "New Support Ticket",
+      "support-ticket-updated": "Ticket Update",
+      "support-message-received": "New Message",
     };
 
     return subtitles[template] || "Notification";
@@ -1079,130 +1501,6 @@ class EmailService {
       template: "welcome",
       context: { company, user },
     });
-  }
-
-  public async sendInvoiceEmail(
-    invoiceId: string,
-    attachPDF: boolean = true
-  ): Promise<boolean> {
-    try {
-      const InvoiceModel = (await import("../models/invoice.model"))
-        .InvoiceModel;
-      const invoice = await InvoiceModel.findById(invoiceId)
-        .populate("company")
-        .populate("customer")
-        .lean();
-
-      if (!invoice) return false;
-
-      const company = invoice.company as any;
-      const customer = invoice.customer as any;
-
-      const attachments = [];
-
-      if (attachPDF) {
-        try {
-          const { generateInvoicePDF } = await import("./pdf.service");
-          const pdfBuffer = await generateInvoicePDF(invoiceId);
-          attachments.push({
-            filename: `invoice-${invoice.invoiceNumber}.pdf`,
-            content: pdfBuffer,
-            contentType: "application/pdf",
-          });
-        } catch (error) {
-          console.warn("Failed to attach PDF to email:", error);
-        }
-      }
-
-      return this.sendEmail({
-        to: customer?.email || company.contactEmail,
-        subject: `Invoice ${invoice.invoiceNumber} from ${company.name}`,
-        template: "invoice",
-        context: {
-          company,
-          user: customer,
-          data: {
-            id: invoice._id,
-            invoiceNumber: invoice.invoiceNumber,
-            issueDate: new Date(invoice.createdAt).toLocaleDateString(),
-            dueDate: (invoice as any).dueDate
-              ? new Date((invoice as any).dueDate).toLocaleDateString()
-              : "Upon Receipt",
-            currency: invoice.currency,
-            total: invoice.total.toFixed(2),
-            lines: invoice.lines,
-          },
-        },
-        attachments,
-      });
-    } catch (error) {
-      console.error("Failed to send invoice email:", error);
-      return false;
-    }
-  }
-
-  public async sendReceiptEmail(
-    receiptId: string,
-    attachPDF: boolean = true
-  ): Promise<boolean> {
-    try {
-      const ReceiptModel = (await import("../models/receipt.model"))
-        .ReceiptModel;
-      const receipt = await ReceiptModel.findById(receiptId)
-        .populate({
-          path: "invoice",
-          populate: {
-            path: "company customer",
-          },
-        })
-        .lean();
-
-      if (!receipt) return false;
-
-      const invoice = receipt.invoice as any;
-      const company = invoice.company;
-      const customer = invoice.customer;
-
-      const attachments = [];
-
-      if (attachPDF) {
-        try {
-          const { generateReceiptPDF } = await import("./pdf.service");
-          const pdfBuffer = await generateReceiptPDF(receiptId);
-          attachments.push({
-            filename: `receipt-${receipt._id}.pdf`,
-            content: pdfBuffer,
-            contentType: "application/pdf",
-          });
-        } catch (error) {
-          console.warn("Failed to attach PDF to email:", error);
-        }
-      }
-
-      return this.sendEmail({
-        to: customer?.email || company.contactEmail,
-        subject: `Payment Receipt from ${company.name}`,
-        template: "receipt",
-        context: {
-          company,
-          user: customer,
-          data: {
-            receiptId: receipt._id.toString().slice(-8).toUpperCase(),
-            invoiceNumber: invoice.invoiceNumber,
-            paymentDate: new Date(receipt.timestamp).toLocaleDateString(),
-            currency: invoice.currency,
-            amount: receipt.amount.toFixed(2),
-            paymentMethod:
-              invoice.payment?.method?.replace("_", " ").toUpperCase() || "N/A",
-            reference: receipt.reference || invoice.payment?.reference || "",
-          },
-        },
-        attachments,
-      });
-    } catch (error) {
-      console.error("Failed to send receipt email:", error);
-      return false;
-    }
   }
 
   public async sendBookingConfirmation(bookingId: string): Promise<boolean> {
@@ -1508,6 +1806,283 @@ class EmailService {
     }
   }
 
+  public async sendSupportTicketCreatedEmail(
+    ticketId: string,
+    subject: string,
+    type: string,
+    priority: string,
+    userId: string
+  ): Promise<boolean> {
+    try {
+      const user = await UserModel.findById(userId).lean();
+      if (!user) return false;
+
+      return this.sendEmail({
+        to: user.email,
+        subject: `New Support Ticket Created - ${subject}`,
+        template: "support-ticket-created",
+        context: {
+          company: user.company,
+          user,
+          data: {
+            id: ticketId,
+            subject,
+            type,
+            priority,
+            user: {
+              name: user.name,
+              email: user.email,
+            },
+            createdAt: new Date().toLocaleDateString(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send support ticket created email:", error);
+      return false;
+    }
+  }
+
+  public async sendSupportTicketUpdatedEmail(
+    ticketId: string,
+    status: string,
+    lastUpdatedBy: string,
+    lastUpdatedAt: string
+  ): Promise<boolean> {
+    try {
+      const user = await UserModel.findById(lastUpdatedBy).lean();
+      if (!user) return false;
+
+      return this.sendEmail({
+        to: user.email,
+        subject: `Support Ticket #${ticketId} Updated`,
+        template: "support-ticket-updated",
+        context: {
+          company: user.company,
+          user,
+          data: {
+            id: ticketId,
+            status,
+            lastUpdatedBy: user.name,
+            lastUpdatedAt,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send support ticket updated email:", error);
+      return false;
+    }
+  }
+
+  public async sendSupportMessageReceivedEmail(
+    ticketId: string,
+    subject: string,
+    message: string,
+    userId: string
+  ): Promise<boolean> {
+    try {
+      const user = await UserModel.findById(userId).lean();
+      if (!user) return false;
+
+      return this.sendEmail({
+        to: user.email,
+        subject: `New Message in Support Ticket #${ticketId} - ${subject}`,
+        template: "support-message-received",
+        context: {
+          company: user.company,
+          user,
+          data: {
+            ticketId,
+            subject,
+            message,
+            user: {
+              name: user.name,
+              email: user.email,
+            },
+            receivedAt: new Date().toLocaleDateString(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send support message received email:", error);
+      return false;
+    }
+  }
+
+  public async sendCompanyInvitationEmail(
+    invitationId: string,
+    companyId: string,
+    invitedByUserId: string,
+    invitedUserEmail: string,
+    role: string
+  ): Promise<boolean> {
+    try {
+      const company = await CompanyModel.findById(companyId).lean();
+      const invitedBy = await UserModel.findById(invitedByUserId).lean();
+      if (!company || !invitedBy) return false;
+
+      return this.sendEmail({
+        to: invitedUserEmail,
+        subject: `You're Invited to Join ${company.name}!`,
+        template: "company-invitation",
+        context: {
+          company: { name: "Taurean IT Logistics" },
+          user: { name: invitedUserEmail.split("@")[0] },
+          data: {
+            companyName: company.name,
+            invitedBy: {
+              name: invitedBy.name || invitedBy.email,
+            },
+            role,
+            invitationDate: new Date().toLocaleDateString(),
+            invitationId,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send company invitation email:", error);
+      return false;
+    }
+  }
+
+  public async sendCompanyInvitationRejectedEmail(
+    companyId: string,
+    invitedUserEmail: string,
+    reviewedByUserId: string,
+    reason?: string
+  ): Promise<boolean> {
+    try {
+      const company = await CompanyModel.findById(companyId).lean();
+      const reviewedBy = await UserModel.findById(reviewedByUserId).lean();
+      if (!company || !reviewedBy) return false;
+
+      return this.sendEmail({
+        to: invitedUserEmail,
+        subject: `Company Invitation Update - ${company.name}`,
+        template: "company-invitation-rejected",
+        context: {
+          company: { name: "Taurean IT Logistics" },
+          user: { name: invitedUserEmail.split("@")[0] },
+          data: {
+            companyName: company.name,
+            reviewedBy: {
+              name: reviewedBy.name || reviewedBy.email,
+            },
+            reviewDate: new Date().toLocaleDateString(),
+            reason,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send company invitation rejected email:", error);
+      return false;
+    }
+  }
+
+  public async sendCompanyRegisteredEmail(
+    companyId: string,
+    ownerEmail: string
+  ): Promise<boolean> {
+    try {
+      const company = await CompanyModel.findById(companyId).lean();
+      if (!company) return false;
+
+      return this.sendEmail({
+        to: ownerEmail,
+        subject: `Welcome to Taurean IT Logistics, ${company.name}!`,
+        template: "company-registered",
+        context: {
+          company: { name: "Taurean IT Logistics" },
+          user: { name: company.name },
+          data: {
+            companyName: company.name,
+            subscriptionPlan:
+              (company as any).subscription?.plan || "Free Trial",
+            trialExpiry: (company as any).subscription?.expiresAt
+              ? new Date(
+                  (company as any).subscription.expiresAt
+                ).toLocaleDateString()
+              : "30 days from now",
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send company registered email:", error);
+      return false;
+    }
+  }
+
+  public async sendLicenseActivatedEmail(
+    companyId: string,
+    licenseKey: string,
+    plan: string,
+    expiryDate: Date
+  ): Promise<boolean> {
+    try {
+      const company = await CompanyModel.findById(companyId)
+        .populate("owner")
+        .lean();
+      if (!company) return false;
+
+      const owner = company.owner as any;
+
+      return this.sendEmail({
+        to: owner.email,
+        subject: `License Activated - ${company.name}`,
+        template: "license-activated",
+        context: {
+          company: { name: "Taurean IT Logistics" },
+          user: owner,
+          data: {
+            licenseKey,
+            plan,
+            activationDate: new Date().toLocaleDateString(),
+            expiryDate: expiryDate.toLocaleDateString(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send license activated email:", error);
+      return false;
+    }
+  }
+
+  public async sendLicenseExpiringEmail(
+    companyId: string,
+    daysRemaining: number
+  ): Promise<boolean> {
+    try {
+      const company = await CompanyModel.findById(companyId)
+        .populate("owner")
+        .lean();
+      if (!company) return false;
+
+      const owner = company.owner as any;
+      const subscription = (company as any).subscription;
+
+      return this.sendEmail({
+        to: owner.email,
+        subject: `License Expiring in ${daysRemaining} Days - ${company.name}`,
+        template: "license-expiring",
+        context: {
+          company: { name: "Taurean IT Logistics" },
+          user: owner,
+          data: {
+            licenseKey: subscription?.licenseKey || "N/A",
+            currentPlan: subscription?.plan || "Standard",
+            expiryDate: subscription?.expiresAt
+              ? new Date(subscription.expiresAt).toLocaleDateString()
+              : "Unknown",
+            daysRemaining,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send license expiring email:", error);
+      return false;
+    }
+  }
+
   public async sendCustomEmail(
     to: string | string[],
     subject: string,
@@ -1518,6 +2093,24 @@ class EmailService {
       const company = companyId
         ? await CompanyModel.findById(companyId).lean()
         : { name: "Taurean IT Logistics" };
+
+      // Check company email settings if companyId is provided
+      if (companyId && company) {
+        const emailSettings = (company as any).emailSettings;
+        if (emailSettings?.customFromName || emailSettings?.customFromEmail) {
+          // Use company-specific sender details
+          return this.sendEmail({
+            to,
+            subject,
+            template: "base",
+            context: {
+              company: company || { name: "Taurean IT Logistics" },
+              content,
+            },
+            companyId, // Pass companyId for custom sender configuration
+          });
+        }
+      }
 
       return this.sendEmail({
         to,
@@ -1547,6 +2140,53 @@ class EmailService {
       return false;
     }
   }
+
+  public async testCompanyEmailConfiguration(companyId: string): Promise<{
+    configured: boolean;
+    companySettings?: any;
+    error?: string;
+    hasCustomSettings?: boolean;
+  }> {
+    try {
+      const company = await CompanyModel.findById(companyId)
+        .select("emailSettings name")
+        .lean();
+
+      if (!company) {
+        return { configured: false, error: "Company not found" };
+      }
+
+      const emailSettings = (company as any).emailSettings;
+
+      // Test basic email configuration
+      const basicTest = await this.testEmailConfiguration();
+      if (!basicTest) {
+        return {
+          configured: false,
+          companySettings: emailSettings,
+          error: "Basic email configuration failed",
+        };
+      }
+
+      // Check if company has custom email settings
+      const hasCustomSettings =
+        emailSettings &&
+        (emailSettings.customFromName ||
+          emailSettings.customFromEmail ||
+          emailSettings.emailSignature);
+
+      return {
+        configured: true,
+        companySettings: emailSettings,
+        hasCustomSettings,
+      };
+    } catch (error: any) {
+      return {
+        configured: false,
+        error: error.message || "Unknown error occurred",
+      };
+    }
+  }
 }
 
 // Export singleton instance
@@ -1555,8 +2195,6 @@ export const emailService = new EmailService();
 // Export individual methods for easy import
 export const {
   sendWelcomeEmail,
-  sendInvoiceEmail,
-  sendReceiptEmail,
   sendBookingConfirmation,
   sendBookingReminder,
   sendPaymentSuccessEmail,
@@ -1567,4 +2205,8 @@ export const {
   sendAccountVerificationEmail,
   sendCustomEmail,
   testEmailConfiguration,
+  testCompanyEmailConfiguration,
+  sendSupportTicketCreatedEmail,
+  sendSupportTicketUpdatedEmail,
+  sendSupportMessageReceivedEmail,
 } = emailService;
