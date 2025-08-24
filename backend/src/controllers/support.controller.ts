@@ -3,7 +3,7 @@ import { SupportTicketModel } from "../models/supportTicket.model";
 import { SupportMessageModel } from "../models/supportMessage.model";
 import { UserModel } from "../models/user.model";
 import { CompanyModel } from "../models/company.model";
-import { sendError, sendSuccess } from "../utils";
+import { sendError, sendSuccess, sendUnauthorized } from "../utils";
 import { emailService } from "../services/email.service";
 import { emitToTicket } from "../realtime/socket";
 import { isValidObjectId } from "mongoose";
@@ -265,9 +265,19 @@ export class SupportController {
     try {
       const { ticketId } = req.params;
       const userId = (req.user as any)?.id;
-      const userCompanyId = (req.user as any)?.companyId;
       const userRole = (req.user as any)?.role;
       const isSuperAdmin = (req.user as any)?.isSuperAdmin;
+
+      const fullUser = await UserModel.findById(userId)
+        .select("company isSuperAdmin role")
+        .lean();
+
+      if (!fullUser) {
+        sendUnauthorized(res, "User not found");
+        return;
+      }
+
+      const userCompanyId = fullUser.company.toString();
 
       if (!userId) {
         sendError(res, "User not authenticated", null, 401);
@@ -1090,9 +1100,18 @@ export class SupportController {
     try {
       const { ticketId } = req.params;
       const userId = (req.user as any)?.id;
-      const userCompanyId = (req.user as any)?.companyId;
       const userRole = (req.user as any)?.role;
       const isSuperAdmin = (req.user as any)?.isSuperAdmin;
+      const fullUser = await UserModel.findById(userId)
+        .select("company isSuperAdmin role")
+        .lean();
+
+      if (!fullUser) {
+        sendUnauthorized(res, "User not found");
+        return;
+      }
+
+      const userCompanyId = fullUser.company.toString();
 
       if (!userId) {
         sendError(res, "User not authenticated", null, 401);

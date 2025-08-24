@@ -13,6 +13,7 @@ import {
   Loader,
   LockOpen,
   Building2,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -213,6 +214,15 @@ export function Header() {
                         >
                           <Building2 className="mr-2 h-4 w-4" />
                           <span>Join Requests</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/user/support"
+                          className="flex items-center"
+                        >
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          <span>Support</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -34,6 +35,17 @@ export const CalendarFilters = ({
   onStatusChange,
   onFacilityChange,
 }: CalendarFiltersProps) => {
+  // Memoize the facilities options to prevent unnecessary re-renders
+  const facilityOptions = useMemo(
+    () =>
+      facilities.map((f) => (
+        <SelectItem key={f._id} value={f._id}>
+          {f.name}
+        </SelectItem>
+      )),
+    [facilities]
+  );
+
   return (
     <div className="space-y-6 mb-8">
       <BookingStats bookings={bookings} />
@@ -81,11 +93,7 @@ export const CalendarFilters = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {facilities.map((f) => (
-                  <SelectItem key={f._id} value={f._id}>
-                    {f.name}
-                  </SelectItem>
-                ))}
+                {facilityOptions}
               </SelectContent>
             </Select>
           </div>

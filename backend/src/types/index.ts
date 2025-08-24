@@ -401,7 +401,9 @@ export interface Tax {
   name: string;
   rate: number;
   type: string;
-  appliesTo: "inventory_item" | "facitlity" | "both";
+  appliesTo: "inventory_item" | "facility" | "both";
+  isSuperAdminTax?: boolean;
+  company?: Company;
   active: boolean;
 }
 

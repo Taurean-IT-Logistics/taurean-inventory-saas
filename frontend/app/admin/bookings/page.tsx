@@ -675,7 +675,6 @@ const BookingDashboard = () => {
 
           <TabsContent value="calendar">
             <BookingCalendar
-              onRefresh={bookingsRefetch}
               facilities={facilities?.facilities as Facility[]}
               bookings={bookings as Booking[]}
               onUpdateBooking={handleUpdateBooking}

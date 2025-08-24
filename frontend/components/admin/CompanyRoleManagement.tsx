@@ -59,30 +59,12 @@ export default function CompanyRoleManagement({
       manageFacilities: false,
       manageInventory: false,
       manageTransactions: false,
+      manageEmails: false,
+      manageSettings: false,
     },
   });
 
   const queryClient = useQueryClient();
-
-  // Don't render if no companyId
-  if (!companyId) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Roles & Permissions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4 text-gray-500">
-            Company ID not available. Please ensure you are associated with a
-            company.
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   const { data: rolesData, isLoading } = useQuery({
     queryKey: ["company-roles"],
@@ -173,6 +155,26 @@ export default function CompanyRoleManagement({
     },
   });
 
+  // Don't render if no companyId
+  if (!companyId) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Roles & Permissions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4 text-gray-500">
+            Company ID not available. Please ensure you are associated with a
+            company.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -187,6 +189,8 @@ export default function CompanyRoleManagement({
         manageFacilities: false,
         manageInventory: false,
         manageTransactions: false,
+        manageEmails: false,
+        manageSettings: false,
       },
     });
   };
@@ -218,6 +222,8 @@ export default function CompanyRoleManagement({
         manageFacilities: role.permissions.manageFacilities || false,
         manageInventory: role.permissions.manageInventory || false,
         manageTransactions: role.permissions.manageTransactions || false,
+        manageEmails: role.permissions.manageEmails || false,
+        manageSettings: role.permissions.manageSettings || false,
       },
     });
     setIsEditModalOpen(true);
@@ -262,6 +268,8 @@ export default function CompanyRoleManagement({
       manageFacilities: Settings,
       manageInventory: Settings,
       manageTransactions: Shield,
+      manageEmails: Settings,
+      manageSettings: Settings,
     };
     return iconMap[permission] || Eye;
   };
@@ -278,6 +286,8 @@ export default function CompanyRoleManagement({
       manageFacilities: "Manage Facilities",
       manageInventory: "Manage Inventory",
       manageTransactions: "Manage Transactions",
+      manageEmails: "Manage Emails",
+      manageSettings: "Manage Settings",
     };
     return labelMap[permission] || permission;
   };

@@ -47,7 +47,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, EmailAPI } from "@/lib/api";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
 import { useSocket } from "@/components/SocketProvider";
@@ -81,12 +81,62 @@ const EmailSettingsPage = () => {
   const [bulkMessage, setBulkMessage] = useState("");
   const [bulkUserRole, setBulkUserRole] = useState("");
 
+  // Local state for email settings before saving
+  const [localSettings, setLocalSettings] = useState<EmailSettings>({
+    sendInvoiceEmails: true,
+    sendReceiptEmails: true,
+    sendBookingConfirmations: true,
+    sendBookingReminders: true,
+    sendPaymentNotifications: true,
+    sendWelcomeEmails: true,
+    sendSubscriptionNotices: true,
+    customFromName: "",
+    customFromEmail: "",
+    emailSignature: "",
+  });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   const { subscribeToEvent, unsubscribeFromEvent } = useSocket();
+
+  // Fetch email settings
+  const {
+    data: emailSettings,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["email-settings", (user as any)?.company],
+    queryFn: () => apiFetch(`/email/settings/${(user as any)?.company._id}`),
+    enabled: !!(user as any)?.company,
+  });
+
+  // Update local settings when email settings are loaded
+  useEffect(() => {
+    if (emailSettings && (emailSettings as any)?.emailSettings) {
+      const settings = (emailSettings as any).emailSettings;
+      setLocalSettings({
+        sendInvoiceEmails: settings.sendInvoiceEmails ?? true,
+        sendReceiptEmails: settings.sendReceiptEmails ?? true,
+        sendBookingConfirmations: settings.sendBookingConfirmations ?? true,
+        sendBookingReminders: settings.sendBookingReminders ?? true,
+        sendPaymentNotifications: settings.sendPaymentNotifications ?? true,
+        sendWelcomeEmails: settings.sendWelcomeEmails ?? true,
+        sendSubscriptionNotices: settings.sendSubscriptionNotices ?? true,
+        customFromName: settings.customFromName || "",
+        customFromEmail: settings.customFromEmail || "",
+        emailSignature: settings.emailSignature || "",
+      });
+      setHasUnsavedChanges(false);
+    }
+  }, [emailSettings]);
 
   useEffect(() => {
     const onEmailEvent = (data: any) => {
       if (data?.status === "sent") {
-        toast({ title: "Email sent", description: `${data.subject} delivered` });
+        toast({
+          title: "Email sent",
+          description: `${data.subject} delivered`,
+        });
       } else if (data?.status === "failed") {
         toast({
           title: "Email failed",
@@ -104,25 +154,15 @@ const EmailSettingsPage = () => {
     };
   }, [subscribeToEvent, unsubscribeFromEvent]);
 
-  // Fetch email settings
-  const {
-    data: emailSettings,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ["email-settings", (user as any)?.companyId],
-    queryFn: () => apiFetch(`/email/settings/${(user as any)?.companyId}`),
-    enabled: !!(user as any)?.companyId,
-  });
-
   // Test email configuration
   const testConfigMutation = useMutation({
-    mutationFn: () => apiFetch("/email/test-config"),
-    onSuccess: () => {
+    mutationFn: () => EmailAPI.testConfiguration(),
+    onSuccess: (data: any) => {
       toast({
         title: "Configuration Test Successful",
-        description: "Email configuration is working properly.",
+        description: `Email configuration is working properly. Tested by ${
+          data.userType === "superAdmin" ? "Super Admin" : "Company Admin"
+        }`,
       });
     },
     onError: (error: any) => {
@@ -134,10 +174,33 @@ const EmailSettingsPage = () => {
     },
   });
 
+  // Test company email configuration
+  const testCompanyConfigMutation = useMutation({
+    mutationFn: () =>
+      EmailAPI.testCompanyConfiguration((user as any)?.company._id),
+    onSuccess: (data: any) => {
+      toast({
+        title: "Company Email Test Successful",
+        description: `Company email configuration test completed. ${
+          data.hasCustomSettings
+            ? "Custom settings detected."
+            : "Using default settings."
+        }`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Company Email Test Failed",
+        description: error.message || "Company email configuration has issues.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Send test email
   const testEmailMutation = useMutation({
     mutationFn: (data: { to: string; subject: string; message: string }) =>
-      apiFetch("/email/test", { method: "POST", body: JSON.stringify(data) }),
+      EmailAPI.sendTestEmail(data),
     onSuccess: () => {
       toast({
         title: "Test Email Sent",
@@ -157,21 +220,21 @@ const EmailSettingsPage = () => {
   // Update email settings
   const updateSettingsMutation = useMutation({
     mutationFn: (settings: EmailSettings) =>
-      apiFetch(`/email/settings/${(user as any)?.companyId}`, {
-        method: "PUT",
-        body: JSON.stringify({ emailSettings: settings }),
-      }),
-    onSuccess: () => {
+      EmailAPI.updateEmailSettings((user as any)?.company._id, settings),
+    onSuccess: (data: any) => {
       toast({
-        title: "Settings Updated",
-        description: "Email settings have been updated successfully.",
+        title: "Settings Saved",
+        description: `Email settings have been saved successfully by ${
+          data.userType === "superAdmin" ? "Super Admin" : "Company Admin"
+        }`,
       });
+      setHasUnsavedChanges(false);
       queryClient.invalidateQueries({ queryKey: ["email-settings"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Update Settings",
-        description: error.message || "Could not update email settings.",
+        title: "Failed to Save Settings",
+        description: error.message || "Could not save email settings.",
         variant: "destructive",
       });
     },
@@ -201,9 +264,31 @@ const EmailSettingsPage = () => {
   });
 
   const handleSettingsUpdate = (field: keyof EmailSettings, value: any) => {
-    const currentSettings = (emailSettings as any)?.emailSettings || {};
-    const updatedSettings = { ...currentSettings, [field]: value };
-    updateSettingsMutation.mutate(updatedSettings);
+    setLocalSettings((prev) => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSaveSettings = () => {
+    updateSettingsMutation.mutate(localSettings);
+  };
+
+  const handleResetSettings = () => {
+    if (emailSettings && (emailSettings as any)?.emailSettings) {
+      const settings = (emailSettings as any).emailSettings;
+      setLocalSettings({
+        sendInvoiceEmails: settings.sendInvoiceEmails ?? true,
+        sendReceiptEmails: settings.sendReceiptEmails ?? true,
+        sendBookingConfirmations: settings.sendBookingConfirmations ?? true,
+        sendBookingReminders: settings.sendBookingReminders ?? true,
+        sendPaymentNotifications: settings.sendPaymentNotifications ?? true,
+        sendWelcomeEmails: settings.sendWelcomeEmails ?? true,
+        sendSubscriptionNotices: settings.sendSubscriptionNotices ?? true,
+        customFromName: settings.customFromName || "",
+        customFromEmail: settings.customFromEmail || "",
+        emailSignature: settings.emailSignature || "",
+      });
+      setHasUnsavedChanges(false);
+    }
   };
 
   const handleTestEmail = () => {
@@ -271,7 +356,8 @@ const EmailSettingsPage = () => {
     );
   }
 
-  const settings = (emailSettings as any)?.emailSettings || {};
+  // Use localSettings for display, fallback to server settings for status info
+  const serverSettings = (emailSettings as any)?.emailSettings || {};
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -283,18 +369,32 @@ const EmailSettingsPage = () => {
             Configure email notifications and communication preferences
           </p>
         </div>
-        <Button
-          onClick={() => testConfigMutation.mutate()}
-          disabled={testConfigMutation.isPending}
-          variant="outline"
-        >
-          {testConfigMutation.isPending ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <TestTube className="h-4 w-4 mr-2" />
-          )}
-          Test Configuration
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => testConfigMutation.mutate()}
+            disabled={testConfigMutation.isPending}
+            variant="outline"
+          >
+            {testConfigMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <TestTube className="h-4 w-4 mr-2" />
+            )}
+            Test System Config
+          </Button>
+          <Button
+            onClick={() => testCompanyConfigMutation.mutate()}
+            disabled={testCompanyConfigMutation.isPending}
+            variant="outline"
+          >
+            {testCompanyConfigMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Settings className="h-4 w-4 mr-2" />
+            )}
+            Test Company Config
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="settings" className="space-y-6">
@@ -326,7 +426,7 @@ const EmailSettingsPage = () => {
                     </p>
                   </div>
                   <Switch
-                    checked={settings.sendInvoiceEmails}
+                    checked={localSettings.sendInvoiceEmails}
                     onCheckedChange={(value) =>
                       handleSettingsUpdate("sendInvoiceEmails", value)
                     }
@@ -341,7 +441,7 @@ const EmailSettingsPage = () => {
                     </p>
                   </div>
                   <Switch
-                    checked={settings.sendReceiptEmails}
+                    checked={localSettings.sendReceiptEmails}
                     onCheckedChange={(value) =>
                       handleSettingsUpdate("sendReceiptEmails", value)
                     }
@@ -356,7 +456,7 @@ const EmailSettingsPage = () => {
                     </p>
                   </div>
                   <Switch
-                    checked={settings.sendBookingConfirmations}
+                    checked={localSettings.sendBookingConfirmations}
                     onCheckedChange={(value) =>
                       handleSettingsUpdate("sendBookingConfirmations", value)
                     }
@@ -371,7 +471,7 @@ const EmailSettingsPage = () => {
                     </p>
                   </div>
                   <Switch
-                    checked={settings.sendBookingReminders}
+                    checked={localSettings.sendBookingReminders}
                     onCheckedChange={(value) =>
                       handleSettingsUpdate("sendBookingReminders", value)
                     }
@@ -386,7 +486,7 @@ const EmailSettingsPage = () => {
                     </p>
                   </div>
                   <Switch
-                    checked={settings.sendPaymentNotifications}
+                    checked={localSettings.sendPaymentNotifications}
                     onCheckedChange={(value) =>
                       handleSettingsUpdate("sendPaymentNotifications", value)
                     }
@@ -401,11 +501,85 @@ const EmailSettingsPage = () => {
                     </p>
                   </div>
                   <Switch
-                    checked={settings.sendWelcomeEmails}
+                    checked={localSettings.sendWelcomeEmails}
                     onCheckedChange={(value) =>
                       handleSettingsUpdate("sendWelcomeEmails", value)
                     }
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Company Email Configuration Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5" />
+                  Company Email Configuration
+                </CardTitle>
+                <CardDescription>
+                  Current status of your company&apos;s email configuration
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">From Name:</span>
+                    <p className="text-muted-foreground">
+                      {serverSettings.customFromName ||
+                        "Default (Taurean IT Logistics)"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium">From Email:</span>
+                    <p className="text-muted-foreground">
+                      {serverSettings.customFromEmail ||
+                        "Default (noreply@taureanitlogistics.com)"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Custom Signature:</span>
+                    <p className="text-muted-foreground">
+                      {serverSettings.emailSignature
+                        ? "Configured"
+                        : "Not configured"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Last Updated:</span>
+                    <p className="text-muted-foreground">
+                      {serverSettings.updatedAt
+                        ? new Date(
+                            serverSettings.updatedAt
+                          ).toLocaleDateString()
+                        : "Never"}
+                    </p>
+                  </div>
+                </div>
+                {hasUnsavedChanges && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      <span className="text-sm font-medium text-yellow-800">
+                        You have unsaved changes
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <div className="pt-2">
+                  <Button
+                    onClick={() => testCompanyConfigMutation.mutate()}
+                    disabled={testCompanyConfigMutation.isPending}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {testCompanyConfigMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                    )}
+                    Test Company Configuration
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -427,7 +601,7 @@ const EmailSettingsPage = () => {
                   <Input
                     id="customFromName"
                     placeholder="Your Company Name"
-                    value={settings.customFromName || ""}
+                    value={localSettings.customFromName || ""}
                     onChange={(e) =>
                       handleSettingsUpdate("customFromName", e.target.value)
                     }
@@ -443,7 +617,7 @@ const EmailSettingsPage = () => {
                     id="customFromEmail"
                     type="email"
                     placeholder="noreply@yourcompany.com"
-                    value={settings.customFromEmail || ""}
+                    value={localSettings.customFromEmail || ""}
                     onChange={(e) =>
                       handleSettingsUpdate("customFromEmail", e.target.value)
                     }
@@ -459,7 +633,7 @@ const EmailSettingsPage = () => {
                     id="emailSignature"
                     placeholder="Best regards,&#10;Your Company Team"
                     rows={4}
-                    value={settings.emailSignature || ""}
+                    value={localSettings.emailSignature || ""}
                     onChange={(e) =>
                       handleSettingsUpdate("emailSignature", e.target.value)
                     }
@@ -467,6 +641,31 @@ const EmailSettingsPage = () => {
                   <p className="text-sm text-muted-foreground">
                     Custom signature added to all emails
                   </p>
+                </div>
+
+                {/* Save/Reset Buttons */}
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={handleSaveSettings}
+                    disabled={
+                      !hasUnsavedChanges || updateSettingsMutation.isPending
+                    }
+                    className="flex-1"
+                  >
+                    {updateSettingsMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                    )}
+                    Save Email Settings
+                  </Button>
+                  <Button
+                    onClick={handleResetSettings}
+                    disabled={!hasUnsavedChanges}
+                    variant="outline"
+                  >
+                    Reset
+                  </Button>
                 </div>
               </CardContent>
             </Card>

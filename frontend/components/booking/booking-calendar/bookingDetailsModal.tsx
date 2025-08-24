@@ -28,6 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types";
 import { getStatusColor } from "./utils";
+import { currencyFormat } from "@/lib/utils";
 
 interface BookingDetailsModalProps {
   booking: Booking | null;
@@ -247,7 +248,9 @@ export const BookingDetailsModal = ({
                     Total Price
                   </p>
                   <p className="text-gray-900">
-                    ${booking.totalPrice?.toFixed(2) || "0.00"}
+                    {currencyFormat(
+                      parseFloat(booking.totalPrice?.toFixed(2)) || 0
+                    )}
                   </p>
                 </div>
               </div>

@@ -27,9 +27,10 @@ export default function InviteUserModal({ companyId }: InviteUserModalProps) {
   const queryClient = useQueryClient();
 
   const inviteMutation = useMutation({
-    mutationFn: ({ email }: { email: string }) =>
-      CompanyJoinRequestsAPI.inviteUser(email, companyId), // We'll need to get userId from email
-    onSuccess: () => {
+    mutationFn: ({ email }: { email: string }) => {
+      return CompanyJoinRequestsAPI.inviteUser(email, companyId);
+    },
+    onSuccess: (data) => {
       toast({
         title: "Success",
         description: "User invited successfully!",
@@ -48,6 +49,16 @@ export default function InviteUserModal({ companyId }: InviteUserModalProps) {
     },
   });
 
+  // Validate companyId after hooks
+  if (!companyId) {
+    return (
+      <Button disabled className="flex items-center gap-2">
+        <UserPlus className="h-4 w-4" />
+        Invite User (No Company)
+      </Button>
+    );
+  }
+
   const handleInvite = async () => {
     if (!email.trim()) {
       toast({
@@ -58,25 +69,21 @@ export default function InviteUserModal({ companyId }: InviteUserModalProps) {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // For now, we'll show a success message
-      // In a real implementation, you'd need to:
-      // 1. Find the user by email
-      // 2. Send the invitation
-      toast({
-        title: "Success",
-        description: "Invitation sent successfully!",
-        variant: "default",
-      });
-      setIsOpen(false);
-      setEmail("");
-    } catch (error) {
+    if (!companyId) {
       toast({
         title: "Error",
-        description: "Failed to send invitation",
+        description: "Company ID is missing",
         variant: "destructive",
       });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await inviteMutation.mutateAsync({ email: email.trim() });
+    } catch (error) {
+      console.log(error);
     } finally {
       setIsLoading(false);
     }

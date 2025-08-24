@@ -153,16 +153,29 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
     str.trim().replace(/\s/g, "").toLowerCase();
 
   const serviceFeeRate = (item as InventoryItem).isTaxable
-    ? (taxes as Tax[]).find((t: any) =>
-        normalized(t.name).includes("servicefee")
+    ? (taxes as Tax[]).find(
+        (t: Tax) =>
+          normalized(t.name).includes("servicefee") &&
+          t.active &&
+          (t.appliesTo === "inventory_item" || t.appliesTo === "both") &&
+          (t.isSuperAdminTax || (t.company as any) === (item as any).company)
       )?.rate || 0
     : 0;
 
-  const taxRate = (item as InventoryItem).isTaxable
-    ? (taxes as Tax[]).find(
-        (t: any) => !normalized(t.name).includes("servicefee")
-      )?.rate || 0
-    : 0;
+  const applicableTaxes = (item as InventoryItem).isTaxable
+    ? (taxes as Tax[]).filter(
+        (t: Tax) =>
+          !normalized(t.name).includes("servicefee") &&
+          t.active &&
+          (t.appliesTo === "inventory_item" || t.appliesTo === "both") &&
+          (t.isSuperAdminTax || (t.company as any) === (item as any).company)
+      )
+    : [];
+
+  const totalTaxRate = applicableTaxes.reduce(
+    (sum, tax) => sum + (tax.rate || 0),
+    0
+  );
 
   const price =
     (item as InventoryItem).pricing.find(
@@ -171,7 +184,7 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
 
   const subtotal = price * quantity * rentalDays;
   const serviceFee = Math.round(subtotal * (serviceFeeRate / 100));
-  const tax = Math.round((subtotal + serviceFee) * (taxRate / 100));
+  const tax = Math.round((subtotal + serviceFee) * (totalTaxRate / 100));
   const totalPrice = subtotal + serviceFee + tax;
 
   const handleTransaction = async () => {
@@ -281,7 +294,11 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                       <Label htmlFor="startDate">Start Date</Label>
                       <DatePicker
                         date={startDate ? new Date(startDate) : undefined}
-                        onDateChange={(date) => setStartDate(date ? date.toISOString().split("T")[0] : "")}
+                        onDateChange={(date) =>
+                          setStartDate(
+                            date ? date.toISOString().split("T")[0] : ""
+                          )
+                        }
                         placeholder="Select start date"
                         disabled={!isAvailable}
                       />
@@ -290,7 +307,11 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                       <Label htmlFor="endDate">End Date</Label>
                       <DatePicker
                         date={endDate ? new Date(endDate) : undefined}
-                        onDateChange={(date) => setEndDate(date ? date.toISOString().split("T")[0] : "")}
+                        onDateChange={(date) =>
+                          setEndDate(
+                            date ? date.toISOString().split("T")[0] : ""
+                          )
+                        }
                         placeholder="Select end date"
                         disabled={!isAvailable}
                       />
@@ -361,7 +382,7 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                     <div className="flex justify-between items-center">
                       <span>Tax:</span>
                       <span className="text-xl font-semibold text-blue-600">
-                        {currencyFormat(tax)}
+                        {currencyFormat(totalTaxRate)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center border-t pt-3">

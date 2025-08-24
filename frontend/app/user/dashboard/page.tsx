@@ -30,10 +30,7 @@ import {
 import {
   CalendarDays,
   CreditCard,
-  Download,
-  FileText,
   MoreHorizontal,
-  Receipt,
   TrendingUp,
   Wallet,
   Clock,
@@ -43,13 +40,9 @@ import {
   DollarSign,
   Building2,
   Home,
-  Users,
-  Calendar,
-  Activity,
   MessageSquare,
-  HelpCircle,
 } from "lucide-react";
-import { InvoicesAPI, TransactionsAPI, BookingsAPI } from "@/lib/api";
+import { TransactionsAPI, BookingsAPI } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { currencyFormat } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
@@ -80,28 +73,6 @@ const UserDashboard = () => {
     enabled: !!user,
   });
 
-  // Fetch user invoices
-  const {
-    data: invoices,
-    isLoading: invoicesLoading,
-    error: invoicesError,
-  } = useQuery({
-    queryKey: ["user-invoices"],
-    queryFn: () => InvoicesAPI.getUserInvoices(),
-    enabled: !!user,
-  });
-
-  // Fetch user receipts
-  const {
-    data: receipts,
-    isLoading: receiptsLoading,
-    error: receiptsError,
-  } = useQuery({
-    queryKey: ["user-receipts"],
-    queryFn: () => InvoicesAPI.getUserReceipts(),
-    enabled: !!user,
-  });
-
   // Fetch user bookings
   const {
     data: bookings,
@@ -126,12 +97,11 @@ const UserDashboard = () => {
       stats.totalSpent = (transactions as any).data
         .filter((t: any) => t.type === "expense")
         .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
-    }
 
-    if ((invoices as any)?.data) {
-      stats.pendingPayments = (invoices as any).data
-        .filter((inv: any) => inv.status === "pending")
-        .reduce((sum: number, inv: any) => sum + (inv.total || 0), 0);
+      // Calculate pending payments from transactions
+      stats.pendingPayments = (transactions as any).data
+        .filter((t: any) => t.status === "pending")
+        .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     }
 
     if ((bookings as any)?.data) {
@@ -141,118 +111,7 @@ const UserDashboard = () => {
     }
 
     return stats;
-  }, [transactions, invoices, bookings]);
-
-  const handleDownloadInvoice = async (
-    invoiceId: string,
-    invoiceNumber: string
-  ) => {
-    try {
-      const response = await fetch(`/api/v1/invoices/${invoiceId}/download`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to download invoice");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `invoice-${invoiceNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Success",
-        description: "Invoice downloaded successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to download invoice",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDownloadReceipt = async (receiptId: string) => {
-    try {
-      const response = await fetch(
-        `/api/v1/invoices/receipts/${receiptId}/download`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to download receipt");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `receipt-${receiptId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Success",
-        description: "Receipt downloaded successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to download receipt",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleExportTransactions = async (format: "csv" | "excel") => {
-    try {
-      const response = await fetch(
-        `/api/v1/transactions/export/user?format=${format}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to export transactions");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `my-transactions.${format === "excel" ? "xlsx" : "csv"}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Success",
-        description: "Transactions exported successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to export transactions",
-        variant: "destructive",
-      });
-    }
-  };
+  }, [transactions, bookings]);
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -284,12 +143,7 @@ const UserDashboard = () => {
     }
   };
 
-  if (
-    transactionsLoading ||
-    invoicesLoading ||
-    receiptsLoading ||
-    bookingsLoading
-  ) {
+  if (transactionsLoading || bookingsLoading) {
     return <Loader text="Loading dashboard..." className="pt-20" />;
   }
 
@@ -303,22 +157,6 @@ const UserDashboard = () => {
             Welcome back, {user?.name}! Here&apos;s your account overview.
           </p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => handleExportTransactions("csv")}>
-              Export as CSV
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExportTransactions("excel")}>
-              Export as Excel
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       {/* Stats Cards */}
@@ -470,11 +308,10 @@ const UserDashboard = () => {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
-          <TabsTrigger value="invoices">Invoices</TabsTrigger>
-          <TabsTrigger value="receipts">Receipts</TabsTrigger>
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="invitations">Invitations</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
         </TabsList>
@@ -643,50 +480,58 @@ const UserDashboard = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="invoices" className="space-y-6">
+        <TabsContent value="transactions" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                My Invoices
+                <CreditCard className="h-5 w-5" />
+                All Transactions
               </CardTitle>
-              <CardDescription>All your invoices and bills</CardDescription>
+              <CardDescription>
+                Detailed list of all your transactions
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {invoicesError ? (
+              {transactionsError ? (
                 <ErrorComponent
-                  title="Error loading invoices"
-                  message={invoicesError.message}
+                  title="Error loading transactions"
+                  message={transactionsError.message}
                 />
-              ) : !(invoices as any)?.data ||
-                (invoices as any).data.length === 0 ? (
+              ) : !(transactions as any)?.data ||
+                (transactions as any).data.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  No invoices found
+                  No transactions found
                 </p>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Date</TableHead>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Description</TableHead>
                       <TableHead>Amount</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(invoices as any).data.map((invoice: any) => (
-                      <TableRow key={invoice._id}>
+                    {(transactions as any).data.map((transaction: any) => (
+                      <TableRow key={transaction._id}>
                         <TableCell className="font-medium">
-                          #{invoice.invoiceNumber}
+                          {transaction._id.slice(-8)}
+                        </TableCell>
+                        <TableCell>{transaction.type}</TableCell>
+                        <TableCell>{transaction.description}</TableCell>
+                        <TableCell>
+                          {currencyFormat(transaction.amount)}
                         </TableCell>
                         <TableCell>
-                          {new Date(invoice.createdAt).toLocaleDateString()}
+                          {new Date(transaction.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          {invoice.currency} {invoice.total.toFixed(2)}
+                          {getStatusBadge(transaction.status)}
                         </TableCell>
-                        <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -695,20 +540,11 @@ const UserDashboard = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleDownloadInvoice(
-                                    invoice._id,
-                                    invoice.invoiceNumber
-                                  )
-                                }
-                              >
-                                <Download className="mr-2 h-4 w-4" />
-                                Download PDF
-                              </DropdownMenuItem>
                               <DropdownMenuItem>View Details</DropdownMenuItem>
-                              {invoice.status === "pending" && (
-                                <DropdownMenuItem>Pay Now</DropdownMenuItem>
+                              {transaction.status === "pending" && (
+                                <DropdownMenuItem>
+                                  Cancel Transaction
+                                </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -722,78 +558,9 @@ const UserDashboard = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="receipts" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Receipt className="h-5 w-5" />
-                My Receipts
-              </CardTitle>
-              <CardDescription>
-                Payment receipts for your transactions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {receiptsError ? (
-                <ErrorComponent
-                  title="Error loading receipts"
-                  message={receiptsError.message}
-                />
-              ) : !(receipts as any)?.data ||
-                (receipts as any).data.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No receipts found
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Receipt ID</TableHead>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(receipts as any).data.map((receipt: any) => (
-                      <TableRow key={receipt._id}>
-                        <TableCell className="font-medium">
-                          {receipt._id.slice(-8)}
-                        </TableCell>
-                        <TableCell>#{receipt.invoice?.invoiceNumber}</TableCell>
-                        <TableCell>
-                          {new Date(receipt.timestamp).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>{currencyFormat(receipt.amount)}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleDownloadReceipt(receipt._id)
-                                }
-                              >
-                                <Download className="mr-2 h-4 w-4" />
-                                Download PDF
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        
+
+        
 
         <TabsContent value="invitations" className="space-y-6">
           <Card>

@@ -42,8 +42,6 @@ export function initSocket(server: HttpServer): Server {
   });
 
   io.on("connection", (socket: Socket) => {
-    console.log(`Socket connected: ${(socket as any).user?.id || "anonymous"}`);
-
     // Join user's company room
     if ((socket as any).user?.companyId) {
       socket.join(`company:${(socket as any).user.companyId}`);
@@ -79,10 +77,18 @@ export function initSocket(server: HttpServer): Server {
           return;
         }
 
-        // Check access permissions
+        const userCompanyId = await UserModel.findById((socket as any).user?.id)
+          .select("company")
+          .lean();
+
+        // Check access permissions - allow company staff to join for typing events
+        const userCompanyIdStr = userCompanyId?.company?.toString();
+        const ticketCompanyIdStr = ticket.company.toString();
+        const isSameCompany = userCompanyIdStr === ticketCompanyIdStr;
+
         const canAccess =
           (socket as any).user?.isSuperAdmin ||
-          ticket.company.toString() === (socket as any).user?.companyId ||
+          isSameCompany ||
           ticket.user.toString() === (socket as any).user?.id ||
           ticket.assignedTo?.toString() === (socket as any).user?.id;
 
@@ -103,12 +109,45 @@ export function initSocket(server: HttpServer): Server {
       socket.emit("left-ticket", ticketId);
     });
 
-    socket.on("typing", (data: { ticketId: string; isTyping: boolean }) => {
-      socket.to(`ticket:${data.ticketId}`).emit("user-typing", {
-        userId: (socket as any).user?.id,
-        isTyping: data.isTyping,
-      });
+    socket.on("join-company", (companyId: string) => {
+      socket.join(`company:${companyId}`);
+      socket.emit("joined-company", companyId);
     });
+
+    socket.on("leave-company", (companyId: string) => {
+      socket.leave(`company:${companyId}`);
+      socket.emit("left-company", companyId);
+    });
+
+    socket.on(
+      "typing",
+      (data: {
+        ticketId: string;
+        companyId: string;
+        isTyping: boolean;
+        userId: string;
+        userType: "staff" | "user";
+      }) => {
+        // Emit to ticket room
+        socket.to(`ticket:${data.ticketId}`).emit("typing", {
+          userId: data.userId,
+          isTyping: data.isTyping,
+          ticketId: data.ticketId,
+          userType: data.userType,
+        });
+
+        // Emit to company room for staff to see
+        if (data.companyId) {
+          socket.to(`company:${data.companyId}`).emit("typing", {
+            userId: data.userId,
+            isTyping: data.isTyping,
+            ticketId: data.ticketId,
+            userType: data.userType,
+            companyId: data.companyId,
+          });
+        }
+      }
+    );
 
     socket.on(
       "new-message",
@@ -118,12 +157,15 @@ export function initSocket(server: HttpServer): Server {
           socket.to(`ticket:${data.ticketId}`).emit("new-message", {
             ...data.message,
             sender: (socket as any).user?.id,
+            ticketId: data.ticketId, // Include ticketId for frontend query invalidation
           });
 
           // Update message read status
-          await SupportMessageModel.findByIdAndUpdate(data.message._id, {
-            isRead: false,
-          });
+          if (data.message._id) {
+            await SupportMessageModel.findByIdAndUpdate(data.message._id, {
+              isRead: false,
+            });
+          }
         } catch (error) {
           socket.emit("error", "Failed to send message");
         }
@@ -135,9 +177,7 @@ export function initSocket(server: HttpServer): Server {
     });
 
     socket.on("disconnect", () => {
-      console.log(
-        `Socket disconnected: ${(socket as any).user?.id || "anonymous"}`
-      );
+      // Socket disconnected
     });
   });
 

@@ -10,6 +10,7 @@ export interface CartItem {
 
 export interface User {
   _id: string;
+  id: string;
   name: string;
   username: string;
   email: string;
@@ -409,7 +410,9 @@ export interface Tax {
   name: string;
   rate: number;
   type: string;
-  appliesTo: "inventory_item" | "facitlity" | "both";
+  appliesTo: "inventory_item" | "facility" | "both";
+  isSuperAdminTax?: boolean;
+  company?: Company;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -546,6 +549,8 @@ export interface CompanyRole {
     manageFacilities: boolean;
     manageInventory: boolean;
     manageTransactions: boolean;
+    manageEmails: boolean;
+    manageSettings: boolean;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -577,16 +582,30 @@ export interface Notification {
 }
 
 export interface NotificationPreferences {
-  _id: string;
-  userId: string;
-  email: boolean;
-  push: boolean;
-  sms: boolean;
-  bookingNotifications: boolean;
-  paymentNotifications: boolean;
-  systemNotifications: boolean;
-  marketingNotifications: boolean;
-  updatedAt: Date;
+  email: {
+    invoices: boolean;
+    receipts: boolean;
+    bookings: boolean;
+    payments: boolean;
+    support: boolean;
+    marketing: boolean;
+  };
+  push: {
+    invoices: boolean;
+    receipts: boolean;
+    bookings: boolean;
+    payments: boolean;
+    support: boolean;
+    marketing: boolean;
+  };
+  sms: {
+    invoices: boolean;
+    receipts: boolean;
+    bookings: boolean;
+    payments: boolean;
+    support: boolean;
+    marketing: boolean;
+  };
 }
 
 export interface CompanyJoinRequest {
@@ -620,4 +639,99 @@ export interface BookingCalendarProps {
   onUpdateBooking?: (booking: Booking) => Promise<void>;
   onDeleteBooking?: (bookingId: string) => Promise<void>;
   onCreateBooking?: (booking: Partial<Booking>) => Promise<void>;
+}
+
+export interface SupportTicket {
+  _id: string;
+  user: User;
+  subject: string;
+  description: string;
+  category:
+    | "technical"
+    | "billing"
+    | "general"
+    | "feature_request"
+    | "bug_report";
+  priority: "low" | "medium" | "high" | "urgent";
+  status:
+    | "open"
+    | "in_progress"
+    | "waiting_for_customer"
+    | "resolved"
+    | "closed";
+  assignedTo?: User;
+  messages: SupportMessage[];
+  attachments: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  resolvedAt?: Date;
+  closedAt?: Date;
+}
+
+export interface SupportMessage {
+  _id: string;
+  ticket: string;
+  user: User;
+  message: string;
+  attachments: string[];
+  isInternal: boolean;
+  createdAt: Date;
+}
+
+export interface TaxSchedule {
+  _id: string;
+  name: string;
+  description?: string;
+  type: "percentage" | "fixed";
+  value: number;
+  effectiveDate: Date;
+  expiryDate?: Date;
+  isActive: boolean;
+  appliesTo: "all" | "facilities" | "inventory" | "subscriptions";
+  company: string;
+  createdBy: User;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Resource {
+  _id: string;
+  name: string;
+  description?: string;
+  type: "document" | "image" | "video" | "other";
+  path: string;
+  originalName: string;
+  mimetype: string;
+  size: number;
+  uploadedBy: User;
+  company?: string;
+  isPublic: boolean;
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DeletionRequest {
+  _id: string;
+  user: User;
+  reason: string;
+  dataTypes: string[];
+  status: "pending" | "approved" | "rejected" | "completed";
+  requestedAt: Date;
+  processedAt?: Date;
+  processedBy?: User;
+  notes?: string;
+}
+
+export interface HealthStatus {
+  status: "healthy" | "degraded" | "unhealthy";
+  timestamp: Date;
+  services: {
+    database: "healthy" | "degraded" | "unhealthy";
+    external: "healthy" | "degraded" | "unhealthy";
+    storage: "healthy" | "degraded" | "unhealthy";
+  };
+  responseTime: number;
+  uptime: number;
+  version: string;
 }

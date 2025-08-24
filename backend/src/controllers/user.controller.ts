@@ -222,6 +222,7 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
       "isDeleted",
       "status",
       "profile",
+      "isSuperAdmin",
     ];
     const filteredData = Object.keys(data)
       .filter((key) => allowedFields.includes(key))

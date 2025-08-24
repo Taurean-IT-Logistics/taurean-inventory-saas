@@ -317,7 +317,7 @@ export function EnhancedChatWidget() {
         console.error("Socket connection error:", error);
       });
 
-      newSocket.on("user-typing", (data) => {
+      newSocket.on("typing", (data) => {
         if (data.userId !== user?._id) {
           if (data.isTyping) {
             setTypingUsers((prev) => new Set(prev).add(data.userId));
@@ -1201,10 +1201,49 @@ export function EnhancedChatWidget() {
                             <input
                               type="text"
                               value={inputValue}
-                              onChange={(e) => setInputValue(e.target.value)}
-                              onKeyPress={(e) =>
-                                e.key === "Enter" && handleSendMessage()
-                              }
+                              onChange={(e) => {
+                                setInputValue(e.target.value);
+                                if (
+                                  socket &&
+                                  selectedTicket?._id &&
+                                  user?._id
+                                ) {
+                                  socket.emit("typing", {
+                                    ticketId: selectedTicket._id,
+                                    userId: user._id,
+                                    isTyping: true,
+                                  });
+                                }
+                              }}
+                              onBlur={() => {
+                                if (
+                                  socket &&
+                                  selectedTicket?._id &&
+                                  user?._id
+                                ) {
+                                  socket.emit("typing", {
+                                    ticketId: selectedTicket._id,
+                                    userId: user._id,
+                                    isTyping: false,
+                                  });
+                                }
+                              }}
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") {
+                                  handleSendMessage();
+                                  if (
+                                    socket &&
+                                    selectedTicket?._id &&
+                                    user?._id
+                                  ) {
+                                    socket.emit("typing", {
+                                      ticketId: selectedTicket._id,
+                                      userId: user._id,
+                                      isTyping: false,
+                                    });
+                                  }
+                                }
+                              }}
                               placeholder="Type your message..."
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />

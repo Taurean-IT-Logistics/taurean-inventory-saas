@@ -272,6 +272,7 @@ export default function CompanyOnboardingPage() {
 
     // Add basic form fields
     submitData.append("name", formData.name);
+    submitData.append("business_name", formData.name); // Business name same as company name
     submitData.append("contactEmail", formData.contactEmail);
     submitData.append("contactPhone", formData.contactPhone);
     submitData.append("location", formData.location);

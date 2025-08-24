@@ -7,6 +7,14 @@ import { sendSuccess, sendError, sendNotFound } from "../utils";
  */
 export const createTax = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (req.body.isSuperAdminTax) {
+      req.body.company = undefined;
+    }
+
+    if (!req.body.isSuperAdminTax) {
+      req.body.company = req.user?.companyId;
+    }
+
     const newTax = await TaxService.createTax(req.body);
     sendSuccess(res, "Tax created successfully", newTax);
   } catch (error) {
@@ -46,11 +54,14 @@ export const getCompanyTaxes = async (
 ): Promise<void> => {
   try {
     if (!req.user?.companyId) {
-      sendError(res, "Company ID not found. User must be associated with a company.");
+      sendError(
+        res,
+        "Company ID not found. User must be associated with a company."
+      );
       return;
     }
 
-    const filters = {
+    const staffFilters = {
       active:
         req.query.active === "true"
           ? true
@@ -62,7 +73,17 @@ export const getCompanyTaxes = async (
       companyId: req.user.companyId,
     };
 
-    const taxes = await TaxService.getCompanyTaxes(filters);
+    const superAdminFilters = {
+      active:
+        req.query.active === "true"
+          ? true
+          : req.query.active === "false"
+          ? false
+          : undefined,
+    };
+    const taxes = await TaxService.getCompanyTaxes(
+      req.user.isSuperAdmin ? superAdminFilters : staffFilters
+    );
     sendSuccess(res, "Company taxes fetched successfully", taxes);
   } catch (error) {
     sendError(res, "Failed to fetch company taxes", error);

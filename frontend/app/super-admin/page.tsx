@@ -40,27 +40,49 @@ import {
   CheckCircle,
   Clock,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
+import { ErrorComponent } from "@/components/ui/error";
 
 export default function SuperAdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("overview");
 
-  const { data: statsData, isLoading: statsLoading } = useQuery({
+  const {
+    data: statsData,
+    isLoading: statsLoading,
+    isError: statsError,
+    refetch: refetchStats,
+  } = useQuery({
     queryKey: ["super-admin-stats"],
     queryFn: SuperAdminAPI.getSystemStatistics,
   });
 
-  const { data: companiesData, isLoading: companiesLoading } = useQuery({
+  const {
+    data: companiesData,
+    isLoading: companiesLoading,
+    isError: companiesError,
+    refetch: refetchCompanies,
+  } = useQuery({
     queryKey: ["super-admin-companies"],
     queryFn: SuperAdminAPI.getAllCompanies,
   });
 
-  const { data: usersData, isLoading: usersLoading } = useQuery({
+  const {
+    data: usersData,
+    isLoading: usersLoading,
+    isError: usersError,
+    refetch: refetchUsers,
+  } = useQuery({
     queryKey: ["super-admin-users"],
     queryFn: SuperAdminAPI.getAllUsers,
   });
 
-  const { data: activityData, isLoading: activityLoading } = useQuery({
+  const {
+    data: activityData,
+    isLoading: activityLoading,
+    isError: activityError,
+    refetch: refetchActivity,
+  } = useQuery({
     queryKey: ["super-admin-activity"],
     queryFn: () => SuperAdminAPI.getRecentActivity(10),
   });
@@ -110,14 +132,24 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleRefetch = () => {
+    refetchStats();
+    refetchCompanies();
+    refetchUsers();
+    refetchActivity();
+  };
+
   if (statsLoading || companiesLoading || usersLoading) {
+    return <Loader text="Loading super admin dashboard..." />;
+  }
+
+  if (statsError || companiesError || usersError || activityError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading super admin dashboard...</p>
-        </div>
-      </div>
+      <ErrorComponent
+        message="Error loading super admin dashboard"
+        onRetry={handleRefetch}
+        title="Error"
+      />
     );
   }
 

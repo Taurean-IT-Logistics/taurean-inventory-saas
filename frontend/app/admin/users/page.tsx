@@ -12,7 +12,7 @@ import CompanyRoleManagement from "@/components/admin/CompanyRoleManagement";
 import { EnhancedChatWidget } from "@/components/chat/enhanced-chat-widget";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UsersAPI, TransactionsAPI } from "@/lib/api";
+import { UsersAPI, TransactionsAPI, CompanyRoleAPI } from "@/lib/api";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
 import { toast } from "@/hooks/use-toast";
@@ -70,17 +70,19 @@ const UserManagement = () => {
 
   const updateUserMutation = useMutation({
     mutationFn: (user: User) => UsersAPI.update(user._id, user),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Success",
         description: "User updated successfully",
       });
+      console.log("Success", data);
       queryClient.invalidateQueries({ queryKey: ["users-company"] });
     },
     onError: () => {
       toast({
         title: "Error",
         description: "Failed to update user",
+        variant: "destructive",
       });
     },
   });
@@ -155,6 +157,39 @@ const UserManagement = () => {
   };
 
   const handleSaveEdit = async (updatedUser: User) => {
+    console.log(updatedUser);
+
+    // If the company role has changed, handle role assignment/removal
+    if (updatedUser.companyRole !== editingUser?.companyRole) {
+      try {
+        if (updatedUser.companyRole === "_no_roles") {
+          // Remove role from user
+          await CompanyRoleAPI.removeRoleFromUser(updatedUser._id);
+          toast({
+            title: "Success",
+            description: "User role removed successfully",
+          });
+        } else if (updatedUser.companyRole) {
+          // Assign new role to user
+          await CompanyRoleAPI.assignRoleToUser(
+            updatedUser._id,
+            updatedUser.companyRole
+          );
+          toast({
+            title: "Success",
+            description: "User role assigned successfully",
+          });
+        }
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update user role",
+          variant: "destructive",
+        });
+        return; // Don't proceed with user update if role assignment fails
+      }
+    }
+
     updateUserMutation.mutate(updatedUser);
     setShowEditModal(false);
     setEditingUser(null);
@@ -209,7 +244,7 @@ const UserManagement = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Quick Actions</h3>
               </div>
-              <InviteUserModal companyId={user?.company || ""} />
+              <InviteUserModal companyId={(user?.company as any)?._id || ""} />
             </div>
 
             <UserFilters

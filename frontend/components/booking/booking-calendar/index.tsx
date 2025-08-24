@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -38,38 +38,44 @@ const BookingCalendar = ({
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterFacility, setFilterFacility] = useState<string>("all");
 
-  // Transform bookings to calendar events
-  const events: BookingEvent[] = (bookings || [])
-    .filter((b) => filterStatus === "all" || b.status === filterStatus)
-    .filter((b) => {
-      if (filterFacility === "all") return true;
-      const facilityId =
-        typeof b.facility === "string" ? b.facility : (b.facility as any)?._id;
-      return facilityId === filterFacility;
-    })
-    .map((b) => {
-      const facilityName =
-        typeof b.facility === "string"
-          ? facilities.find((f) => f._id === b.facility)?.name ||
-            "Unknown Facility"
-          : (b.facility as any)?.name || "Unknown Facility";
+  // Transform bookings to calendar events - memoized to prevent infinite re-renders
+  const events: BookingEvent[] = useMemo(() => {
+    if (!bookings || !facilities) return [];
 
-      return {
-        title: `${facilityName} - ${b.user?.name || "Unknown User"}`,
-        start: b.startDate
-          ? new Date(b.startDate).toISOString()
-          : new Date().toISOString(),
-        end: b.endDate
-          ? new Date(b.endDate).toISOString()
-          : new Date().toISOString(),
-        backgroundColor: getStatusColor(b.status),
-        borderColor: getStatusColor(b.status),
-        extendedProps: {
-          booking: b,
-          facility: b.facility,
-        },
-      };
-    });
+    return bookings
+      .filter((b) => filterStatus === "all" || b.status === filterStatus)
+      .filter((b) => {
+        if (filterFacility === "all") return true;
+        const facilityId =
+          typeof b.facility === "string"
+            ? b.facility
+            : (b.facility as any)?._id;
+        return facilityId === filterFacility;
+      })
+      .map((b) => {
+        const facilityName =
+          typeof b.facility === "string"
+            ? facilities.find((f) => f._id === b.facility)?.name ||
+              "Unknown Facility"
+            : (b.facility as any)?.name || "Unknown Facility";
+
+        return {
+          title: `${facilityName} - ${b.user?.name || "Unknown User"}`,
+          start: b.startDate
+            ? new Date(b.startDate).toISOString()
+            : new Date().toISOString(),
+          end: b.endDate
+            ? new Date(b.endDate).toISOString()
+            : new Date().toISOString(),
+          backgroundColor: getStatusColor(b.status),
+          borderColor: getStatusColor(b.status),
+          extendedProps: {
+            booking: b,
+            facility: b.facility,
+          },
+        };
+      });
+  }, [bookings, facilities, filterStatus, filterFacility]);
 
   // Mutations
   const updateBookingMutation = useMutation({
@@ -152,16 +158,31 @@ const BookingCalendar = ({
     },
   });
 
-  // Event handlers
-  const handleEventClick = (info: any) => {
+  // Loading states - memoized to prevent unnecessary re-renders
+  const isLoading = useMemo(
+    () =>
+      updateBookingMutation.isPending ||
+      createBookingMutation.isPending ||
+      deleteBookingMutation.isPending ||
+      statusChangeMutation.isPending,
+    [
+      updateBookingMutation.isPending,
+      createBookingMutation.isPending,
+      deleteBookingMutation.isPending,
+      statusChangeMutation.isPending,
+    ]
+  );
+
+  // Event handlers - memoized to prevent unnecessary re-renders
+  const handleEventClick = useCallback((info: any) => {
     const booking = info.event.extendedProps.booking;
     if (booking) {
       setSelectedBooking(booking);
       setShowBookingModal(true);
     }
-  };
+  }, []);
 
-  const handleDateSelect = (selectInfo: any) => {
+  const handleDateSelect = useCallback((selectInfo: any) => {
     setFormData({
       startDate: new Date(selectInfo.startStr),
       endDate: new Date(selectInfo.endStr),
@@ -174,9 +195,9 @@ const BookingCalendar = ({
     });
     setShowEditModal(true);
     setEditingBooking(null);
-  };
+  }, []);
 
-  const handleEditBooking = (booking: Booking) => {
+  const handleEditBooking = useCallback((booking: Booking) => {
     setEditingBooking(booking);
     setFormData({
       ...booking,
@@ -185,58 +206,72 @@ const BookingCalendar = ({
     });
     setShowBookingModal(false);
     setShowEditModal(true);
-  };
+  }, []);
 
-  const handleSaveBooking = async () => {
-    if (!formData.facility || !formData.startDate || !formData.endDate) {
-      return;
-    }
+  const handleSaveBooking = useCallback(
+    async (formData: Partial<Booking>) => {
+      if (!formData.facility || !formData.startDate || !formData.endDate) {
+        return;
+      }
 
-    const bookingData = {
-      ...formData,
-      duration: calculateDuration(
-        formData.startDate!.toISOString(),
-        formData.endDate!.toISOString()
-      ),
-      user:
-        (formData.user && typeof formData.user === "object"
-          ? (formData.user as any)._id
-          : formData.user) || undefined,
-      facility:
-        (formData.facility && typeof formData.facility === "object"
-          ? (formData.facility as any)._id
-          : formData.facility) || undefined,
-    };
+      // Prevent multiple submissions by checking mutation states directly
+      if (updateBookingMutation.isPending || createBookingMutation.isPending) {
+        return;
+      }
 
-    if (editingBooking) {
-      updateBookingMutation.mutate({
-        ...editingBooking,
-        ...bookingData,
-      } as Booking);
-    } else {
-      createBookingMutation.mutate({
-        ...bookingData,
-        createdAt: new Date(),
-        isDeleted: false,
-      });
-    }
-  };
+      const bookingData = {
+        ...formData,
+        duration: calculateDuration(
+          formData.startDate!.toISOString(),
+          formData.endDate!.toISOString()
+        ),
+        user:
+          (formData.user && typeof formData.user === "object"
+            ? (formData.user as any)._id
+            : formData.user) || undefined,
+        facility:
+          (formData.facility && typeof formData.facility === "object"
+            ? (formData.facility as any)._id
+            : formData.facility) || undefined,
+      };
 
-  const handleDeleteBooking = async (booking: Booking) => {
-    if (!window.confirm("Are you sure you want to delete this booking?")) {
-      return;
-    }
+      if (editingBooking) {
+        updateBookingMutation.mutate({
+          ...editingBooking,
+          ...bookingData,
+        } as Booking);
+      } else {
+        createBookingMutation.mutate({
+          ...bookingData,
+          createdAt: new Date(),
+          isDeleted: false,
+        });
+      }
+    },
+    [updateBookingMutation, createBookingMutation]
+  );
 
-    if (booking._id) {
-      deleteBookingMutation.mutate(booking._id);
-    }
-  };
+  const handleDeleteBooking = useCallback(
+    async (booking: Booking) => {
+      if (!window.confirm("Are you sure you want to delete this booking?")) {
+        return;
+      }
 
-  const handleStatusChange = async (booking: Booking, newStatus: string) => {
-    statusChangeMutation.mutate({ booking, newStatus });
-  };
+      if (booking._id) {
+        deleteBookingMutation.mutate(booking._id);
+      }
+    },
+    [deleteBookingMutation]
+  );
 
-  const handleNewBooking = () => {
+  const handleStatusChange = useCallback(
+    async (booking: Booking, newStatus: string) => {
+      statusChangeMutation.mutate({ booking, newStatus });
+    },
+    [statusChangeMutation]
+  );
+
+  const handleNewBooking = useCallback(() => {
     setFormData({
       startDate: new Date(),
       endDate: new Date(Date.now() + 60 * 60 * 1000),
@@ -249,22 +284,24 @@ const BookingCalendar = ({
     });
     setEditingBooking(null);
     setShowEditModal(true);
-  };
+  }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
-  };
+  }, [queryClient]);
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     console.log("Export functionality to be implemented");
-  };
+  }, []);
 
-  // Loading states
-  const isLoading =
-    updateBookingMutation.isPending ||
-    createBookingMutation.isPending ||
-    deleteBookingMutation.isPending ||
-    statusChangeMutation.isPending;
+  // Memoize modal close handlers to prevent unnecessary re-renders
+  const handleCloseBookingModal = useCallback(() => {
+    setShowBookingModal(false);
+  }, []);
+
+  const handleCloseEditModal = useCallback(() => {
+    setShowEditModal(false);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -323,7 +360,7 @@ const BookingCalendar = ({
           booking={selectedBooking}
           isOpen={showBookingModal}
           isSaving={isLoading}
-          onClose={() => setShowBookingModal(false)}
+          onClose={handleCloseBookingModal}
           onEdit={handleEditBooking}
           onDelete={handleDeleteBooking}
           onStatusChange={handleStatusChange}
@@ -335,7 +372,7 @@ const BookingCalendar = ({
           editingBooking={editingBooking}
           formData={formData}
           facilities={facilities}
-          onClose={() => setShowEditModal(false)}
+          onClose={handleCloseEditModal}
           onSave={handleSaveBooking}
         />
       </div>

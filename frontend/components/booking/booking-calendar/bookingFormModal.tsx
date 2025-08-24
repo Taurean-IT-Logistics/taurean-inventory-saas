@@ -30,7 +30,7 @@ interface BookingFormModalProps {
   formData: Partial<Booking>;
   facilities: Facility[];
   onClose: () => void;
-  onSave: () => void;
+  onSave: (data: Partial<Booking>) => void;
 }
 
 export const BookingFormModal = ({
@@ -44,18 +44,38 @@ export const BookingFormModal = ({
 }: BookingFormModalProps) => {
   // Local state for form editing - prevents infinite loops
   const [localFormData, setLocalFormData] = useState<Partial<Booking>>({});
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize local form data when modal opens or editing booking changes
+  // Initialize local form data when modal opens
   useEffect(() => {
-    if (isOpen && formData) {
-      setLocalFormData(formData);
+    if (isOpen && !isInitialized) {
+      if (editingBooking) {
+        setLocalFormData({
+          ...editingBooking,
+          startDate: new Date(editingBooking.startDate),
+          endDate: new Date(editingBooking.endDate),
+        });
+      } else {
+        setLocalFormData({
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 60 * 60 * 1000),
+          status: "pending",
+          paymentStatus: "pending",
+          totalPrice: 0,
+          duration: "1 hour",
+          notes: "",
+          internalNotes: "",
+        });
+      }
+      setIsInitialized(true);
     }
-  }, [isOpen, formData]);
+  }, [isOpen, editingBooking, isInitialized]);
 
-  // Reset local form data when modal closes
+  // Reset when modal closes
   useEffect(() => {
     if (!isOpen) {
       setLocalFormData({});
+      setIsInitialized(false);
     }
   }, [isOpen]);
 
@@ -92,9 +112,25 @@ export const BookingFormModal = ({
   };
 
   const handleSave = () => {
-    // Update the parent formData before calling onSave
-    Object.assign(formData, localFormData);
-    onSave();
+    onSave(localFormData);
+  };
+
+  const getFacilityDisplayName = () => {
+    if (!localFormData.facility) return "";
+
+    if (typeof localFormData.facility === "string") {
+      // Find facility by ID
+      const facility = facilities.find((f) => f._id === localFormData.facility);
+      return facility?.name || "";
+    } else {
+      // Facility is an object
+      const facilityObj = localFormData.facility as any;
+      if (facilityObj?._id) {
+        const facility = facilities.find((f) => f._id === facilityObj._id);
+        return facility?.name || "";
+      }
+      return facilityObj?.name || "";
+    }
   };
 
   return (
@@ -116,16 +152,7 @@ export const BookingFormModal = ({
                 Facility <span className="text-red-500">*</span>
               </Label>
               <Select
-                value={
-                  typeof localFormData.facility === "string"
-                    ? facilities.find((f) => f._id === localFormData.facility)
-                        ?.name || ""
-                    : (localFormData.facility as any)?._id
-                    ? facilities.find(
-                        (f) => f._id === (localFormData.facility as any)._id
-                      )?.name || ""
-                    : ""
-                }
+                value={getFacilityDisplayName()}
                 onValueChange={handleFacilityChange}
               >
                 <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">

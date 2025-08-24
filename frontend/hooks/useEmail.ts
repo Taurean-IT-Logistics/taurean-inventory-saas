@@ -58,49 +58,10 @@ export function useSendWelcomeEmail() {
   });
 }
 
-export function useSendInvoiceEmail() {
-  return useMutation({
-    mutationFn: ({ invoiceId, attachPDF = true }: { invoiceId: string; attachPDF?: boolean }) =>
-      EmailAPI.sendInvoiceEmail(invoiceId, attachPDF),
-    onSuccess: () => {
-      toast({
-        title: "Invoice Email Sent",
-        description: "Invoice email has been sent successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send invoice email",
-        variant: "destructive",
-      });
-    },
-  });
-}
-
-export function useSendReceiptEmail() {
-  return useMutation({
-    mutationFn: ({ receiptId, attachPDF = true }: { receiptId: string; attachPDF?: boolean }) =>
-      EmailAPI.sendReceiptEmail(receiptId, attachPDF),
-    onSuccess: () => {
-      toast({
-        title: "Receipt Email Sent",
-        description: "Receipt email has been sent successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send receipt email",
-        variant: "destructive",
-      });
-    },
-  });
-}
-
 export function useSendBookingConfirmation() {
   return useMutation({
-    mutationFn: (bookingId: string) => EmailAPI.sendBookingConfirmation(bookingId),
+    mutationFn: (bookingId: string) =>
+      EmailAPI.sendBookingConfirmation(bookingId),
     onSuccess: () => {
       toast({
         title: "Confirmation Sent",
@@ -159,10 +120,17 @@ export function useUpdateEmailSettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ companyId, settings }: { companyId: string; settings: any }) =>
-      EmailAPI.updateEmailSettings(companyId, settings),
+    mutationFn: ({
+      companyId,
+      settings,
+    }: {
+      companyId: string;
+      settings: any;
+    }) => EmailAPI.updateEmailSettings(companyId, settings),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["email", "settings", variables.companyId] });
+      queryClient.invalidateQueries({
+        queryKey: ["email", "settings", variables.companyId],
+      });
       toast({
         title: "Success",
         description: "Email settings updated successfully",

@@ -85,7 +85,8 @@ const BookingManagement = ({
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [formData, setFormData] = useState<Partial<Booking>>({});
+  // Remove formData state - we'll let the modal handle its own state
+  // const [formData, setFormData] = useState<Partial<Booking>>({});
 
   useEffect(() => {
     const filtered = bookings.filter((booking) => {
@@ -199,13 +200,15 @@ const BookingManagement = ({
   };
 
   const handleEditBooking = (booking: Booking) => {
-    setEditingBooking(booking);
-    setFormData({
-      ...booking,
-      startDate: new Date(booking.startDate),
-      endDate: new Date(booking.endDate),
-    });
-    setShowDetailsModal(false);
+    setShowDetailsModal(false); // close details modal first
+    setTimeout(() => {
+      setEditingBooking(booking);
+      setShowEditModal(true);
+    }, 0);
+  };
+
+  const handleCreateBooking = () => {
+    setEditingBooking(null);
     setShowEditModal(true);
   };
 
@@ -243,7 +246,7 @@ const BookingManagement = ({
     }
   };
 
-  const handleSaveBooking = async () => {
+  const handleSaveBooking = async (formData: Partial<Booking>) => {
     if (!formData.facility || !formData.startDate || !formData.endDate) {
       setError("Please fill in all required fields");
       toast({
@@ -309,7 +312,6 @@ const BookingManagement = ({
       }
 
       setShowEditModal(false);
-      setFormData({});
       setEditingBooking(null);
     } catch (err) {
       console.error("Error saving booking:", err);
@@ -402,6 +404,233 @@ const BookingManagement = ({
     }
   };
 
+  // Simplified BookingFormModal component directly in here to avoid prop passing issues
+  const BookingFormModal = () => {
+    const [localFormData, setLocalFormData] = useState<Partial<Booking>>({});
+
+    // Initialize form data when modal opens
+    useEffect(() => {
+      if (showEditModal) {
+        if (editingBooking) {
+          setLocalFormData({
+            ...editingBooking,
+            startDate: new Date(editingBooking.startDate),
+            endDate: new Date(editingBooking.endDate),
+          });
+        } else {
+          setLocalFormData({
+            startDate: new Date(),
+            endDate: new Date(Date.now() + 60 * 60 * 1000),
+            status: "pending",
+            paymentStatus: "pending",
+            totalPrice: 0,
+            duration: "1 hour",
+            notes: "",
+            internalNotes: "",
+          });
+        }
+      }
+    }, [showEditModal, editingBooking?._id]); // Only depend on modal state and booking ID
+
+    const handleFacilityChange = (value: string) => {
+      const facility = facilities.find((f) => f._id === value);
+      setLocalFormData((prev) => ({
+        ...prev,
+        facility: facility?._id || value,
+      }));
+    };
+
+    const handleInputChange = (field: keyof Booking, value: any) => {
+      setLocalFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    };
+
+    const handleDateChange = (
+      field: "startDate" | "endDate",
+      value: Date | undefined
+    ) => {
+      if (value) {
+        setLocalFormData((prev) => ({
+          ...prev,
+          [field]: value,
+        }));
+      }
+    };
+
+    const getFacilityDisplayValue = () => {
+      if (!localFormData.facility) return "";
+
+      if (typeof localFormData.facility === "string") {
+        return localFormData.facility;
+      } else {
+        return (localFormData.facility as any)?._id || "";
+      }
+    };
+
+    return (
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingBooking ? "Edit Booking" : "Create New Booking"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="facility">Facility *</Label>
+                <Select
+                  value={getFacilityDisplayValue()}
+                  onValueChange={handleFacilityChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select facility" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {facilities.map((facility) => (
+                      <SelectItem key={facility._id} value={facility._id}>
+                        {facility.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={localFormData.status || "pending"}
+                  onValueChange={(value) => handleInputChange("status", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="no_show">No Show</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Start Date & Time *</Label>
+                <DateTimePicker
+                  date={localFormData.startDate}
+                  onDateChange={(date: Date | undefined) => {
+                    handleDateChange("startDate", date);
+                  }}
+                  placeholder="Select start date and time"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="endDate">End Date & Time *</Label>
+                <DateTimePicker
+                  date={localFormData.endDate}
+                  onDateChange={(date: Date | undefined) => {
+                    handleDateChange("endDate", date);
+                  }}
+                  placeholder="Select end date and time"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="paymentStatus">Payment Status</Label>
+                <Select
+                  value={localFormData.paymentStatus || "pending"}
+                  onValueChange={(value) =>
+                    handleInputChange("paymentStatus", value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
+                    <SelectItem value="partial_refund">
+                      Partial Refund
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="totalPrice">Total Price</Label>
+                <Input
+                  id="totalPrice"
+                  type="number"
+                  step="0.01"
+                  value={localFormData.totalPrice || 0}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "totalPrice",
+                      Number.parseFloat(e.target.value) || 0
+                    )
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                rows={3}
+                value={localFormData.notes || ""}
+                onChange={(e) => handleInputChange("notes", e.target.value)}
+                placeholder="Customer notes..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="internalNotes">Internal Notes</Label>
+              <Textarea
+                id="internalNotes"
+                rows={2}
+                value={localFormData.internalNotes || ""}
+                onChange={(e) =>
+                  handleInputChange("internalNotes", e.target.value)
+                }
+                placeholder="Internal staff notes..."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => handleSaveBooking(localFormData)}
+              disabled={
+                isSaving ||
+                !localFormData.facility ||
+                !localFormData.startDate ||
+                !localFormData.endDate
+              }
+            >
+              {isSaving && <Loader size="sm" className="mr-2" />}
+              {editingBooking ? "Update" : "Create"} Booking
+            </Button>
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
@@ -424,22 +653,7 @@ const BookingManagement = ({
             </p>
           </div>
           <div className="flex gap-3 mt-4 sm:mt-0">
-            <Button
-              onClick={() => {
-                setFormData({
-                  startDate: new Date(),
-                  endDate: new Date(Date.now() + 60 * 60 * 1000),
-                  status: "pending",
-                  paymentStatus: "pending",
-                  totalPrice: 0,
-                  duration: "1 hour",
-                  notes: "",
-                  internalNotes: "",
-                });
-                setEditingBooking(null);
-                setShowEditModal(true);
-              }}
-            >
+            <Button onClick={handleCreateBooking}>
               <Plus className="h-4 w-4 mr-2" />
               New Booking
             </Button>
@@ -706,22 +920,9 @@ const BookingManagement = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              setEditingBooking(booking);
-                              setFormData({
-                                facility: booking.facility,
-                                user: booking.user,
-                                startDate: new Date(booking.startDate),
-                                endDate: new Date(booking.endDate),
-                                status: booking.status,
-                                paymentStatus:
-                                  booking.paymentStatus || "pending",
-                                totalPrice: booking.totalPrice || 0,
-                                duration: booking.duration || "",
-                                notes: booking.notes || "",
-                                internalNotes: booking.internalNotes || "",
-                              });
-                              setShowEditModal(true);
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditBooking(booking);
                             }}
                           >
                             <Edit className="h-4 w-4" />
@@ -744,187 +945,7 @@ const BookingManagement = ({
         </Card>
       </div>
 
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingBooking ? "Edit Booking" : "Create New Booking"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="facility">Facility *</Label>
-                <Select
-                  value={
-                    typeof formData.facility === "string"
-                      ? formData.facility
-                      : (formData.facility as any)?._id || ""
-                  }
-                  onValueChange={(value) => {
-                    const facility = facilities.find((f) => f._id === value);
-                    setFormData((prev) => ({
-                      ...prev,
-                      facility: facility?._id || value,
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select facility" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {facilities.map((facility) => (
-                      <SelectItem key={facility._id} value={facility._id}>
-                        {facility.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      status: value as Booking["status"],
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="no_show">No Show</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date & Time *</Label>
-                <DateTimePicker
-                  date={formData.startDate}
-                  onDateChange={(date: Date | undefined) => {
-                    setFormData((prev) => ({ ...prev, startDate: date }));
-                  }}
-                  placeholder="Select start date and time"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="endDate">End Date & Time *</Label>
-                <DateTimePicker
-                  date={formData.endDate}
-                  onDateChange={(date: Date | undefined) => {
-                    setFormData((prev) => ({ ...prev, endDate: date }));
-                  }}
-                  placeholder="Select end date and time"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="paymentStatus">Payment Status</Label>
-                <Select
-                  value={formData.paymentStatus || "pending"}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      paymentStatus: value as Booking["paymentStatus"],
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                    <SelectItem value="refunded">Refunded</SelectItem>
-                    <SelectItem value="partial_refund">
-                      Partial Refund
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="totalPrice">Total Price</Label>
-                <Input
-                  id="totalPrice"
-                  type="number"
-                  step="0.01"
-                  value={formData.totalPrice || 0}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      totalPrice: Number.parseFloat(e.target.value) || 0,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                rows={3}
-                value={formData.notes || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, notes: e.target.value }))
-                }
-                placeholder="Customer notes..."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="internalNotes">Internal Notes</Label>
-              <Textarea
-                id="internalNotes"
-                rows={2}
-                value={formData.internalNotes || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    internalNotes: e.target.value,
-                  }))
-                }
-                placeholder="Internal staff notes..."
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              onClick={handleSaveBooking}
-              disabled={
-                isSaving ||
-                !formData.facility ||
-                !formData.startDate ||
-                !formData.endDate
-              }
-            >
-              {isSaving && <Loader size="sm" className="mr-2" />}
-              {editingBooking ? "Update" : "Create"} Booking
-            </Button>
-            <Button variant="outline" onClick={() => setShowEditModal(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BookingFormModal />
 
       <BookingDetailsModal
         booking={selectedBooking}

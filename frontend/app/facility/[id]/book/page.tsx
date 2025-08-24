@@ -23,12 +23,13 @@ import {
   BookingsAPI,
   FacilitiesAPI,
   getResourceUrl,
+  TaxesAPI,
   TransactionsAPI,
 } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { ErrorComponent } from "@/components/ui/error";
 import { Loader } from "@/components/ui/loader";
-import { Booking, Facility } from "@/types";
+import { Booking, Facility, Tax } from "@/types";
 import { currencyFormat } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
 import { useRedirect } from "@/hooks/useRedirect";
@@ -70,6 +71,12 @@ export default function BookingPage({ params }: { params: { id: string } }) {
         variant: "destructive",
       });
     },
+  });
+
+  const { data: taxes = [] } = useQuery({
+    queryKey: ["taxes"],
+    queryFn: () => TaxesAPI.list(),
+    enabled: !!user,
   });
 
   const bookingsMutation = useMutation({
@@ -278,20 +285,51 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       }
     }
 
+    const normalized = (str: string) =>
+      str.trim().replace(/\s/g, "").toLowerCase();
+
     const defaultPricing = facility.pricing.find((p) => p.isDefault);
     const subtotal = (defaultPricing?.amount || 0) * days;
-    const serviceFee = 45;
-    const tax = Math.round(subtotal * 0.15); // 15% tax
+    const serviceFeeRate = (facility as Facility).isTaxable
+      ? (taxes as Tax[]).find(
+          (t: Tax) =>
+            normalized(t.name).includes("servicefee") &&
+            t.active &&
+            (t.appliesTo === "facility" || t.appliesTo === "both") &&
+            (t.isSuperAdminTax || (t.company as any) === facility.company)
+        )?.rate || 0
+      : 0;
+
+    const applicableTaxes = (facility as Facility).isTaxable
+      ? (taxes as Tax[]).filter(
+          (t: Tax) =>
+            !normalized(t.name).includes("servicefee") &&
+            t.active &&
+            (t.appliesTo === "facility" || t.appliesTo === "both") &&
+            (t.isSuperAdminTax || (t.company as any) === facility.company)
+        )
+      : [];
+
+    const totalTaxRate = applicableTaxes.reduce(
+      (sum, tax) => sum + (tax.rate || 0),
+      0
+    );
     return {
       days,
       subtotal,
-      serviceFee,
-      tax,
-      total: subtotal + serviceFee + tax,
+      serviceFeeRate,
+      taxRate: totalTaxRate,
+      total: subtotal + serviceFeeRate + totalTaxRate,
     };
   };
 
-  const { days, subtotal, serviceFee, tax, total } = calculateTotal();
+  const {
+    days,
+    subtotal,
+    serviceFeeRate,
+    taxRate: totalTaxRate,
+    total,
+  } = calculateTotal();
 
   const handleProceedToCheckout = () => {
     // Check if user is authenticated
@@ -838,12 +876,14 @@ export default function BookingPage({ params }: { params: { id: string } }) {
               <div className="flex justify-between">
                 <span className="text-gray-600">Service fee</span>
                 <span className="text-gray-900">
-                  {currencyFormat(serviceFee)}
+                  {currencyFormat(serviceFeeRate)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Tax</span>
-                <span className="text-gray-900">{currencyFormat(tax)}</span>
+                <span className="text-gray-900">
+                  {currencyFormat(totalTaxRate)}
+                </span>
               </div>
               <div className="border-t pt-3 flex justify-between font-semibold text-lg">
                 <span className="text-gray-900">Total</span>

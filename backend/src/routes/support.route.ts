@@ -1,7 +1,10 @@
 import express from "express";
 import multer from "multer";
 import { SupportController } from "../controllers/support.controller";
-import { AuthMiddleware } from "../middlewares/auth.middleware";
+import {
+  AuthMiddleware,
+  RequireActiveCompany,
+} from "../middlewares/auth.middleware";
 import { AuthorizeRoles } from "../middlewares/auth.middleware";
 import path from "path";
 import fs from "fs";
@@ -84,6 +87,7 @@ router.get(
 router.get(
   "/tickets/staff",
   AuthorizeRoles("admin", "staff"),
+  RequireActiveCompany(),
   SupportController.getStaffTickets
 );
 
@@ -111,12 +115,14 @@ router.put("/tickets/:ticketId/reopen", SupportController.reopenTicket);
 router.put(
   "/tickets/:ticketId/status",
   AuthorizeRoles("admin", "staff"),
+  RequireActiveCompany(),
   SupportController.updateTicketStatus
 );
 
 // Assign ticket to staff member
 router.put(
   "/tickets/:ticketId/assign",
+  RequireActiveCompany(),
   AuthorizeRoles("admin", "staff"),
   SupportController.assignTicket
 );
@@ -125,12 +131,14 @@ router.put(
 router.put(
   "/tickets/:ticketId/reassign",
   AuthorizeRoles("admin", "staff"),
+  RequireActiveCompany(),
   SupportController.reassignTicket
 );
 
 router.get(
   "/staff/available",
   AuthorizeRoles("admin", "staff"),
+  RequireActiveCompany(),
   SupportController.getAvailableStaff
 );
 

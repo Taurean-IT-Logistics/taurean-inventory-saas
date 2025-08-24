@@ -6,6 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   BarChart3,
   Download,
   FileText,
@@ -43,8 +50,16 @@ export default function ReportsPage() {
 
   const metrics = useMemo(() => {
     const income = (cashflow as any)?.income || 0;
-    const totalBookings = Array.isArray(bookings) ? (bookings as any).length : ((bookings as any)?.length || (bookings as any)?.data?.length || (bookings as any)?.bookings?.length || 0);
-    const facilitiesCount = (facilities as any)?.facilities?.length || (facilities as any)?.items?.length || 0;
+    const totalBookings = Array.isArray(bookings)
+      ? (bookings as any).length
+      : (bookings as any)?.length ||
+        (bookings as any)?.data?.length ||
+        (bookings as any)?.bookings?.length ||
+        0;
+    const facilitiesCount =
+      (facilities as any)?.facilities?.length ||
+      (facilities as any)?.items?.length ||
+      0;
     const activeUsers = (users as any)?.users?.length || 0;
     return { income, totalBookings, facilitiesCount, activeUsers };
   }, [cashflow, bookings, facilities, users]);
@@ -58,31 +73,37 @@ export default function ReportsPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="text-gray-600">View insights and export data for your business</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Reports & Analytics
+          </h1>
+          <p className="text-gray-600">
+            View insights and export data for your business
+          </p>
         </div>
         <div className="flex items-center space-x-3">
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option value="365">Last year</option>
-          </select>
-          <select
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="overview">Overview</option>
-            <option value="bookings">Bookings</option>
-            <option value="revenue">Revenue</option>
-            <option value="users">Users</option>
-            <option value="facilities">Facilities</option>
-          </select>
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Date range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Last 7 days</SelectItem>
+              <SelectItem value="30">Last 30 days</SelectItem>
+              <SelectItem value="90">Last 90 days</SelectItem>
+              <SelectItem value="365">Last year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={reportType} onValueChange={setReportType}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Report type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="overview">Overview</SelectItem>
+              <SelectItem value="bookings">Bookings</SelectItem>
+              <SelectItem value="revenue">Revenue</SelectItem>
+              <SelectItem value="users">Users</SelectItem>
+              <SelectItem value="facilities">Facilities</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -94,14 +115,20 @@ export default function ReportsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">GH₵{metrics.income.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Based on transactions</p>
+            <div className="text-2xl font-bold">
+              GH₵{metrics.income.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Based on transactions
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Bookings
+            </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -128,7 +155,9 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{metrics.facilitiesCount}</div>
-            <p className="text-xs text-muted-foreground">Available facilities</p>
+            <p className="text-xs text-muted-foreground">
+              Available facilities
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -183,31 +212,35 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Report Type</label>
-                <select
-                  value={reportType}
-                  onChange={(e) => setReportType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="overview">Overview Report</option>
-                  <option value="bookings">Bookings Report</option>
-                  <option value="revenue">Revenue Report</option>
-                  <option value="users">Users Report</option>
-                  <option value="facilities">Facilities Report</option>
-                </select>
+                <Select value={reportType} onValueChange={setReportType}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select report type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="overview">Overview Report</SelectItem>
+                    <SelectItem value="bookings">Bookings Report</SelectItem>
+                    <SelectItem value="revenue">Revenue Report</SelectItem>
+                    <SelectItem value="users">Users Report</SelectItem>
+                    <SelectItem value="facilities">
+                      Facilities Report
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Date Range</label>
-                <select
-                  value={dateRange}
-                  onChange={(e) => setDateRange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="7">Last 7 days</option>
-                  <option value="30">Last 30 days</option>
-                  <option value="90">Last 90 days</option>
-                  <option value="365">Last year</option>
-                </select>
+                <Select value={dateRange} onValueChange={setDateRange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select date range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">Last 7 days</SelectItem>
+                    <SelectItem value="30">Last 30 days</SelectItem>
+                    <SelectItem value="90">Last 90 days</SelectItem>
+                    <SelectItem value="365">Last year</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -236,7 +269,10 @@ export default function ReportsPage() {
             </div>
 
             <div className="pt-4 border-t">
-              <Button onClick={() => exportReport("all")} className="bg-blue-600 hover:bg-blue-700">
+              <Button
+                onClick={() => exportReport("all")}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Export All Reports
               </Button>
