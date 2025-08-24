@@ -1,6 +1,9 @@
 import express from "express";
 import { CompanyController } from "../controllers/company.controller";
-import { AuthMiddleware } from "../middlewares/auth.middleware";
+import {
+  AuthMiddleware,
+  RequireActiveCompany,
+} from "../middlewares/auth.middleware";
 import { AuthorizeRoles } from "../middlewares/auth.middleware";
 import { fileFilter, storage } from "../middlewares";
 import multer from "multer";
@@ -35,6 +38,7 @@ router.post(
 router.put(
   "/:companyId",
   multer(uploadConfig).single("file"),
+  RequireActiveCompany(),
   CompanyController.updateCompany
 );
 router.post("/:companyId/join-request", CompanyController.handleJoinRequest);
