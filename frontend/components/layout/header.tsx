@@ -112,6 +112,12 @@ export function Header() {
                     Rentals
                   </Link>
                   <Link
+                    href="/about"
+                    className="text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200 px-3 py-2 rounded-full hover:bg-gray-100"
+                  >
+                    About
+                  </Link>
+                  <Link
                     href="/pricing"
                     className="text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200 px-3 py-2 rounded-full hover:bg-gray-100"
                   >

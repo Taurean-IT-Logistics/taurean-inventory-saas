@@ -735,3 +735,18 @@ export interface HealthStatus {
   uptime: number;
   version: string;
 }
+
+export interface BookingFilters {
+  search: string;
+  status: string;
+  paymentStatus: string;
+  dateRange: string;
+  facility: string;
+}
+
+export interface BookingStats {
+  total: number;
+  confirmed: number;
+  pending: number;
+  revenue: number;
+}

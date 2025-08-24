@@ -237,8 +237,7 @@ export const CompanyJoinRequestsAPI = {
 
 // Subscriptions
 export const SubscriptionsAPI = {
-  getPlans: () =>
-    apiFetch<SubscriptionPlan[]>(`/subscriptions/plans`, { method: "GET" }),
+  getPlans: () => apiFetch(`/subscriptions/plans`, { method: "GET" }),
 
   startFreeTrial: (companyId: string) =>
     apiFetch(`/subscriptions/start-trial`, {

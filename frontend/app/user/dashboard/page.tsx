@@ -19,7 +19,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
@@ -50,6 +49,8 @@ import { ErrorComponent } from "@/components/ui/error";
 import Link from "next/link";
 import UserInvitations from "@/components/user/UserInvitations";
 import { EnhancedChatWidget } from "@/components/chat/enhanced-chat-widget";
+import { PaymentStatusBadge } from "@/components/booking/booking-calendar/paymentStatusBadge";
+import { BookingStatusBadge } from "@/components/booking/booking-calendar/bookingStatusBadge";
 
 interface DashboardStats {
   totalBookings: number;
@@ -87,61 +88,31 @@ const UserDashboard = () => {
   // Calculate dashboard stats
   const dashboardStats: DashboardStats = React.useMemo(() => {
     const stats = {
-      totalBookings: (bookings as any)?.data?.length || 0,
+      totalBookings: (bookings as any)?.length || 0,
       totalSpent: 0,
       pendingPayments: 0,
       completedBookings: 0,
     };
 
-    if ((transactions as any)?.data) {
-      stats.totalSpent = (transactions as any).data
-        .filter((t: any) => t.type === "expense")
+    if (transactions as any) {
+      stats.totalSpent = (transactions as any)
+        .filter((t: any) => t.reconciled === true)
         .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
       // Calculate pending payments from transactions
-      stats.pendingPayments = (transactions as any).data
-        .filter((t: any) => t.status === "pending")
+      stats.pendingPayments = (transactions as any)
+        .filter((t: any) => t.reconciled === false)
         .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     }
 
-    if ((bookings as any)?.data) {
-      stats.completedBookings = (bookings as any).data.filter(
+    if (bookings as any) {
+      stats.completedBookings = (bookings as any).filter(
         (booking: any) => booking.status === "completed"
       ).length;
     }
 
     return stats;
   }, [transactions, bookings]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "paid":
-      case "completed":
-        return <Badge className="bg-green-100 text-green-800">Paid</Badge>;
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case "failed":
-      case "cancelled":
-        return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "paid":
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "pending":
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      case "failed":
-      case "cancelled":
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return <AlertCircle className="h-4 w-4 text-gray-600" />;
-    }
-  };
 
   if (transactionsLoading || bookingsLoading) {
     return <Loader text="Loading dashboard..." className="pt-20" />;
@@ -161,67 +132,78 @@ const UserDashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Bookings
             </CardTitle>
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <CalendarDays className="h-6 w-6 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-foreground">
               {dashboardStats.totalBookings}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {dashboardStats.completedBookings} completed
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <DollarSign className="h-6 w-6 text-emerald-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-foreground">
               {currencyFormat(dashboardStats.totalSpent)}
             </div>
-            <p className="text-xs text-muted-foreground">Across all bookings</p>
+            <p className="text-sm text-muted-foreground">Across all bookings</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Pending Payments
             </CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 bg-amber-100 rounded-xl">
+              <Wallet className="h-6 w-6 text-amber-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-foreground">
               {currencyFormat(dashboardStats.pendingPayments)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Outstanding invoices
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Active Bookings
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 bg-green-100 rounded-xl">
+              <TrendingUp className="h-6 w-6 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {(bookings as any)?.data?.filter(
-                (b: any) => b.status === "active"
+            <div className="text-2xl font-bold text-foreground">
+              {(bookings as any)?.filter(
+                (b: any) =>
+                  b.status !== "cancelled" &&
+                  b.status !== "completed" &&
+                  b.status !== "pending"
               ).length || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Currently in progress
             </p>
           </CardContent>
@@ -230,7 +212,7 @@ const UserDashboard = () => {
 
       {/* Quick Access Section */}
       {!user?.company && (
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
@@ -271,7 +253,7 @@ const UserDashboard = () => {
 
       {/* Company Status Section */}
       {user?.company && (
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
@@ -319,7 +301,7 @@ const UserDashboard = () => {
         <TabsContent value="overview" className="space-y-6">
           {/* Recent Join Requests */}
           {!user?.company && (
-            <Card>
+            <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
@@ -351,7 +333,7 @@ const UserDashboard = () => {
           )}
 
           {/* Recent Transactions */}
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
@@ -365,41 +347,42 @@ const UserDashboard = () => {
                   title="Error loading transactions"
                   message={transactionsError.message}
                 />
-              ) : !(transactions as any)?.data ||
-                (transactions as any).data.length === 0 ? (
+              ) : !(transactions as any) ||
+                (transactions as any).length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No transactions found
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {(transactions as any).data
-                    .slice(0, 5)
-                    .map((transaction: any) => (
-                      <div
-                        key={transaction._id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          {getStatusIcon(transaction.status)}
-                          <div>
-                            <p className="font-medium">
-                              {transaction.description}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(
-                                transaction.createdAt
-                              ).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
+                  {(transactions as any).slice(0, 5).map((transaction: any) => (
+                    <div
+                      key={transaction._id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <PaymentStatusBadge
+                          status={
+                            transaction.reconciled ? "completed" : "pending"
+                          }
+                        />
+                        <div>
                           <p className="font-medium">
-                            {currencyFormat(transaction.amount)}
+                            {transaction.description}
                           </p>
-                          {getStatusBadge(transaction.status)}
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(
+                              transaction.createdAt
+                            ).toLocaleDateString()}
+                          </p>
                         </div>
                       </div>
-                    ))}
+                      <div className="text-right">
+                        <p className="font-medium">
+                          {currencyFormat(transaction.amount)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -407,7 +390,7 @@ const UserDashboard = () => {
         </TabsContent>
 
         <TabsContent value="bookings" className="space-y-6">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CalendarDays className="h-5 w-5" />
@@ -421,8 +404,7 @@ const UserDashboard = () => {
                   title="Error loading bookings"
                   message={bookingsError.message}
                 />
-              ) : !(bookings as any)?.data ||
-                (bookings as any).data.length === 0 ? (
+              ) : !(bookings as any) || (bookings as any).length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No bookings found
                 </p>
@@ -440,10 +422,10 @@ const UserDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(bookings as any).data.map((booking: any) => (
+                    {(bookings as any).map((booking: any) => (
                       <TableRow key={booking._id}>
                         <TableCell className="font-medium">
-                          {booking.bookingNumber}
+                          #{booking._id.slice(-8)}
                         </TableCell>
                         <TableCell>{booking.facility?.name}</TableCell>
                         <TableCell>
@@ -451,9 +433,11 @@ const UserDashboard = () => {
                         </TableCell>
                         <TableCell>{booking.duration} hours</TableCell>
                         <TableCell>
-                          {currencyFormat(booking.totalAmount)}
+                          {currencyFormat(booking.totalPrice)}
                         </TableCell>
-                        <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                        <TableCell>
+                          <BookingStatusBadge status={booking.status} />
+                        </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -481,7 +465,7 @@ const UserDashboard = () => {
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-6">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
@@ -497,8 +481,8 @@ const UserDashboard = () => {
                   title="Error loading transactions"
                   message={transactionsError.message}
                 />
-              ) : !(transactions as any)?.data ||
-                (transactions as any).data.length === 0 ? (
+              ) : !(transactions as any) ||
+                (transactions as any).length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No transactions found
                 </p>
@@ -507,7 +491,6 @@ const UserDashboard = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
-                      <TableHead>Type</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Date</TableHead>
@@ -516,12 +499,12 @@ const UserDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(transactions as any).data.map((transaction: any) => (
+                    {(transactions as any).map((transaction: any) => (
                       <TableRow key={transaction._id}>
                         <TableCell className="font-medium">
-                          {transaction._id.slice(-8)}
+                          #{transaction._id.slice(-8)}
                         </TableCell>
-                        <TableCell>{transaction.type}</TableCell>
+
                         <TableCell>{transaction.description}</TableCell>
                         <TableCell>
                           {currencyFormat(transaction.amount)}
@@ -530,7 +513,11 @@ const UserDashboard = () => {
                           {new Date(transaction.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          {getStatusBadge(transaction.status)}
+                          <PaymentStatusBadge
+                            status={
+                              transaction.reconciled ? "completed" : "pending"
+                            }
+                          />
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -558,12 +545,8 @@ const UserDashboard = () => {
           </Card>
         </TabsContent>
 
-        
-
-        
-
         <TabsContent value="invitations" className="space-y-6">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
@@ -580,7 +563,7 @@ const UserDashboard = () => {
         </TabsContent>
 
         <TabsContent value="support" className="space-y-6">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Home className="h-5 w-5" />

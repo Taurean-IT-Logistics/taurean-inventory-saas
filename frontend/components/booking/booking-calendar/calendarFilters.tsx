@@ -55,7 +55,7 @@ export const CalendarFilters = ({
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">View</Label>
             <Select value={viewType} onValueChange={onViewTypeChange}>
-              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -69,7 +69,7 @@ export const CalendarFilters = ({
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">Status</Label>
             <Select value={filterStatus} onValueChange={onStatusChange}>
-              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -88,7 +88,7 @@ export const CalendarFilters = ({
               Facility
             </Label>
             <Select value={filterFacility} onValueChange={onFacilityChange}>
-              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -20,8 +20,12 @@ import {
 } from "lucide-react";
 import { SubscriptionsAPI } from "@/lib/api";
 import { SubscriptionPlan, SubscriptionStatus, UsageStats } from "@/types";
+import { currencyFormat } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
+import { Loader } from "@/components/ui/loader";
+import { ErrorComponent } from "@/components/ui/error";
 
 // Feature icons mapping
 const featureIcons = {
@@ -59,7 +63,6 @@ const analyticsDescriptions = {
 
 export default function PricingPage() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentPlanIndex, setCurrentPlanIndex] = useState(0);
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<SubscriptionStatus | null>(null);
@@ -67,21 +70,19 @@ export default function PricingPage() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const loadPlans = useCallback(async () => {
-    try {
-      const plansData = await SubscriptionsAPI.getPlans();
-      setPlans(plansData);
-    } catch (error) {
-      console.error("Failed to load plans:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load subscription plans",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+  const {
+    data: plansData,
+    isLoading: plansLoading,
+    isError: isPlansError,
+    error: plansError,
+    refetch: plansRefetch,
+  } = useQuery({
+    queryKey: ["plans"],
+    queryFn: async () => {
+      const plans = await SubscriptionsAPI.getPlans();
+      return plans as { plans: SubscriptionPlan[] };
+    },
+  });
 
   const loadSubscriptionStatus = useCallback(async () => {
     if (!user?.company) return;
@@ -96,11 +97,10 @@ export default function PricingPage() {
   }, [user?.company]);
 
   useEffect(() => {
-    loadPlans();
     if (user?.company) {
       loadSubscriptionStatus();
     }
-  }, [user, loadPlans, loadSubscriptionStatus]);
+  }, [user, loadSubscriptionStatus]);
 
   const handleStartTrial = async () => {
     if (!user?.company) {
@@ -145,7 +145,6 @@ export default function PricingPage() {
         email: user.email,
       });
 
-      // Redirect to payment page or handle payment
       if ((response as any).payment?.authorization_url) {
         window.location.href = (response as any).payment.authorization_url;
       }
@@ -196,19 +195,24 @@ export default function PricingPage() {
     return true;
   };
 
-  if (loading) {
+  if (plansLoading) {
+    return <Loader text="Loading pricing plans..." />;
+  }
+
+  if (isPlansError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading pricing plans...</p>
-        </div>
-      </div>
+      <ErrorComponent
+        title="Error loading pricing plans"
+        message={plansError.message}
+        onRetry={plansRefetch}
+      />
     );
   }
 
+  console.log("Plans", plansData);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen mt-20 px-20">
       <div className="container mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-16">
@@ -281,7 +285,7 @@ export default function PricingPage() {
         <div className="mb-16">
           <div className="flex justify-center mb-8">
             <div className="flex space-x-2">
-              {plans.map((_, index) => (
+              {(plansData?.plans || []).map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentPlanIndex(index)}
@@ -298,7 +302,7 @@ export default function PricingPage() {
               className="flex transition-transform duration-300 ease-in-out"
               style={{ transform: `translateX(-${currentPlanIndex * 100}%)` }}
             >
-              {plans.map((plan, index) => (
+              {(plansData?.plans || []).map((plan, index) => (
                 <div key={plan.id} className="w-full flex-shrink-0 px-4">
                   <Card className="max-w-4xl mx-auto relative">
                     {plan.popular && (
@@ -433,11 +437,16 @@ export default function PricingPage() {
             <button
               onClick={() =>
                 setCurrentPlanIndex(
-                  Math.min(plans.length - 1, currentPlanIndex + 1)
+                  Math.min(
+                    (plansData?.plans || []).length - 1,
+                    currentPlanIndex + 1
+                  )
                 )
               }
               className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow"
-              disabled={currentPlanIndex === plans.length - 1}
+              disabled={
+                currentPlanIndex === (plansData?.plans || []).length - 1
+              }
             >
               <svg
                 className="w-6 h-6 text-gray-600"

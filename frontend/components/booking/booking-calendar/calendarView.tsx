@@ -102,17 +102,21 @@ export const CalendarView = ({
           border-radius: 0.5rem;
           padding: 0.5rem 1rem;
           box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+          transition: all 0.2s ease;
         }
 
         .calendar-container .fc-button:hover {
           background: #f9fafb;
           border-color: #d1d5db;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
 
         .calendar-container .fc-button-active {
-          background: #2563eb !important;
-          border-color: #2563eb !important;
+          background: #3b82f6 !important;
+          border-color: #3b82f6 !important;
           color: white !important;
+          box-shadow: 0 4px 6px -1px rgb(59 130 246 / 0.3);
         }
 
         .calendar-container .fc-daygrid-day {
@@ -128,15 +132,19 @@ export const CalendarView = ({
         }
 
         .calendar-container .fc-event {
-          border-radius: 0.375rem;
-          border: none;
+          border-radius: 0.5rem;
+          border: 2px solid;
           font-weight: 500;
           font-size: 0.875rem;
-          padding: 0.125rem 0.375rem;
+          color: #ffffff;
+          padding: 0.25rem 0.5rem;
+          box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+          transition: all 0.2s ease;
         }
 
         .calendar-container .fc-event:hover {
-          opacity: 0.8;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px 0 rgb(0 0 0 / 0.15);
         }
 
         .calendar-container .fc-daygrid-day-number {
@@ -150,8 +158,16 @@ export const CalendarView = ({
         }
 
         .calendar-container .fc-day-today .fc-daygrid-day-number {
-          color: #2563eb;
+          color: #3b82f6;
           font-weight: 700;
+        }
+
+        .calendar-container .fc-event-main {
+          color: inherit;
+        }
+
+        .calendar-container .fc-event-main-frame {
+          color: inherit;
         }
       `}</style>
     </div>

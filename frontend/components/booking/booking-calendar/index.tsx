@@ -15,7 +15,8 @@ import { CalendarHeader } from "./calendarHeader";
 import { CalendarFilters } from "./calendarFilters";
 import { CalendarView } from "./calendarView";
 import { BookingDetailsModal } from "./bookingDetailsModal";
-import { BookingFormModal } from "./bookingFormModal";
+import { BookingEditModal } from "./bookingEditModal";
+import { toast } from "@/hooks/use-toast";
 
 const BookingCalendar = ({
   bookings,
@@ -87,12 +88,21 @@ const BookingCalendar = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      toast({
+        title: "Booking updated successfully",
+        description: "The booking has been updated successfully",
+      });
       setShowEditModal(false);
       setFormData({});
       setEditingBooking(null);
     },
     onError: (error: any) => {
       console.error("Error updating booking:", error);
+      toast({
+        title: "Error updating booking",
+        description: "An error occurred while updating the booking",
+        variant: "destructive",
+      });
     },
   });
 
@@ -105,12 +115,21 @@ const BookingCalendar = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      toast({
+        title: "Booking created successfully",
+        description: "The booking has been created successfully",
+      });
       setShowEditModal(false);
       setFormData({});
       setEditingBooking(null);
     },
     onError: (error: any) => {
       console.error("Error creating booking:", error);
+      toast({
+        title: "Error creating booking",
+        description: "An error occurred while creating the booking",
+        variant: "destructive",
+      });
     },
   });
 
@@ -124,9 +143,18 @@ const BookingCalendar = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
       setShowBookingModal(false);
+      toast({
+        title: "Booking deleted successfully",
+        description: "The booking has been deleted successfully",
+      });
     },
     onError: (error: any) => {
       console.error("Error deleting booking:", error);
+      toast({
+        title: "Error deleting booking",
+        description: "An error occurred while deleting the booking",
+        variant: "destructive",
+      });
     },
   });
 
@@ -192,6 +220,8 @@ const BookingCalendar = ({
       duration: calculateDuration(selectInfo.startStr, selectInfo.endStr),
       notes: "",
       internalNotes: "",
+      facility: "",
+      user: undefined,
     });
     setShowEditModal(true);
     setEditingBooking(null);
@@ -211,6 +241,12 @@ const BookingCalendar = ({
   const handleSaveBooking = useCallback(
     async (formData: Partial<Booking>) => {
       if (!formData.facility || !formData.startDate || !formData.endDate) {
+        toast({
+          title: "Missing required fields",
+          description:
+            "Please ensure facility, start date, and end date are selected",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -229,18 +265,17 @@ const BookingCalendar = ({
           (formData.user && typeof formData.user === "object"
             ? (formData.user as any)._id
             : formData.user) || undefined,
-        facility:
-          (formData.facility && typeof formData.facility === "object"
-            ? (formData.facility as any)._id
-            : formData.facility) || undefined,
+        facility: formData.facility,
       };
 
-      if (editingBooking) {
+      if (editingBooking?._id) {
+        // Updating existing booking
         updateBookingMutation.mutate({
           ...editingBooking,
           ...bookingData,
         } as Booking);
       } else {
+        // Creating new booking
         createBookingMutation.mutate({
           ...bookingData,
           createdAt: new Date(),
@@ -248,17 +283,17 @@ const BookingCalendar = ({
         });
       }
     },
-    [updateBookingMutation, createBookingMutation]
+    [updateBookingMutation, createBookingMutation, editingBooking]
   );
 
   const handleDeleteBooking = useCallback(
-    async (booking: Booking) => {
+    async (bookingId: string) => {
       if (!window.confirm("Are you sure you want to delete this booking?")) {
         return;
       }
 
-      if (booking._id) {
-        deleteBookingMutation.mutate(booking._id);
+      if (bookingId) {
+        deleteBookingMutation.mutate(bookingId);
       }
     },
     [deleteBookingMutation]
@@ -281,6 +316,8 @@ const BookingCalendar = ({
       duration: "1 hour",
       notes: "",
       internalNotes: "",
+      facility: "",
+      user: undefined,
     });
     setEditingBooking(null);
     setShowEditModal(true);
@@ -366,14 +403,15 @@ const BookingCalendar = ({
           onStatusChange={handleStatusChange}
         />
 
-        <BookingFormModal
-          isOpen={showEditModal}
-          isSaving={isLoading}
-          editingBooking={editingBooking}
-          formData={formData}
+        <BookingEditModal
           facilities={facilities}
+          booking={editingBooking}
+          isOpen={showEditModal}
           onClose={handleCloseEditModal}
-          onSave={handleSaveBooking}
+          onSave={(bookingId, updates) =>
+            handleSaveBooking({ _id: bookingId, ...updates })
+          }
+          onCreate={handleSaveBooking}
         />
       </div>
     </div>

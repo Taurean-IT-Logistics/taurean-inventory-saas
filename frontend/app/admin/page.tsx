@@ -14,6 +14,8 @@ import { useCompanyTransactions } from "@/hooks/useTransactions";
 import { CalendarDays, Building2, Users, Package } from "lucide-react";
 import BookingCalendar from "@/components/booking/booking-calendar";
 import { Booking } from "@/types";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { BookingsAPI } from "@/lib/api";
 
 export default function AdminPage() {
   // Use the hooks for data fetching
@@ -46,6 +48,98 @@ export default function AdminPage() {
     notificationTitle: "Admin Dashboard Update",
   });
 
+  const queryClient = useQueryClient();
+  const deleteBookingMutation = useMutation({
+    mutationFn: (bookingId: string) => BookingsAPI.remove(bookingId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      toast({
+        title: "Booking deleted successfully",
+        description: "The booking has been deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting booking",
+        description: "An error occurred while deleting the booking",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateBookingMutation = useMutation({
+    mutationFn: (booking: Partial<Booking>) => {
+      const { facility, ...rest } = booking;
+
+      // Handle facility field properly - it could be a string ID or an object with _id
+      let facilityId = facility;
+      if (typeof facilityId === "object" && facilityId !== null) {
+        facilityId = (facilityId as any)._id;
+      }
+
+      if (!facilityId) {
+        throw new Error("Facility is required");
+      }
+
+      if (!booking._id) {
+        throw new Error("Booking ID is required for updates");
+      }
+
+      return BookingsAPI.update(booking._id, {
+        ...rest,
+        facility: facilityId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      toast({
+        title: "Booking updated successfully",
+        description: "The booking has been updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating booking",
+        description: "An error occurred while updating the booking",
+        variant: "destructive",
+      });
+      console.error(error);
+    },
+  });
+
+  const createBookingMutation = useMutation({
+    mutationFn: (booking: Partial<Booking>) => {
+      // Handle facility field properly - it could be a string ID or an object with _id
+      let facilityId = booking.facility;
+      if (typeof facilityId === "object" && facilityId !== null) {
+        facilityId = (facilityId as any)._id;
+      }
+
+      if (!facilityId) {
+        throw new Error("Facility is required");
+      }
+
+      return BookingsAPI.create({
+        ...booking,
+        facility: facilityId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      toast({
+        title: "Booking created successfully",
+        description: "The booking has been created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error creating booking",
+        description: "An error occurred while creating the booking",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Calculate dashboard metrics - memoized to prevent unnecessary re-renders
   const metrics = useMemo(
     () => ({
@@ -62,11 +156,7 @@ export default function AdminPage() {
   const handleDeleteBooking = useCallback(
     async (bookingId: string): Promise<void> => {
       try {
-        // This would be handled by the useBookings hook
-        toast({
-          title: "Success",
-          description: "Booking deleted successfully",
-        });
+        deleteBookingMutation.mutate(bookingId);
       } catch (error: any) {
         toast({
           title: "Error",
@@ -75,17 +165,32 @@ export default function AdminPage() {
         });
       }
     },
-    []
+    [deleteBookingMutation]
   );
 
   const handleUpdateBooking = useCallback(
     async (booking: Partial<Booking>): Promise<void> => {
       try {
-        // This would be handled by the useBookings hook
-        toast({
-          title: "Success",
-          description: "Booking updated successfully",
-        });
+        // Validate required fields before updating
+        if (!booking._id) {
+          toast({
+            title: "Validation Error",
+            description: "Booking ID is required for updates",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (!booking.facility) {
+          toast({
+            title: "Validation Error",
+            description: "Facility is required to update a booking",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        updateBookingMutation.mutate(booking);
       } catch (error: any) {
         toast({
           title: "Error",
@@ -94,17 +199,32 @@ export default function AdminPage() {
         });
       }
     },
-    []
+    [updateBookingMutation]
   );
 
   const handleCreateBooking = useCallback(
     async (booking: Partial<Booking>): Promise<void> => {
       try {
-        // This would be handled by the useBookings hook
-        toast({
-          title: "Success",
-          description: "Booking created successfully",
-        });
+        // Validate required fields before creating
+        if (!booking.facility) {
+          toast({
+            title: "Validation Error",
+            description: "Facility is required to create a booking",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (!booking.startDate || !booking.endDate) {
+          toast({
+            title: "Validation Error",
+            description: "Start date and end date are required",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        createBookingMutation.mutate(booking);
       } catch (error: any) {
         toast({
           title: "Error",
@@ -113,7 +233,7 @@ export default function AdminPage() {
         });
       }
     },
-    []
+    [createBookingMutation]
   );
 
   if (
@@ -136,7 +256,7 @@ export default function AdminPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome to the Facility Management System
+            Welcome to the Taurean IT Facility Management System
           </p>
         </div>
 

@@ -29,6 +29,9 @@ import { Badge } from "@/components/ui/badge";
 import type { Booking } from "@/types";
 import { getStatusColor } from "./utils";
 import { currencyFormat } from "@/lib/utils";
+import { PaymentStatusBadge } from "./paymentStatusBadge";
+import { BookingStatusBadge } from "./bookingStatusBadge";
+import { Label } from "@/components/ui/label";
 
 interface BookingDetailsModalProps {
   booking: Booking | null;
@@ -36,7 +39,7 @@ interface BookingDetailsModalProps {
   isSaving: boolean;
   onClose: () => void;
   onEdit: (booking: Booking) => void;
-  onDelete: (booking: Booking) => void;
+  onDelete: (bookingId: string) => void;
   onStatusChange: (booking: Booking, newStatus: string) => void;
 }
 
@@ -49,26 +52,7 @@ export const BookingDetailsModal = ({
   onDelete,
   onStatusChange,
 }: BookingDetailsModalProps) => {
-  const [statusChangeLoading, setStatusChangeLoading] = useState(false);
-
   if (!booking) return null;
-
-  const handleEdit = () => {
-    onEdit(booking);
-  };
-
-  const handleDelete = () => {
-    onDelete(booking);
-  };
-
-  const handleStatusChange = async (newStatus: string) => {
-    setStatusChangeLoading(true);
-    try {
-      await onStatusChange(booking, newStatus);
-    } finally {
-      setStatusChangeLoading(false);
-    }
-  };
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -86,21 +70,6 @@ export const BookingDetailsModal = ({
     });
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "default";
-      case "completed":
-        return "secondary";
-      case "cancelled":
-        return "destructive";
-      case "no_show":
-        return "outline";
-      default:
-        return "secondary";
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl border-0 shadow-xl">
@@ -113,7 +82,7 @@ export const BookingDetailsModal = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleEdit}
+                onClick={() => onEdit(booking)}
                 className="border-gray-200 hover:bg-gray-50"
               >
                 <Edit className="w-4 h-4 mr-2" />
@@ -122,7 +91,7 @@ export const BookingDetailsModal = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleDelete}
+                onClick={() => onDelete(booking._id)}
                 className="border-red-200 hover:bg-red-50 text-red-600 hover:text-red-700"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -140,47 +109,55 @@ export const BookingDetailsModal = ({
                 Current Status
               </p>
               <div className="flex items-center gap-2 mt-1">
-                <Badge
-                  variant={getStatusBadgeVariant(booking.status)}
-                  className="text-sm"
-                >
-                  {booking.status.charAt(0).toUpperCase() +
-                    booking.status.slice(1)}
-                </Badge>
-                <Badge
-                  variant={
-                    booking.paymentStatus === "completed"
-                      ? "default"
-                      : "secondary"
-                  }
-                  className="text-sm"
-                >
-                  {booking.paymentStatus === "completed"
-                    ? "Paid"
-                    : "Payment Pending"}
-                </Badge>
+                <BookingStatusBadge status={booking.status} />
+                <PaymentStatusBadge status={booking.paymentStatus} />
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Select
-                value={booking.status}
-                onValueChange={handleStatusChange}
-                disabled={statusChangeLoading}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                  <SelectItem value="no_show">No Show</SelectItem>
-                </SelectContent>
-              </Select>
-              {statusChangeLoading && (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              )}
+              <div>
+                <Label htmlFor="booking-status">Booking</Label>
+                <Select
+                  value={booking.status}
+                  onValueChange={(value) => onStatusChange(booking, value)}
+                >
+                  <SelectTrigger className="w-40" id="booking-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="no_show">No Show</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="payment-status">Payment Status</Label>
+                <Select
+                  value={booking.paymentStatus}
+                  onValueChange={(value: typeof booking.paymentStatus) =>
+                    onStatusChange(
+                      { ...booking, paymentStatus: value },
+                      booking.status
+                    )
+                  }
+                >
+                  <SelectTrigger className="w-40" id="payment-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
+                    <SelectItem value="partial_refund">
+                      Partial Refund
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
