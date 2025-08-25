@@ -49,7 +49,7 @@ export class ReactEmailRenderer {
       baseUrl: data.baseUrl,
     });
     
-    return await render(emailComponent);
+    return render(emailComponent);
   }
 
   static async renderPasswordResetEmail(data: EmailTemplateData): Promise<string> {
@@ -61,7 +61,7 @@ export class ReactEmailRenderer {
       baseUrl: data.baseUrl,
     });
     
-    return await render(emailComponent);
+    return render(emailComponent);
   }
 
   static async renderBookingConfirmationEmail(data: EmailTemplateData): Promise<string> {
@@ -73,7 +73,7 @@ export class ReactEmailRenderer {
       baseUrl: data.baseUrl,
     });
     
-    return await render(emailComponent);
+    return render(emailComponent);
   }
 
   static async renderCustomEmail(data: EmailTemplateData): Promise<string> {
@@ -84,7 +84,7 @@ export class ReactEmailRenderer {
       baseUrl: data.baseUrl,
     });
     
-    return await render(emailComponent);
+    return render(emailComponent);
   }
 
   static async renderPaymentSuccessEmail(data: EmailTemplateData): Promise<string> {
@@ -96,21 +96,21 @@ export class ReactEmailRenderer {
       baseUrl: data.baseUrl,
     });
     
-    return await render(emailComponent);
+    return render(emailComponent);
   }
 
   static async renderEmail(templateName: string, data: EmailTemplateData): Promise<string> {
     switch (templateName) {
       case 'welcome':
-        return await this.renderWelcomeEmail(data);
+        return this.renderWelcomeEmail(data);
       case 'password-reset':
-        return await this.renderPasswordResetEmail(data);
+        return this.renderPasswordResetEmail(data);
       case 'booking-confirmation':
-        return await this.renderBookingConfirmationEmail(data);
+        return this.renderBookingConfirmationEmail(data);
       case 'custom':
-        return await this.renderCustomEmail(data);
+        return this.renderCustomEmail(data);
       case 'payment-success':
-        return await this.renderPaymentSuccessEmail(data);
+        return this.renderPaymentSuccessEmail(data);
       default:
         throw new Error(`Email template '${templateName}' not found`);
     }
