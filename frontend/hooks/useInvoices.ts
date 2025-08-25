@@ -61,7 +61,7 @@ export function usePayInvoice() {
 
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) =>
-      InvoicesAPI.pay(id, payload),
+      InvoicesAPI.updateStatus(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       queryClient.invalidateQueries({ queryKey: ["receipts"] });
@@ -81,40 +81,3 @@ export function usePayInvoice() {
   });
 }
 
-export function useDownloadInvoice() {
-  return useMutation({
-    mutationFn: (id: string) => InvoicesAPI.downloadInvoice(id),
-    onSuccess: () => {
-      toast({
-        title: "Download Started",
-        description: "Invoice download has been initiated",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Download Failed",
-        description: error.message || "Failed to download invoice",
-        variant: "destructive",
-      });
-    },
-  });
-}
-
-export function useDownloadReceipt() {
-  return useMutation({
-    mutationFn: (id: string) => InvoicesAPI.downloadReceipt(id),
-    onSuccess: () => {
-      toast({
-        title: "Download Started",
-        description: "Receipt download has been initiated",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Download Failed",
-        description: error.message || "Failed to download receipt",
-        variant: "destructive",
-      });
-    },
-  });
-}

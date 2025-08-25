@@ -68,13 +68,18 @@ async function refreshAccessToken() {
 
 export async function apiFetch<T>(
   path: string,
-  options: RequestInit & { method?: HttpMethod } = {}
+  options: RequestInit & { method?: HttpMethod } = {},
+  isBinary = false
 ): Promise<T> {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
   const headers: Record<string, string> = {
-    Accept: "application/json",
     ...(options.headers as Record<string, string>),
   };
+  
+  if (!isBinary) {
+    headers.Accept = "application/json";
+  }
+  
   if (!(options.body instanceof FormData))
     headers["Content-Type"] = headers["Content-Type"] || "application/json";
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -89,6 +94,14 @@ export async function apiFetch<T>(
     } catch {
       // fall through
     }
+  }
+
+  if (isBinary) {
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || res.statusText || "Request failed");
+    }
+    return res.arrayBuffer() as T;
   }
 
   const json = await res.json().catch(() => ({}));
@@ -120,6 +133,16 @@ export const AuthAPI = {
       user: any;
       tokens: { accessToken: string; refreshToken: string };
     }>(`/auth/register`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  forgotPassword: (payload: { email: string }) =>
+    apiFetch(`/auth/forgot-password`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  resetPassword: (payload: { token: string; newPassword: string }) =>
+    apiFetch(`/auth/reset-password`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
@@ -551,6 +574,51 @@ export const FacilitiesAPI = {
     apiFetch(`/reviews/${reviewId}`, { method: "DELETE" }),
   getUserReview: (facilityId: string) =>
     apiFetch(`/reviews/user/${facilityId}`, { method: "GET" }),
+  export: (format: string, filters?: Record<string, string>) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/facilities/export/${format}${qs}`, { method: "GET" }, true);
+  },
+};
+
+// Inventory Returns
+export const InventoryReturnsAPI = {
+  // Get return requests
+  list: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/inventory-returns${qs}`, { method: "GET" });
+  },
+  
+  // Get user return requests
+  listUser: () => apiFetch(`/inventory-returns/user`, { method: "GET" }),
+  
+  // Create return request
+  create: (data: any) =>
+    apiFetch(`/inventory-returns`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  
+  // Update return request
+  update: (id: string, data: any) =>
+    apiFetch(`/inventory-returns/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  
+  // Approve return request
+  approve: (id: string) =>
+    apiFetch(`/inventory-returns/${id}/approve`, { method: "PATCH" }),
+  
+  // Reject return request
+  reject: (id: string, reason?: string) =>
+    apiFetch(`/inventory-returns/${id}/reject`, {
+      method: "PATCH",
+      body: JSON.stringify({ reason }),
+    }),
+  
+  // Complete return
+  complete: (id: string) =>
+    apiFetch(`/inventory-returns/${id}/complete`, { method: "PATCH" }),
 };
 
 // Inventory Items
@@ -806,6 +874,10 @@ export const BookingsAPI = {
   checkOut: (id: string) =>
     apiFetch(`/bookings/${id}/check-out`, { method: "POST" }),
   remove: (id: string) => apiFetch(`/bookings/${id}`, { method: "DELETE" }),
+  export: (format: string, filters?: Record<string, string>) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/bookings/export/${format}${qs}`, { method: "GET" }, true);
+  },
 };
 
 // Users
@@ -834,6 +906,10 @@ export const UsersAPI = {
 
   // Subaccount methods
   getSubaccounts: () => apiFetch(`/users/subaccounts`, { method: "GET" }),
+  export: (format: string, filters?: Record<string, string>) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/users/export/${format}${qs}`, { method: "GET" }, true);
+  },
 };
 
 // Cart
@@ -909,6 +985,10 @@ export const TransactionsAPI = {
     }),
   getSubAccountDetails: (subaccountCode: string) =>
     apiFetch(`/transaction/subaccount/${subaccountCode}`, { method: "GET" }),
+  export: (format: string, filters?: Record<string, string>) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/transaction/export/${format}${qs}`, { method: "GET" }, true);
+  },
 };
 
 // Payouts
@@ -937,6 +1017,98 @@ export const PayoutsAPI = {
 export const CashflowAPI = {
   summary: () => apiFetch(`/cashflow/summary`, { method: "GET" }),
   anomalies: () => apiFetch(`/cashflow/anomalies`, { method: "GET" }),
+};
+
+// Reports
+export const ReportsAPI = {
+  // Get report number
+  getReportNumber: (type: string) =>
+    apiFetch(`/reports/${type}/next-number`, { method: "GET" }),
+  
+  // Get report data
+  getReportData: (type: string, dateRange: string) =>
+    apiFetch(`/reports/${type}/data?dateRange=${dateRange}`, { method: "GET" }),
+  
+  // Get bookings report data
+  getBookingsReportData: (dateRange: string) =>
+    apiFetch(`/reports/bookings/data?dateRange=${dateRange}`, { method: "GET" }),
+  
+  // Get invoices report data
+  getInvoicesReportData: (dateRange: string) =>
+    apiFetch(`/reports/invoices/data?dateRange=${dateRange}`, { method: "GET" }),
+  
+  // Get users report data
+  getUsersReportData: () =>
+    apiFetch(`/reports/users/data`, { method: "GET" }),
+  
+  // Get facilities report data
+  getFacilitiesReportData: () =>
+    apiFetch(`/reports/facilities/data`, { method: "GET" }),
+  
+  // Get transactions report data
+  getTransactionsReportData: (dateRange: string) =>
+    apiFetch(`/reports/transactions/data?dateRange=${dateRange}`, { method: "GET" }),
+};
+
+// Invoices
+export const InvoicesAPI = {
+  // Get company invoices
+  listCompany: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/invoices/company${qs}`, { method: "GET" });
+  },
+
+  // Get user invoices
+  listMine: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/invoices/user${qs}`, { method: "GET" });
+  },
+
+  // Get invoice by ID
+  getById: (id: string) => apiFetch(`/invoices/${id}`, { method: "GET" }),
+
+  // Create new invoice
+  create: (payload: any) =>
+    apiFetch(`/invoices`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // Update invoice status
+  updateStatus: (id: string, payload: any) =>
+    apiFetch(`/invoices/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  // Get invoice number
+  getInvoiceNumber: () => apiFetch(`/invoices/next-number`, { method: "GET" }),
+
+  // Get receipt number
+  getReceiptNumber: (invoiceId: string) =>
+    apiFetch(`/invoices/${invoiceId}/receipt-number`, { method: "GET" }),
+
+  // Get invoice statistics
+  getStats: () => apiFetch(`/invoices/stats/company`, { method: "GET" }),
+
+  // Create invoice from transaction
+  createFromTransaction: (transactionId: string) =>
+    apiFetch(`/invoices/from-transaction`, {
+      method: "POST",
+      body: JSON.stringify({ transactionId }),
+    }),
+
+  // Get company receipts
+  receiptsCompany: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/invoices/receipts/company${qs}`, { method: "GET" });
+  },
+
+  // Get user receipts
+  receiptsMine: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/invoices/receipts/user${qs}`, { method: "GET" });
+  },
 };
 
 // Email
@@ -1313,6 +1485,83 @@ export const HealthAPI = {
   // Check external services health
   checkExternalServicesHealth: () =>
     apiFetch("/health/external", { method: "GET" }),
+};
+
+export const SuperAdminAPI = {
+  // Get system statistics
+  getSystemStatistics: () => apiFetch("/super-admin/stats", { method: "GET" }),
+
+  // Get all companies
+  getAllCompanies: () => apiFetch("/super-admin/companies", { method: "GET" }),
+
+  // Search companies
+  searchCompanies: (query: string) =>
+    apiFetch(`/super-admin/companies/search?q=${encodeURIComponent(query)}`, { method: "GET" }),
+
+  // Get company details
+  getCompanyDetails: (companyId: string) =>
+    apiFetch(`/super-admin/companies/${companyId}`, { method: "GET" }),
+
+  // Get all users
+  getAllUsers: () => apiFetch("/super-admin/users", { method: "GET" }),
+
+  // Get unassigned users
+  getUnassignedUsers: () => apiFetch("/super-admin/users/unassigned", { method: "GET" }),
+
+  // Search users
+  searchUsers: (query: string) =>
+    apiFetch(`/super-admin/users/search?q=${encodeURIComponent(query)}`, { method: "GET" }),
+
+  // Get recent activity
+  getRecentActivity: (limit: number = 10) =>
+    apiFetch(`/super-admin/activity?limit=${limit}`, { method: "GET" }),
+
+  // Update company status
+  updateCompanyStatus: (companyId: string, status: string) =>
+    apiFetch(`/super-admin/companies/${companyId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    }),
+
+  // Update user status
+  updateUserStatus: (userId: string, status: string) =>
+    apiFetch(`/super-admin/users/${userId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    }),
+
+  // Activate company subscription
+  activateCompanySubscription: (companyId: string, plan: string, duration: number) =>
+    apiFetch(`/super-admin/companies/${companyId}/subscription`, {
+      method: "POST",
+      body: JSON.stringify({ plan, duration }),
+    }),
+
+  // Deactivate company subscription
+  deactivateCompanySubscription: (companyId: string) =>
+    apiFetch(`/super-admin/companies/${companyId}/subscription`, {
+      method: "DELETE",
+    }),
+
+  // Update user role
+  updateUserRole: (userId: string, role: string) =>
+    apiFetch(`/super-admin/users/${userId}/role`, {
+      method: "PUT",
+      body: JSON.stringify({ role }),
+    }),
+
+  // Assign user to company
+  assignUserToCompany: (userId: string, companyId: string) =>
+    apiFetch(`/super-admin/users/${userId}/assign`, {
+      method: "POST",
+      body: JSON.stringify({ companyId }),
+    }),
+
+  // Remove user from company
+  removeUserFromCompany: (userId: string) =>
+    apiFetch(`/super-admin/users/${userId}/remove`, {
+      method: "DELETE",
+    }),
 };
 
 export const getResourceUrl = (path: string): string => {

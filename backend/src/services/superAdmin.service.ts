@@ -56,6 +56,35 @@ export class SuperAdminService {
     }
   }
 
+  // Update company status
+  static async updateCompanyStatus(companyId: string, status: string) {
+    try {
+      const company = await CompanyModel.findById(companyId);
+      if (!company) {
+        throw new Error("Company not found");
+      }
+
+      // Update subscription status
+      if (company.subscription) {
+        company.subscription.status = status as "active" | "expired" | "cancelled";
+        await company.save();
+      } else {
+        // Create subscription if it doesn't exist
+        company.subscription = {
+          plan: "monthly",
+          status: status as "active" | "expired" | "cancelled",
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          licenseKey: `LIC-${Date.now()}`,
+        };
+        await company.save();
+      }
+
+      return company;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
+
   // Get company details with full statistics
   static async getCompanyDetails(companyId: string) {
     try {

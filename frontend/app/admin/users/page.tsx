@@ -41,7 +41,7 @@ const UserManagement = () => {
   // Real-time updates for users
   useRealtimeUpdates({
     queryKeys: ["users-company"],
-    events: ["NotificationUser", "NotificationCompany"],
+    events: ["NotificationCreated", "NotificationUpdated"],
     showNotifications: true,
     notificationTitle: "User Update",
   });

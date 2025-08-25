@@ -25,6 +25,7 @@
   "dependencies": {
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.0",
+    "@types/pdfkit": "^0.17.2",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.9.0",
@@ -53,6 +54,7 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.5",
     "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.17.1",
     "puppeteer": "^24.16.2",
     "socket.io": "^4.7.5",
     "swagger-jsdoc": "^6.2.8",

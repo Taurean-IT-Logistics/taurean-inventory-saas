@@ -102,6 +102,14 @@ export default function Login() {
                   placeholder="Enter your password"
                   className="mt-2"
                 />
+                <div className="mt-2 text-right">
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
               <Button
                 type="submit"
