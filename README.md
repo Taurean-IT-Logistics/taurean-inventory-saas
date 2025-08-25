@@ -10,9 +10,8 @@ A comprehensive SaaS facility management platform built with Next.js, Node.js, a
 - 🧾 **Modern Invoice System** - Professional PDF generation with company branding
 - 📱 **Real-time Updates** - Socket.io integration for live notifications
 - 💬 **Chat System** - Built-in support ticket and messaging system
-- 📈 **Analytics & Reporting** - Business insights and data export (CSV/Excel)
+- 📈 **Analytics & Reporting** - Business insights and data export
 - 🔐 **Role-based Access Control** - Granular permissions system
-- 🌍 **Multi-currency Support** - GHS, USD, EUR, GBP, NGN
 - 📱 **Mobile Responsive** - Optimized for all devices
 
 ## Quick Start with Docker
