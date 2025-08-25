@@ -30,12 +30,16 @@ interface NotificationContextType {
   refreshNotifications: () => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(
+  undefined
+);
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error("useNotifications must be used within a NotificationProvider");
+    throw new Error(
+      "useNotifications must be used within a NotificationProvider"
+    );
   }
   return context;
 };
@@ -71,8 +75,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       setUnreadCount(unreadCountData as number);
     } else {
       // Fallback: calculate from notifications
-      const count = (notifications as Notification[]).filter((n: Notification) => !n.isRead).length;
-      setUnreadCount(count);
+      const count = (notifications as unknown as Notification[])?.filter(
+        (n: Notification) => !n.isRead
+      ).length;
+      setUnreadCount(count as number);
     }
   }, [unreadCountData, notifications]);
 
@@ -82,9 +88,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const handleNewNotification = (notification: Notification) => {
       // Add new notification to the list
-      queryClient.setQueryData(["notifications"], (old: Notification[] = []) => {
-        return [notification, ...old];
-      });
+      queryClient.setQueryData(
+        ["notifications"],
+        (old: Notification[] = []) => {
+          return [notification, ...old];
+        }
+      );
 
       // Update unread count
       setUnreadCount((prev) => prev + 1);
@@ -97,18 +106,27 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     };
 
-    const handleNotificationUpdate = (data: { notificationId: string; updates: Partial<Notification> }) => {
-      queryClient.setQueryData(["notifications"], (old: Notification[] = []) => {
-        return old.map((n) =>
-          n._id === data.notificationId ? { ...n, ...data.updates } : n
-        );
-      });
+    const handleNotificationUpdate = (data: {
+      notificationId: string;
+      updates: Partial<Notification>;
+    }) => {
+      queryClient.setQueryData(
+        ["notifications"],
+        (old: Notification[] = []) => {
+          return old.map((n) =>
+            n._id === data.notificationId ? { ...n, ...data.updates } : n
+          );
+        }
+      );
     };
 
     const handleNotificationDelete = (notificationId: string) => {
-      queryClient.setQueryData(["notifications"], (old: Notification[] = []) => {
-        return old.filter((n) => n._id !== notificationId);
-      });
+      queryClient.setQueryData(
+        ["notifications"],
+        (old: Notification[] = []) => {
+          return old?.filter((n: Notification) => n._id !== notificationId);
+        }
+      );
     };
 
     // Listen for real-time events
@@ -126,19 +144,24 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   const markAsRead = async (notificationId: string) => {
     try {
       await NotificationsAPI.markAsRead(notificationId);
-      
+
       // Update local state
-      queryClient.setQueryData(["notifications"], (old: Notification[] = []) => {
-        return old.map((n) =>
-          n._id === notificationId ? { ...n, isRead: true } : n
-        );
-      });
+      queryClient.setQueryData(
+        ["notifications"],
+        (old: Notification[] = []) => {
+          return old?.map((n: Notification) =>
+            n._id === notificationId ? { ...n, isRead: true } : n
+          );
+        }
+      );
 
       // Update unread count
       setUnreadCount((prev) => Math.max(0, prev - 1));
 
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+      queryClient.invalidateQueries({
+        queryKey: ["notifications-unread-count"],
+      });
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
     }
@@ -147,17 +170,22 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   const markAllAsRead = async () => {
     try {
       await NotificationsAPI.markAllAsRead();
-      
+
       // Update local state
-      queryClient.setQueryData(["notifications"], (old: Notification[] = []) => {
-        return old.map((n) => ({ ...n, isRead: true }));
-      });
+      queryClient.setQueryData(
+        ["notifications"],
+        (old: Notification[] = []) => {
+          return old?.map((n: Notification) => ({ ...n, isRead: true }));
+        }
+      );
 
       // Reset unread count
       setUnreadCount(0);
 
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+      queryClient.invalidateQueries({
+        queryKey: ["notifications-unread-count"],
+      });
     } catch (error) {
       console.error("Failed to mark all notifications as read:", error);
     }
@@ -166,22 +194,31 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   const deleteNotification = async (notificationId: string) => {
     try {
       await NotificationsAPI.deleteNotification(notificationId);
-      
+
       // Update local state
-      queryClient.setQueryData(["notifications"], (old: Notification[] = []) => {
-        const deletedNotification = old.find((n) => n._id === notificationId);
-        const newList = old.filter((n) => n._id !== notificationId);
-        
-        // Update unread count if deleted notification was unread
-        if (deletedNotification && !deletedNotification.isRead) {
-          setUnreadCount((prev) => Math.max(0, prev - 1));
+      queryClient.setQueryData(
+        ["notifications"],
+        (old: Notification[] = []) => {
+          const deletedNotification = old?.find(
+            (n: Notification) => n._id === notificationId
+          );
+          const newList = old?.filter(
+            (n: Notification) => n._id !== notificationId
+          );
+
+          // Update unread count if deleted notification was unread
+          if (deletedNotification && !deletedNotification?.isRead) {
+            setUnreadCount((prev: number) => Math.max(0, prev - 1));
+          }
+
+          return newList as Notification[];
         }
-        
-        return newList;
-      });
+      );
 
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+      queryClient.invalidateQueries({
+        queryKey: ["notifications-unread-count"],
+      });
     } catch (error) {
       console.error("Failed to delete notification:", error);
     }
@@ -193,7 +230,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const value: NotificationContextType = {
-    notifications: notifications as Notification[],
+    notifications: notifications as unknown as Notification[],
     unreadCount,
     isLoading,
     markAsRead,

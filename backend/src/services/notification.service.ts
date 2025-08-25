@@ -1,4 +1,7 @@
-import { NotificationModel, NotificationDocument } from "../models/notification.model";
+import {
+  NotificationModel,
+  NotificationDocument,
+} from "../models/notification.model";
 import { UserModel } from "../models/user.model";
 import { CompanyModel } from "../models/company.model";
 import { BookingModel } from "../models/booking.model";
@@ -19,7 +22,9 @@ export interface CreateNotificationData {
 
 class NotificationService {
   // Create a new notification
-  async createNotification(data: CreateNotificationData): Promise<NotificationDocument> {
+  async createNotification(
+    data: CreateNotificationData
+  ): Promise<NotificationDocument> {
     try {
       const notification = new NotificationModel({
         user: data.userId,
@@ -34,7 +39,11 @@ class NotificationService {
       const savedNotification = await notification.save();
 
       // Emit real-time event
-      emitEvent(Events.NotificationCreated, savedNotification, `user:${data.userId}`);
+      emitEvent(
+        Events.NotificationCreated,
+        savedNotification,
+        `user:${data.userId}`
+      );
 
       return savedNotification;
     } catch (error) {
@@ -181,12 +190,12 @@ class NotificationService {
           notificationData = {
             userId: user._id,
             title: "Payment Initiated",
-            message: `Payment of GHS ${(transaction.amount / 100).toFixed(2)} has been initiated.`,
+            message: `Payment of GHS ${transaction.amount} has been initiated.`,
             type: "info",
             category: "payment",
             data: {
               transactionId: transaction._id,
-              amount: transaction.amount / 100,
+              amount: transaction.amount,
               currency: "GHS",
               facilityName: facility?.name,
               link: `/user/transactions`,
@@ -198,12 +207,14 @@ class NotificationService {
           notificationData = {
             userId: user._id,
             title: "Payment Successful",
-            message: `Payment of ${"GHS"} ${(transaction.amount / 100).toFixed(2)} has been processed successfully!`,
+            message: `Payment of ${"GHS"} ${
+              transaction.amount
+            } has been processed successfully!`,
             type: "success",
             category: "payment",
             data: {
               transactionId: transaction._id,
-              amount: transaction.amount / 100,
+              amount: transaction.amount,
               currency: "GHS",
               facilityName: facility?.name,
               link: `/user/transactions`,
@@ -215,12 +226,14 @@ class NotificationService {
           notificationData = {
             userId: user._id,
             title: "Payment Failed",
-            message: `Payment of ${"GHS"} ${(transaction.amount / 100).toFixed(2)} has failed. Please try again.`,
+            message: `Payment of ${"GHS"} ${
+              transaction.amount
+            } has failed. Please try again.`,
             type: "error",
             category: "payment",
             data: {
               transactionId: transaction._id,
-              amount: transaction.amount / 100,
+              amount: transaction.amount,
               currency: "GHS",
               facilityName: facility?.name,
               link: `/user/transactions`,
@@ -232,12 +245,14 @@ class NotificationService {
           notificationData = {
             userId: user._id,
             title: "Payment Refunded",
-            message: `A refund of ${"GHS"} ${(transaction.amount / 100).toFixed(2)} has been processed.`,
+            message: `A refund of ${"GHS"} ${
+              transaction.amount
+            } has been processed.`,
             type: "success",
             category: "payment",
             data: {
               transactionId: transaction._id,
-              amount: transaction.amount / 100,
+              amount: transaction.amount,
               currency: "GHS",
               facilityName: facility?.name,
               link: `/user/transactions`,
@@ -277,7 +292,9 @@ class NotificationService {
           notificationData = {
             userId: user._id,
             title: "New Invoice Generated",
-            message: `A new invoice #${invoice.invoiceNumber} for ${invoice.currency} ${invoice.totalAmount.toFixed(2)} has been generated.`,
+            message: `A new invoice #${invoice.invoiceNumber} for ${
+              invoice.currency
+            } ${invoice.totalAmount.toFixed(2)} has been generated.`,
             type: "info",
             category: "invoice",
             data: {
@@ -453,10 +470,19 @@ class NotificationService {
     data?: any
   ): Promise<void> {
     try {
-      const users = await UserModel.find({ company: companyId, isDeleted: false });
+      const users = await UserModel.find({
+        company: companyId,
+        isDeleted: false,
+      });
 
       for (const user of users) {
-        await this.createSystemNotification(user._id.toString(), title, message, type, data);
+        await this.createSystemNotification(
+          user._id.toString(),
+          title,
+          message,
+          type,
+          data
+        );
       }
     } catch (error) {
       console.error("Error creating company notification:", error);
@@ -468,13 +494,23 @@ class NotificationService {
     userId: string,
     page = 1,
     limit = 20
-  ): Promise<{ notifications: NotificationDocument[]; total: number; pages: number }> {
+  ): Promise<{
+    notifications: NotificationDocument[];
+    total: number;
+    pages: number;
+  }> {
     try {
-      const total = await NotificationModel.countDocuments({ user: userId, isDeleted: false });
+      const total = await NotificationModel.countDocuments({
+        user: userId,
+        isDeleted: false,
+      });
       const pages = Math.ceil(total / limit);
       const skip = (page - 1) * limit;
 
-      const notifications = await NotificationModel.find({ user: userId, isDeleted: false })
+      const notifications = await NotificationModel.find({
+        user: userId,
+        isDeleted: false,
+      })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit);
@@ -494,10 +530,14 @@ class NotificationService {
       );
 
       // Emit real-time event
-      emitEvent(Events.NotificationUpdated, {
-        notificationId,
-        updates: { isRead: true },
-      }, `user:${userId}`);
+      emitEvent(
+        Events.NotificationUpdated,
+        {
+          notificationId,
+          updates: { isRead: true },
+        },
+        `user:${userId}`
+      );
     } catch (error) {
       throw new Error(`Error marking notification as read: ${error.message}`);
     }
@@ -512,17 +552,26 @@ class NotificationService {
       );
 
       // Emit real-time event
-      emitEvent(Events.NotificationUpdated, {
-        notificationId: "all",
-        updates: { isRead: true },
-      }, `user:${userId}`);
+      emitEvent(
+        Events.NotificationUpdated,
+        {
+          notificationId: "all",
+          updates: { isRead: true },
+        },
+        `user:${userId}`
+      );
     } catch (error) {
-      throw new Error(`Error marking all notifications as read: ${error.message}`);
+      throw new Error(
+        `Error marking all notifications as read: ${error.message}`
+      );
     }
   }
 
   // Delete notification
-  async deleteNotification(notificationId: string, userId: string): Promise<void> {
+  async deleteNotification(
+    notificationId: string,
+    userId: string
+  ): Promise<void> {
     try {
       await NotificationModel.findOneAndUpdate(
         { _id: notificationId, user: userId },
