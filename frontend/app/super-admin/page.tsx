@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SuperAdminAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -39,14 +45,39 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  UserPlus,
+  UserMinus,
+  Crown,
+  Shield,
+  Download,
+  Eye,
+  Mail,
+  Phone,
+  MapPin,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function SuperAdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("overview");
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [subscriptionData, setSubscriptionData] = useState({
+    plan: "",
+    duration: 30,
+  });
 
+  const queryClient = useQueryClient();
+
+  // Queries
   const {
     data: statsData,
     isLoading: statsLoading,
@@ -85,6 +116,126 @@ export default function SuperAdminDashboard() {
   } = useQuery({
     queryKey: ["super-admin-activity"],
     queryFn: () => SuperAdminAPI.getRecentActivity(10),
+  });
+
+  // Mutations
+  const updateCompanyStatusMutation = useMutation({
+    mutationFn: ({ companyId, status }: { companyId: string; status: string }) =>
+      SuperAdminAPI.updateCompanyStatus(companyId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["super-admin-companies"] });
+      queryClient.invalidateQueries({ queryKey: ["super-admin-stats"] });
+      toast({
+        title: "Success",
+        description: "Company status updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update company status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const activateSubscriptionMutation = useMutation({
+    mutationFn: ({ companyId, plan, duration }: { companyId: string; plan: string; duration: number }) =>
+      SuperAdminAPI.activateCompanySubscription(companyId, plan, duration),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["super-admin-companies"] });
+      setIsSubscriptionModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Subscription activated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to activate subscription",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deactivateSubscriptionMutation = useMutation({
+    mutationFn: (companyId: string) =>
+      SuperAdminAPI.deactivateCompanySubscription(companyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["super-admin-companies"] });
+      toast({
+        title: "Success",
+        description: "Subscription deactivated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to deactivate subscription",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateUserRoleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) =>
+      SuperAdminAPI.updateUserRole(userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
+      setIsUserModalOpen(false);
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user role",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const assignUserToCompanyMutation = useMutation({
+    mutationFn: ({ userId, companyId }: { userId: string; companyId: string }) =>
+      SuperAdminAPI.assignUserToCompany(userId, companyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
+      setIsUserModalOpen(false);
+      toast({
+        title: "Success",
+        description: "User assigned to company successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign user to company",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeUserFromCompanyMutation = useMutation({
+    mutationFn: (userId: string) =>
+      SuperAdminAPI.removeUserFromCompany(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
+      setIsUserModalOpen(false);
+      toast({
+        title: "Success",
+        description: "User removed from company successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove user from company",
+        variant: "destructive",
+      });
+    },
   });
 
   const stats = (statsData as any)?.stats || {};
@@ -137,6 +288,44 @@ export default function SuperAdminDashboard() {
     refetchCompanies();
     refetchUsers();
     refetchActivity();
+  };
+
+  const handleActivateSubscription = () => {
+    if (!selectedCompany || !subscriptionData.plan) {
+      toast({
+        title: "Error",
+        description: "Please select a plan",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    activateSubscriptionMutation.mutate({
+      companyId: selectedCompany._id,
+      plan: subscriptionData.plan,
+      duration: subscriptionData.duration,
+    });
+  };
+
+  const handleUpdateUserRole = (role: string) => {
+    if (!selectedUser) return;
+    updateUserRoleMutation.mutate({
+      userId: selectedUser._id,
+      role,
+    });
+  };
+
+  const handleAssignUserToCompany = (companyId: string) => {
+    if (!selectedUser) return;
+    assignUserToCompanyMutation.mutate({
+      userId: selectedUser._id,
+      companyId,
+    });
+  };
+
+  const handleRemoveUserFromCompany = () => {
+    if (!selectedUser) return;
+    removeUserFromCompanyMutation.mutate(selectedUser._id);
   };
 
   if (statsLoading || companiesLoading || usersLoading) {
@@ -327,39 +516,6 @@ export default function SuperAdminDashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="max-w-md"
               />
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Company
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Company</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="companyName">Company Name</Label>
-                      <Input
-                        id="companyName"
-                        placeholder="Enter company name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="companyDescription">Description</Label>
-                      <Input
-                        id="companyDescription"
-                        placeholder="Enter company description"
-                      />
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline">Cancel</Button>
-                      <Button>Add Company</Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -371,17 +527,55 @@ export default function SuperAdminDashboard() {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <CardTitle className="text-lg">{company.name}</CardTitle>
-                      <Badge
-                        className={getSubscriptionStatusColor(
-                          company.subscription?.status || "inactive"
-                        )}
-                      >
-                        {company.subscription?.status || "inactive"}
-                      </Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedCompany(company);
+                              setIsCompanyModalOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedCompany(company);
+                              setIsSubscriptionModalOpen(true);
+                            }}
+                          >
+                            <Crown className="h-4 w-4 mr-2" />
+                            Manage Subscription
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              updateCompanyStatusMutation.mutate({
+                                companyId: company._id,
+                                status: company.subscription?.status === "active" ? "inactive" : "active",
+                              });
+                            }}
+                          >
+                            <Shield className="h-4 w-4 mr-2" />
+                            {company.subscription?.status === "active" ? "Deactivate" : "Activate"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                     <p className="text-sm text-gray-600">
                       {company.description}
                     </p>
+                    <Badge
+                      className={getSubscriptionStatusColor(
+                        company.subscription?.status || "inactive"
+                      )}
+                    >
+                      {company.subscription?.status || "inactive"}
+                    </Badge>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -414,14 +608,6 @@ export default function SuperAdminDashboard() {
                           </span>
                         </div>
                       )}
-                      <div className="flex gap-2 pt-2">
-                        <Button size="sm" variant="outline" className="flex-1">
-                          View Details
-                        </Button>
-                        <Button size="sm" className="flex-1">
-                          Manage
-                        </Button>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -460,6 +646,14 @@ export default function SuperAdminDashboard() {
                         <div>
                           <p className="font-medium">{user.name}</p>
                           <p className="text-sm text-gray-500">{user.email}</p>
+                          <p className="text-xs text-gray-400">
+                            {user.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {user.phone}
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -469,9 +663,32 @@ export default function SuperAdminDashboard() {
                         <Badge variant="outline">
                           {(user.company as any)?.name || "No Company"}
                         </Badge>
-                        <Button size="sm" variant="outline">
-                          Manage
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsUserModalOpen(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Manage User
+                            </DropdownMenuItem>
+                            {user.company && (
+                              <DropdownMenuItem
+                                onClick={() => handleRemoveUserFromCompany()}
+                              >
+                                <UserMinus className="h-4 w-4 mr-2" />
+                                Remove from Company
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   ))}
@@ -520,6 +737,236 @@ export default function SuperAdminDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Company Details Modal */}
+      <Dialog open={isCompanyModalOpen} onOpenChange={setIsCompanyModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Company Details</DialogTitle>
+          </DialogHeader>
+          {selectedCompany && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold mb-2">Basic Information</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <Label>Name</Label>
+                      <p className="text-sm text-gray-600">{selectedCompany.name}</p>
+                    </div>
+                    <div>
+                      <Label>Description</Label>
+                      <p className="text-sm text-gray-600">{selectedCompany.description}</p>
+                    </div>
+                    <div>
+                      <Label>Owner</Label>
+                      <p className="text-sm text-gray-600">
+                        {(selectedCompany.owner as any)?.name} ({(selectedCompany.owner as any)?.email})
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Subscription</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <Label>Status</Label>
+                      <Badge className={getSubscriptionStatusColor(selectedCompany.subscription?.status || "inactive")}>
+                        {selectedCompany.subscription?.status || "inactive"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <Label>Plan</Label>
+                      <p className="text-sm text-gray-600">{selectedCompany.subscription?.plan || "No plan"}</p>
+                    </div>
+                    {selectedCompany.subscription?.expiresAt && (
+                      <div>
+                        <Label>Expires</Label>
+                        <p className="text-sm text-gray-600">
+                          {format(new Date(selectedCompany.subscription.expiresAt), "MMM dd, yyyy")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Statistics</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {selectedCompany.stats?.userCount || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Users</div>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {selectedCompany.stats?.facilityCount || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Facilities</div>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {selectedCompany.stats?.bookingCount || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Bookings</div>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {selectedCompany.stats?.transactionCount || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Transactions</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* User Management Modal */}
+      <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Manage User</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Name</Label>
+                  <p className="text-sm text-gray-600">{selectedUser.name}</p>
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <p className="text-sm text-gray-600">{selectedUser.email}</p>
+                </div>
+                <div>
+                  <Label>Current Role</Label>
+                  <Badge className={getRoleColor(selectedUser.role)}>
+                    {selectedUser.role}
+                  </Badge>
+                </div>
+                <div>
+                  <Label>Current Company</Label>
+                  <p className="text-sm text-gray-600">
+                    {(selectedUser.company as any)?.name || "No Company"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label>Update Role</Label>
+                  <Select
+                    value={selectedUser.role}
+                    onValueChange={handleUpdateUserRole}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="superAdmin">Super Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Assign to Company</Label>
+                  <Select
+                    value={(selectedUser.company as any)?._id || ""}
+                    onValueChange={handleAssignUserToCompany}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select company" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No Company</SelectItem>
+                      {companies.map((company: any) => (
+                        <SelectItem key={company._id} value={company._id}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Subscription Management Modal */}
+      <Dialog open={isSubscriptionModalOpen} onOpenChange={setIsSubscriptionModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Subscription</DialogTitle>
+          </DialogHeader>
+          {selectedCompany && (
+            <div className="space-y-4">
+              <div>
+                <Label>Company</Label>
+                <p className="text-sm text-gray-600">{selectedCompany.name}</p>
+              </div>
+              <div>
+                <Label>Current Status</Label>
+                <Badge className={getSubscriptionStatusColor(selectedCompany.subscription?.status || "inactive")}>
+                  {selectedCompany.subscription?.status || "inactive"}
+                </Badge>
+              </div>
+              <div>
+                <Label>Plan</Label>
+                <Select
+                  value={subscriptionData.plan}
+                  onValueChange={(value) => setSubscriptionData(prev => ({ ...prev, plan: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="basic">Basic</SelectItem>
+                    <SelectItem value="premium">Premium</SelectItem>
+                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Duration (days)</Label>
+                <Select
+                  value={subscriptionData.duration.toString()}
+                  onValueChange={(value) => setSubscriptionData(prev => ({ ...prev, duration: parseInt(value) }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30">30 days</SelectItem>
+                    <SelectItem value="90">90 days</SelectItem>
+                    <SelectItem value="365">1 year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsSubscriptionModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleActivateSubscription}
+                  disabled={activateSubscriptionMutation.isPending}
+                >
+                  {activateSubscriptionMutation.isPending ? "Activating..." : "Activate Subscription"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

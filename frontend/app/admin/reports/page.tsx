@@ -25,7 +25,7 @@ import {
   Receipt,
   CreditCard,
 } from "lucide-react";
-import { CashflowAPI, BookingsAPI, FacilitiesAPI, UsersAPI, InvoicesAPI } from "@/lib/api";
+import { CashflowAPI, BookingsAPI, FacilitiesAPI, UsersAPI, InvoicesAPI, ReportsAPI } from "@/lib/api";
 import ReportTemplate from "@/components/reports/ReportTemplate";
 import { toast } from "@/hooks/use-toast";
 
@@ -87,13 +87,52 @@ export default function ReportsPage() {
     };
   }, [cashflow, bookings, facilities, users, invoices]);
 
-  const exportReport = (format: string) => {
-    // TODO: wire to export endpoints if needed
-    console.log(`Exporting ${reportType} report in ${format} format`);
-    toast({
-      title: "Export Started",
-      description: `Exporting ${reportType} report in ${format} format`,
-    });
+  const exportReport = async (format: string) => {
+    try {
+      let blob: any;
+      
+      switch (reportType) {
+        case "overview":
+          blob = await ReportsAPI.exportReport("overview", format, dateRange);
+          break;
+        case "bookings":
+          blob = await ReportsAPI.exportBookings(format, dateRange);
+          break;
+        case "revenue":
+          blob = await ReportsAPI.exportInvoices(format, dateRange);
+          break;
+        case "users":
+          blob = await ReportsAPI.exportUsers(format);
+          break;
+        case "facilities":
+          blob = await ReportsAPI.exportFacilities(format);
+          break;
+        default:
+          blob = await ReportsAPI.exportReport("overview", format, dateRange);
+      }
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob as Blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = `${reportType}-report-${dateRange}days.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Export Successful",
+        description: `${reportType} report exported successfully`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export report",
+        variant: "destructive",
+      });
+    }
   };
 
   const generateReport = () => {

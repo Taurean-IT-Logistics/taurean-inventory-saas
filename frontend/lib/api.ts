@@ -574,6 +574,51 @@ export const FacilitiesAPI = {
     apiFetch(`/reviews/${reviewId}`, { method: "DELETE" }),
   getUserReview: (facilityId: string) =>
     apiFetch(`/reviews/user/${facilityId}`, { method: "GET" }),
+  export: (format: string, filters?: Record<string, string>) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/facilities/export/${format}${qs}`, { method: "GET" }, true);
+  },
+};
+
+// Inventory Returns
+export const InventoryReturnsAPI = {
+  // Get return requests
+  list: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/inventory-returns${qs}`, { method: "GET" });
+  },
+  
+  // Get user return requests
+  listUser: () => apiFetch(`/inventory-returns/user`, { method: "GET" }),
+  
+  // Create return request
+  create: (data: any) =>
+    apiFetch(`/inventory-returns`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  
+  // Update return request
+  update: (id: string, data: any) =>
+    apiFetch(`/inventory-returns/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  
+  // Approve return request
+  approve: (id: string) =>
+    apiFetch(`/inventory-returns/${id}/approve`, { method: "PATCH" }),
+  
+  // Reject return request
+  reject: (id: string, reason?: string) =>
+    apiFetch(`/inventory-returns/${id}/reject`, {
+      method: "PATCH",
+      body: JSON.stringify({ reason }),
+    }),
+  
+  // Complete return
+  complete: (id: string) =>
+    apiFetch(`/inventory-returns/${id}/complete`, { method: "PATCH" }),
 };
 
 // Inventory Items
@@ -829,6 +874,10 @@ export const BookingsAPI = {
   checkOut: (id: string) =>
     apiFetch(`/bookings/${id}/check-out`, { method: "POST" }),
   remove: (id: string) => apiFetch(`/bookings/${id}`, { method: "DELETE" }),
+  export: (format: string, filters?: Record<string, string>) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/bookings/export/${format}${qs}`, { method: "GET" }, true);
+  },
 };
 
 // Users
@@ -857,6 +906,10 @@ export const UsersAPI = {
 
   // Subaccount methods
   getSubaccounts: () => apiFetch(`/users/subaccounts`, { method: "GET" }),
+  export: (format: string, filters?: Record<string, string>) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/users/export/${format}${qs}`, { method: "GET" }, true);
+  },
 };
 
 // Cart
@@ -932,6 +985,10 @@ export const TransactionsAPI = {
     }),
   getSubAccountDetails: (subaccountCode: string) =>
     apiFetch(`/transaction/subaccount/${subaccountCode}`, { method: "GET" }),
+  export: (format: string, filters?: Record<string, string>) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/transaction/export/${format}${qs}`, { method: "GET" }, true);
+  },
 };
 
 // Payouts
@@ -960,6 +1017,33 @@ export const PayoutsAPI = {
 export const CashflowAPI = {
   summary: () => apiFetch(`/cashflow/summary`, { method: "GET" }),
   anomalies: () => apiFetch(`/cashflow/anomalies`, { method: "GET" }),
+};
+
+// Reports
+export const ReportsAPI = {
+  // Export reports
+  exportReport: (type: string, format: string, dateRange: string) =>
+    apiFetch(`/reports/export/${type}/${format}?dateRange=${dateRange}`, { method: "GET" }, true),
+  
+  // Export bookings
+  exportBookings: (format: string, dateRange: string) =>
+    apiFetch(`/reports/bookings/export/${format}?dateRange=${dateRange}`, { method: "GET" }, true),
+  
+  // Export invoices
+  exportInvoices: (format: string, dateRange: string) =>
+    apiFetch(`/reports/invoices/export/${format}?dateRange=${dateRange}`, { method: "GET" }, true),
+  
+  // Export users
+  exportUsers: (format: string) =>
+    apiFetch(`/reports/users/export/${format}`, { method: "GET" }, true),
+  
+  // Export facilities
+  exportFacilities: (format: string) =>
+    apiFetch(`/reports/facilities/export/${format}`, { method: "GET" }, true),
+  
+  // Export transactions
+  exportTransactions: (format: string, dateRange: string) =>
+    apiFetch(`/reports/transactions/export/${format}?dateRange=${dateRange}`, { method: "GET" }, true),
 };
 
 // Invoices
