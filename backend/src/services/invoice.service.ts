@@ -67,8 +67,8 @@ class InvoiceService {
       const customerInfo = data.customerInfo || {
         name: user.name,
         email: user.email,
-        phone: user.phone,
-        address: user.address,
+        phone: user.phone || "",
+        address: "",
       };
 
       // Prepare company info
@@ -78,7 +78,7 @@ class InvoiceService {
         phone: company.contactPhone || "",
         email: company.contactEmail || "",
         logo: company.logo,
-        taxId: company.taxId,
+        taxId: "",
       };
 
       // Calculate item amounts
@@ -554,8 +554,8 @@ class InvoiceService {
         companyId: transaction.company.toString(),
         userId: transaction.user.toString(),
         transactionId: transaction._id.toString(),
-        facility: transaction.facility?.toString(),
-        booking: transaction.booking?.toString(),
+        facilityId: transaction.facility?.toString(),
+        bookingId: transaction.booking?.toString(),
         items: [
           {
             description: transaction.description || "Payment",
@@ -571,17 +571,17 @@ class InvoiceService {
         currency: "GHS",
         dueDate,
         customerInfo: {
-          name: transaction.user.name,
-          email: transaction.user.email,
-          phone: transaction.user.phone,
-          address: transaction.user.address,
+          name: (transaction.user as any).name,
+          email: (transaction.user as any).email,
+          phone: (transaction.user as any).phone || "",
+          address: "",
         },
       };
 
       const invoice = await this.createInvoice(invoiceData);
 
       // Update invoice status to paid if transaction is successful
-      if (transaction.status === "success") {
+      if ((transaction as any).status === "success") {
         await this.updateInvoiceStatus(
           invoice._id.toString(),
           "paid",

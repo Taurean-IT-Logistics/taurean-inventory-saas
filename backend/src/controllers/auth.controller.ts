@@ -16,6 +16,7 @@ import {
 import { Types } from "mongoose";
 import { emailService } from "../services/email.service";
 import { notificationService } from "../services/notification.service";
+import { CompanyModel } from "../models/company.model";
 
 // Register new user
 const register = async (req: Request, res: Response): Promise<void> => {

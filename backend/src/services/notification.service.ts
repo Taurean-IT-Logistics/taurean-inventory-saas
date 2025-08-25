@@ -181,13 +181,13 @@ class NotificationService {
           notificationData = {
             userId: user._id,
             title: "Payment Initiated",
-            message: `Payment of ${transaction.currency} ${(transaction.amount / 100).toFixed(2)} has been initiated.`,
+            message: `Payment of GHS ${(transaction.amount / 100).toFixed(2)} has been initiated.`,
             type: "info",
             category: "payment",
             data: {
               transactionId: transaction._id,
               amount: transaction.amount / 100,
-              currency: transaction.currency,
+              currency: "GHS",
               facilityName: facility?.name,
               link: `/user/transactions`,
             },
@@ -198,13 +198,13 @@ class NotificationService {
           notificationData = {
             userId: user._id,
             title: "Payment Successful",
-            message: `Payment of ${transaction.currency} ${(transaction.amount / 100).toFixed(2)} has been processed successfully!`,
+            message: `Payment of ${"GHS"} ${(transaction.amount / 100).toFixed(2)} has been processed successfully!`,
             type: "success",
             category: "payment",
             data: {
               transactionId: transaction._id,
               amount: transaction.amount / 100,
-              currency: transaction.currency,
+              currency: "GHS",
               facilityName: facility?.name,
               link: `/user/transactions`,
             },
@@ -215,13 +215,13 @@ class NotificationService {
           notificationData = {
             userId: user._id,
             title: "Payment Failed",
-            message: `Payment of ${transaction.currency} ${(transaction.amount / 100).toFixed(2)} has failed. Please try again.`,
+            message: `Payment of ${"GHS"} ${(transaction.amount / 100).toFixed(2)} has failed. Please try again.`,
             type: "error",
             category: "payment",
             data: {
               transactionId: transaction._id,
               amount: transaction.amount / 100,
-              currency: transaction.currency,
+              currency: "GHS",
               facilityName: facility?.name,
               link: `/user/transactions`,
             },
@@ -232,13 +232,13 @@ class NotificationService {
           notificationData = {
             userId: user._id,
             title: "Payment Refunded",
-            message: `A refund of ${transaction.currency} ${(transaction.amount / 100).toFixed(2)} has been processed.`,
+            message: `A refund of ${"GHS"} ${(transaction.amount / 100).toFixed(2)} has been processed.`,
             type: "success",
             category: "payment",
             data: {
               transactionId: transaction._id,
               amount: transaction.amount / 100,
-              currency: transaction.currency,
+              currency: "GHS",
               facilityName: facility?.name,
               link: `/user/transactions`,
             },
@@ -456,7 +456,7 @@ class NotificationService {
       const users = await UserModel.find({ company: companyId, isDeleted: false });
 
       for (const user of users) {
-        await this.createSystemNotification(user._id, title, message, type, data);
+        await this.createSystemNotification(user._id.toString(), title, message, type, data);
       }
     } catch (error) {
       console.error("Error creating company notification:", error);

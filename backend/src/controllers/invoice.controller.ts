@@ -8,7 +8,7 @@ import { Events } from "../realtime/events";
 // Get all invoices for company
 const getCompanyInvoices = async (req: Request, res: Response): Promise<void> => {
   try {
-    const companyId = req.user?.company;
+    const companyId = req.user?.companyId;
     if (!companyId) {
       sendError(res, "Company context required", 400);
       return;
@@ -22,8 +22,8 @@ const getCompanyInvoices = async (req: Request, res: Response): Promise<void> =>
     if (req.query.userId) filters.userId = req.query.userId;
     if (req.query.facilityId) filters.facilityId = req.query.facilityId;
     if (req.query.search) filters.search = req.query.search;
-    if (req.query.startDate) filters.startDate = new Date(req.query.startDate as string);
-    if (req.query.endDate) filters.endDate = new Date(req.query.endDate as string);
+    if (req.query.startDate) (filters as any).startDate = new Date(req.query.startDate as string);
+    if (req.query.endDate) (filters as any).endDate = new Date(req.query.endDate as string);
 
     const result = await invoiceService.getCompanyInvoices(companyId, filters, page, limit);
 
@@ -48,8 +48,8 @@ const getUserInvoices = async (req: Request, res: Response): Promise<void> => {
 
     if (req.query.status) filters.status = req.query.status;
     if (req.query.facilityId) filters.facilityId = req.query.facilityId;
-    if (req.query.startDate) filters.startDate = new Date(req.query.startDate as string);
-    if (req.query.endDate) filters.endDate = new Date(req.query.endDate as string);
+    if (req.query.startDate) (filters as any).startDate = new Date(req.query.startDate as string);
+    if (req.query.endDate) (filters as any).endDate = new Date(req.query.endDate as string);
 
     const result = await invoiceService.getUserInvoices(userId, filters, page, limit);
 
@@ -72,7 +72,7 @@ const getInvoiceById = async (req: Request, res: Response): Promise<void> => {
 
     // Check if user has access to this invoice
     const userId = req.user?.id;
-    const companyId = req.user?.company;
+    const companyId = req.user?.companyId;
     
     if (invoice.user.toString() !== userId && invoice.company.toString() !== companyId) {
       sendError(res, "Access denied", 403);
@@ -88,7 +88,7 @@ const getInvoiceById = async (req: Request, res: Response): Promise<void> => {
 // Create new invoice
 const createInvoice = async (req: Request, res: Response): Promise<void> => {
   try {
-    const companyId = req.user?.company;
+    const companyId = req.user?.companyId;
     if (!companyId) {
       sendError(res, "Company context required", 400);
       return;
@@ -215,7 +215,7 @@ const downloadInvoice = async (req: Request, res: Response): Promise<void> => {
 
     // Check if user has access to this invoice
     const userId = req.user?.id;
-    const companyId = req.user?.company;
+    const companyId = req.user?.companyId;
     
     if (invoice.user.toString() !== userId && invoice.company.toString() !== companyId) {
       sendError(res, "Access denied", 403);
@@ -252,7 +252,7 @@ const downloadReceipt = async (req: Request, res: Response): Promise<void> => {
 
     // Check if user has access to this invoice
     const userId = req.user?.id;
-    const companyId = req.user?.company;
+    const companyId = req.user?.companyId;
     
     if (invoice.user.toString() !== userId && invoice.company.toString() !== companyId) {
       sendError(res, "Access denied", 403);
@@ -274,7 +274,7 @@ const downloadReceipt = async (req: Request, res: Response): Promise<void> => {
 // Get invoice statistics
 const getInvoiceStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const companyId = req.user?.company;
+    const companyId = req.user?.companyId;
     if (!companyId) {
       sendError(res, "Company context required", 400);
       return;
@@ -314,7 +314,7 @@ const createInvoiceFromTransaction = async (req: Request, res: Response): Promis
 // Get company receipts (paid invoices)
 const getCompanyReceipts = async (req: Request, res: Response): Promise<void> => {
   try {
-    const companyId = req.user?.company;
+    const companyId = req.user?.companyId;
     if (!companyId) {
       sendError(res, "Company context required", 400);
       return;
@@ -322,10 +322,10 @@ const getCompanyReceipts = async (req: Request, res: Response): Promise<void> =>
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const filters = { status: "paid" };
+    const filters: any = { status: "paid" };
 
-    if (req.query.startDate) filters.startDate = new Date(req.query.startDate as string);
-    if (req.query.endDate) filters.endDate = new Date(req.query.endDate as string);
+    if (req.query.startDate) (filters as any).startDate = new Date(req.query.startDate as string);
+    if (req.query.endDate) (filters as any).endDate = new Date(req.query.endDate as string);
 
     const result = await invoiceService.getCompanyInvoices(companyId, filters, page, limit);
 
@@ -346,10 +346,10 @@ const getUserReceipts = async (req: Request, res: Response): Promise<void> => {
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const filters = { status: "paid" };
+    const filters: any = { status: "paid" };
 
-    if (req.query.startDate) filters.startDate = new Date(req.query.startDate as string);
-    if (req.query.endDate) filters.endDate = new Date(req.query.endDate as string);
+    if (req.query.startDate) (filters as any).startDate = new Date(req.query.startDate as string);
+    if (req.query.endDate) (filters as any).endDate = new Date(req.query.endDate as string);
 
     const result = await invoiceService.getUserInvoices(userId, filters, page, limit);
 
