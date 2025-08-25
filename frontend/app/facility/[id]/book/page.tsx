@@ -79,6 +79,50 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     enabled: !!user,
   });
 
+  // Calculate pricing and taxes
+  const calculateTotal = () => {
+    if (!bookingData.startDate || !bookingData.endDate || !facilityData) {
+      return { subtotal: 0, serviceFee: 0, tax: 0, total: 0 };
+    }
+
+    const facility = facilityData as Facility;
+    const startDate = new Date(bookingData.startDate);
+    const endDate = new Date(bookingData.endDate);
+    const days = differenceInDays(endDate, startDate) || 1;
+    
+    const basePrice = facility.pricing.find((p) => p.isDefault)?.amount || 0;
+    const subtotal = basePrice * days;
+
+    // Calculate service fee from taxes
+    const serviceFeeRate = taxes.find(
+      (t: Tax) =>
+        t.name.toLowerCase().includes("service") &&
+        t.active &&
+        (t.appliesTo === "facility" || t.appliesTo === "both") &&
+        (t.isSuperAdminTax || t.company === facility.company)
+    )?.rate || 0;
+
+    const serviceFee = Math.round(subtotal * (serviceFeeRate / 100));
+
+    // Calculate applicable taxes
+    const applicableTaxes = taxes.filter(
+      (t: Tax) =>
+        !t.name.toLowerCase().includes("service") &&
+        t.active &&
+        (t.appliesTo === "facility" || t.appliesTo === "both") &&
+        (t.isSuperAdminTax || t.company === facility.company)
+    );
+
+    const totalTaxRate = applicableTaxes.reduce((sum, tax) => sum + (tax.rate || 0), 0);
+    const tax = Math.round((subtotal + serviceFee) * (totalTaxRate / 100));
+
+    const total = subtotal + serviceFee + tax;
+
+    return { subtotal, serviceFee, tax, total, days, basePrice, serviceFeeRate, totalTaxRate, applicableTaxes };
+  };
+
+  const { subtotal, serviceFee, tax, total, days, basePrice, serviceFeeRate, totalTaxRate, applicableTaxes } = calculateTotal();
+
   const bookingsMutation = useMutation({
     mutationFn: async (bookingData: Partial<Booking>) => {
       return BookingsAPI.create(bookingData);
@@ -863,28 +907,41 @@ export default function BookingPage({ params }: { params: { id: string } }) {
             <div className="border-t pt-4 space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">
-                  {currencyFormat(
-                    facility.pricing.find((p) => p.isDefault)?.amount || 0
-                  )}{" "}
-                  x {days} {facility.pricing.find((p) => p.isDefault)?.unit}
-                  {days > 1 ? "s" : ""}
+                  {currencyFormat(basePrice)} x {days} day{days > 1 ? 's' : ''}
                 </span>
                 <span className="text-gray-900">
                   {currencyFormat(subtotal)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Service fee</span>
-                <span className="text-gray-900">
-                  {currencyFormat(serviceFeeRate)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tax</span>
-                <span className="text-gray-900">
-                  {currencyFormat(totalTaxRate)}
-                </span>
-              </div>
+              
+              {serviceFee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Service fee ({serviceFeeRate}%)</span>
+                  <span className="text-gray-900">
+                    {currencyFormat(serviceFee)}
+                  </span>
+                </div>
+              )}
+              
+              {applicableTaxes.length > 0 && (
+                <>
+                  {applicableTaxes.map((tax: Tax, index: number) => (
+                    <div key={index} className="flex justify-between">
+                      <span className="text-gray-600">{tax.name} ({tax.rate}%)</span>
+                      <span className="text-gray-900">
+                        {currencyFormat(Math.round((subtotal + serviceFee) * (tax.rate / 100)))}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Tax</span>
+                    <span className="text-gray-900">
+                      {currencyFormat(tax)}
+                    </span>
+                  </div>
+                </>
+              )}
+              
               <div className="border-t pt-3 flex justify-between font-semibold text-lg">
                 <span className="text-gray-900">Total</span>
                 <span className="text-gray-900">{currencyFormat(total)}</span>
