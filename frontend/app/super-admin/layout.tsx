@@ -1,11 +1,14 @@
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { SuperAdminLayoutWrapper } from "@/components/layout/SuperAdminLayoutWrapper";
 
-interface UserRouteProps {
+interface SuperAdminRouteProps {
   children: React.ReactNode;
 }
 
-export default function UserRoute({ children }: UserRouteProps) {
+export default function SuperAdminRoute({ children }: SuperAdminRouteProps) {
   return (
-    <ProtectedRoute allowedRoles={["superAdmin"]}>{children}</ProtectedRoute>
+    <ProtectedRoute allowedRoles={["superAdmin"]}>
+      <SuperAdminLayoutWrapper>{children}</SuperAdminLayoutWrapper>
+    </ProtectedRoute>
   );
 }
