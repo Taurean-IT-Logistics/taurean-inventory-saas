@@ -30,7 +30,7 @@ import {
 import Logo from "../logo/Logo";
 import type { Route } from "./NavMain";
 import DashboardNavigation from "./NavMain";
-import { NotificationsPopover } from "./NavNotifications";
+import { NotificationPopover } from "../notifications/NotificationPopover";
 import { Button } from "../ui/button";
 import { useAuth } from "../AuthProvider";
 import { getResourceUrl } from "@/lib/api";
@@ -210,7 +210,7 @@ export function DashboardSidebar() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          <NotificationsPopover notifications={sampleNotifications} />
+          <NotificationPopover />
           <SidebarTrigger />
           <SocketStatus />
 

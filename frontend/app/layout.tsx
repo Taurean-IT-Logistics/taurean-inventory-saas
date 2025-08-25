@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { EnhancedChatWidget } from "@/components/chat/enhanced-chat-widget";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TanstackProvider } from "@/components/TanstackProvider";
+import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -40,9 +41,11 @@ html {
         <ErrorBoundary>
           <TanstackProvider>
             <ThemeProvider>
-              <Header />
-              {children}
-              <Footer />
+              <NotificationProvider>
+                <Header />
+                {children}
+                <Footer />
+              </NotificationProvider>
             </ThemeProvider>
             <Toaster />
             <EnhancedChatWidget />

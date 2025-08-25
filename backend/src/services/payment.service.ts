@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { IPaymentFormData } from "../types";
 import { CONFIG } from "../config";
 import { CompanyModel } from "../models/company.model";
+import { notificationService } from "./notification.service";
 
 const PAYSTACK_SECRET_KEY = CONFIG.PAYSTACK_SECRET_KEY;
 

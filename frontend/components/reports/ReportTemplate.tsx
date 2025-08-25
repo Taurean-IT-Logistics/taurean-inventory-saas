@@ -19,6 +19,7 @@ import {
   Activity,
 } from "lucide-react";
 import { format } from "date-fns";
+import RevenueChart from "@/components/charts/RevenueChart";
 
 interface ReportData {
   title: string;
@@ -332,25 +333,13 @@ export const ReportTemplate: React.FC<ReportTemplateProps> = ({
       {data.charts && data.charts.length > 0 && (
         <div className="space-y-6">
           {data.charts.map((chart, index) => (
-            <Card key={index} className="print:border-0 print:shadow-none">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {chart.type === "bar" && <BarChart3 className="w-5 h-5" />}
-                  {chart.type === "pie" && <PieChart className="w-5 h-5" />}
-                  {chart.type === "line" && <TrendingUp className="w-5 h-5" />}
-                  {chart.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
-                  <div className="text-center">
-                    <BarChart3 className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <p>Chart: {chart.title}</p>
-                    <p className="text-sm">Chart integration coming soon</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <RevenueChart
+              key={index}
+              data={chart.data}
+              title={chart.title}
+              type={chart.type}
+              height={300}
+            />
           ))}
         </div>
       )}

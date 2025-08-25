@@ -168,6 +168,41 @@ export default function ReportsPage() {
           icon: <TrendingDown className="w-5 h-5 text-red-600" />,
         },
       ],
+      charts: [
+        {
+          title: "Revenue Trend",
+          type: "line" as const,
+          data: [
+            { name: "Jan", value: metrics.income * 0.8 },
+            { name: "Feb", value: metrics.income * 0.9 },
+            { name: "Mar", value: metrics.income * 0.95 },
+            { name: "Apr", value: metrics.income },
+            { name: "May", value: metrics.income * 1.1 },
+            { name: "Jun", value: metrics.income * 1.2 },
+          ],
+        },
+        {
+          title: "Invoice Status Distribution",
+          type: "pie" as const,
+          data: [
+            { name: "Paid", value: metrics.paidInvoices },
+            { name: "Pending", value: metrics.totalInvoices - metrics.paidInvoices - metrics.overdueInvoices },
+            { name: "Overdue", value: metrics.overdueInvoices },
+          ],
+        },
+        {
+          title: "Monthly Bookings",
+          type: "bar" as const,
+          data: [
+            { name: "Jan", value: metrics.totalBookings * 0.7 },
+            { name: "Feb", value: metrics.totalBookings * 0.8 },
+            { name: "Mar", value: metrics.totalBookings * 0.9 },
+            { name: "Apr", value: metrics.totalBookings },
+            { name: "May", value: metrics.totalBookings * 1.1 },
+            { name: "Jun", value: metrics.totalBookings * 1.2 },
+          ],
+        },
+      ],
       tables: [
         {
           title: "Financial Summary",

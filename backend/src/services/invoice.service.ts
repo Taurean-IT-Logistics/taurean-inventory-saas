@@ -9,6 +9,7 @@ import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
 import { generateInvoiceNumber } from "../utils/invoiceUtils";
+import { notificationService } from "./notification.service";
 
 export interface CreateInvoiceData {
   companyId: string;
@@ -108,6 +109,14 @@ class InvoiceService {
       });
 
       const savedInvoice = await invoice.save();
+      
+      // Send invoice creation notification
+      try {
+        await notificationService.createInvoiceNotification(savedInvoice._id.toString(), "created");
+      } catch (error) {
+        console.error("Failed to send invoice creation notification:", error);
+      }
+      
       return savedInvoice;
     } catch (error) {
       throw new Error(`Error creating invoice: ${error.message}`);
@@ -231,11 +240,26 @@ class InvoiceService {
         updateData.paymentMethod = paymentMethod;
       }
 
-      return await InvoiceModel.findByIdAndUpdate(
+      const updatedInvoice = await InvoiceModel.findByIdAndUpdate(
         invoiceId,
         updateData,
         { new: true }
       ).populate("user company facility booking transaction");
+      
+      if (updatedInvoice) {
+        // Send notifications based on status change
+        try {
+          if (status === "paid") {
+            await notificationService.createInvoiceNotification(invoiceId, "paid");
+          } else if (status === "overdue") {
+            await notificationService.createInvoiceNotification(invoiceId, "overdue");
+          }
+        } catch (error) {
+          console.error("Failed to send invoice status notification:", error);
+        }
+      }
+      
+      return updatedInvoice;
     } catch (error) {
       throw new Error(`Error updating invoice status: ${error.message}`);
     }

@@ -10,6 +10,11 @@ const NotificationSchema = new Schema<NotificationDocument>(
     type: { type: String, enum: ["info", "warning", "success", "error"], default: "info" },
     title: { type: String, required: true, trim: true },
     message: { type: String, required: true, trim: true },
+    category: { 
+      type: String, 
+      enum: ["booking", "payment", "invoice", "system", "support"], 
+      default: "system" 
+    },
     data: { type: Schema.Types.Mixed },
     isRead: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
