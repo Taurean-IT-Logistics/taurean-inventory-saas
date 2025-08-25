@@ -2,10 +2,10 @@ name: Pull Request Check
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, dev]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: "18"
 
 jobs:
   # Quick Build Check
@@ -21,14 +21,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       # Backend Build Check
       - name: Backend Build Check
         run: |
           echo "🔧 Checking Backend Build..."
           cd backend
-          npm ci
+          npm i
           npm run build
           echo "✅ Backend build successful!"
 
@@ -37,7 +37,7 @@ jobs:
         run: |
           echo "🔧 Checking Frontend Build..."
           cd frontend
-          npm ci
+          npm i
           npm run build
           echo "✅ Frontend build successful!"
 
@@ -101,13 +101,13 @@ jobs:
     steps:
       - name: Build Status Summary
         run: |
-          echo "📊 Build Summary for PR #${{ github.event.number }}"
+          echo "Build Summary for PR #${{ github.event.number }}"
           echo "================================================"
           echo "Backend Build: ${{ needs.build-check.result }}"
           echo "Frontend Build: ${{ needs.build-check.result }}"
           echo "Security Check: ${{ needs.security-check.result }}"
           echo "Code Quality: ${{ needs.code-quality.result }}"
-          
+
           if [[ "${{ needs.build-check.result }}" == "success" ]]; then
             echo "🎉 All builds successful! Ready for review."
           else

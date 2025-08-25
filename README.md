@@ -40,6 +40,7 @@ nano .env
 ```
 
 **Required Environment Variables:**
+
 ```env
 # Database
 MONGO_ROOT_USERNAME=admin
@@ -90,6 +91,7 @@ docker-compose --profile production up -d
 ### SSL Configuration
 
 1. Place your SSL certificates in the `ssl/` directory:
+
    ```
    ssl/
    ├── cert.pem
@@ -122,13 +124,13 @@ npm run dev
 
 ## Services
 
-| Service | Port | Description |
-|---------|------|-------------|
-| Frontend | 3000 | Next.js application |
-| Backend | 3001 | Node.js API server |
-| MongoDB | 27017 | Database |
-| Redis | 6379 | Caching & sessions |
-| Nginx | 80/443 | Reverse proxy (production) |
+| Service  | Port   | Description                |
+| -------- | ------ | -------------------------- |
+| Frontend | 3000   | Next.js application        |
+| Backend  | 3001   | Node.js API server         |
+| MongoDB  | 27017  | Database                   |
+| Redis    | 6379   | Caching & sessions         |
+| Nginx    | 80/443 | Reverse proxy (production) |
 
 ## Architecture
 
@@ -150,29 +152,34 @@ npm run dev
 ## Key Features
 
 ### 🏢 Multi-Tenant SaaS
+
 - Complete data isolation between companies
 - Company-specific branding and settings
 - Super admin oversight capabilities
 
 ### 💳 Payment Processing
+
 - Paystack integration with webhooks
 - Payment verification and callbacks
 - Multi-currency support
 - Automated receipt generation
 
 ### 🧾 Invoice System
+
 - Professional PDF templates
 - Company branding integration
 - Tax calculation with schedules
 - Automated numbering systems
 
 ### 📊 Analytics & Reporting
+
 - Business performance metrics
 - Revenue and booking analytics
 - Data export (CSV/Excel)
 - Real-time dashboard updates
 
 ### 💬 Communication
+
 - Built-in chat system
 - Support ticket management
 - Real-time notifications
@@ -184,20 +191,20 @@ Once running, visit http://localhost:3001/api-docs for complete API documentatio
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MONGO_ROOT_USERNAME` | MongoDB root username | admin |
-| `MONGO_ROOT_PASSWORD` | MongoDB root password | password123 |
-| `MONGO_DATABASE` | Database name | facility_management |
-| `REDIS_PASSWORD` | Redis password | redis123 |
-| `JWT_SECRET` | JWT signing secret | Required |
-| `JWT_REFRESH_SECRET` | JWT refresh secret | Required |
-| `PAYSTACK_SECRET_KEY` | Paystack secret key | Required |
-| `PAYSTACK_PUBLIC_KEY` | Paystack public key | Required |
-| `EMAIL_HOST` | SMTP host | Optional |
-| `EMAIL_PORT` | SMTP port | 587 |
-| `EMAIL_USER` | SMTP username | Optional |
-| `EMAIL_PASS` | SMTP password | Optional |
+| Variable              | Description           | Default             |
+| --------------------- | --------------------- | ------------------- |
+| `MONGO_ROOT_USERNAME` | MongoDB root username | admin               |
+| `MONGO_ROOT_PASSWORD` | MongoDB root password | password123         |
+| `MONGO_DATABASE`      | Database name         | facility_management |
+| `REDIS_PASSWORD`      | Redis password        | redis123            |
+| `JWT_SECRET`          | JWT signing secret    | Required            |
+| `JWT_REFRESH_SECRET`  | JWT refresh secret    | Required            |
+| `PAYSTACK_SECRET_KEY` | Paystack secret key   | Required            |
+| `PAYSTACK_PUBLIC_KEY` | Paystack public key   | Required            |
+| `EMAIL_HOST`          | SMTP host             | Optional            |
+| `EMAIL_PORT`          | SMTP port             | 587                 |
+| `EMAIL_USER`          | SMTP username         | Optional            |
+| `EMAIL_PASS`          | SMTP password         | Optional            |
 
 ## Health Checks
 
@@ -255,9 +262,15 @@ docker-compose logs frontend
 docker-compose logs mongodb
 ```
 
+## Workflow Status
+
+[![Build Status](https://img.shields.io/github/actions/workflow/status/theniitettey/taurean-inventory-saas/ci-cd.yml?branch=main&label=Build&style=flat-square)](https://github.com/{owner}/{repo}/actions/workflows/ci-cd.yml)
+[![Test Status](https://img.shields.io/github/actions/workflow/status/theniitettey/taurean-inventory-saas/pr-check.yml?branch=main&label=Tests&style=flat-square)](https://github.com/{owner}/{repo}/actions/workflows/pr-check.yml)
+
 ## Support
 
 For support and questions:
+
 - Email: support@taureanitlogistics.com
 - Documentation: [API Docs](http://localhost:3001/api-docs)
 

@@ -3,11 +3,11 @@ name: Maintenance
 on:
   schedule:
     # Run every Monday at 2 AM UTC
-    - cron: '0 2 * * 1'
+    - cron: "0 2 * * 1"
   workflow_dispatch: # Allow manual trigger
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: "18"
 
 jobs:
   # Dependency Updates
@@ -27,11 +27,11 @@ jobs:
       - name: Check for outdated dependencies
         run: |
           echo "📦 Checking for outdated dependencies..."
-          
+
           cd backend
           echo "Backend dependencies:"
           npm outdated || echo "All backend dependencies are up to date"
-          
+
           cd ../frontend
           echo "Frontend dependencies:"
           npm outdated || echo "All frontend dependencies are up to date"
@@ -39,10 +39,10 @@ jobs:
       - name: Check for security vulnerabilities
         run: |
           echo "🔒 Checking for security vulnerabilities..."
-          
+
           cd backend
           npm audit --audit-level=moderate || true
-          
+
           cd ../frontend
           npm audit --audit-level=moderate || true
 
@@ -64,7 +64,7 @@ jobs:
         run: |
           echo "🔧 Verifying Backend Build..."
           cd backend
-          npm ci
+          npm i
           npm run build
           echo "✅ Backend build verified!"
 
@@ -72,7 +72,7 @@ jobs:
         run: |
           echo "🔧 Verifying Frontend Build..."
           cd frontend
-          npm ci
+          npm i
           npm run build
           echo "✅ Frontend build verified!"
 
@@ -94,8 +94,8 @@ jobs:
         run: |
           echo "🗄️ Checking Database Models..."
           cd backend
-          npm ci
-          
+          npm i
+
           # Check if all models compile correctly
           npx tsc --noEmit src/models/*.ts
           echo "✅ Database models verified!"
@@ -118,8 +118,8 @@ jobs:
         run: |
           echo "📧 Checking Email Templates..."
           cd backend
-          npm ci
-          
+          npm i
+
           # Check if React Email templates compile
           npx tsc --noEmit src/emails/**/*.tsx
           echo "✅ Email templates verified!"
@@ -134,7 +134,7 @@ jobs:
     steps:
       - name: Generate Summary Report
         run: |
-          echo "📊 Maintenance Summary Report"
+          echo "Maintenance Summary Report"
           echo "=============================="
           echo "Generated: $(date)"
           echo ""
@@ -143,7 +143,7 @@ jobs:
           echo "Database Check: ${{ needs.database-check.result }}"
           echo "Email Template Check: ${{ needs.email-check.result }}"
           echo ""
-          
+
           if [[ "${{ needs.build-verification.result }}" == "success" ]]; then
             echo "🎉 All systems operational!"
           else
