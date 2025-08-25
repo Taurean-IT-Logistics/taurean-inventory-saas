@@ -24,6 +24,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.disable("x-powered-by");
+
+// Serve static files
+app.use(express.static("public"));
+
 app.use(LoggerMiddleware);
 app.use(ErrorMiddleware);
 app.use(APIRateLimiter);

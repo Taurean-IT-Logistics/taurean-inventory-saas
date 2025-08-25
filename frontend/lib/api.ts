@@ -136,6 +136,16 @@ export const AuthAPI = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  forgotPassword: (payload: { email: string }) =>
+    apiFetch(`/auth/forgot-password`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  resetPassword: (payload: { token: string; newPassword: string }) =>
+    apiFetch(`/auth/reset-password`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   profile: () => apiFetch<User | null>(`/auth/profile`, { method: "GET" }),
   logout: () => apiFetch(`/auth/logout`, { method: "POST" }),
 };

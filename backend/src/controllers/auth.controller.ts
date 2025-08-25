@@ -438,10 +438,39 @@ const forgotPassword = async (req: Request, res: Response): Promise<void> => {
       role: user.role,
     });
 
-    // Send password reset email (implement email service)
-    // await EmailService.sendPasswordResetEmail(user.email, resetToken);
+    // Get company info for email
+    const company = user.company ? await CompanyModel.findById(user.company) : null;
 
-    sendSuccess(res, "Password reset link has been sent to your email");
+    // Create reset URL
+    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
+
+    // Send password reset email
+    try {
+      await emailService.sendEmail({
+        to: user.email,
+        subject: "Reset Your Password",
+        template: "password-reset",
+        context: {
+          company: company || { name: "FacilityHub" },
+          user: {
+            name: user.name,
+            email: user.email,
+          },
+          data: {
+            resetLink: resetUrl,
+            requestTime: new Date().toLocaleString(),
+            ipAddress: req.ip || "Unknown",
+            expiryTime: new Date(Date.now() + 60 * 60 * 1000).toLocaleString(),
+          },
+        },
+        companyId: user.company?.toString(),
+      });
+
+      sendSuccess(res, "If the email exists, a password reset link has been sent");
+    } catch (emailError) {
+      console.error("Failed to send password reset email:", emailError);
+      sendError(res, "Failed to send password reset email");
+    }
   } catch (error: any) {
     sendError(res, "Failed to process password reset request", error.message);
   }

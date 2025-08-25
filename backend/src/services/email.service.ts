@@ -146,22 +146,11 @@ class EmailService {
               }
               
               .header {
-                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  background: hsl(220 70% 35%);
                   padding: 60px 30px 40px;
                   text-align: center;
                   color: white;
                   position: relative;
-              }
-              
-              .header::before {
-                  content: '';
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  bottom: 0;
-                  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-                  opacity: 0.3;
               }
               
               .company-logo {
@@ -217,7 +206,7 @@ class EmailService {
               
               .cta-button {
                   display: inline-block;
-                  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+                  background: hsl(25 95% 53%);
                   color: white;
                   text-decoration: none;
                   padding: 18px 36px;
@@ -226,14 +215,14 @@ class EmailService {
                   font-size: 12px;
                   text-transform: uppercase;
                   letter-spacing: 0.5px;
-                  box-shadow: 0 4px 15px rgba(52, 211, 153, 0.3);
+                  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
                   transition: all 0.3s ease;
                   font-family: 'Montserrat', sans-serif;
               }
               
               .cta-button:hover {
                   transform: translateY(-2px);
-                  box-shadow: 0 6px 20px rgba(52, 211, 153, 0.4);
+                  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
               }
               
               .info-card {
@@ -304,14 +293,14 @@ class EmailService {
               }
               
               .footer-link {
-                  color: #34d399;
+                  color: hsl(25 95% 53%);
                   text-decoration: none;
                   margin: 0 15px;
                   font-weight: 500;
               }
               
               .footer-link:hover {
-                  color: #10b981;
+                  color: hsl(25 95% 63%);
               }
               
               .social-links {
@@ -399,11 +388,8 @@ class EmailService {
       <body>
           <div class="email-container">
               <div class="header">
-                  {{#if company.logo}}
-                  <img src="{{company.logo.path}}" alt="{{company.name}}" class="company-logo">
-                  {{else}}
+                  <img src="{{baseUrl}}/logo.webp" alt="{{company.name}}" class="company-logo">
                   <div class="company-name">{{company.name}}</div>
-                  {{/if}}
                   <div class="header-subtitle">{{headerSubtitle}}</div>
               </div>
               
