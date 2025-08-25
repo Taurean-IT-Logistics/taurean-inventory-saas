@@ -23,3 +23,4 @@ export {
 
 export { SupportTicketModel, ISupportTicket } from "./supportTicket.model";
 export { SupportMessageModel, ISupportMessage } from "./supportMessage.model";
+export { InvoiceModel, InvoiceDocument } from "./invoice.model";

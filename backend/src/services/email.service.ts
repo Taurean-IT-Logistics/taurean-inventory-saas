@@ -110,6 +110,7 @@ class EmailService {
     );
     this.templates.set("license-activated", this.getLicenseActivatedTemplate());
     this.templates.set("license-expiring", this.getLicenseExpiringTemplate());
+    this.templates.set("invoice", this.getInvoiceTemplate());
   }
 
   private getBaseTemplate(): handlebars.TemplateDelegate {
@@ -1334,6 +1335,58 @@ class EmailService {
     return handlebars.compile(content);
   }
 
+  private getInvoiceTemplate(): handlebars.TemplateDelegate {
+    const content = `
+      <div class="greeting">Invoice Generated</div>
+      
+      <div class="message">
+          {{#if user.name}}Dear {{user.name}},{{else}}Dear Valued Customer,{{/if}}<br><br>
+          An invoice has been generated for your recent transaction with {{company.name}}.
+      </div>
+      
+      <div class="info-card">
+          <div class="info-card-title">Invoice Details</div>
+          <div class="info-grid">
+              <div class="info-item">
+                  <div class="info-label">Invoice Number</div>
+                  <div class="info-value">#{{data.invoiceNumber}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Amount</div>
+                  <div class="info-value">{{data.currency}} {{data.totalAmount}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Due Date</div>
+                  <div class="info-value">{{data.dueDate}}</div>
+              </div>
+              <div class="info-item">
+                  <div class="info-label">Status</div>
+                  <div class="info-value"><span class="status-badge status-{{data.status}}">{{data.status}}</span></div>
+              </div>
+          </div>
+      </div>
+      
+      <div class="highlight">
+          <strong>Invoice Summary:</strong><br>
+          • Subtotal: {{data.currency}} {{data.subtotal}}<br>
+          {{#if data.taxAmount}}• Tax: {{data.currency}} {{data.taxAmount}}<br>{{/if}}
+          {{#if data.discountAmount}}• Discount: -{{data.currency}} {{data.discountAmount}}<br>{{/if}}
+          • Total: {{data.currency}} {{data.totalAmount}}
+      </div>
+      
+      <div class="cta-section">
+          <a href="{{baseUrl}}/invoices/{{data.invoiceId}}" class="cta-button">View Invoice</a>
+          <a href="{{baseUrl}}/invoices/{{data.invoiceId}}/download" class="cta-button secondary">Download PDF</a>
+      </div>
+      
+      <div class="message">
+          Please review the invoice and ensure payment is made by the due date. If you have any questions, please contact our support team.
+      </div>
+    `;
+
+    return handlebars.compile(content);
+  }
+
   public async sendEmail(options: EmailOptions): Promise<boolean> {
     if (!this.transporter) {
       console.warn("Email transporter not configured. Email not sent.");
@@ -2141,6 +2194,40 @@ class EmailService {
     }
   }
 
+  public async sendInvoiceEmail(invoice: any): Promise<boolean> {
+    try {
+      const user = await UserModel.findById(invoice.user).lean();
+      const company = await CompanyModel.findById(invoice.company).lean();
+
+      if (!user || !company) return false;
+
+      return this.sendEmail({
+        to: user.email,
+        subject: `Invoice #${invoice.invoiceNumber} - ${company.name}`,
+        template: "invoice",
+        context: {
+          company,
+          user,
+          data: {
+            invoiceId: invoice._id,
+            invoiceNumber: invoice.invoiceNumber,
+            totalAmount: invoice.totalAmount.toFixed(2),
+            subtotal: invoice.subtotal.toFixed(2),
+            taxAmount: invoice.taxAmount?.toFixed(2) || "0.00",
+            discountAmount: invoice.discountAmount?.toFixed(2) || "0.00",
+            currency: invoice.currency,
+            dueDate: new Date(invoice.dueDate).toLocaleDateString(),
+            status: invoice.status,
+          },
+        },
+        companyId: company._id.toString(),
+      });
+    } catch (error) {
+      console.error("Failed to send invoice email:", error);
+      return false;
+    }
+  }
+
   public async testCompanyEmailConfiguration(companyId: string): Promise<{
     configured: boolean;
     companySettings?: any;
@@ -2209,4 +2296,5 @@ export const {
   sendSupportTicketCreatedEmail,
   sendSupportTicketUpdatedEmail,
   sendSupportMessageReceivedEmail,
+  sendInvoiceEmail,
 } = emailService;

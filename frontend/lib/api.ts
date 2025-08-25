@@ -68,13 +68,18 @@ async function refreshAccessToken() {
 
 export async function apiFetch<T>(
   path: string,
-  options: RequestInit & { method?: HttpMethod } = {}
+  options: RequestInit & { method?: HttpMethod } = {},
+  isBinary = false
 ): Promise<T> {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
   const headers: Record<string, string> = {
-    Accept: "application/json",
     ...(options.headers as Record<string, string>),
   };
+  
+  if (!isBinary) {
+    headers.Accept = "application/json";
+  }
+  
   if (!(options.body instanceof FormData))
     headers["Content-Type"] = headers["Content-Type"] || "application/json";
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -89,6 +94,14 @@ export async function apiFetch<T>(
     } catch {
       // fall through
     }
+  }
+
+  if (isBinary) {
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || res.statusText || "Request failed");
+    }
+    return res.arrayBuffer() as T;
   }
 
   const json = await res.json().catch(() => ({}));
@@ -937,6 +950,68 @@ export const PayoutsAPI = {
 export const CashflowAPI = {
   summary: () => apiFetch(`/cashflow/summary`, { method: "GET" }),
   anomalies: () => apiFetch(`/cashflow/anomalies`, { method: "GET" }),
+};
+
+// Invoices
+export const InvoicesAPI = {
+  // Get company invoices
+  listCompany: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/invoices/company${qs}`, { method: "GET" });
+  },
+
+  // Get user invoices
+  listMine: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/invoices/user${qs}`, { method: "GET" });
+  },
+
+  // Get invoice by ID
+  getById: (id: string) => apiFetch(`/invoices/${id}`, { method: "GET" }),
+
+  // Create new invoice
+  create: (payload: any) =>
+    apiFetch(`/invoices`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // Update invoice status
+  updateStatus: (id: string, payload: any) =>
+    apiFetch(`/invoices/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  // Download invoice PDF
+  downloadInvoice: (id: string) =>
+    apiFetch(`/invoices/${id}/download`, { method: "GET" }, true),
+
+  // Download receipt PDF
+  downloadReceipt: (id: string) =>
+    apiFetch(`/invoices/${id}/receipt`, { method: "GET" }, true),
+
+  // Get invoice statistics
+  getStats: () => apiFetch(`/invoices/stats/company`, { method: "GET" }),
+
+  // Create invoice from transaction
+  createFromTransaction: (transactionId: string) =>
+    apiFetch(`/invoices/from-transaction`, {
+      method: "POST",
+      body: JSON.stringify({ transactionId }),
+    }),
+
+  // Get company receipts
+  receiptsCompany: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/invoices/receipts/company${qs}`, { method: "GET" });
+  },
+
+  // Get user receipts
+  receiptsMine: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/invoices/receipts/user${qs}`, { method: "GET" });
+  },
 };
 
 // Email

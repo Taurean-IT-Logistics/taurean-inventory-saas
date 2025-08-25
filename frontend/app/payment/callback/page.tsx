@@ -130,9 +130,21 @@ const PaymentCallbackPage = () => {
     if (!paymentData?.transaction?._id) return;
 
     try {
-      const blob = await InvoicesAPI.downloadInvoice(
-        paymentData.transaction._id
-      );
+      // First, try to create an invoice from the transaction if it doesn't exist
+      let invoiceId = paymentData.transaction._id;
+      
+      try {
+        // Try to create invoice from transaction
+        const invoice = await InvoicesAPI.createFromTransaction(
+          paymentData.transaction._id
+        );
+        invoiceId = invoice._id;
+      } catch (createError) {
+        // If invoice already exists or creation fails, use transaction ID
+        console.log("Invoice creation failed, using transaction ID:", createError);
+      }
+
+      const blob = await InvoicesAPI.downloadInvoice(invoiceId);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.style.display = "none";
@@ -160,9 +172,21 @@ const PaymentCallbackPage = () => {
     if (!paymentData?.transaction?._id) return;
 
     try {
-      const blob = await InvoicesAPI.downloadReceipt(
-        paymentData.transaction._id
-      );
+      // First, try to create an invoice from the transaction if it doesn't exist
+      let invoiceId = paymentData.transaction._id;
+      
+      try {
+        // Try to create invoice from transaction
+        const invoice = await InvoicesAPI.createFromTransaction(
+          paymentData.transaction._id
+        );
+        invoiceId = invoice._id;
+      } catch (createError) {
+        // If invoice already exists or creation fails, use transaction ID
+        console.log("Invoice creation failed, using transaction ID:", createError);
+      }
+
+      const blob = await InvoicesAPI.downloadReceipt(invoiceId);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.style.display = "none";
