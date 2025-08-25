@@ -52,7 +52,7 @@ jobs:
       - name: Install Backend Dependencies
         run: |
           cd backend
-          npm i
+          npm install --registry https://registry.npmjs.org/
 
       - name: Create Backend Environment File
         run: |
@@ -110,7 +110,7 @@ jobs:
       - name: Install Frontend Dependencies
         run: |
           cd frontend
-          npm i
+          npm install --registry https://registry.npmjs.org/
 
       - name: Create Frontend Environment File
         run: |
