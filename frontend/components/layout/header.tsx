@@ -14,6 +14,8 @@ import {
   LockOpen,
   Building2,
   MessageSquare,
+  Package,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -31,7 +33,7 @@ import { toast } from "@/hooks/use-toast";
 import type { User } from "@/types";
 import { useAuth } from "../AuthProvider";
 import NotificationPanel from "../notifications/NotificationPanel";
-import { NotificationsAPI } from "@/lib/api";
+import { useNotifications } from "../notifications/NotificationProvider";
 import Image from "next/image";
 import { logo } from "@/assets";
 
@@ -43,18 +45,15 @@ export function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // Fetch unread notification count
-  const { data: unreadCount = 0 } = useQuery({
-    queryKey: ["notification-unread-count"],
-    queryFn: () => NotificationsAPI.getUnreadCount(),
-    refetchInterval: 30000, // Refetch every 30 seconds
-    enabled: !!user,
-  }) as { data: number };
+  // Get unread notification count from context
+  const notificationsContext = useNotifications();
+  const unreadCount = user ? notificationsContext?.unreadCount || 0 : 0;
 
   const hideHeader =
     pathname.startsWith("/auth") ||
     pathname.startsWith("/onboarding") ||
-    pathname.startsWith("/admin");
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/super-admin");
 
   // Reset all dropdown states when user changes (login/logout)
   useEffect(() => {
@@ -231,6 +230,15 @@ export function Header() {
                           <span>Support</span>
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/user/returns"
+                          className="flex items-center"
+                        >
+                          <Package className="mr-2 h-4 w-4" />
+                          <span>Returns</span>
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
                         {!user?.company ? (
@@ -251,6 +259,17 @@ export function Header() {
                               <span>Visit Dashboard</span>
                             </Link>
                           )
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        {user?.isSuperAdmin && (
+                          <Link
+                            href="/super-admin"
+                            className="flex items-center"
+                          >
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Super Admin Panel</span>
+                          </Link>
                         )}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />

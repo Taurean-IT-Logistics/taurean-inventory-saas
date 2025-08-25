@@ -5,12 +5,13 @@ import { FacilityModel } from "../models/facility.model";
 import { BookingModel } from "../models/booking.model";
 import { TransactionModel } from "../models/transaction.model";
 import { TaxModel } from "../models/tax.model";
+import { generateLicenseKey } from "./subscription.service";
 
 export class SuperAdminService {
   // Get all companies with statistics
   static async getAllCompanies() {
     try {
-      const companies = await CompanyModel.find({ isDeleted: false })
+      const companies = await CompanyModel.find()
         .populate("subscription", "plan status expiresAt")
         .populate("owner", "name email username")
         .sort({ createdAt: -1 });
@@ -66,7 +67,10 @@ export class SuperAdminService {
 
       // Update subscription status
       if (company.subscription) {
-        company.subscription.status = status as "active" | "expired" | "cancelled";
+        company.subscription.status = status as
+          | "active"
+          | "expired"
+          | "cancelled";
         await company.save();
       } else {
         // Create subscription if it doesn't exist
@@ -156,10 +160,12 @@ export class SuperAdminService {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + duration);
 
+      const licenseKey = generateLicenseKey(companyId);
+
       company.subscription = {
         plan,
         expiresAt,
-        licenseKey: `LIC_${companyId}_${Date.now()}`,
+        licenseKey: licenseKey,
       };
 
       await company.save();
@@ -301,12 +307,9 @@ export class SuperAdminService {
   // Get system statistics
   static async getSystemStatistics() {
     try {
-      const totalCompanies = await CompanyModel.countDocuments({
-        isDeleted: false,
-      });
+      const totalCompanies = await CompanyModel.countDocuments();
       const activeCompanies = await CompanyModel.countDocuments({
-        isDeleted: false,
-        "subscription.status": "active",
+        isActive: true,
       });
 
       const totalUsers = await UserModel.countDocuments({ isDeleted: false });
@@ -392,7 +395,6 @@ export class SuperAdminService {
           { name: { $regex: query, $options: "i" } },
           { description: { $regex: query, $options: "i" } },
         ],
-        isDeleted: false,
       })
         .populate("owner", "name email")
         .populate("subscription", "plan status")

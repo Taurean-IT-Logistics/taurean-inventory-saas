@@ -1,6 +1,8 @@
 import { TransactionDocument, TransactionModel } from "../models";
 import { Types } from "mongoose";
 import { Transaction } from "../types"; // Assuming this is where your Transaction type is defined
+import { emitEvent } from "../realtime/socket";
+import { Events } from "../realtime/events";
 
 // Create a new transaction
 const createTransaction = async (
@@ -10,8 +12,6 @@ const createTransaction = async (
     const newTransaction = new TransactionModel(transactionData);
     const saved = await newTransaction.save();
     try {
-      const { emitEvent } = await import("../realtime/socket");
-      const { Events } = await import("../realtime/events");
       emitEvent(Events.TransactionCreated, {
         id: saved._id,
         transaction: saved,
@@ -121,8 +121,6 @@ const updateTransaction = async (
       );
     if (updated) {
       try {
-        const { emitEvent } = await import("../realtime/socket");
-        const { Events } = await import("../realtime/events");
         emitEvent(Events.TransactionUpdated, {
           id: updated._id,
           transaction: updated,
