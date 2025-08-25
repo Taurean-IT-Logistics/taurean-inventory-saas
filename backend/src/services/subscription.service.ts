@@ -1,4 +1,6 @@
 import { CompanyModel } from "../models/company.model";
+import { UserModel } from "../models/user.model";
+import { createTransaction } from "./transaction.service";
 import crypto from "crypto";
 
 // Enhanced plans with features and free trial support
@@ -225,9 +227,6 @@ export class SubscriptionService {
 
       // Create transaction document for subscription payment
       try {
-        const { createTransaction } = await import("./transaction.service");
-        const { UserModel } = await import("../models/user.model");
-        
         // Get company owner for transaction
         const owner = await UserModel.findOne({ company: companyId, role: "admin" });
         

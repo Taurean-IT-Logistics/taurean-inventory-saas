@@ -1,6 +1,8 @@
 import nodemailer from "nodemailer";
 import { CompanyModel } from "../models/company.model";
 import { UserModel } from "../models/user.model";
+import { BookingModel } from "../models/booking.model";
+import { TransactionModel } from "../models/transaction.model";
 import { emitEvent } from "../realtime/socket";
 import { Events } from "../realtime/events";
 import { ReactEmailRenderer, EmailTemplateData } from "../emails/ReactEmailRenderer";
@@ -207,8 +209,6 @@ class EmailService {
 
   public async sendBookingConfirmation(bookingId: string): Promise<boolean> {
     try {
-      const BookingModel = (await import("../models/booking.model"))
-        .BookingModel;
       const booking = await BookingModel.findById(bookingId)
         .populate("user")
         .populate("facility")
@@ -335,8 +335,6 @@ class EmailService {
 
   public async sendBookingReminder(bookingId: string): Promise<boolean> {
     try {
-      const BookingModel = (await import("../models/booking.model"))
-        .BookingModel;
       const booking = await BookingModel.findById(bookingId)
         .populate("user")
         .populate("facility")
@@ -376,8 +374,6 @@ class EmailService {
 
   public async sendPaymentSuccessEmail(transactionId: string): Promise<boolean> {
     try {
-      const TransactionModel = (await import("../models/transaction.model"))
-        .TransactionModel;
       const transaction = await TransactionModel.findById(transactionId)
         .populate("user")
         .populate("company")
