@@ -129,61 +129,84 @@ class EmailService {
               }
               
               body {
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                   line-height: 1.6;
                   color: #1a1a1a;
-                  background-color: #f8fafc;
+                  background-color: #f5f5f5;
+                  padding: 20px 0;
               }
               
               .email-container {
-                  max-width: 600px;
+                  max-width: 680px;
                   margin: 0 auto;
                   background-color: #ffffff;
-                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                  border-radius: 12px;
+                  overflow: hidden;
+                  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
               }
               
               .header {
-                  background: linear-gradient(135deg, hsl(220 70% 35%) 0%, hsl(25 95% 53%) 100%);
-                  padding: 40px 30px;
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  padding: 60px 30px 40px;
                   text-align: center;
                   color: white;
+                  position: relative;
+              }
+              
+              .header::before {
+                  content: '';
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  bottom: 0;
+                  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+                  opacity: 0.3;
               }
               
               .company-logo {
-                  max-width: 150px;
-                  max-height: 60px;
+                  max-width: 120px;
+                  max-height: 50px;
                   margin-bottom: 20px;
                   border-radius: 8px;
+                  position: relative;
+                  z-index: 1;
               }
               
               .company-name {
-                  font-size: 28px;
+                  font-size: 32px;
                   font-weight: 700;
                   margin-bottom: 8px;
                   text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                  position: relative;
+                  z-index: 1;
               }
               
               .header-subtitle {
                   font-size: 16px;
                   opacity: 0.9;
                   font-weight: 400;
+                  position: relative;
+                  z-index: 1;
               }
               
               .content {
-                  padding: 40px 30px;
+                  padding: 60px 30px;
               }
               
               .greeting {
-                  font-size: 24px;
-                  font-weight: 600;
+                  font-size: 28px;
+                  font-weight: 700;
                   color: #1a1a1a;
-                  margin-bottom: 20px;
+                  margin-bottom: 28px;
+                  border-bottom: 1px solid #e1e2e6;
+                  padding-bottom: 28px;
               }
               
               .message {
                   font-size: 16px;
                   line-height: 1.7;
-                  color: #4a5568;
+                  color: #9095a2;
                   margin-bottom: 30px;
               }
               
@@ -194,24 +217,27 @@ class EmailService {
               
               .cta-button {
                   display: inline-block;
-                  background: linear-gradient(135deg, hsl(220 70% 35%) 0%, hsl(25 95% 53%) 100%);
+                  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
                   color: white;
                   text-decoration: none;
-                  padding: 16px 32px;
-                  border-radius: 8px;
-                  font-weight: 600;
-                  font-size: 16px;
-                  box-shadow: 0 4px 15px rgba(34, 70, 53, 0.3);
+                  padding: 18px 36px;
+                  border-radius: 40px;
+                  font-weight: 800;
+                  font-size: 12px;
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                  box-shadow: 0 4px 15px rgba(52, 211, 153, 0.3);
                   transition: all 0.3s ease;
+                  font-family: 'Montserrat', sans-serif;
               }
               
               .cta-button:hover {
                   transform: translateY(-2px);
-                  box-shadow: 0 6px 20px rgba(34, 70, 53, 0.4);
+                  box-shadow: 0 6px 20px rgba(52, 211, 153, 0.4);
               }
               
               .info-card {
-                  background: #f7fafc;
+                  background: #f8fafc;
                   border: 1px solid #e2e8f0;
                   border-radius: 12px;
                   padding: 24px;
@@ -252,16 +278,25 @@ class EmailService {
               }
               
               .footer {
-                  background: #2d3748;
-                  color: #a0aec0;
-                  padding: 30px;
+                  background: #000000;
+                  color: #9095a2;
+                  padding: 60px 30px;
                   text-align: center;
                   font-size: 14px;
               }
               
               .footer-content {
-                  max-width: 500px;
+                  max-width: 475px;
                   margin: 0 auto;
+              }
+              
+              .footer-title {
+                  font-size: 32px;
+                  font-weight: 600;
+                  color: #ffffff;
+                  margin-bottom: 30px;
+                  border-bottom: 1px solid #262626;
+                  padding-bottom: 40px;
               }
               
               .footer-links {
@@ -269,14 +304,14 @@ class EmailService {
               }
               
               .footer-link {
-                  color: hsl(220 70% 35%);
+                  color: #34d399;
                   text-decoration: none;
                   margin: 0 15px;
                   font-weight: 500;
               }
               
               .footer-link:hover {
-                  color: hsl(25 95% 53%);
+                  color: #10b981;
               }
               
               .social-links {
@@ -286,7 +321,7 @@ class EmailService {
               .social-link {
                   display: inline-block;
                   margin: 0 8px;
-                  color: #a0aec0;
+                  color: #9095a2;
                   text-decoration: none;
               }
               
@@ -378,11 +413,7 @@ class EmailService {
               
               <div class="footer">
                   <div class="footer-content">
-                      <div>
-                          <strong>{{company.name}}</strong><br>
-                          {{#if company.address}}{{company.address}}<br>{{/if}}
-                          {{#if company.phone}}{{company.phone}} • {{/if}}{{#if company.email}}{{company.email}}{{/if}}
-                      </div>
+                      <div class="footer-title">{{company.name}}</div>
                       
                       <div class="footer-links">
                           <a href="{{baseUrl}}" class="footer-link">Dashboard</a>
@@ -392,13 +423,11 @@ class EmailService {
                       
                       <div class="divider"></div>
                       
-                      <p style="font-size: 12px; color: #718096;">
-                          You received this email because you have an account with {{company.name}}.
-                          <br>If you no longer wish to receive these emails, you can 
-                          <a href="{{baseUrl}}/unsubscribe" style="color: hsl(220 70% 35%);">unsubscribe here</a>.
+                      <p style="font-size: 14px; color: #9095a2; line-height: 22px;">
+                          If you do not want to receive these emails or didn't request this, you can ignore and delete this email.
                       </p>
                       
-                      <p style="font-size: 12px; color: #718096; margin-top: 15px;">
+                      <p style="font-size: 14px; color: #9095a2; margin-top: 20px;">
                           © {{currentYear}} {{company.name}}. All rights reserved.
                       </p>
                   </div>
@@ -413,17 +442,10 @@ class EmailService {
 
   private getWelcomeTemplate(): handlebars.TemplateDelegate {
     const content = `
-      <!-- Taurean IT Header -->
-      <div class="taurean-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 20px;">
-        <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Taurean IT</h1>
-        <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">Creator and operator of the Taurean Inventory SaaS platform</p>
-        <p style="margin: 5px 0; font-size: 12px; opacity: 0.8;">Ghana | admin@taureanit.com | +233000000000</p>
-      </div>
-      
       <div class="greeting">Welcome to {{company.name}}, {{user.name}}!</div>
       
       <div class="message">
-          We're thrilled to have you join our facility management platform powered by Taurean IT. Your account has been successfully created and is ready to use.
+          We're thrilled to have you join our facility management platform. Your account has been successfully created and is ready to use.
       </div>
       
       <div class="info-card">
@@ -871,42 +893,18 @@ class EmailService {
 
   private getPasswordResetTemplate(): handlebars.TemplateDelegate {
     const content = `
-      <!-- Taurean IT Header -->
-      <div class="taurean-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; margin-bottom: 20px;">
-        <h1 style="margin: 0; font-size: 24px; font-weight: 700;">Taurean IT</h1>
-        <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">Creator and operator of the Taurean Inventory SaaS platform</p>
-        <p style="margin: 5px 0; font-size: 12px; opacity: 0.8;">Ghana | admin@taureanit.com | +233000000000</p>
-      </div>
-      
-      <div class="greeting">Password Reset Request</div>
+      <div class="greeting">Reset your password</div>
       
       <div class="message">
-          {{#if user.name}}Hello {{user.name}},{{else}}Hello,{{/if}}<br><br>
-          We received a request to reset the password for your {{company.name}} account on the Taurean platform. If you made this request, click the button below to create a new password.
+          You're receiving this e-mail because you requested a password reset for your {{company.name}} account.
       </div>
       
-      <div class="info-card" style="background: #fef5e7; border-color: #f6e05e;">
-          <div class="info-card-title" style="color: #92400e;">Security Information</div>
-          <div style="font-size: 14px; color: #744210;">
-              <strong>Account:</strong> {{user.email}}<br>
-              <strong>Request Time:</strong> {{data.requestTime}}<br>
-              <strong>IP Address:</strong> {{data.ipAddress}}<br>
-              <strong>Expires:</strong> {{data.expiryTime}}
-          </div>
+      <div class="message">
+          Please tap the button below to choose a new password.
       </div>
       
       <div class="cta-section">
-          <a href="{{data.resetLink}}" class="cta-button">Reset Password</a>
-      </div>
-      
-      <div class="highlight" style="background: #fef2f2; border-color: #fca5a5;">
-          <strong>Security Notice:</strong><br>
-          If you didn't request this password reset, please ignore this email. Your account remains secure.
-          The reset link will expire in 1 hour for your security.
-      </div>
-      
-      <div class="message">
-          For your security, this link will expire in 1 hour. If you need assistance, please contact our support team.
+          <a href="{{data.resetLink}}" class="cta-button">Reset your password</a>
       </div>
     `;
 
@@ -1337,11 +1335,11 @@ class EmailService {
 
   private getInvoiceTemplate(): handlebars.TemplateDelegate {
     const content = `
-      <div class="greeting">Invoice Generated</div>
+      <div class="greeting">New Invoice Generated</div>
       
       <div class="message">
           {{#if user.name}}Dear {{user.name}},{{else}}Dear Valued Customer,{{/if}}<br><br>
-          An invoice has been generated for your recent transaction with {{company.name}}.
+          A new invoice has been generated for your recent transaction with {{company.name}}.
       </div>
       
       <div class="info-card">
@@ -1376,7 +1374,6 @@ class EmailService {
       
       <div class="cta-section">
           <a href="{{baseUrl}}/invoices/{{data.invoiceId}}" class="cta-button">View Invoice</a>
-          <a href="{{baseUrl}}/invoices/{{data.invoiceId}}/download" class="cta-button secondary">Download PDF</a>
       </div>
       
       <div class="message">
