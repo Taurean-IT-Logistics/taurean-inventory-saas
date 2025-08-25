@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { invoiceService } from "../services/invoice.service";
+import { invoiceService, InvoiceService } from "../services/invoice.service";
 import { sendSuccess, sendError, sendNotFound, sendValidationError } from "../utils";
 import { emailService } from "../services/email.service";
 import { emitEvent } from "../realtime/socket";
@@ -359,6 +359,33 @@ const getUserReceipts = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// Get next invoice number
+const getNextInvoiceNumber = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      sendError(res, "Company ID not found", null, 400);
+      return;
+    }
+
+    const invoiceNumber = await InvoiceService.getNextInvoiceNumber(companyId);
+    sendSuccess(res, "Invoice number generated", { invoiceNumber });
+  } catch (error: any) {
+    sendError(res, error.message, null, 400);
+  }
+};
+
+// Get receipt number for invoice
+const getReceiptNumber = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { invoiceId } = req.params;
+    const receiptNumber = await InvoiceService.getReceiptNumber(invoiceId);
+    sendSuccess(res, "Receipt number generated", { receiptNumber });
+  } catch (error: any) {
+    sendError(res, error.message, null, 400);
+  }
+};
+
 export const InvoiceController = {
   getCompanyInvoices,
   getUserInvoices,
@@ -371,4 +398,6 @@ export const InvoiceController = {
   createInvoiceFromTransaction,
   getCompanyReceipts,
   getUserReceipts,
+  getNextInvoiceNumber,
+  getReceiptNumber,
 };

@@ -1021,29 +1021,33 @@ export const CashflowAPI = {
 
 // Reports
 export const ReportsAPI = {
-  // Export reports
-  exportReport: (type: string, format: string, dateRange: string) =>
-    apiFetch(`/reports/export/${type}/${format}?dateRange=${dateRange}`, { method: "GET" }, true),
+  // Get report number
+  getReportNumber: (type: string) =>
+    apiFetch(`/reports/${type}/next-number`, { method: "GET" }),
   
-  // Export bookings
-  exportBookings: (format: string, dateRange: string) =>
-    apiFetch(`/reports/bookings/export/${format}?dateRange=${dateRange}`, { method: "GET" }, true),
+  // Get report data
+  getReportData: (type: string, dateRange: string) =>
+    apiFetch(`/reports/${type}/data?dateRange=${dateRange}`, { method: "GET" }),
   
-  // Export invoices
-  exportInvoices: (format: string, dateRange: string) =>
-    apiFetch(`/reports/invoices/export/${format}?dateRange=${dateRange}`, { method: "GET" }, true),
+  // Get bookings report data
+  getBookingsReportData: (dateRange: string) =>
+    apiFetch(`/reports/bookings/data?dateRange=${dateRange}`, { method: "GET" }),
   
-  // Export users
-  exportUsers: (format: string) =>
-    apiFetch(`/reports/users/export/${format}`, { method: "GET" }, true),
+  // Get invoices report data
+  getInvoicesReportData: (dateRange: string) =>
+    apiFetch(`/reports/invoices/data?dateRange=${dateRange}`, { method: "GET" }),
   
-  // Export facilities
-  exportFacilities: (format: string) =>
-    apiFetch(`/reports/facilities/export/${format}`, { method: "GET" }, true),
+  // Get users report data
+  getUsersReportData: () =>
+    apiFetch(`/reports/users/data`, { method: "GET" }),
   
-  // Export transactions
-  exportTransactions: (format: string, dateRange: string) =>
-    apiFetch(`/reports/transactions/export/${format}?dateRange=${dateRange}`, { method: "GET" }, true),
+  // Get facilities report data
+  getFacilitiesReportData: () =>
+    apiFetch(`/reports/facilities/data`, { method: "GET" }),
+  
+  // Get transactions report data
+  getTransactionsReportData: (dateRange: string) =>
+    apiFetch(`/reports/transactions/data?dateRange=${dateRange}`, { method: "GET" }),
 };
 
 // Invoices
@@ -1077,13 +1081,12 @@ export const InvoicesAPI = {
       body: JSON.stringify(payload),
     }),
 
-  // Download invoice PDF
-  downloadInvoice: (id: string) =>
-    apiFetch(`/invoices/${id}/download`, { method: "GET" }, true),
+  // Get invoice number
+  getInvoiceNumber: () => apiFetch(`/invoices/next-number`, { method: "GET" }),
 
-  // Download receipt PDF
-  downloadReceipt: (id: string) =>
-    apiFetch(`/invoices/${id}/receipt`, { method: "GET" }, true),
+  // Get receipt number
+  getReceiptNumber: (invoiceId: string) =>
+    apiFetch(`/invoices/${invoiceId}/receipt-number`, { method: "GET" }),
 
   // Get invoice statistics
   getStats: () => apiFetch(`/invoices/stats/company`, { method: "GET" }),

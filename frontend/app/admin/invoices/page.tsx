@@ -53,15 +53,24 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { InvoicesAPI } from "@/lib/api";
-import { useCompanyInvoices, useDownloadInvoice, useDownloadReceipt } from "@/hooks/useInvoices";
+import { useCompanyInvoices } from "@/hooks/useInvoices";
+import InvoiceGenerator, { InvoiceData } from "@/components/invoices/InvoiceGenerator";
+import ReceiptGenerator, { ReceiptData } from "@/components/invoices/ReceiptGenerator";
+import { CreateInvoiceModal } from "@/components/invoices/CreateInvoiceModal";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useRef } from "react";
 
 export default function InvoicesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const invoiceGeneratorRef = useRef<any>(null);
+  const receiptGeneratorRef = useRef<any>(null);
 
   const { data: invoiceStats } = useQuery({
     queryKey: ["invoice-stats"],
@@ -69,8 +78,6 @@ export default function InvoicesPage() {
   });
 
   const { data: invoicesData, isLoading } = useCompanyInvoices();
-  const downloadInvoice = useDownloadInvoice();
-  const downloadReceipt = useDownloadReceipt();
 
   const invoices = (invoicesData as any)?.invoices || [];
   const stats = invoiceStats as any;
@@ -85,6 +92,106 @@ export default function InvoicesPage() {
     
     return matchesSearch && matchesStatus;
   });
+
+  const handleDownloadInvoice = async (invoice: any) => {
+    try {
+      // Get invoice number from backend
+      const invoiceNumberData = await InvoicesAPI.getInvoiceNumber();
+      const invoiceNumber = (invoiceNumberData as any)?.invoiceNumber || invoice.invoiceNumber;
+
+      // Prepare invoice data
+      const invoiceData: InvoiceData = {
+        invoiceNumber,
+        issueDate: new Date(invoice.issueDate),
+        dueDate: new Date(invoice.dueDate),
+        company: {
+          name: invoice.companyInfo.name,
+          address: invoice.companyInfo.address,
+          phone: invoice.companyInfo.phone,
+          email: invoice.companyInfo.email,
+          logo: invoice.companyInfo.logo,
+          taxId: invoice.companyInfo.taxId,
+        },
+        customer: {
+          name: invoice.customerInfo.name,
+          email: invoice.customerInfo.email,
+          phone: invoice.customerInfo.phone,
+          address: invoice.customerInfo.address,
+        },
+        items: invoice.items,
+        subtotal: invoice.subtotal,
+        taxAmount: invoice.taxAmount,
+        discountAmount: invoice.discountAmount,
+        totalAmount: invoice.totalAmount,
+        currency: invoice.currency,
+        notes: invoice.notes,
+        terms: invoice.terms,
+        status: invoice.status,
+      };
+
+      setSelectedInvoice(invoiceData);
+      
+      // Trigger PDF generation
+      setTimeout(() => {
+        invoiceGeneratorRef.current?.download();
+      }, 100);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to download invoice",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadReceipt = async (invoice: any) => {
+    try {
+      // Get receipt number from backend
+      const receiptNumberData = await InvoicesAPI.getReceiptNumber(invoice._id);
+      const receiptNumber = (receiptNumberData as any)?.receiptNumber || `RCP-${Date.now()}`;
+
+      // Prepare receipt data
+      const receiptData: ReceiptData = {
+        receiptNumber,
+        invoiceNumber: invoice.invoiceNumber,
+        paymentDate: new Date(invoice.paidDate || new Date()),
+        paymentMethod: invoice.paymentMethod || "Online Payment",
+        company: {
+          name: invoice.companyInfo.name,
+          address: invoice.companyInfo.address,
+          phone: invoice.companyInfo.phone,
+          email: invoice.companyInfo.email,
+          logo: invoice.companyInfo.logo,
+        },
+        customer: {
+          name: invoice.customerInfo.name,
+          email: invoice.customerInfo.email,
+          phone: invoice.customerInfo.phone,
+          address: invoice.customerInfo.address,
+        },
+        items: invoice.items,
+        subtotal: invoice.subtotal,
+        taxAmount: invoice.taxAmount,
+        discountAmount: invoice.discountAmount,
+        totalAmount: invoice.totalAmount,
+        currency: invoice.currency,
+        transactionId: invoice.transaction?._id,
+      };
+
+      setSelectedReceipt(receiptData);
+      
+      // Trigger PDF generation
+      setTimeout(() => {
+        receiptGeneratorRef.current?.download();
+      }, 100);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to download receipt",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -109,47 +216,7 @@ export default function InvoicesPage() {
     }).format(amount);
   };
 
-  const handleDownloadInvoice = async (invoiceId: string) => {
-    try {
-      const blob = await InvoicesAPI.downloadInvoice(invoiceId);
-      const url = window.URL.createObjectURL(blob as Blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `invoice-${invoiceId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to download invoice",
-        variant: "destructive",
-      });
-    }
-  };
 
-  const handleDownloadReceipt = async (invoiceId: string) => {
-    try {
-      const blob = await InvoicesAPI.downloadReceipt(invoiceId);
-      const url = window.URL.createObjectURL(blob as Blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `receipt-${invoiceId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to download receipt",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="p-6">
@@ -160,27 +227,10 @@ export default function InvoicesPage() {
             Manage and track all invoices for your company
           </p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Invoice
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create New Invoice</DialogTitle>
-              <DialogDescription>
-                Create a new invoice for your customer
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-500">
-                Invoice creation form will be implemented here
-              </p>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setShowCreateModal(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Create Invoice
+        </Button>
       </div>
 
       {/* Statistics Cards */}
@@ -376,14 +426,14 @@ export default function InvoicesPage() {
                               View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleDownloadInvoice(invoice._id)}
+                              onClick={() => handleDownloadInvoice(invoice)}
                             >
                               <Download className="mr-2 h-4 w-4" />
                               Download Invoice
                             </DropdownMenuItem>
                             {invoice.status === "paid" && (
                               <DropdownMenuItem
-                                onClick={() => handleDownloadReceipt(invoice._id)}
+                                onClick={() => handleDownloadReceipt(invoice)}
                               >
                                 <Receipt className="mr-2 h-4 w-4" />
                                 Download Receipt
@@ -409,6 +459,40 @@ export default function InvoicesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Invoice Generator (hidden) */}
+      {selectedInvoice && (
+        <InvoiceGenerator
+          ref={invoiceGeneratorRef}
+          data={selectedInvoice}
+          onGenerate={(pdfBlob) => {
+            // Handle PDF generation if needed
+            console.log('Invoice PDF generated:', pdfBlob);
+          }}
+        />
+      )}
+
+      {/* Receipt Generator (hidden) */}
+      {selectedReceipt && (
+        <ReceiptGenerator
+          ref={receiptGeneratorRef}
+          data={selectedReceipt}
+          onGenerate={(pdfBlob) => {
+            // Handle PDF generation if needed
+            console.log('Receipt PDF generated:', pdfBlob);
+          }}
+        />
+      )}
+
+      {/* Create Invoice Modal */}
+      <CreateInvoiceModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          // Refresh the invoices list
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

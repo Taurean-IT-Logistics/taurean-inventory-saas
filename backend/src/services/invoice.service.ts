@@ -595,6 +595,49 @@ class InvoiceService {
       throw new Error(`Error creating invoice from transaction: ${error.message}`);
     }
   }
+
+  // Get next invoice number
+  static async getNextInvoiceNumber(companyId: string): Promise<string> {
+    try {
+      // Get the last invoice for this company
+      const lastInvoice = await InvoiceModel.findOne({ company: companyId })
+        .sort({ invoiceNumber: -1 })
+        .select('invoiceNumber');
+
+      let nextNumber = 1;
+      if (lastInvoice && lastInvoice.invoiceNumber) {
+        // Extract number from invoice number (e.g., "INV-2024-001" -> 1)
+        const match = lastInvoice.invoiceNumber.match(/-(\d+)$/);
+        if (match) {
+          nextNumber = parseInt(match[1]) + 1;
+        }
+      }
+
+      const year = new Date().getFullYear();
+      const paddedNumber = nextNumber.toString().padStart(3, '0');
+      return `INV-${year}-${paddedNumber}`;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
+
+  // Get receipt number for invoice
+  static async getReceiptNumber(invoiceId: string): Promise<string> {
+    try {
+      const invoice = await InvoiceModel.findById(invoiceId);
+      if (!invoice) {
+        throw new Error("Invoice not found");
+      }
+
+      // Generate receipt number based on invoice
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+      return `RCP-${timestamp}-${randomSuffix}`;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
 }
 
+export { InvoiceService };
 export const invoiceService = new InvoiceService();

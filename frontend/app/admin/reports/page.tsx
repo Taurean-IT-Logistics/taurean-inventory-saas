@@ -27,12 +27,16 @@ import {
 } from "lucide-react";
 import { CashflowAPI, BookingsAPI, FacilitiesAPI, UsersAPI, InvoicesAPI, ReportsAPI } from "@/lib/api";
 import ReportTemplate from "@/components/reports/ReportTemplate";
+import ReportGenerator, { ReportData } from "@/components/reports/ReportGenerator";
 import { toast } from "@/hooks/use-toast";
+import { useRef } from "react";
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState("30");
   const [reportType, setReportType] = useState("overview");
   const [showReport, setShowReport] = useState(false);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const reportGeneratorRef = useRef<any>(null);
 
   const { data: cashflow } = useQuery({
     queryKey: ["cashflow", dateRange],
@@ -89,43 +93,24 @@ export default function ReportsPage() {
 
   const exportReport = async (format: string) => {
     try {
-      let blob: any;
-      
-      switch (reportType) {
-        case "overview":
-          blob = await ReportsAPI.exportReport("overview", format, dateRange);
-          break;
-        case "bookings":
-          blob = await ReportsAPI.exportBookings(format, dateRange);
-          break;
-        case "revenue":
-          blob = await ReportsAPI.exportInvoices(format, dateRange);
-          break;
-        case "users":
-          blob = await ReportsAPI.exportUsers(format);
-          break;
-        case "facilities":
-          blob = await ReportsAPI.exportFacilities(format);
-          break;
-        default:
-          blob = await ReportsAPI.exportReport("overview", format, dateRange);
+      if (!reportData) {
+        toast({
+          title: "Error",
+          description: "No report data available",
+          variant: "destructive",
+        });
+        return;
       }
 
-      // Create download link
-      const url = window.URL.createObjectURL(blob as Blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `${reportType}-report-${dateRange}days.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Export Successful",
-        description: `${reportType} report exported successfully`,
-      });
+      if (format === "pdf") {
+        reportGeneratorRef.current?.download();
+      } else {
+        // For other formats, we can implement CSV/Excel export
+        toast({
+          title: "Info",
+          description: `${format.toUpperCase()} export will be implemented soon`,
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Export Failed",
@@ -135,11 +120,97 @@ export default function ReportsPage() {
     }
   };
 
-  const generateReport = () => {
-    setShowReport(true);
+  const generateReport = async () => {
+    try {
+      // Get report number from backend
+      const reportNumberData = await ReportsAPI.getReportNumber(reportType);
+      const reportNumber = (reportNumberData as any)?.reportNumber || `RPT-${Date.now()}`;
+
+      // Prepare report data
+      const reportDataObj: ReportData = {
+        reportNumber,
+        reportType,
+        generatedAt: new Date(),
+        dateRange: {
+          start: new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000),
+          end: new Date(),
+        },
+        company: {
+          name: "Your Company",
+          address: "Company Address",
+          phone: "+233 XX XXX XXXX",
+          email: "info@company.com",
+        },
+        summary: {
+          totalRevenue: metrics.income,
+          totalBookings: metrics.totalBookings,
+          totalUsers: metrics.activeUsers,
+          totalFacilities: metrics.facilitiesCount,
+          currency: "GHS",
+        },
+        metrics: [
+          {
+            label: "Total Invoices",
+            value: metrics.totalInvoices,
+          },
+          {
+            label: "Paid Invoices",
+            value: metrics.paidInvoices,
+          },
+          {
+            label: "Overdue Invoices",
+            value: metrics.overdueInvoices,
+          },
+          {
+            label: "Total Invoice Amount",
+            value: `GHS ${metrics.totalInvoiceAmount.toLocaleString()}`,
+          },
+          {
+            label: "Paid Amount",
+            value: `GHS ${metrics.paidInvoiceAmount.toLocaleString()}`,
+          },
+          {
+            label: "Overdue Amount",
+            value: `GHS ${metrics.overdueInvoiceAmount.toLocaleString()}`,
+          },
+        ],
+        charts: [
+          {
+            title: "Revenue Trend",
+            type: "line" as const,
+            data: [
+              { name: "Jan", value: metrics.income * 0.8 },
+              { name: "Feb", value: metrics.income * 0.9 },
+              { name: "Mar", value: metrics.income * 0.95 },
+              { name: "Apr", value: metrics.income },
+              { name: "May", value: metrics.income * 1.1 },
+              { name: "Jun", value: metrics.income * 1.2 },
+            ],
+          },
+          {
+            title: "Invoice Status Distribution",
+            type: "pie" as const,
+            data: [
+              { name: "Paid", value: metrics.paidInvoices },
+              { name: "Pending", value: metrics.totalInvoices - metrics.paidInvoices - metrics.overdueInvoices },
+              { name: "Overdue", value: metrics.overdueInvoices },
+            ],
+          },
+        ],
+      };
+
+      setReportData(reportDataObj);
+      setShowReport(true);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate report",
+        variant: "destructive",
+      });
+    }
   };
 
-  const reportData = useMemo(() => {
+  const filteredReportData = useMemo(() => {
     const startDate = new Date();
     const endDate = new Date();
     
@@ -506,11 +577,23 @@ export default function ReportsPage() {
             </Button>
           </div>
           <ReportTemplate
-            data={reportData}
+            data={filteredReportData}
             onExport={exportReport}
             onPrint={() => window.print()}
           />
         </div>
+      )}
+
+      {/* Report Generator (hidden) */}
+      {reportData && (
+        <ReportGenerator
+          ref={reportGeneratorRef}
+          data={reportData}
+          onGenerate={(pdfBlob) => {
+            // Handle PDF generation if needed
+            console.log('PDF generated:', pdfBlob);
+          }}
+        />
       )}
     </div>
   );

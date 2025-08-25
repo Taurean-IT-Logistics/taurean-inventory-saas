@@ -75,4 +75,10 @@ router.get(
 // Get user receipts (paid invoices) - no company context required
 router.get("/receipts/user", InvoiceController.getUserReceipts);
 
+// Get next invoice number
+router.get("/next-number", AuthMiddleware, InvoiceController.getNextInvoiceNumber);
+
+// Get receipt number for invoice
+router.get("/:invoiceId/receipt-number", AuthMiddleware, InvoiceController.getReceiptNumber);
+
 export default router;
