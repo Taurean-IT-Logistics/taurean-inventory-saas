@@ -550,4 +550,5 @@ class NotificationService {
   }
 }
 
-export const notificationService = new NotificationService();
+const notificationService = new NotificationService();
+export { notificationService };

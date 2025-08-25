@@ -15,6 +15,7 @@ import {
 } from "../helpers";
 import { Types } from "mongoose";
 import { emailService } from "../services/email.service";
+import { notificationService } from "../services/notification.service";
 
 // Register new user
 const register = async (req: Request, res: Response): Promise<void> => {
@@ -509,6 +510,33 @@ const resetPassword = async (req: Request, res: Response): Promise<void> => {
     await UserService.updateUser(user.id, { password: newPassword });
 
     await invalidateToken(user.id, "passwordResetToken");
+
+    // Get user and company info for email
+    const userDoc = await UserService.getUserById(user.id);
+    const company = userDoc?.company ? await CompanyModel.findById(userDoc.company) : null;
+
+    // Send password changed confirmation email
+    try {
+      await emailService.sendEmail({
+        to: userDoc?.email || "",
+        subject: "Password Changed Successfully",
+        template: "password-changed",
+        context: {
+          company: company || { name: "FacilityHub" },
+          user: {
+            name: userDoc?.name || "",
+            email: userDoc?.email || "",
+          },
+          data: {
+            changedTime: new Date().toLocaleString(),
+            ipAddress: req.ip || "Unknown",
+          },
+        },
+        companyId: userDoc?.company?.toString(),
+      });
+    } catch (emailError) {
+      console.error("Failed to send password changed email:", emailError);
+    }
 
     sendSuccess(res, "Password reset successfully");
   } catch (error: any) {

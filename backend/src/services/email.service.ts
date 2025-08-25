@@ -111,6 +111,7 @@ class EmailService {
     this.templates.set("license-activated", this.getLicenseActivatedTemplate());
     this.templates.set("license-expiring", this.getLicenseExpiringTemplate());
     this.templates.set("invoice", this.getInvoiceTemplate());
+    this.templates.set("password-changed", this.getPasswordChangedTemplate());
   }
 
   private getBaseTemplate(): handlebars.TemplateDelegate {
@@ -1364,6 +1365,40 @@ class EmailService {
       
       <div class="message">
           Please review the invoice and ensure payment is made by the due date. If you have any questions, please contact our support team.
+      </div>
+    `;
+
+    return handlebars.compile(content);
+  }
+
+  private getPasswordChangedTemplate(): handlebars.TemplateDelegate {
+    const content = `
+      <div class="greeting">Password Changed Successfully</div>
+      
+      <div class="message">
+          Your password has been successfully changed for your {{company.name}} account.
+      </div>
+      
+      <div class="info-card">
+          <div class="info-card-title">Security Information</div>
+          <div style="font-size: 14px; color: #4a5568;">
+              <strong>Account:</strong> {{user.email}}<br>
+              <strong>Changed Time:</strong> {{data.changedTime}}<br>
+              <strong>IP Address:</strong> {{data.ipAddress}}
+          </div>
+      </div>
+      
+      <div class="highlight">
+          <strong>Security Notice:</strong><br>
+          If you did not change your password, please contact our support team immediately.
+      </div>
+      
+      <div class="cta-section">
+          <a href="{{baseUrl}}/login" class="cta-button">Login to Your Account</a>
+      </div>
+      
+      <div class="message">
+          For your security, we recommend using a strong, unique password and enabling two-factor authentication if available.
       </div>
     `;
 
