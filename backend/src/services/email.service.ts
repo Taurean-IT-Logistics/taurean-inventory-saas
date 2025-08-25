@@ -5,7 +5,10 @@ import { BookingModel } from "../models/booking.model";
 import { TransactionModel } from "../models/transaction.model";
 import { emitEvent } from "../realtime/socket";
 import { Events } from "../realtime/events";
-import { ReactEmailRenderer, EmailTemplateData } from "../emails/ReactEmailRenderer";
+import {
+  ReactEmailRenderer,
+  EmailTemplateData,
+} from "../emails/ReactEmailRenderer";
 import { CONFIG } from "../config";
 
 interface EmailConfig {
@@ -85,12 +88,20 @@ class EmailService {
 
       // Render email using React Email
       let htmlContent: string;
-      
+
       try {
-        htmlContent = await ReactEmailRenderer.renderEmail(options.template, emailData);
+        htmlContent = await ReactEmailRenderer.renderEmail(
+          options.template,
+          emailData
+        );
       } catch (error) {
-        console.error(`Failed to render React Email template '${options.template}':`, error);
-        throw new Error(`Email template '${options.template}' not found or failed to render`);
+        console.error(
+          `Failed to render React Email template '${options.template}':`,
+          error
+        );
+        throw new Error(
+          `Email template '${options.template}' not found or failed to render`
+        );
       }
 
       // Get company-specific email settings if companyId is provided
@@ -131,7 +142,6 @@ class EmailService {
       };
 
       const info = await this.transporter.sendMail(mailOptions);
-      console.log("Email sent successfully:", info.messageId);
 
       // Emit real-time email delivery success event
       try {
@@ -140,9 +150,7 @@ class EmailService {
           options.context?.company?.id ||
           undefined;
         const userId =
-          options.context?.user?._id ||
-          options.context?.user?.id ||
-          undefined;
+          options.context?.user?._id || options.context?.user?.id || undefined;
         const payload = {
           status: "sent",
           messageId: info.messageId,
@@ -168,9 +176,7 @@ class EmailService {
           options.context?.company?.id ||
           undefined;
         const userId =
-          options.context?.user?._id ||
-          options.context?.user?.id ||
-          undefined;
+          options.context?.user?._id || options.context?.user?.id || undefined;
         const payload = {
           status: "failed",
           error: (error as any)?.message || "unknown",
@@ -233,7 +239,9 @@ class EmailService {
             facilityName: facility.name,
             startDate: booking.startDate,
             endDate: booking.endDate,
-            totalAmount: parseFloat((booking as any).totalAmount?.toFixed(2) || "0.00"),
+            totalAmount: parseFloat(
+              (booking as any).totalAmount?.toFixed(2) || "0.00"
+            ),
             currency: (booking as any).currency || "GHS",
             status: "confirmed",
           },
@@ -257,7 +265,7 @@ class EmailService {
       if (!user) return false;
 
       const company = user.company as any;
-      const resetLink = `${CONFIG.FRONTEND_BASE_URL}/auth/reset-password?token=${resetToken}`;
+      const resetLink = `${CONFIG.FRONTEND_BASE_URL}/reset-password?token=${resetToken}`;
 
       return this.sendEmail({
         to: userEmail,
@@ -286,7 +294,7 @@ class EmailService {
       if (!user) return false;
 
       const company = user.company as any;
-      const verificationLink = `${CONFIG.FRONTEND_BASE_URL}/auth/verify-email?token=${verificationToken}`;
+      const verificationLink = `${CONFIG.FRONTEND_BASE_URL}/verify-email?token=${verificationToken}`;
 
       return this.sendEmail({
         to: userEmail,
@@ -314,7 +322,7 @@ class EmailService {
     companyId?: string
   ): Promise<boolean> {
     try {
-      const company = companyId 
+      const company = companyId
         ? await CompanyModel.findById(companyId).lean()
         : { name: "Taurean IT Logistics" };
 
@@ -372,7 +380,9 @@ class EmailService {
     }
   }
 
-  public async sendPaymentSuccessEmail(transactionId: string): Promise<boolean> {
+  public async sendPaymentSuccessEmail(
+    transactionId: string
+  ): Promise<boolean> {
     try {
       const transaction = await TransactionModel.findById(transactionId)
         .populate("user")
@@ -534,7 +544,9 @@ class EmailService {
           user: owner,
           data: {
             daysRemaining,
-            expiryDate: new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000).toLocaleDateString(),
+            expiryDate: new Date(
+              Date.now() + daysRemaining * 24 * 60 * 60 * 1000
+            ).toLocaleDateString(),
           },
         },
       });

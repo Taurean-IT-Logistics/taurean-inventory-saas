@@ -3,7 +3,13 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
 import Link from "next/link";
@@ -19,7 +25,7 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       toast({
         title: "Error",
@@ -36,7 +42,8 @@ export default function ForgotPasswordPage() {
       setIsSuccess(true);
       toast({
         title: "Success",
-        description: "If an account with that email exists, a password reset link has been sent",
+        description:
+          "If an account with that email exists, a password reset link has been sent",
       });
     } catch (error: any) {
       toast({
@@ -57,7 +64,9 @@ export default function ForgotPasswordPage() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
-            <CardTitle className="text-2xl font-bold">Check Your Email</CardTitle>
+            <CardTitle className="text-2xl font-bold">
+              Check Your Email
+            </CardTitle>
             <CardDescription>
               We&apos;ve sent a password reset link to <strong>{email}</strong>
             </CardDescription>
@@ -74,7 +83,7 @@ export default function ForgotPasswordPage() {
               </Button>
             </div>
             <div className="pt-4">
-              <Link href="/login">
+              <Link href="/auth/sign-in">
                 <Button variant="outline" className="w-full">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to Login
@@ -93,7 +102,8 @@ export default function ForgotPasswordPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Forgot Password</CardTitle>
           <CardDescription>
-            Enter your email address and we&apos;ll send you a link to reset your password
+            Enter your email address and we&apos;ll send you a link to reset
+            your password
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -113,13 +123,16 @@ export default function ForgotPasswordPage() {
                 />
               </div>
             </div>
-            
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Sending..." : "Send Reset Link"}
             </Button>
-            
+
             <div className="text-center">
-              <Link href="/login" className="text-sm text-blue-600 hover:text-blue-700">
+              <Link
+                href="/auth/sign-in"
+                className="text-sm text-blue-600 hover:text-blue-700"
+              >
                 <ArrowLeft className="inline mr-1 h-3 w-3" />
                 Back to Login
               </Link>

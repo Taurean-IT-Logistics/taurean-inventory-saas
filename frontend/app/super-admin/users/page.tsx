@@ -54,7 +54,8 @@ export default function SuperAdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  const [isAssignCompanyModalOpen, setIsAssignCompanyModalOpen] = useState(false);
+  const [isAssignCompanyModalOpen, setIsAssignCompanyModalOpen] =
+    useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
 
   const queryClient = useQueryClient();
@@ -70,21 +71,16 @@ export default function SuperAdminUsersPage() {
     queryFn: SuperAdminAPI.getAllUsers,
   });
 
-  const {
-    data: companiesData,
-    isLoading: companiesLoading,
-  } = useQuery({
+  const { data: companiesData, isLoading: companiesLoading } = useQuery({
     queryKey: ["super-admin-companies"],
     queryFn: SuperAdminAPI.getAllCompanies,
   });
 
-  const {
-    data: unassignedUsersData,
-    isLoading: unassignedUsersLoading,
-  } = useQuery({
-    queryKey: ["super-admin-unassigned-users"],
-    queryFn: SuperAdminAPI.getUnassignedUsers,
-  });
+  const { data: unassignedUsersData, isLoading: unassignedUsersLoading } =
+    useQuery({
+      queryKey: ["super-admin-unassigned-users"],
+      queryFn: SuperAdminAPI.getUnassignedUsers,
+    });
 
   // Mutations
   const updateUserRoleMutation = useMutation({
@@ -108,7 +104,13 @@ export default function SuperAdminUsersPage() {
   });
 
   const assignUserToCompanyMutation = useMutation({
-    mutationFn: async ({ userId, companyId }: { userId: string; companyId: string }) => {
+    mutationFn: async ({
+      userId,
+      companyId,
+    }: {
+      userId: string;
+      companyId: string;
+    }) => {
       return SuperAdminAPI.assignUserToCompany(userId, companyId);
     },
     onSuccess: () => {
@@ -117,7 +119,9 @@ export default function SuperAdminUsersPage() {
         description: "User assigned to company successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
-      queryClient.invalidateQueries({ queryKey: ["super-admin-unassigned-users"] });
+      queryClient.invalidateQueries({
+        queryKey: ["super-admin-unassigned-users"],
+      });
       setIsAssignCompanyModalOpen(false);
     },
     onError: (error: any) => {
@@ -139,7 +143,9 @@ export default function SuperAdminUsersPage() {
         description: "User removed from company successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
-      queryClient.invalidateQueries({ queryKey: ["super-admin-unassigned-users"] });
+      queryClient.invalidateQueries({
+        queryKey: ["super-admin-unassigned-users"],
+      });
     },
     onError: (error: any) => {
       toast({
@@ -155,7 +161,9 @@ export default function SuperAdminUsersPage() {
   };
 
   const handleAssignCompany = (userId: string) => {
-    setSelectedUser((usersData as any[])?.find((u: any) => u._id === userId));
+    setSelectedUser(
+      (usersData as any)?.users?.find((u: any) => u._id === userId)
+    );
     setIsAssignCompanyModalOpen(true);
   };
 
@@ -163,14 +171,19 @@ export default function SuperAdminUsersPage() {
     removeUserFromCompanyMutation.mutate(userId);
   };
 
-  const filteredUsers = (usersData as any[])?.filter((user: any) =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.username.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
-
   if (usersLoading) return <Loader text="Loading users..." />;
-  if (usersError) return <ErrorComponent message="Failed to load users" onRetry={refetchUsers} />;
+  if (usersError)
+    return (
+      <ErrorComponent message="Failed to load users" onRetry={refetchUsers} />
+    );
+
+  const filteredUsers =
+    (usersData as any)?.users?.filter(
+      (user: any) =>
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.username.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
   return (
     <div className="space-y-6">
@@ -214,7 +227,7 @@ export default function SuperAdminUsersPage() {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10  rounded-lg flex items-center justify-center">
                     <Users className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
@@ -234,7 +247,9 @@ export default function SuperAdminUsersPage() {
                       <Eye className="h-4 w-4 mr-2" />
                       View Details
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleAssignCompany(user._id)}>
+                    <DropdownMenuItem
+                      onClick={() => handleAssignCompany(user._id)}
+                    >
                       <Building2 className="h-4 w-4 mr-2" />
                       Assign Company
                     </DropdownMenuItem>
@@ -248,7 +263,11 @@ export default function SuperAdminUsersPage() {
                 <span className="text-sm text-gray-600">Role:</span>
                 <Badge
                   variant={user.role === "superAdmin" ? "default" : "secondary"}
-                  className={user.role === "superAdmin" ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-800"}
+                  className={
+                    user.role === "superAdmin"
+                      ? "bg-purple-100 text-purple-800"
+                      : "bg-gray-100 text-gray-800"
+                  }
                 >
                   {user.role === "superAdmin" ? (
                     <Crown className="h-3 w-3 mr-1" />
@@ -264,7 +283,11 @@ export default function SuperAdminUsersPage() {
                 <span className="text-sm text-gray-600">Company:</span>
                 <Badge
                   variant={user.company ? "default" : "secondary"}
-                  className={user.company ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}
+                  className={
+                    user.company
+                      ? "bg-green-100 text-green-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }
                 >
                   {user.company ? (user.company as any).name : "Unassigned"}
                 </Badge>
@@ -275,7 +298,11 @@ export default function SuperAdminUsersPage() {
                 <span className="text-sm text-gray-600">Status:</span>
                 <Badge
                   variant={user.status === "active" ? "default" : "secondary"}
-                  className={user.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                  className={
+                    user.status === "active"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }
                 >
                   {user.status}
                 </Badge>
@@ -287,8 +314,16 @@ export default function SuperAdminUsersPage() {
                   variant="outline"
                   size="sm"
                   className="flex-1"
-                  onClick={() => handleRoleUpdate(user._id, user.role === "admin" ? "user" : "admin")}
-                  disabled={updateUserRoleMutation.isPending || user.role === "superAdmin"}
+                  onClick={() =>
+                    handleRoleUpdate(
+                      user._id,
+                      user.role === "admin" ? "user" : "admin"
+                    )
+                  }
+                  disabled={
+                    updateUserRoleMutation.isPending ||
+                    user.role === "superAdmin"
+                  }
                 >
                   {user.role === "admin" ? "Make User" : "Make Admin"}
                 </Button>
@@ -333,7 +368,9 @@ export default function SuperAdminUsersPage() {
                 </div>
                 <div>
                   <Label>Username</Label>
-                  <p className="text-sm font-medium">@{selectedUser.username}</p>
+                  <p className="text-sm font-medium">
+                    @{selectedUser.username}
+                  </p>
                 </div>
                 <div>
                   <Label>Email</Label>
@@ -341,33 +378,49 @@ export default function SuperAdminUsersPage() {
                 </div>
                 <div>
                   <Label>Phone</Label>
-                  <p className="text-sm font-medium">{selectedUser.phone || "N/A"}</p>
+                  <p className="text-sm font-medium">
+                    {selectedUser.phone || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <Label>Role</Label>
-                  <Badge variant={selectedUser.role === "superAdmin" ? "default" : "secondary"}>
+                  <Badge
+                    variant={
+                      selectedUser.role === "superAdmin"
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
                     {selectedUser.role}
                   </Badge>
                 </div>
                 <div>
                   <Label>Status</Label>
-                  <Badge variant={selectedUser.status === "active" ? "default" : "secondary"}>
+                  <Badge
+                    variant={
+                      selectedUser.status === "active" ? "default" : "secondary"
+                    }
+                  >
                     {selectedUser.status}
                   </Badge>
                 </div>
               </div>
-              
+
               {selectedUser.company && (
                 <div className="border-t pt-4">
                   <h4 className="font-medium mb-2">Company Details</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Company Name</Label>
-                      <p className="text-sm font-medium">{(selectedUser.company as any).name}</p>
+                      <p className="text-sm font-medium">
+                        {(selectedUser.company as any).name}
+                      </p>
                     </div>
                     <div>
                       <Label>Company Role</Label>
-                      <p className="text-sm font-medium">{selectedUser.companyRole || "N/A"}</p>
+                      <p className="text-sm font-medium">
+                        {(selectedUser.companyRole as any).name || "N/A"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -396,7 +449,10 @@ export default function SuperAdminUsersPage() {
       </Dialog>
 
       {/* Assign Company Modal */}
-      <Dialog open={isAssignCompanyModalOpen} onOpenChange={setIsAssignCompanyModalOpen}>
+      <Dialog
+        open={isAssignCompanyModalOpen}
+        onOpenChange={setIsAssignCompanyModalOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Assign User to Company</DialogTitle>
@@ -405,19 +461,23 @@ export default function SuperAdminUsersPage() {
             {selectedUser && (
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm text-gray-600">
-                  <strong>User:</strong> {selectedUser.name} ({selectedUser.email})
+                  <strong>User:</strong> {selectedUser.name} (
+                  {selectedUser.email})
                 </p>
               </div>
             )}
-            
+
             <div>
               <Label>Select Company</Label>
-              <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+              <Select
+                value={selectedCompanyId}
+                onValueChange={setSelectedCompanyId}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a company" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(companiesData as any[])?.map((company: any) => (
+                  {(companiesData as any)?.companies?.map((company: any) => (
                     <SelectItem key={company._id} value={company._id}>
                       {company.name}
                     </SelectItem>
@@ -439,14 +499,18 @@ export default function SuperAdminUsersPage() {
                   if (selectedUser && selectedCompanyId) {
                     assignUserToCompanyMutation.mutate({
                       userId: selectedUser._id,
-                      companyId: selectedCompanyId
+                      companyId: selectedCompanyId,
                     });
                   }
                 }}
-                disabled={!selectedCompanyId || assignUserToCompanyMutation.isPending}
+                disabled={
+                  !selectedCompanyId || assignUserToCompanyMutation.isPending
+                }
                 className="flex-1"
               >
-                {assignUserToCompanyMutation.isPending ? "Assigning..." : "Assign"}
+                {assignUserToCompanyMutation.isPending
+                  ? "Assigning..."
+                  : "Assign"}
               </Button>
             </div>
           </div>

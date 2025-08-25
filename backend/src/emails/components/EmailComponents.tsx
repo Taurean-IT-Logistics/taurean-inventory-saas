@@ -136,19 +136,22 @@ export const CTAButton: React.FC<CTAButtonProps> = ({ href, children }) => {
       <Button
         href={href}
         style={{
-          background: 'hsl(25 95% 53%)',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
           textDecoration: 'none',
-          padding: '18px 36px',
-          borderRadius: '40px',
-          fontWeight: 800,
-          fontSize: '12px',
-          textTransform: 'uppercase',
+          padding: '20px 40px',
+          borderRadius: '50px',
+          fontWeight: '700',
+          fontSize: '16px',
+          textTransform: 'none',
           letterSpacing: '0.5px',
-          boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+          boxShadow: '0 8px 25px rgba(102, 126, 234, 0.4)',
           border: 'none',
           cursor: 'pointer',
-          fontFamily: 'Montserrat, sans-serif',
+          fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+          transition: 'all 0.3s ease',
+          display: 'inline-block',
+          minWidth: '200px',
         }}
       >
         {children}

@@ -136,26 +136,46 @@ export default function UserReturnsPage() {
     });
   };
 
-  const filteredReturns = (returnsData as any[])?.filter((returnItem: any) =>
-    returnItem.item?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    returnItem.status.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredReturns =
+    (returnsData as any[])?.filter(
+      (returnItem: any) =>
+        returnItem.item?.name
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        returnItem.status.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
-  const filteredActiveRentals = (activeRentalsData as any[])?.filter((rental: any) =>
-    rental.item?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    rental.status.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredActiveRentals =
+    (activeRentalsData as any[])?.filter(
+      (rental: any) =>
+        rental.item?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        rental.status.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
-  if (returnsLoading || activeRentalsLoading) return <Loader text="Loading returns..." />;
-  if (returnsError || activeRentalsError) return <ErrorComponent message="Failed to load returns" onRetry={() => { refetchReturns(); refetchActiveRentals(); }} />;
+  if (returnsLoading || activeRentalsLoading)
+    return <Loader text="Loading returns..." />;
+  if (returnsError || activeRentalsError)
+    return (
+      <ErrorComponent
+        message="Failed to load returns"
+        onRetry={() => {
+          refetchReturns();
+          refetchActiveRentals();
+        }}
+      />
+    );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-20 mt-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Returns & Rentals</h1>
-          <p className="text-gray-600">Manage your rental returns and active rentals</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Returns & Rentals
+          </h1>
+          <p className="text-gray-600">
+            Manage your rental returns and active rentals
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => window.print()}>
@@ -197,7 +217,10 @@ export default function UserReturnsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredActiveRentals.map((rental: any) => (
-                <Card key={rental._id} className="hover:shadow-lg transition-shadow">
+                <Card
+                  key={rental._id}
+                  className="hover:shadow-lg transition-shadow"
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -214,19 +237,28 @@ export default function UserReturnsPage() {
                         )}
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{rental.item?.name}</h3>
-                        <p className="text-sm text-gray-600">SKU: {rental.item?.sku || "N/A"}</p>
+                        <h3 className="font-medium text-gray-900">
+                          {rental.item?.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          SKU: {rental.item?.sku || "N/A"}
+                        </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="secondary">
-                            {rental.status}
-                          </Badge>
+                          <Badge variant="secondary">{rental.status}</Badge>
                           <Badge variant="outline">
-                            {rental.quantity} item{rental.quantity > 1 ? 's' : ''}
+                            {rental.quantity} item
+                            {rental.quantity > 1 ? "s" : ""}
                           </Badge>
                         </div>
                         <div className="text-xs text-gray-500 mt-2">
-                          <p>Rented: {format(new Date(rental.startDate), "MMM dd, yyyy")}</p>
-                          <p>Due: {format(new Date(rental.endDate), "MMM dd, yyyy")}</p>
+                          <p>
+                            Rented:{" "}
+                            {format(new Date(rental.startDate), "MMM dd, yyyy")}
+                          </p>
+                          <p>
+                            Due:{" "}
+                            {format(new Date(rental.endDate), "MMM dd, yyyy")}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -266,7 +298,10 @@ export default function UserReturnsPage() {
           ) : (
             <div className="space-y-4">
               {filteredReturns.map((returnItem: any) => (
-                <Card key={returnItem._id} className="hover:shadow-lg transition-shadow">
+                <Card
+                  key={returnItem._id}
+                  className="hover:shadow-lg transition-shadow"
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -283,14 +318,22 @@ export default function UserReturnsPage() {
                         )}
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{returnItem.item?.name}</h3>
-                        <p className="text-sm text-gray-600">SKU: {returnItem.item?.sku || "N/A"}</p>
+                        <h3 className="font-medium text-gray-900">
+                          {returnItem.item?.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          SKU: {returnItem.item?.sku || "N/A"}
+                        </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge
                             variant={
-                              returnItem.status === "approved" ? "default" :
-                              returnItem.status === "pending" ? "secondary" :
-                              returnItem.status === "rejected" ? "destructive" : "outline"
+                              returnItem.status === "approved"
+                                ? "default"
+                                : returnItem.status === "pending"
+                                ? "secondary"
+                                : returnItem.status === "rejected"
+                                ? "destructive"
+                                : "outline"
                             }
                           >
                             {returnItem.status}
@@ -300,9 +343,21 @@ export default function UserReturnsPage() {
                           </Badge>
                         </div>
                         <div className="text-xs text-gray-500 mt-2">
-                          <p>Return Requested: {format(new Date(returnItem.createdAt), "MMM dd, yyyy")}</p>
+                          <p>
+                            Return Requested:{" "}
+                            {format(
+                              new Date(returnItem.createdAt),
+                              "MMM dd, yyyy"
+                            )}
+                          </p>
                           {returnItem.returnDate && (
-                            <p>Preferred Return: {format(new Date(returnItem.returnDate), "MMM dd, yyyy")}</p>
+                            <p>
+                              Preferred Return:{" "}
+                              {format(
+                                new Date(returnItem.returnDate),
+                                "MMM dd, yyyy"
+                              )}
+                            </p>
                           )}
                         </div>
                         {returnItem.reason && (
@@ -345,9 +400,15 @@ export default function UserReturnsPage() {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-medium mb-2">Item Details</h3>
                 <div className="space-y-1 text-sm">
-                  <p><strong>Name:</strong> {selectedReturn.name}</p>
-                  <p><strong>SKU:</strong> {selectedReturn.sku}</p>
-                  <p><strong>Status:</strong> {selectedReturn.status}</p>
+                  <p>
+                    <strong>Name:</strong> {selectedReturn.name}
+                  </p>
+                  <p>
+                    <strong>SKU:</strong> {selectedReturn.sku}
+                  </p>
+                  <p>
+                    <strong>Status:</strong> {selectedReturn.status}
+                  </p>
                 </div>
               </div>
             )}
@@ -358,7 +419,9 @@ export default function UserReturnsPage() {
                 <Label htmlFor="reason">Reason for Return *</Label>
                 <Select
                   value={returnFormData.reason}
-                  onValueChange={(value) => setReturnFormData(prev => ({ ...prev, reason: value }))}
+                  onValueChange={(value) =>
+                    setReturnFormData((prev) => ({ ...prev, reason: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a reason" />
@@ -366,7 +429,9 @@ export default function UserReturnsPage() {
                   <SelectContent>
                     <SelectItem value="damaged">Item is damaged</SelectItem>
                     <SelectItem value="defective">Item is defective</SelectItem>
-                    <SelectItem value="wrong_item">Wrong item received</SelectItem>
+                    <SelectItem value="wrong_item">
+                      Wrong item received
+                    </SelectItem>
                     <SelectItem value="not_needed">No longer needed</SelectItem>
                     <SelectItem value="quality_issue">Quality issue</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
@@ -378,7 +443,9 @@ export default function UserReturnsPage() {
                 <Label htmlFor="condition">Item Condition</Label>
                 <Select
                   value={returnFormData.condition}
-                  onValueChange={(value) => setReturnFormData(prev => ({ ...prev, condition: value }))}
+                  onValueChange={(value) =>
+                    setReturnFormData((prev) => ({ ...prev, condition: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -399,8 +466,13 @@ export default function UserReturnsPage() {
                   id="returnDate"
                   type="date"
                   value={returnFormData.returnDate}
-                  onChange={(e) => setReturnFormData(prev => ({ ...prev, returnDate: e.target.value }))}
-                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) =>
+                    setReturnFormData((prev) => ({
+                      ...prev,
+                      returnDate: e.target.value,
+                    }))
+                  }
+                  min={new Date().toISOString().split("T")[0]}
                 />
               </div>
 
@@ -409,7 +481,12 @@ export default function UserReturnsPage() {
                 <Textarea
                   id="description"
                   value={returnFormData.description}
-                  onChange={(e) => setReturnFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setReturnFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   placeholder="Please provide any additional details about the return..."
                   rows={3}
                 />
@@ -421,7 +498,10 @@ export default function UserReturnsPage() {
                   <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
                   <div className="text-sm text-yellow-800">
                     <p className="font-medium">Important:</p>
-                    <p>Please ensure the item is in the same condition as when received. Returns may be subject to inspection.</p>
+                    <p>
+                      Please ensure the item is in the same condition as when
+                      received. Returns may be subject to inspection.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -441,7 +521,9 @@ export default function UserReturnsPage() {
               disabled={createReturnMutation.isPending}
               className="flex-1"
             >
-              {createReturnMutation.isPending ? "Submitting..." : "Submit Return Request"}
+              {createReturnMutation.isPending
+                ? "Submitting..."
+                : "Submit Return Request"}
             </Button>
           </div>
         </DialogContent>

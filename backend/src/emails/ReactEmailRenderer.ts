@@ -1,10 +1,10 @@
-import { render } from '@react-email/render';
-import React from 'react';
-import { WelcomeEmail } from './templates/WelcomeEmail';
-import { PasswordResetEmail } from './templates/PasswordResetEmail';
-import { BookingConfirmationEmail } from './templates/BookingConfirmationEmail';
-import { CustomEmail } from './templates/CustomEmail';
-import { PaymentSuccessEmail } from './templates/PaymentSuccessEmail';
+import { render } from "@react-email/render";
+import React from "react";
+import { WelcomeEmail } from "./templates/WelcomeEmail";
+import { PasswordResetEmail } from "./templates/PasswordResetEmail";
+import { BookingConfirmationEmail } from "./templates/BookingConfirmationEmail";
+import { CustomEmail } from "./templates/CustomEmail";
+import { PaymentSuccessEmail } from "./templates/PaymentSuccessEmail";
 
 export interface EmailTemplateData {
   company: {
@@ -37,7 +37,7 @@ export interface EmailTemplateData {
 export class ReactEmailRenderer {
   private static getCompanyLogoUrl(companyName: string): string {
     // Use BACKEND_BASE_URL for company logos and assets
-    const backendUrl = process.env.BACKEND_BASE_URL || 'http://localhost:3001';
+    const backendUrl = process.env.BACKEND_BASE_URL || "http://localhost:3001";
     return `${backendUrl}/logo.webp`;
   }
 
@@ -48,11 +48,13 @@ export class ReactEmailRenderer {
       user: data.user!,
       baseUrl: data.baseUrl,
     });
-    
+
     return render(emailComponent);
   }
 
-  static async renderPasswordResetEmail(data: EmailTemplateData): Promise<string> {
+  static async renderPasswordResetEmail(
+    data: EmailTemplateData
+  ): Promise<string> {
     const logoUrl = this.getCompanyLogoUrl(data.company.name);
     const emailComponent = React.createElement(PasswordResetEmail, {
       company: { ...data.company, logo: logoUrl },
@@ -60,11 +62,13 @@ export class ReactEmailRenderer {
       resetLink: data.resetLink!,
       baseUrl: data.baseUrl,
     });
-    
+
     return render(emailComponent);
   }
 
-  static async renderBookingConfirmationEmail(data: EmailTemplateData): Promise<string> {
+  static async renderBookingConfirmationEmail(
+    data: EmailTemplateData
+  ): Promise<string> {
     const logoUrl = this.getCompanyLogoUrl(data.company.name);
     const emailComponent = React.createElement(BookingConfirmationEmail, {
       company: { ...data.company, logo: logoUrl },
@@ -72,7 +76,7 @@ export class ReactEmailRenderer {
       booking: data.booking!,
       baseUrl: data.baseUrl,
     });
-    
+
     return render(emailComponent);
   }
 
@@ -80,14 +84,16 @@ export class ReactEmailRenderer {
     const logoUrl = this.getCompanyLogoUrl(data.company.name);
     const emailComponent = React.createElement(CustomEmail, {
       company: { ...data.company, logo: logoUrl },
-      message: data.data?.message || '',
+      message: data.data?.message || "",
       baseUrl: data.baseUrl,
     });
-    
+
     return render(emailComponent);
   }
 
-  static async renderPaymentSuccessEmail(data: EmailTemplateData): Promise<string> {
+  static async renderPaymentSuccessEmail(
+    data: EmailTemplateData
+  ): Promise<string> {
     const logoUrl = this.getCompanyLogoUrl(data.company.name);
     const emailComponent = React.createElement(PaymentSuccessEmail, {
       company: { ...data.company, logo: logoUrl },
@@ -95,21 +101,24 @@ export class ReactEmailRenderer {
       data: data.data!,
       baseUrl: data.baseUrl,
     });
-    
+
     return render(emailComponent);
   }
 
-  static async renderEmail(templateName: string, data: EmailTemplateData): Promise<string> {
+  static async renderEmail(
+    templateName: string,
+    data: EmailTemplateData
+  ): Promise<string> {
     switch (templateName) {
-      case 'welcome':
+      case "welcome":
         return this.renderWelcomeEmail(data);
-      case 'password-reset':
+      case "password-reset":
         return this.renderPasswordResetEmail(data);
-      case 'booking-confirmation':
+      case "booking-confirmation":
         return this.renderBookingConfirmationEmail(data);
-      case 'custom':
+      case "custom":
         return this.renderCustomEmail(data);
-      case 'payment-success':
+      case "payment-success":
         return this.renderPaymentSuccessEmail(data);
       default:
         throw new Error(`Email template '${templateName}' not found`);

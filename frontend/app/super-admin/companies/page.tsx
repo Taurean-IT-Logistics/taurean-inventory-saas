@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { SuperAdminAPI } from "@/lib/api";
+import { getResourceUrl, SuperAdminAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
+import Logo from "@/components/logo/Logo";
 
 export default function SuperAdminCompaniesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,12 +81,22 @@ export default function SuperAdminCompaniesPage() {
     refetch: refetchCompanies,
   } = useQuery({
     queryKey: ["super-admin-companies"],
-    queryFn: SuperAdminAPI.getAllCompanies,
+    queryFn: async () => {
+      const response = await SuperAdminAPI.getAllCompanies();
+      console.log(response);
+      return response;
+    },
   });
 
   // Mutations
   const updateCompanyStatusMutation = useMutation({
-    mutationFn: async ({ companyId, status }: { companyId: string; status: string }) => {
+    mutationFn: async ({
+      companyId,
+      status,
+    }: {
+      companyId: string;
+      status: string;
+    }) => {
       return SuperAdminAPI.updateCompanyStatus(companyId, status);
     },
     onSuccess: () => {
@@ -105,8 +116,20 @@ export default function SuperAdminCompaniesPage() {
   });
 
   const activateSubscriptionMutation = useMutation({
-    mutationFn: async ({ companyId, plan, duration }: { companyId: string; plan: string; duration: number }) => {
-      return SuperAdminAPI.activateCompanySubscription(companyId, plan, duration);
+    mutationFn: async ({
+      companyId,
+      plan,
+      duration,
+    }: {
+      companyId: string;
+      plan: string;
+      duration: number;
+    }) => {
+      return SuperAdminAPI.activateCompanySubscription(
+        companyId,
+        plan,
+        duration
+      );
     },
     onSuccess: () => {
       toast({
@@ -150,7 +173,9 @@ export default function SuperAdminCompaniesPage() {
   };
 
   const handleSubscriptionActivation = (companyId: string) => {
-    setSelectedCompany((companiesData as any[])?.find((c: any) => c._id === companyId));
+    setSelectedCompany(
+      (companiesData as any)?.companies?.find((c: any) => c._id === companyId)
+    );
     setIsSubscriptionModalOpen(true);
   };
 
@@ -158,20 +183,31 @@ export default function SuperAdminCompaniesPage() {
     deactivateSubscriptionMutation.mutate(companyId);
   };
 
-  const filteredCompanies = (companiesData as any[])?.filter((company: any) =>
-    company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    company.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
-
   if (companiesLoading) return <Loader text="Loading companies..." />;
-  if (companiesError) return <ErrorComponent message="Failed to load companies" onRetry={refetchCompanies} />;
+
+  if (companiesError)
+    return (
+      <ErrorComponent
+        message="Failed to load companies"
+        onRetry={refetchCompanies}
+      />
+    );
+
+  const filteredCompanies =
+    (companiesData as any)?.companies?.filter(
+      (company: any) =>
+        company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Companies Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Companies Management
+          </h1>
           <p className="text-gray-600">Manage all companies in the system</p>
         </div>
         <div className="flex items-center gap-3">
@@ -203,13 +239,21 @@ export default function SuperAdminCompaniesPage() {
 
       {/* Companies Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCompanies.map((company: any) => (
+        {filteredCompanies?.map((company: any) => (
           <Card key={company._id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-purple-600" />
+                  <div className="w-10 h-10  rounded-lg flex items-center justify-center">
+                    {company.logo?.path ? (
+                      <Logo
+                        logo={getResourceUrl(company.logo.path)}
+                        height={40}
+                        width={40}
+                      />
+                    ) : (
+                      <Building2 className="h-5 w-5 text-purple-600" />
+                    )}
                   </div>
                   <div>
                     <CardTitle className="text-lg">{company.name}</CardTitle>
@@ -223,11 +267,15 @@ export default function SuperAdminCompaniesPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setSelectedCompany(company)}>
+                    <DropdownMenuItem
+                      onClick={() => setSelectedCompany(company)}
+                    >
                       <Eye className="h-4 w-4 mr-2" />
                       View Details
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleSubscriptionActivation(company._id)}>
+                    <DropdownMenuItem
+                      onClick={() => handleSubscriptionActivation(company._id)}
+                    >
                       <Settings className="h-4 w-4 mr-2" />
                       Manage Subscription
                     </DropdownMenuItem>
@@ -238,10 +286,14 @@ export default function SuperAdminCompaniesPage() {
             <CardContent className="space-y-4">
               {/* Status */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Status:</span>
+                <span className="text-sm text-gray-600 mr-4">Status:</span>
                 <Badge
                   variant={company.isActive ? "default" : "secondary"}
-                  className={company.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+                  className={
+                    company.isActive
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
+                  }
                 >
                   {company.isActive ? "Active" : "Inactive"}
                 </Badge>
@@ -249,10 +301,20 @@ export default function SuperAdminCompaniesPage() {
 
               {/* Subscription */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Subscription:</span>
+                <span className="text-sm text-gray-600 mr-4">
+                  Subscription:
+                </span>
                 <Badge
-                  variant={company.subscription?.status === "active" ? "default" : "secondary"}
-                  className={company.subscription?.status === "active" ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"}
+                  variant={
+                    company.subscription?.status === "active"
+                      ? "default"
+                      : "secondary"
+                  }
+                  className={
+                    company.subscription?.status === "active"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-gray-100 text-gray-800"
+                  }
                 >
                   {company.subscription?.status || "None"}
                 </Badge>
@@ -280,7 +342,12 @@ export default function SuperAdminCompaniesPage() {
                   variant="outline"
                   size="sm"
                   className="flex-1"
-                  onClick={() => handleStatusUpdate(company._id, company.isActive ? "inactive" : "active")}
+                  onClick={() =>
+                    handleStatusUpdate(
+                      company._id,
+                      company.isActive ? "inactive" : "active"
+                    )
+                  }
                   disabled={updateCompanyStatusMutation.isPending}
                 >
                   {company.isActive ? "Deactivate" : "Activate"}
@@ -300,7 +367,10 @@ export default function SuperAdminCompaniesPage() {
       </div>
 
       {/* Company Details Modal */}
-      <Dialog open={!!selectedCompany} onOpenChange={() => setSelectedCompany(null)}>
+      <Dialog
+        open={!!selectedCompany}
+        onOpenChange={() => setSelectedCompany(null)}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Company Details</DialogTitle>
@@ -318,36 +388,51 @@ export default function SuperAdminCompaniesPage() {
                 </div>
                 <div>
                   <Label>Phone</Label>
-                  <p className="text-sm font-medium">{selectedCompany.phone || "N/A"}</p>
+                  <p className="text-sm font-medium">
+                    {selectedCompany.phone || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <Label>Status</Label>
-                  <Badge variant={selectedCompany.isActive ? "default" : "secondary"}>
+                  <Badge
+                    variant={selectedCompany.isActive ? "default" : "secondary"}
+                  >
                     {selectedCompany.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </div>
               </div>
-              
+
               {selectedCompany.subscription && (
                 <div className="border-t pt-4">
                   <h4 className="font-medium mb-2">Subscription Details</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Plan</Label>
-                      <p className="text-sm font-medium">{selectedCompany.subscription.plan}</p>
+                      <p className="text-sm font-medium">
+                        {selectedCompany.subscription.plan}
+                      </p>
                     </div>
                     <div>
                       <Label>Status</Label>
-                      <Badge variant={selectedCompany.subscription.status === "active" ? "default" : "secondary"}>
+                      <Badge
+                        variant={
+                          selectedCompany.subscription.status === "active"
+                            ? "default"
+                            : "secondary"
+                        }
+                      >
                         {selectedCompany.subscription.status}
                       </Badge>
                     </div>
                     <div>
                       <Label>Expires</Label>
                       <p className="text-sm font-medium">
-                        {selectedCompany.subscription.expiresAt ? 
-                          format(new Date(selectedCompany.subscription.expiresAt), "PPP") : "N/A"
-                        }
+                        {selectedCompany.subscription.expiresAt
+                          ? format(
+                              new Date(selectedCompany.subscription.expiresAt),
+                              "PPP"
+                            )
+                          : "N/A"}
                       </p>
                     </div>
                   </div>
@@ -359,7 +444,10 @@ export default function SuperAdminCompaniesPage() {
       </Dialog>
 
       {/* Subscription Modal */}
-      <Dialog open={isSubscriptionModalOpen} onOpenChange={setIsSubscriptionModalOpen}>
+      <Dialog
+        open={isSubscriptionModalOpen}
+        onOpenChange={setIsSubscriptionModalOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Manage Subscription</DialogTitle>
@@ -367,7 +455,12 @@ export default function SuperAdminCompaniesPage() {
           <div className="space-y-4">
             <div>
               <Label>Plan</Label>
-              <Select value={subscriptionData.plan} onValueChange={(value) => setSubscriptionData(prev => ({ ...prev, plan: value }))}>
+              <Select
+                value={subscriptionData.plan}
+                onValueChange={(value) =>
+                  setSubscriptionData((prev) => ({ ...prev, plan: value }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a plan" />
                 </SelectTrigger>
@@ -384,7 +477,12 @@ export default function SuperAdminCompaniesPage() {
               <Input
                 type="number"
                 value={subscriptionData.duration}
-                onChange={(e) => setSubscriptionData(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
+                onChange={(e) =>
+                  setSubscriptionData((prev) => ({
+                    ...prev,
+                    duration: parseInt(e.target.value),
+                  }))
+                }
                 min="1"
               />
             </div>
@@ -402,14 +500,19 @@ export default function SuperAdminCompaniesPage() {
                     activateSubscriptionMutation.mutate({
                       companyId: selectedCompany._id,
                       plan: subscriptionData.plan,
-                      duration: subscriptionData.duration
+                      duration: subscriptionData.duration,
                     });
                   }
                 }}
-                disabled={!subscriptionData.plan || activateSubscriptionMutation.isPending}
+                disabled={
+                  !subscriptionData.plan ||
+                  activateSubscriptionMutation.isPending
+                }
                 className="flex-1"
               >
-                {activateSubscriptionMutation.isPending ? "Activating..." : "Activate"}
+                {activateSubscriptionMutation.isPending
+                  ? "Activating..."
+                  : "Activate"}
               </Button>
             </div>
           </div>

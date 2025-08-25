@@ -17,6 +17,7 @@ import { Types } from "mongoose";
 import { emailService } from "../services/email.service";
 import { notificationService } from "../services/notification.service";
 import { CompanyModel } from "../models/company.model";
+import { CONFIG } from "../config";
 
 // Register new user
 const register = async (req: Request, res: Response): Promise<void> => {
@@ -441,10 +442,12 @@ const forgotPassword = async (req: Request, res: Response): Promise<void> => {
     });
 
     // Get company info for email
-    const company = user.company ? await CompanyModel.findById(user.company) : null;
+    const company = user.company
+      ? await CompanyModel.findById(user.company)
+      : null;
 
     // Create reset URL
-    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
+    const resetUrl = `${CONFIG.FRONTEND_BASE_URL}/reset-password?token=${resetToken}`;
 
     // Send password reset email
     try {
@@ -458,8 +461,8 @@ const forgotPassword = async (req: Request, res: Response): Promise<void> => {
             name: user.name,
             email: user.email,
           },
+          resetLink: resetUrl,
           data: {
-            resetLink: resetUrl,
             requestTime: new Date().toLocaleString(),
             ipAddress: req.ip || "Unknown",
             expiryTime: new Date(Date.now() + 60 * 60 * 1000).toLocaleString(),
@@ -468,7 +471,10 @@ const forgotPassword = async (req: Request, res: Response): Promise<void> => {
         companyId: user.company?.toString(),
       });
 
-      sendSuccess(res, "If the email exists, a password reset link has been sent");
+      sendSuccess(
+        res,
+        "If the email exists, a password reset link has been sent"
+      );
     } catch (emailError) {
       console.error("Failed to send password reset email:", emailError);
       sendError(res, "Failed to send password reset email");
@@ -514,14 +520,16 @@ const resetPassword = async (req: Request, res: Response): Promise<void> => {
 
     // Get user and company info for email
     const userDoc = await UserService.getUserById(user.id);
-    const company = userDoc?.company ? await CompanyModel.findById(userDoc.company) : null;
+    const company = userDoc?.company
+      ? await CompanyModel.findById(userDoc.company)
+      : null;
 
     // Send password changed confirmation email
     try {
       await emailService.sendEmail({
         to: userDoc?.email || "",
         subject: "Password Changed Successfully",
-        template: "password-changed",
+        template: "custom",
         context: {
           company: company || { name: "FacilityHub" },
           user: {
@@ -529,6 +537,7 @@ const resetPassword = async (req: Request, res: Response): Promise<void> => {
             email: userDoc?.email || "",
           },
           data: {
+            message: `Your password has been successfully changed at ${new Date().toLocaleString()}. If you did not make this change, please contact support immediately.`,
             changedTime: new Date().toLocaleString(),
             ipAddress: req.ip || "Unknown",
           },

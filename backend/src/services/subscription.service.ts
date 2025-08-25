@@ -127,7 +127,7 @@ const plans = [
   },
 ];
 
-function generateLicenseKey(companyId: string): string {
+export function generateLicenseKey(companyId: string): string {
   const nonce = crypto.randomBytes(8).toString("hex");
   return `${companyId.slice(-6)}-${nonce}`.toUpperCase();
 }
@@ -228,8 +228,11 @@ export class SubscriptionService {
       // Create transaction document for subscription payment
       try {
         // Get company owner for transaction
-        const owner = await UserModel.findOne({ company: companyId, role: "admin" });
-        
+        const owner = await UserModel.findOne({
+          company: companyId,
+          role: "admin",
+        });
+
         if (owner) {
           await createTransaction({
             type: "income",
@@ -246,7 +249,10 @@ export class SubscriptionService {
           });
         }
       } catch (transactionError) {
-        console.warn("Failed to create subscription transaction:", transactionError);
+        console.warn(
+          "Failed to create subscription transaction:",
+          transactionError
+        );
         // Don't fail the subscription activation if transaction creation fails
       }
 

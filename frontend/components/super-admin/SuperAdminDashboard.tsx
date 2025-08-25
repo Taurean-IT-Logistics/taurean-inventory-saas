@@ -119,8 +119,13 @@ export default function SuperAdminDashboard() {
 
   // Mutations
   const updateCompanyStatusMutation = useMutation({
-    mutationFn: ({ companyId, status }: { companyId: string; status: string }) =>
-      SuperAdminAPI.updateCompanyStatus(companyId, status),
+    mutationFn: ({
+      companyId,
+      status,
+    }: {
+      companyId: string;
+      status: string;
+    }) => SuperAdminAPI.updateCompanyStatus(companyId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["super-admin-companies"] });
       queryClient.invalidateQueries({ queryKey: ["super-admin-stats"] });
@@ -139,8 +144,15 @@ export default function SuperAdminDashboard() {
   });
 
   const activateSubscriptionMutation = useMutation({
-    mutationFn: ({ companyId, plan, duration }: { companyId: string; plan: string; duration: number }) =>
-      SuperAdminAPI.activateCompanySubscription(companyId, plan, duration),
+    mutationFn: ({
+      companyId,
+      plan,
+      duration,
+    }: {
+      companyId: string;
+      plan: string;
+      duration: number;
+    }) => SuperAdminAPI.activateCompanySubscription(companyId, plan, duration),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["super-admin-companies"] });
       setIsSubscriptionModalOpen(false);
@@ -198,8 +210,13 @@ export default function SuperAdminDashboard() {
   });
 
   const assignUserToCompanyMutation = useMutation({
-    mutationFn: ({ userId, companyId }: { userId: string; companyId: string }) =>
-      SuperAdminAPI.assignUserToCompany(userId, companyId),
+    mutationFn: ({
+      userId,
+      companyId,
+    }: {
+      userId: string;
+      companyId: string;
+    }) => SuperAdminAPI.assignUserToCompany(userId, companyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
       setIsUserModalOpen(false);
@@ -218,8 +235,7 @@ export default function SuperAdminDashboard() {
   });
 
   const removeUserFromCompanyMutation = useMutation({
-    mutationFn: (userId: string) =>
-      SuperAdminAPI.removeUserFromCompany(userId),
+    mutationFn: (userId: string) => SuperAdminAPI.removeUserFromCompany(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
       setIsUserModalOpen(false);
@@ -418,6 +434,109 @@ export default function SuperAdminDashboard() {
           </Card>
         </div>
 
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => (window.location.href = "/super-admin/companies")}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center">
+                <Building2 className="h-4 w-4 mr-2" />
+                Manage Companies
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                View and manage all registered companies
+              </p>
+              <Button size="sm" className="w-full">
+                View Companies
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => (window.location.href = "/super-admin/users")}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center">
+                <Users className="h-4 w-4 mr-2" />
+                Manage Users
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                View and manage all system users
+              </p>
+              <Button size="sm" className="w-full">
+                View Users
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => (window.location.href = "/super-admin/stats")}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                System Stats
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                View detailed system statistics
+              </p>
+              <Button size="sm" className="w-full">
+                View Stats
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Additional Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => (window.location.href = "/super-admin/activity")}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center">
+                <Activity className="h-4 w-4 mr-2" />
+                Activity Logs
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                Monitor system activities and events
+              </p>
+              <Button size="sm" className="w-full">
+                View Logs
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center">
+                <Shield className="h-4 w-4 mr-2" />
+                Security
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                Monitor security and access controls
+              </p>
+              <Button size="sm" className="w-full" variant="outline">
+                Coming Soon
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Main Content Tabs */}
         <div className="space-y-6">
           <div className="flex space-x-4 border-b">
@@ -460,6 +579,12 @@ export default function SuperAdminDashboard() {
               }`}
             >
               Activity
+            </button>
+            <button
+              onClick={() => (window.location.href = "/super-admin/activity")}
+              className="px-4 py-2 font-medium text-gray-500 hover:text-gray-700"
+            >
+              Activity Logs
             </button>
           </div>
 
@@ -560,7 +685,9 @@ export default function SuperAdminDashboard() {
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between">
-                        <CardTitle className="text-lg">{company.name}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {company.name}
+                        </CardTitle>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
@@ -590,12 +717,17 @@ export default function SuperAdminDashboard() {
                               onClick={() => {
                                 updateCompanyStatusMutation.mutate({
                                   companyId: company._id,
-                                  status: company.subscription?.status === "active" ? "inactive" : "active",
+                                  status:
+                                    company.subscription?.status === "active"
+                                      ? "inactive"
+                                      : "active",
                                 });
                               }}
                             >
                               <Shield className="h-4 w-4 mr-2" />
-                              {company.subscription?.status === "active" ? "Deactivate" : "Activate"}
+                              {company.subscription?.status === "active"
+                                ? "Deactivate"
+                                : "Activate"}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -681,7 +813,9 @@ export default function SuperAdminDashboard() {
                           </div>
                           <div>
                             <p className="font-medium">{user.name}</p>
-                            <p className="text-sm text-gray-500">{user.email}</p>
+                            <p className="text-sm text-gray-500">
+                              {user.email}
+                            </p>
                             <p className="text-xs text-gray-400">
                               {user.phone && (
                                 <span className="flex items-center gap-1">
@@ -791,16 +925,21 @@ export default function SuperAdminDashboard() {
                   <div className="space-y-2">
                     <div>
                       <Label>Name</Label>
-                      <p className="text-sm text-gray-600">{selectedCompany.name}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedCompany.name}
+                      </p>
                     </div>
                     <div>
                       <Label>Description</Label>
-                      <p className="text-sm text-gray-600">{selectedCompany.description}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedCompany.description}
+                      </p>
                     </div>
                     <div>
                       <Label>Owner</Label>
                       <p className="text-sm text-gray-600">
-                        {(selectedCompany.owner as any)?.name} ({(selectedCompany.owner as any)?.email})
+                        {(selectedCompany.owner as any)?.name} (
+                        {(selectedCompany.owner as any)?.email})
                       </p>
                     </div>
                   </div>
@@ -810,19 +949,28 @@ export default function SuperAdminDashboard() {
                   <div className="space-y-2">
                     <div>
                       <Label>Status</Label>
-                      <Badge className={getSubscriptionStatusColor(selectedCompany.subscription?.status || "inactive")}>
+                      <Badge
+                        className={getSubscriptionStatusColor(
+                          selectedCompany.subscription?.status || "inactive"
+                        )}
+                      >
                         {selectedCompany.subscription?.status || "inactive"}
                       </Badge>
                     </div>
                     <div>
                       <Label>Plan</Label>
-                      <p className="text-sm text-gray-600">{selectedCompany.subscription?.plan || "No plan"}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedCompany.subscription?.plan || "No plan"}
+                      </p>
                     </div>
                     {selectedCompany.subscription?.expiresAt && (
                       <div>
                         <Label>Expires</Label>
                         <p className="text-sm text-gray-600">
-                          {format(new Date(selectedCompany.subscription.expiresAt), "MMM dd, yyyy")}
+                          {format(
+                            new Date(selectedCompany.subscription.expiresAt),
+                            "MMM dd, yyyy"
+                          )}
                         </p>
                       </div>
                     )}
@@ -939,7 +1087,10 @@ export default function SuperAdminDashboard() {
       </Dialog>
 
       {/* Subscription Management Modal */}
-      <Dialog open={isSubscriptionModalOpen} onOpenChange={setIsSubscriptionModalOpen}>
+      <Dialog
+        open={isSubscriptionModalOpen}
+        onOpenChange={setIsSubscriptionModalOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Manage Subscription</DialogTitle>
@@ -952,7 +1103,11 @@ export default function SuperAdminDashboard() {
               </div>
               <div>
                 <Label>Current Status</Label>
-                <Badge className={getSubscriptionStatusColor(selectedCompany.subscription?.status || "inactive")}>
+                <Badge
+                  className={getSubscriptionStatusColor(
+                    selectedCompany.subscription?.status || "inactive"
+                  )}
+                >
                   {selectedCompany.subscription?.status || "inactive"}
                 </Badge>
               </div>
@@ -960,7 +1115,9 @@ export default function SuperAdminDashboard() {
                 <Label>Plan</Label>
                 <Select
                   value={subscriptionData.plan}
-                  onValueChange={(value) => setSubscriptionData(prev => ({ ...prev, plan: value }))}
+                  onValueChange={(value) =>
+                    setSubscriptionData((prev) => ({ ...prev, plan: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select plan" />
@@ -976,7 +1133,12 @@ export default function SuperAdminDashboard() {
                 <Label>Duration (days)</Label>
                 <Select
                   value={subscriptionData.duration.toString()}
-                  onValueChange={(value) => setSubscriptionData(prev => ({ ...prev, duration: parseInt(value) }))}
+                  onValueChange={(value) =>
+                    setSubscriptionData((prev) => ({
+                      ...prev,
+                      duration: parseInt(value),
+                    }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select duration" />
@@ -999,7 +1161,9 @@ export default function SuperAdminDashboard() {
                   onClick={handleActivateSubscription}
                   disabled={activateSubscriptionMutation.isPending}
                 >
-                  {activateSubscriptionMutation.isPending ? "Activating..." : "Activate Subscription"}
+                  {activateSubscriptionMutation.isPending
+                    ? "Activating..."
+                    : "Activate Subscription"}
                 </Button>
               </div>
             </div>

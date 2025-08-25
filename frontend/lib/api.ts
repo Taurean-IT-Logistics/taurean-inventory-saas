@@ -75,11 +75,11 @@ export async function apiFetch<T>(
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
-  
+
   if (!isBinary) {
     headers.Accept = "application/json";
   }
-  
+
   if (!(options.body instanceof FormData))
     headers["Content-Type"] = headers["Content-Type"] || "application/json";
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -576,7 +576,11 @@ export const FacilitiesAPI = {
     apiFetch(`/reviews/user/${facilityId}`, { method: "GET" }),
   export: (format: string, filters?: Record<string, string>) => {
     const qs = filters ? `?${new URLSearchParams(filters)}` : "";
-    return apiFetch(`/facilities/export/${format}${qs}`, { method: "GET" }, true);
+    return apiFetch(
+      `/facilities/export/${format}${qs}`,
+      { method: "GET" },
+      true
+    );
   },
 };
 
@@ -587,35 +591,35 @@ export const InventoryReturnsAPI = {
     const qs = params ? `?${new URLSearchParams(params)}` : "";
     return apiFetch(`/inventory-returns${qs}`, { method: "GET" });
   },
-  
+
   // Get user return requests
   listUser: () => apiFetch(`/inventory-returns/user`, { method: "GET" }),
-  
+
   // Create return request
   create: (data: any) =>
     apiFetch(`/inventory-returns`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  
+
   // Update return request
   update: (id: string, data: any) =>
     apiFetch(`/inventory-returns/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
-  
+
   // Approve return request
   approve: (id: string) =>
     apiFetch(`/inventory-returns/${id}/approve`, { method: "PATCH" }),
-  
+
   // Reject return request
   reject: (id: string, reason?: string) =>
     apiFetch(`/inventory-returns/${id}/reject`, {
       method: "PATCH",
       body: JSON.stringify({ reason }),
     }),
-  
+
   // Complete return
   complete: (id: string) =>
     apiFetch(`/inventory-returns/${id}/complete`, { method: "PATCH" }),
@@ -987,7 +991,11 @@ export const TransactionsAPI = {
     apiFetch(`/transaction/subaccount/${subaccountCode}`, { method: "GET" }),
   export: (format: string, filters?: Record<string, string>) => {
     const qs = filters ? `?${new URLSearchParams(filters)}` : "";
-    return apiFetch(`/transaction/export/${format}${qs}`, { method: "GET" }, true);
+    return apiFetch(
+      `/transaction/export/${format}${qs}`,
+      { method: "GET" },
+      true
+    );
   },
 };
 
@@ -1024,30 +1032,35 @@ export const ReportsAPI = {
   // Get report number
   getReportNumber: (type: string) =>
     apiFetch(`/reports/${type}/next-number`, { method: "GET" }),
-  
+
   // Get report data
   getReportData: (type: string, dateRange: string) =>
     apiFetch(`/reports/${type}/data?dateRange=${dateRange}`, { method: "GET" }),
-  
+
   // Get bookings report data
   getBookingsReportData: (dateRange: string) =>
-    apiFetch(`/reports/bookings/data?dateRange=${dateRange}`, { method: "GET" }),
-  
+    apiFetch(`/reports/bookings/data?dateRange=${dateRange}`, {
+      method: "GET",
+    }),
+
   // Get invoices report data
   getInvoicesReportData: (dateRange: string) =>
-    apiFetch(`/reports/invoices/data?dateRange=${dateRange}`, { method: "GET" }),
-  
+    apiFetch(`/reports/invoices/data?dateRange=${dateRange}`, {
+      method: "GET",
+    }),
+
   // Get users report data
-  getUsersReportData: () =>
-    apiFetch(`/reports/users/data`, { method: "GET" }),
-  
+  getUsersReportData: () => apiFetch(`/reports/users/data`, { method: "GET" }),
+
   // Get facilities report data
   getFacilitiesReportData: () =>
     apiFetch(`/reports/facilities/data`, { method: "GET" }),
-  
+
   // Get transactions report data
   getTransactionsReportData: (dateRange: string) =>
-    apiFetch(`/reports/transactions/data?dateRange=${dateRange}`, { method: "GET" }),
+    apiFetch(`/reports/transactions/data?dateRange=${dateRange}`, {
+      method: "GET",
+    }),
 };
 
 // Invoices
@@ -1489,14 +1502,17 @@ export const HealthAPI = {
 
 export const SuperAdminAPI = {
   // Get system statistics
-  getSystemStatistics: () => apiFetch("/super-admin/stats", { method: "GET" }),
+  getSystemStatistics: () =>
+    apiFetch("/super-admin/statistics", { method: "GET" }),
 
   // Get all companies
   getAllCompanies: () => apiFetch("/super-admin/companies", { method: "GET" }),
 
   // Search companies
   searchCompanies: (query: string) =>
-    apiFetch(`/super-admin/companies/search?q=${encodeURIComponent(query)}`, { method: "GET" }),
+    apiFetch(`/super-admin/companies/search?q=${encodeURIComponent(query)}`, {
+      method: "GET",
+    }),
 
   // Get company details
   getCompanyDetails: (companyId: string) =>
@@ -1506,11 +1522,14 @@ export const SuperAdminAPI = {
   getAllUsers: () => apiFetch("/super-admin/users", { method: "GET" }),
 
   // Get unassigned users
-  getUnassignedUsers: () => apiFetch("/super-admin/users/unassigned", { method: "GET" }),
+  getUnassignedUsers: () =>
+    apiFetch("/super-admin/users/unassigned", { method: "GET" }),
 
   // Search users
   searchUsers: (query: string) =>
-    apiFetch(`/super-admin/users/search?q=${encodeURIComponent(query)}`, { method: "GET" }),
+    apiFetch(`/super-admin/users/search?q=${encodeURIComponent(query)}`, {
+      method: "GET",
+    }),
 
   // Get recent activity
   getRecentActivity: (limit: number = 10) =>
@@ -1531,7 +1550,11 @@ export const SuperAdminAPI = {
     }),
 
   // Activate company subscription
-  activateCompanySubscription: (companyId: string, plan: string, duration: number) =>
+  activateCompanySubscription: (
+    companyId: string,
+    plan: string,
+    duration: number
+  ) =>
     apiFetch(`/super-admin/companies/${companyId}/subscription`, {
       method: "POST",
       body: JSON.stringify({ plan, duration }),
