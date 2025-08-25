@@ -334,13 +334,10 @@ const verifyPaymentController = async (
         );
         if (userDoc) {
           await emailService.sendPaymentFailedEmail(
-            {
-              reference: verificationResponse.data.reference,
-              amount: verificationResponse.data.amount / 100,
-              currency: verificationResponse.data.currency,
-            },
             userDoc.email,
-            transaction.company?.toString() || ""
+            verificationResponse.data.amount / 100,
+            verificationResponse.data.currency,
+            "Payment verification failed"
           );
         }
         

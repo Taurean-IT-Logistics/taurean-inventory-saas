@@ -11,8 +11,10 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": false,
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+    "jsx": "react-jsx",
+    "allowJs": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules/**/*"]
 }

@@ -3,6 +3,8 @@ import React from 'react';
 import { WelcomeEmail } from './templates/WelcomeEmail';
 import { PasswordResetEmail } from './templates/PasswordResetEmail';
 import { BookingConfirmationEmail } from './templates/BookingConfirmationEmail';
+import { CustomEmail } from './templates/CustomEmail';
+import { PaymentSuccessEmail } from './templates/PaymentSuccessEmail';
 
 export interface EmailTemplateData {
   company: {
@@ -39,7 +41,7 @@ export class ReactEmailRenderer {
     return `${backendUrl}/logo.webp`;
   }
 
-  static renderWelcomeEmail(data: EmailTemplateData): string {
+  static async renderWelcomeEmail(data: EmailTemplateData): Promise<string> {
     const logoUrl = this.getCompanyLogoUrl(data.company.name);
     const emailComponent = React.createElement(WelcomeEmail, {
       company: { ...data.company, logo: logoUrl },
@@ -47,10 +49,10 @@ export class ReactEmailRenderer {
       baseUrl: data.baseUrl,
     });
     
-    return render(emailComponent);
+    return await render(emailComponent);
   }
 
-  static renderPasswordResetEmail(data: EmailTemplateData): string {
+  static async renderPasswordResetEmail(data: EmailTemplateData): Promise<string> {
     const logoUrl = this.getCompanyLogoUrl(data.company.name);
     const emailComponent = React.createElement(PasswordResetEmail, {
       company: { ...data.company, logo: logoUrl },
@@ -59,10 +61,10 @@ export class ReactEmailRenderer {
       baseUrl: data.baseUrl,
     });
     
-    return render(emailComponent);
+    return await render(emailComponent);
   }
 
-  static renderBookingConfirmationEmail(data: EmailTemplateData): string {
+  static async renderBookingConfirmationEmail(data: EmailTemplateData): Promise<string> {
     const logoUrl = this.getCompanyLogoUrl(data.company.name);
     const emailComponent = React.createElement(BookingConfirmationEmail, {
       company: { ...data.company, logo: logoUrl },
@@ -71,17 +73,44 @@ export class ReactEmailRenderer {
       baseUrl: data.baseUrl,
     });
     
-    return render(emailComponent);
+    return await render(emailComponent);
   }
 
-  static renderEmail(templateName: string, data: EmailTemplateData): string {
+  static async renderCustomEmail(data: EmailTemplateData): Promise<string> {
+    const logoUrl = this.getCompanyLogoUrl(data.company.name);
+    const emailComponent = React.createElement(CustomEmail, {
+      company: { ...data.company, logo: logoUrl },
+      message: data.data?.message || '',
+      baseUrl: data.baseUrl,
+    });
+    
+    return await render(emailComponent);
+  }
+
+  static async renderPaymentSuccessEmail(data: EmailTemplateData): Promise<string> {
+    const logoUrl = this.getCompanyLogoUrl(data.company.name);
+    const emailComponent = React.createElement(PaymentSuccessEmail, {
+      company: { ...data.company, logo: logoUrl },
+      user: data.user!,
+      data: data.data!,
+      baseUrl: data.baseUrl,
+    });
+    
+    return await render(emailComponent);
+  }
+
+  static async renderEmail(templateName: string, data: EmailTemplateData): Promise<string> {
     switch (templateName) {
       case 'welcome':
-        return this.renderWelcomeEmail(data);
+        return await this.renderWelcomeEmail(data);
       case 'password-reset':
-        return this.renderPasswordResetEmail(data);
+        return await this.renderPasswordResetEmail(data);
       case 'booking-confirmation':
-        return this.renderBookingConfirmationEmail(data);
+        return await this.renderBookingConfirmationEmail(data);
+      case 'custom':
+        return await this.renderCustomEmail(data);
+      case 'payment-success':
+        return await this.renderPaymentSuccessEmail(data);
       default:
         throw new Error(`Email template '${templateName}' not found`);
     }

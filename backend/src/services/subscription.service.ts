@@ -223,6 +223,34 @@ export class SubscriptionService {
 
       await company.save();
 
+      // Create transaction document for subscription payment
+      try {
+        const { createTransaction } = await import("./transaction.service");
+        const { UserModel } = await import("../models/user.model");
+        
+        // Get company owner for transaction
+        const owner = await UserModel.findOne({ company: companyId, role: "admin" });
+        
+        if (owner) {
+          await createTransaction({
+            type: "income",
+            category: "company",
+            amount: plan.price,
+            method: "subscription",
+            user: owner._id.toString(),
+            company: companyId,
+            description: `Subscription payment for ${plan.label} plan`,
+            paymentDetails: {
+              paystackReference: paymentReference,
+            },
+            isPlatformRevenue: true,
+          });
+        }
+      } catch (transactionError) {
+        console.warn("Failed to create subscription transaction:", transactionError);
+        // Don't fail the subscription activation if transaction creation fails
+      }
+
       return company;
     } catch (error: any) {
       throw new Error(`Failed to activate subscription: ${error.message}`);

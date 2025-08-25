@@ -85,7 +85,7 @@ class EmailService {
       let htmlContent: string;
       
       try {
-        htmlContent = ReactEmailRenderer.renderEmail(options.template, emailData);
+        htmlContent = await ReactEmailRenderer.renderEmail(options.template, emailData);
       } catch (error) {
         console.error(`Failed to render React Email template '${options.template}':`, error);
         throw new Error(`Email template '${options.template}' not found or failed to render`);
@@ -307,6 +307,247 @@ class EmailService {
     }
   }
 
+  public async sendCustomEmail(
+    to: string,
+    subject: string,
+    message: string,
+    companyId?: string
+  ): Promise<boolean> {
+    try {
+      const company = companyId 
+        ? await CompanyModel.findById(companyId).lean()
+        : { name: "Taurean IT Logistics" };
+
+      return this.sendEmail({
+        to,
+        subject,
+        template: "custom",
+        context: {
+          company: company || { name: "Taurean IT Logistics" },
+          data: { message },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send custom email:", error);
+      return false;
+    }
+  }
+
+  public async sendBookingReminder(bookingId: string): Promise<boolean> {
+    try {
+      const BookingModel = (await import("../models/booking.model"))
+        .BookingModel;
+      const booking = await BookingModel.findById(bookingId)
+        .populate("user")
+        .populate("facility")
+        .populate("company")
+        .lean();
+
+      if (!booking) return false;
+
+      const user = booking.user as any;
+      const facility = booking.facility as any;
+      const company = (booking as any).company;
+
+      return this.sendEmail({
+        to: user.email,
+        subject: `Booking Reminder - ${facility.name}`,
+        template: "booking-reminder",
+        context: {
+          company,
+          user,
+          data: {
+            facilityName: facility.name,
+            startDate: new Date(booking.startDate).toLocaleDateString(),
+            startTime: new Date(booking.startDate).toLocaleTimeString(),
+            duration: Math.ceil(
+              (new Date(booking.endDate).getTime() -
+                new Date(booking.startDate).getTime()) /
+                (1000 * 60 * 60)
+            ),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send booking reminder email:", error);
+      return false;
+    }
+  }
+
+  public async sendPaymentSuccessEmail(transactionId: string): Promise<boolean> {
+    try {
+      const TransactionModel = (await import("../models/transaction.model"))
+        .TransactionModel;
+      const transaction = await TransactionModel.findById(transactionId)
+        .populate("user")
+        .populate("company")
+        .lean();
+
+      if (!transaction) return false;
+
+      const user = transaction.user as any;
+      const company = (transaction as any).company;
+
+      return this.sendEmail({
+        to: user.email,
+        subject: `Payment Successful - ${company?.name || "Your Account"}`,
+        template: "payment-success",
+        context: {
+          company: company || { name: "Taurean IT Logistics" },
+          user,
+          data: {
+            amount: transaction.amount,
+            currency: "GHS", // Default to GHS since transaction doesn't store currency
+            transactionId: transaction._id,
+            date: new Date(transaction.createdAt).toLocaleDateString(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send payment success email:", error);
+      return false;
+    }
+  }
+
+  public async sendPaymentFailedEmail(
+    userEmail: string,
+    amount: number,
+    currency: string,
+    reason: string
+  ): Promise<boolean> {
+    try {
+      const user = await UserModel.findOne({ email: userEmail })
+        .populate("company")
+        .lean();
+
+      if (!user) return false;
+
+      const company = user.company as any;
+
+      return this.sendEmail({
+        to: userEmail,
+        subject: `Payment Failed - ${company?.name || "Your Account"}`,
+        template: "payment-failed",
+        context: {
+          company: company || { name: "Taurean IT Logistics" },
+          user,
+          data: {
+            amount,
+            currency,
+            reason,
+            date: new Date().toLocaleDateString(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send payment failed email:", error);
+      return false;
+    }
+  }
+
+  public async sendSupportTicketCreatedEmail(
+    ticketId: string,
+    subject: string,
+    type: string,
+    priority: string,
+    userId: string
+  ): Promise<boolean> {
+    try {
+      const user = await UserModel.findById(userId).lean();
+      if (!user) return false;
+
+      return this.sendEmail({
+        to: user.email,
+        subject: `New Support Ticket Created - ${subject}`,
+        template: "support-ticket-created",
+        context: {
+          company: user.company,
+          user,
+          data: {
+            id: ticketId,
+            subject,
+            type,
+            priority,
+            user: {
+              name: user.name,
+              email: user.email,
+            },
+            createdAt: new Date().toLocaleDateString(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send support ticket created email:", error);
+      return false;
+    }
+  }
+
+  public async sendInvoiceEmail(invoice: any): Promise<boolean> {
+    try {
+      const user = await UserModel.findById(invoice.user).lean();
+      const company = await CompanyModel.findById(invoice.company).lean();
+
+      if (!user || !company) return false;
+
+      return this.sendEmail({
+        to: user.email,
+        subject: `Invoice #${invoice.invoiceNumber} - ${company.name}`,
+        template: "invoice",
+        context: {
+          company,
+          user,
+          data: {
+            invoiceId: invoice._id,
+            invoiceNumber: invoice.invoiceNumber,
+            totalAmount: invoice.totalAmount.toFixed(2),
+            subtotal: invoice.subtotal.toFixed(2),
+            taxAmount: invoice.taxAmount?.toFixed(2) || "0.00",
+            discountAmount: invoice.discountAmount?.toFixed(2) || "0.00",
+            currency: invoice.currency,
+            dueDate: new Date(invoice.dueDate).toLocaleDateString(),
+            status: invoice.status,
+          },
+        },
+        companyId: company._id.toString(),
+      });
+    } catch (error) {
+      console.error("Failed to send invoice email:", error);
+      return false;
+    }
+  }
+
+  public async sendSubscriptionExpiryEmail(
+    companyId: string,
+    daysRemaining: number
+  ): Promise<boolean> {
+    try {
+      const company = await CompanyModel.findById(companyId)
+        .populate("owner")
+        .lean();
+
+      if (!company) return false;
+
+      const owner = (company as any).owner;
+
+      return this.sendEmail({
+        to: owner.email,
+        subject: `Subscription Expiring Soon - ${company.name}`,
+        template: "subscription-expiry",
+        context: {
+          company,
+          user: owner,
+          data: {
+            daysRemaining,
+            expiryDate: new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send subscription expiry email:", error);
+      return false;
+    }
+  }
+
   public async testEmailConfiguration(): Promise<boolean> {
     if (!this.transporter) {
       return false;
@@ -378,6 +619,13 @@ export const {
   sendBookingConfirmation,
   sendPasswordResetEmail,
   sendAccountVerificationEmail,
+  sendCustomEmail,
+  sendBookingReminder,
+  sendPaymentSuccessEmail,
+  sendPaymentFailedEmail,
+  sendSupportTicketCreatedEmail,
+  sendInvoiceEmail,
+  sendSubscriptionExpiryEmail,
   testEmailConfiguration,
   testCompanyEmailConfiguration,
 } = emailService;
