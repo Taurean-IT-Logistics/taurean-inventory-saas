@@ -401,7 +401,9 @@ export interface Tax {
   name: string;
   rate: number;
   type: string;
-  appliesTo: "inventory_item" | "facitlity" | "both";
+  appliesTo: "inventory_item" | "facility" | "both";
+  isSuperAdminTax?: boolean;
+  company?: Company;
   active: boolean;
 }
 
@@ -480,6 +482,8 @@ export interface CompanyRole {
     manageFacilities?: boolean;
     manageInventory?: boolean;
     manageTransactions?: boolean;
+    manageEmails?: boolean;
+    manageSettings?: boolean;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -491,7 +495,9 @@ export interface Notification {
   type: "info" | "warning" | "success" | "error";
   title: string;
   message: string;
+  category: "booking" | "payment" | "invoice" | "system" | "support";
   data?: any;
   isRead: boolean;
+  isDeleted: boolean;
   createdAt: Date;
 }

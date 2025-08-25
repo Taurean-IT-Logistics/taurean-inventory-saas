@@ -99,7 +99,7 @@ export function useUpdateTicketStatus() {
     }: { 
       ticketId: string; 
       data: { status: string; assignedTo?: string } 
-    }) => SupportAPI.updateTicketStatus(ticketId, data),
+    }) => SupportAPI.updateTicketStatus(ticketId, data.status),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["support", "tickets", variables.ticketId] });
       queryClient.invalidateQueries({ queryKey: ["support", "tickets"] });

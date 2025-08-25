@@ -110,6 +110,12 @@ export default function LicensePage() {
       if (!selectedPlan || !companyId) {
         throw new Error("Please select a plan and company");
       }
+
+      // Validate form data before making API call
+      if (!formData.companyId || !formData.planId || !formData.email) {
+        throw new Error("Company ID, plan ID, and email are required");
+      }
+
       return SubscriptionsAPI.initializePayment(formData);
     },
     onSuccess: () => {
@@ -133,15 +139,64 @@ export default function LicensePage() {
   useEffect(() => {
     if (!user) {
       router.push("/auth/sign-in");
+    } else if (user.email) {
+      // Initialize form data with user email
+      setFormData((prev) => ({
+        ...prev,
+        email: user.email,
+      }));
     }
   }, [user, router]);
 
+  // Ensure formData is synchronized with selected values
+  useEffect(() => {
+    if (!user?.email) {
+      toast({
+        title: "Error",
+        description: "User email is required for license activation",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      companyId: companyId || "",
+      planId: selectedPlan || "",
+      email: user.email,
+    }));
+  }, [companyId, selectedPlan, user?.email]);
+
   const plans = (pricingData as any)?.plans || [];
 
-  console.log(plans);
-
   const handleLicenseActivation = () => {
-    if (!selectedPlan) return;
+    if (!selectedPlan) {
+      toast({
+        title: "Error",
+        description: "Please select a subscription plan",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!companyId) {
+      toast({
+        title: "Error",
+        description: "Please select a company",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user?.email) {
+      toast({
+        title: "Error",
+        description: "User email is required for license activation",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const selected = plans.find(
       (plan: PricingPlan) => plan.id === selectedPlan
     );
@@ -247,7 +302,10 @@ export default function LicensePage() {
                             ? "ring-2 ring-blue-500 bg-blue-50"
                             : "hover:bg-gray-50"
                         }`}
-                        onClick={() => setSelectedPlan(plan.id)}
+                        onClick={() => {
+                          setSelectedPlan(plan.id);
+                          setFormData((prev) => ({ ...prev, planId: plan.id }));
+                        }}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">

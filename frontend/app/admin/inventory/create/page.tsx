@@ -112,7 +112,7 @@ const CreateInventory = () => {
       });
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
       clearDraft();
-      router.push("/inventory");
+      router.push("/admin/inventory");
     },
     onError: (error: Error) => {
       toast({

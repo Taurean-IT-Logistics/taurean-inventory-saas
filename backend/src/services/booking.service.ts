@@ -7,6 +7,7 @@ import {
 import { Types } from "mongoose";
 import { Booking } from "../types";
 import { emailService } from "./email.service";
+import { notificationService } from "./notification.service";
 
 function hasOverlap(
   aStart: Date,
@@ -98,6 +99,26 @@ const createBooking = async (
     bookingData.company = (facility?.company as any)?._id;
     const booking = new BookingModel(bookingData);
     const saved = await booking.save();
+
+    // Update user loyalty profile to increment total bookings
+    try {
+      const { updateUserLoyaltyProfile } = await import("./user.service");
+      await updateUserLoyaltyProfile(
+        saved.user.toString(),
+        0, // No amount for booking creation, just increment count
+        saved.facility?.toString(),
+        true // This is a booking creation
+      );
+      console.log(
+        `Updated loyalty profile for user ${saved.user} - booking created`
+      );
+    } catch (loyaltyError) {
+      console.warn(
+        "Failed to update user loyalty profile for booking creation:",
+        loyaltyError
+      );
+    }
+
     try {
       const { emitEvent } = await import("../realtime/socket");
       const { Events } = await import("../realtime/events");
@@ -105,8 +126,11 @@ const createBooking = async (
 
       // Send booking confirmation email
       await emailService.sendBookingConfirmation((saved as any)._id.toString());
-    } catch (emailError) {
-      console.warn("Failed to send booking confirmation email:", emailError);
+      
+      // Send booking notification
+      await notificationService.createBookingNotification(saved._id.toString(), "created");
+    } catch (error) {
+      console.warn("Failed to send booking confirmation:", error);
     }
     return saved;
   } catch (error) {
@@ -206,7 +230,20 @@ const updateBooking = async (
         const { emitEvent } = await import("../realtime/socket");
         const { Events } = await import("../realtime/events");
         emitEvent(Events.BookingUpdated, { id: updated._id, booking: updated });
-      } catch {}
+        
+        // Send notifications based on status change
+        if (updateData.status) {
+          if (updateData.status === "confirmed") {
+            await notificationService.createBookingNotification(updated._id.toString(), "confirmed");
+          } else if (updateData.status === "cancelled") {
+            await notificationService.createBookingNotification(updated._id.toString(), "cancelled");
+          } else if (updateData.status === "completed") {
+            await notificationService.createBookingNotification(updated._id.toString(), "completed");
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to send booking update notification:", error);
+      }
     }
     return updated;
   } catch (error) {
@@ -256,6 +293,11 @@ const getCompanyBookings = async (
   showDeleted = false
 ): Promise<BookingDocument[]> => {
   try {
+    // Validate companyId is a valid ObjectId
+    if (!Types.ObjectId.isValid(companyId)) {
+      throw new Error("Invalid company ID format");
+    }
+
     const filter: any = { company: companyId };
     if (!showDeleted) {
       filter.isDeleted = false;

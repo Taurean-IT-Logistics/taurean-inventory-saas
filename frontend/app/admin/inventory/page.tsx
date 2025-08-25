@@ -7,6 +7,7 @@ import EditInventoryModal from "@/components/inventory/editInventoryModal";
 import InventoryStatsCards from "@/components/inventory/inventoryStatCards";
 import InventoryFilters from "@/components/inventory/invenoryFilters";
 import InventoryTable from "@/components/inventory/InventoryTable";
+import { ReturnRequestModal } from "@/components/inventory/ReturnRequestModal";
 import { ArrowLeft, Plus, Search } from "lucide-react";
 import { InventoryAPI } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
@@ -23,6 +24,8 @@ export default function AdminInventoryPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returningItem, setReturningItem] = useState<InventoryItem | null>(null);
 
   // Real-time updates for inventory
   useRealtimeUpdates({
@@ -185,6 +188,11 @@ export default function AdminInventoryPage() {
     restoreItemMutation.mutate(itemId);
   };
 
+  const handleReturnRequest = (item: InventoryItem) => {
+    setReturningItem(item);
+    setShowReturnModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
@@ -231,6 +239,7 @@ export default function AdminInventoryPage() {
             onEdit={handleEdit}
             onRestore={handleRestore}
             onDelete={handleDelete}
+            onReturnRequest={handleReturnRequest}
           />
         ) : (
           <Card className="mt-8">
@@ -257,6 +266,21 @@ export default function AdminInventoryPage() {
         }}
         onSave={handleSaveItem}
       />
+
+      {/* Return Request Modal */}
+      {returningItem && (
+        <ReturnRequestModal
+          item={returningItem}
+          isOpen={showReturnModal}
+          onClose={() => {
+            setShowReturnModal(false);
+            setReturningItem(null);
+          }}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["inventory-company"] });
+          }}
+        />
+      )}
     </div>
   );
 }

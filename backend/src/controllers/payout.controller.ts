@@ -4,42 +4,6 @@ import { CompanyModel } from "../models/company.model";
 import { sendSuccess, sendError } from "../utils";
 import axios from "axios";
 import { CONFIG } from "../config";
-import {
-  computeCompanyAvailable,
-  computePlatformAvailable,
-} from "../services/balance.service";
-
-export async function requestPayout(req: Request, res: Response) {
-  try {
-    const { amount, currency = "GHS" } = req.body;
-    const companyId = (req.user as any).companyId;
-    if (!companyId) {
-      sendError(res, "No company context", null, 400);
-      return;
-    }
-    const company = await CompanyModel.findById(companyId).lean();
-    if (!company || !(company as any).paystackRecipientCode) {
-      sendError(res, "Recipient not configured", null, 400);
-      return;
-    }
-    const bal = await computeCompanyAvailable(companyId);
-    if (amount > bal.available) {
-      sendError(res, "Insufficient available balance", null, 400);
-      return;
-    }
-    const doc = await PayoutModel.create({
-      company: companyId,
-      amount,
-      currency,
-      recipientCode: (company as any).paystackRecipientCode,
-      status: "pending",
-      requestedBy: (req.user as any).id,
-    } as any);
-    sendSuccess(res, "Payout requested", { payout: doc }, 201);
-  } catch (e: any) {
-    sendError(res, "Failed to request payout", e.message);
-  }
-}
 
 export async function approvePayout(req: Request, res: Response) {
   try {
@@ -103,28 +67,5 @@ export async function processPayout(req: Request, res: Response) {
     sendSuccess(res, "Payout processing initiated", { payout: doc });
   } catch (e: any) {
     sendError(res, "Failed to process payout", e.message);
-  }
-}
-
-export async function companyBalance(req: Request, res: Response) {
-  try {
-    const companyId = (req.user as any)?.companyId;
-    const bal = await computeCompanyAvailable(companyId);
-    sendSuccess(res, "Company available balance", bal);
-  } catch (e: any) {
-    sendError(res, "Failed to compute balance", e.message);
-  }
-}
-
-export async function platformBalance(req: Request, res: Response) {
-  try {
-    if (!(req.user as any)?.isSuperAdmin) {
-      sendError(res, "Forbidden", null, 403);
-      return;
-    }
-    const bal = await computePlatformAvailable();
-    sendSuccess(res, "Platform available balance", bal);
-  } catch (e: any) {
-    sendError(res, "Failed to compute platform balance", e.message);
   }
 }

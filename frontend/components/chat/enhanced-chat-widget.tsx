@@ -40,6 +40,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "../AuthProvider";
 import { Textarea } from "../ui/textarea";
+import { toast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -77,7 +78,7 @@ interface SupportMessage {
 }
 
 export function EnhancedChatWidget() {
-  const { user } = useAuth();
+  const { user, tokens } = useAuth();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -110,7 +111,19 @@ export function EnhancedChatWidget() {
     category: "general",
     priority: "medium",
     companyId: "",
+    isGeneralTicket: false, // New field to indicate general support tickets
   });
+
+  // Initialize companyId when user changes
+  useEffect(() => {
+    if (user?.company) {
+      const companyId = getCompanyId(user.company);
+      setNewTicketForm((prev) => ({
+        ...prev,
+        companyId: companyId || "",
+      }));
+    }
+  }, [user?.company]);
 
   // Queries
   const {
@@ -131,7 +144,7 @@ export function EnhancedChatWidget() {
     enabled: !!user && isOpen && activeMode === "support",
   });
 
-  // Fetch companies for ticket creation
+  // Fetch companies for ticket creation (only for super admins or when user has no company)
   const {
     data: companies,
     isLoading: isCompaniesLoading,
@@ -140,6 +153,7 @@ export function EnhancedChatWidget() {
   } = useQuery({
     queryKey: ["companies"],
     queryFn: () => CompaniesAPI.list(),
+    enabled: !!user && (user.isSuperAdmin || !user.company),
   });
 
   const { data: ticketDetails, refetch: refetchTicketDetails } = useQuery({
@@ -148,21 +162,42 @@ export function EnhancedChatWidget() {
     enabled: !!selectedTicket?._id && activeMode === "support",
   });
 
+  // Helper function to get company ID
+  const getCompanyId = (userCompany: any): string => {
+    if (!userCompany) return "";
+    return typeof userCompany === "object" ? userCompany._id : userCompany;
+  };
+
   // Mutations
   const createTicketMutation = useMutation({
     mutationFn: (formData: FormData) => SupportAPI.createTicket(formData),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Ticket created successfully:", data);
+
+      // Invalidate and refetch queries
       queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
       refetchTickets();
+
+      // Reset form and close
       setShowTicketForm(false);
       setNewTicketForm({
         title: "",
         description: "",
         category: "general",
         priority: "medium",
-        companyId: "",
+        companyId: user?.company ? getCompanyId(user.company) : "",
+        isGeneralTicket: false,
       });
-      // Add success message
+
+      // Show success toast
+      toast({
+        title: "Success",
+        description:
+          "Support ticket created successfully! A staff member will respond shortly.",
+        variant: "default",
+      });
+
+      // Add success message to chat
       const successMessage: Message = {
         id: Date.now().toString(),
         text: "Support ticket created successfully! A staff member will respond shortly.",
@@ -171,16 +206,47 @@ export function EnhancedChatWidget() {
         type: "support",
       };
       setMessages((prev) => [...prev, successMessage]);
+
+      // Switch to support mode to show the new ticket
+      setActiveMode("support");
+    },
+    onError: (error: any) => {
+      console.error("Failed to create ticket:", error);
+
+      // Show detailed error information
+      let errorMessage = "Failed to create support ticket. Please try again.";
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     },
   });
 
   const sendMessageMutation = useMutation({
     mutationFn: (formData: FormData) =>
       SupportAPI.sendMessage(selectedTicket!._id, formData),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Message sent successfully:", data);
+
+      // Invalidate and refetch queries
       refetchTicketDetails();
       refetchTickets();
       setInputValue("");
+
+      // Show success toast
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent successfully.",
+        variant: "default",
+      });
+
       if (socket) {
         socket.emit("new-message", {
           ticketId: selectedTicket!._id,
@@ -188,22 +254,43 @@ export function EnhancedChatWidget() {
         });
       }
     },
+    onError: (error: any) => {
+      console.error("Failed to send message:", error);
+
+      // Show detailed error information
+      let errorMessage = "Failed to send message. Please try again.";
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
   });
 
   // Socket connection for support
   useEffect(() => {
     if (isOpen && user && activeMode === "support") {
+      console.log("Attempting to connect to socket...");
+
       const newSocket = io(
         process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000",
         {
           auth: {
-            token: localStorage.getItem("accessToken"),
+            token: tokens?.accessToken,
           },
+          transports: ["websocket", "polling"],
+          timeout: 10000,
         }
       );
 
       newSocket.on("connect", () => {
-        console.log("Support socket connected");
+        console.log("Support socket connected successfully");
       });
 
       newSocket.on("message-received", (data) => {
@@ -213,8 +300,25 @@ export function EnhancedChatWidget() {
         }
       });
 
-      newSocket.on("user-typing", (data) => {
-        if (data.userId !== user._id) {
+      newSocket.on("ticket-created", (data) => {
+        refetchTickets();
+      });
+
+      newSocket.on("ticket-updated", (data) => {
+        refetchTicketDetails();
+        refetchTickets();
+      });
+
+      newSocket.on("disconnect", () => {
+        console.log("Socket disconnected");
+      });
+
+      newSocket.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
+      });
+
+      newSocket.on("typing", (data) => {
+        if (data.userId !== user?._id) {
           if (data.isTyping) {
             setTypingUsers((prev) => new Set(prev).add(data.userId));
           } else {
@@ -227,9 +331,18 @@ export function EnhancedChatWidget() {
         }
       });
 
+      // Join ticket room when a ticket is selected
+      if (selectedTicket?._id) {
+        newSocket.emit("join-ticket", selectedTicket._id);
+      }
+
       setSocket(newSocket);
 
       return () => {
+        console.log("Cleaning up socket connection");
+        if (selectedTicket?._id) {
+          newSocket.emit("leave-ticket", selectedTicket._id);
+        }
         newSocket.close();
       };
     }
@@ -240,7 +353,19 @@ export function EnhancedChatWidget() {
     selectedTicket?._id,
     refetchTicketDetails,
     refetchTickets,
+    tokens?.accessToken,
   ]);
+
+  // Join ticket room when ticket selection changes
+  useEffect(() => {
+    if (socket && selectedTicket?._id) {
+      socket.emit("join-ticket", selectedTicket._id);
+
+      return () => {
+        socket.emit("leave-ticket", selectedTicket._id);
+      };
+    }
+  }, [socket, selectedTicket?._id]);
 
   // Auto-scroll to bottom of messages
   const ticketDetailsMessages = (ticketDetails as any)?.messages;
@@ -284,28 +409,99 @@ export function EnhancedChatWidget() {
       formData.append("messageType", "text");
 
       sendMessageMutation.mutate(formData);
+    } else if (activeMode === "support" && !selectedTicket) {
+      toast({
+        title: "Error",
+        description: "Please select a support ticket to send a message.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleCreateTicket = () => {
-    if (!newTicketForm.companyId) {
-      // Show error or handle missing company
+    // Validate form
+    if (!newTicketForm.title.trim() || !newTicketForm.description.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in both title and description fields.",
+        variant: "destructive",
+      });
       return;
     }
 
+    // Determine company ID based on user choice
+    let companyId = newTicketForm.companyId;
+
+    // If user chose general support, don't require company
+    if (newTicketForm.isGeneralTicket) {
+      companyId = ""; // General ticket - no company assigned
+    } else if (!companyId && user?.company) {
+      // Use user's company as default if available
+      companyId = getCompanyId(user.company);
+    }
+
     const formData = new FormData();
-    formData.append("title", newTicketForm.title);
-    formData.append("description", newTicketForm.description);
+    formData.append("title", newTicketForm.title.trim());
+    formData.append("description", newTicketForm.description.trim());
     formData.append("category", newTicketForm.category);
     formData.append("priority", newTicketForm.priority);
-    formData.append("companyId", newTicketForm.companyId);
+    if (companyId) {
+      formData.append("companyId", companyId);
+    }
+
+    // Test toast before mutation
+    toast({
+      title: "Creating Ticket",
+      description: "Please wait while we create your support ticket...",
+      variant: "default",
+    });
 
     createTicketMutation.mutate(formData);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || !selectedTicket || activeMode !== "support") return;
+    if (!files || !selectedTicket || activeMode !== "support") {
+      toast({
+        title: "Error",
+        description:
+          "Please select a ticket and ensure you're in support mode to upload files.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (files.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one file to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size and type
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = ["image/*", ".pdf", ".doc", ".docx", ".txt"];
+
+    for (const file of Array.from(files)) {
+      if (file.size > maxSize) {
+        toast({
+          title: "Error",
+          description: `File ${file.name} is too large. Maximum size is 10MB.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    toast({
+      title: "Uploading",
+      description: `Uploading ${files.length} file${
+        files.length > 1 ? "s" : ""
+      }...`,
+      variant: "default",
+    });
 
     const formData = new FormData();
     formData.append("message", "File uploaded");
@@ -322,6 +518,24 @@ export function EnhancedChatWidget() {
     setSelectedTicket(null);
     setShowTicketForm(false);
     refetchTickets();
+  };
+
+  const handleModeSwitch = (mode: "chat" | "support") => {
+    setActiveMode(mode);
+    setSelectedTicket(null);
+    setShowTicketForm(false);
+
+    if (mode === "chat") {
+      setMessages([
+        {
+          id: "1",
+          text: "Hi! I'm your facility booking assistant. I can help with bookings, pricing, and support tickets. How can I assist you today?",
+          isBot: true,
+          timestamp: new Date(),
+          type: "chat",
+        },
+      ]);
+    }
   };
 
   const getBotResponse = (input: string): string => {
@@ -390,7 +604,6 @@ export function EnhancedChatWidget() {
     }
   };
 
-
   return (
     <>
       <AnimatePresence>
@@ -402,7 +615,9 @@ export function EnhancedChatWidget() {
             className="fixed bottom-6 right-6 z-50"
           >
             <Button
-              onClick={() => setIsOpen(true)}
+              onClick={() => {
+                setIsOpen(true);
+              }}
               className="w-14 h-14 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
             >
               <MessageCircle className="h-6 w-6" />
@@ -438,7 +653,9 @@ export function EnhancedChatWidget() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsMinimized(!isMinimized)}
+                  onClick={() => {
+                    setIsMinimized(!isMinimized);
+                  }}
                   className="text-white hover:bg-slate-800 p-1"
                 >
                   <Minimize2 className="h-4 w-4" />
@@ -446,7 +663,9 @@ export function EnhancedChatWidget() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    setIsOpen(false);
+                  }}
                   className="text-white hover:bg-slate-800 p-1"
                 >
                   <X className="h-4 w-4" />
@@ -457,20 +676,7 @@ export function EnhancedChatWidget() {
             {/* Mode switcher */}
             <div className="flex border-b border-gray-200">
               <button
-                onClick={() => {
-                  setActiveMode("chat");
-                  setSelectedTicket(null);
-                  setShowTicketForm(false);
-                  setMessages([
-                    {
-                      id: "1",
-                      text: "Hi! I'm your facility booking assistant. I can help with bookings, pricing, and support tickets. How can I assist you today?",
-                      isBot: true,
-                      timestamp: new Date(),
-                      type: "chat",
-                    },
-                  ]);
-                }}
+                onClick={() => handleModeSwitch("chat")}
                 className={`w-1/2 py-2 px-4 text-sm font-medium transition-colors ${
                   activeMode === "chat"
                     ? "text-blue-600 border-b-2 border-blue-600"
@@ -480,7 +686,7 @@ export function EnhancedChatWidget() {
                 Chat
               </button>
               <button
-                onClick={() => setActiveMode("support")}
+                onClick={() => handleModeSwitch("support")}
                 className={`w-1/2 py-2 px-4 text-sm font-medium transition-colors ${
                   activeMode === "support"
                     ? "text-blue-600 border-b-2 border-blue-600"
@@ -572,7 +778,9 @@ export function EnhancedChatWidget() {
                               Support Tickets
                             </h3>
                             <button
-                              onClick={() => setShowTicketForm(true)}
+                              onClick={() => {
+                                setShowTicketForm(true);
+                              }}
                               className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs"
                             >
                               <Plus size={12} />
@@ -608,7 +816,9 @@ export function EnhancedChatWidget() {
                                 (ticket: SupportTicket) => (
                                   <div
                                     key={ticket._id}
-                                    onClick={() => setSelectedTicket(ticket)}
+                                    onClick={() => {
+                                      setSelectedTicket(ticket);
+                                    }}
                                     className="p-3 border rounded-lg cursor-pointer transition-colors hover:border-blue-300 hover:bg-blue-50"
                                   >
                                     <div className="flex items-center justify-between mb-2">
@@ -662,10 +872,12 @@ export function EnhancedChatWidget() {
                               Create Support Ticket
                             </h3>
                             <Button
-                              onClick={() => setShowTicketForm(false)}
-                              className="text-gray-500 hover:text-gray-700 text-sm"
+                              onClick={() => {
+                                setShowTicketForm(false);
+                              }}
+                              className="bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                             >
-                              ← Back to tickets
+                              ← Back
                             </Button>
                           </div>
                           <div className="p-4 rounded-lg">
@@ -694,68 +906,110 @@ export function EnhancedChatWidget() {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Detailed description"
                               />
+                              {/* Support Type Selection */}
                               <div className="space-y-2">
-                                <Select
-                                  value={newTicketForm.companyId}
-                                  onValueChange={(value) => {
-                                    setNewTicketForm((prev) => ({
-                                      ...prev,
-                                      companyId: value,
-                                    }));
-                                  }}
-                                >
-                                  <SelectTrigger
-                                    className={
-                                      isCompaniesError ? "border-red-500" : ""
-                                    }
+                                <div className="flex items-center space-x-4">
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="radio"
+                                      name="supportType"
+                                      checked={newTicketForm.isGeneralTicket}
+                                      onChange={() => {
+                                        setNewTicketForm((prev) => ({
+                                          ...prev,
+                                          isGeneralTicket: true,
+                                          companyId: "",
+                                        }));
+                                      }}
+                                      className="text-blue-600"
+                                    />
+                                    <span className="text-sm font-medium">
+                                      General Support
+                                    </span>
+                                  </label>
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="radio"
+                                      name="supportType"
+                                      checked={!newTicketForm.isGeneralTicket}
+                                      onChange={() => {
+                                        setNewTicketForm((prev) => ({
+                                          ...prev,
+                                          isGeneralTicket: false,
+                                        }));
+                                      }}
+                                      className="text-blue-600"
+                                    />
+                                    <span className="text-sm font-medium">
+                                      Company-Specific
+                                    </span>
+                                  </label>
+                                </div>
+
+                                {/* Company Selection - only show if not general support */}
+                                {!newTicketForm.isGeneralTicket && (
+                                  <Select
+                                    value={newTicketForm.companyId}
+                                    onValueChange={(value) => {
+                                      setNewTicketForm((prev) => ({
+                                        ...prev,
+                                        companyId: value,
+                                      }));
+                                    }}
                                   >
-                                    <SelectValue placeholder="Select company" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {isCompaniesLoading ? (
-                                      <SelectItem value="loading" disabled>
-                                        Loading companies...
-                                      </SelectItem>
-                                    ) : isCompaniesError ? (
-                                      <SelectItem
-                                        value="loading_failed"
-                                        disabled
-                                      >
-                                        Failed to load companies.
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            refetchCompanies();
-                                          }}
+                                    <SelectTrigger
+                                      className={
+                                        isCompaniesError ? "border-red-500" : ""
+                                      }
+                                    >
+                                      <SelectValue placeholder="Select company" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {isCompaniesLoading ? (
+                                        <SelectItem value="loading" disabled>
+                                          Loading companies...
+                                        </SelectItem>
+                                      ) : isCompaniesError ? (
+                                        <SelectItem
+                                          value="loading_failed"
+                                          disabled
                                         >
-                                          Retry
-                                        </Button>
-                                      </SelectItem>
-                                    ) : (companies as any)?.companies &&
-                                      (companies as any).companies.length >
-                                        0 ? (
-                                      (companies as any).companies.map(
-                                        (company: {
-                                          _id: string;
-                                          name: string;
-                                        }) => (
-                                          <SelectItem
-                                            key={company._id}
-                                            value={company._id}
+                                          Failed to load companies.
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              refetchCompanies();
+                                            }}
                                           >
-                                            {company.name}
-                                          </SelectItem>
+                                            Retry
+                                          </Button>
+                                        </SelectItem>
+                                      ) : (companies as any)?.companies &&
+                                        (companies as any).companies.length >
+                                          0 ? (
+                                        (companies as any).companies.map(
+                                          (company: {
+                                            _id: string;
+                                            name: string;
+                                          }) => (
+                                            <SelectItem
+                                              key={company._id}
+                                              value={company._id}
+                                            >
+                                              {company.name}
+                                            </SelectItem>
+                                          )
                                         )
-                                      )
-                                    ) : (
-                                      <SelectItem value="" disabled>
-                                        No companies found
-                                      </SelectItem>
-                                    )}
-                                  </SelectContent>
-                                </Select>
+                                      ) : (
+                                        <SelectItem value="" disabled>
+                                          No companies found
+                                        </SelectItem>
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                )}
                                 <div className="grid grid-cols-2 gap-2">
                                   <Select
                                     value={newTicketForm.category}
@@ -844,11 +1098,10 @@ export function EnhancedChatWidget() {
                               Ticket Details
                             </h3>
                             <Button
-                              variant="ghost"
                               onClick={handleBackToTickets}
-                              className="text-gray-500 hover:text-gray-700 text-sm"
+                              className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                             >
-                              ← Back to tickets
+                              ← Back
                             </Button>
                           </div>
                           <div className="p-3 border-b border-gray-200 rounded-lg mb-3">
@@ -948,10 +1201,49 @@ export function EnhancedChatWidget() {
                             <input
                               type="text"
                               value={inputValue}
-                              onChange={(e) => setInputValue(e.target.value)}
-                              onKeyPress={(e) =>
-                                e.key === "Enter" && handleSendMessage()
-                              }
+                              onChange={(e) => {
+                                setInputValue(e.target.value);
+                                if (
+                                  socket &&
+                                  selectedTicket?._id &&
+                                  user?._id
+                                ) {
+                                  socket.emit("typing", {
+                                    ticketId: selectedTicket._id,
+                                    userId: user._id,
+                                    isTyping: true,
+                                  });
+                                }
+                              }}
+                              onBlur={() => {
+                                if (
+                                  socket &&
+                                  selectedTicket?._id &&
+                                  user?._id
+                                ) {
+                                  socket.emit("typing", {
+                                    ticketId: selectedTicket._id,
+                                    userId: user._id,
+                                    isTyping: false,
+                                  });
+                                }
+                              }}
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") {
+                                  handleSendMessage();
+                                  if (
+                                    socket &&
+                                    selectedTicket?._id &&
+                                    user?._id
+                                  ) {
+                                    socket.emit("typing", {
+                                      ticketId: selectedTicket._id,
+                                      userId: user._id,
+                                      isTyping: false,
+                                    });
+                                  }
+                                }
+                              }}
                               placeholder="Type your message..."
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />

@@ -79,6 +79,14 @@ const getAllUsers = async (req: Request, res: Response): Promise<void> => {
 // Get company-specific users with pagination and filtering
 const getCompanyUsers = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (!req.user?.companyId) {
+      sendError(
+        res,
+        "Company ID not found. User must be associated with a company."
+      );
+      return;
+    }
+
     const {
       page = "1",
       limit = "10",
@@ -95,7 +103,7 @@ const getCompanyUsers = async (req: Request, res: Response): Promise<void> => {
       search: search as string,
       sortBy: sortBy as string,
       sortOrder: sortOrder as "asc" | "desc",
-      companyId: req.user?.companyId,
+      companyId: req.user.companyId,
     };
 
     const result = await UserService.getCompanyUsers(options);
@@ -214,6 +222,7 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
       "isDeleted",
       "status",
       "profile",
+      "isSuperAdmin",
     ];
     const filteredData = Object.keys(data)
       .filter((key) => allowedFields.includes(key))
@@ -391,6 +400,47 @@ const updateUserLoyalty = async (
   }
 };
 
+// Get user loyalty profile
+const getLoyaltyProfile = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const user = req.user; // From auth middleware
+
+    if (!user) {
+      sendError(res, "User not found", null, 401);
+      return;
+    }
+
+    const loyaltyProfile = await UserService.getUserLoyaltyProfile(user.id);
+    sendSuccess(res, "Loyalty profile retrieved successfully", loyaltyProfile);
+  } catch (error: any) {
+    sendError(res, "Failed to retrieve loyalty profile", error.message);
+  }
+};
+
+// Get loyalty tier information
+const getLoyaltyTierInfo = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const tierInfo = UserService.getLoyaltyTierInfo();
+    sendSuccess(
+      res,
+      "Loyalty tier information retrieved successfully",
+      tierInfo
+    );
+  } catch (error: any) {
+    sendError(
+      res,
+      "Failed to retrieve loyalty tier information",
+      error.message
+    );
+  }
+};
+
 export {
   createUser,
   getAllUsers,
@@ -403,4 +453,6 @@ export {
   deleteUser,
   getUserStatistics,
   updateUserLoyalty,
+  getLoyaltyProfile,
+  getLoyaltyTierInfo,
 };

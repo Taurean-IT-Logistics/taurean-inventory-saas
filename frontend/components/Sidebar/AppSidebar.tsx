@@ -19,22 +19,25 @@ import {
   LogOut,
   Package2,
   PieChart,
+  Receipt,
   ShoppingBag,
   Users,
   MessageSquare,
   BarChart3,
   Mail,
+  CreditCard,
 } from "lucide-react";
 import Logo from "../logo/Logo";
 import type { Route } from "./NavMain";
 import DashboardNavigation from "./NavMain";
-import { NotificationsPopover } from "./NavNotifications";
+import { NotificationPopover } from "../notifications/NotificationPopover";
 import { Button } from "../ui/button";
 import { useAuth } from "../AuthProvider";
 import { getResourceUrl } from "@/lib/api";
 import { SocketStatus } from "../ui/socket-status";
 import { logo } from "@/assets";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const sampleNotifications = [
   {
@@ -134,10 +137,22 @@ const dashboardRoutes: Route[] = [
     link: "/admin/company-profile",
   },
   {
+    id: "subaccount",
+    title: "Subaccount",
+    icon: <CreditCard className="size-4" />,
+    link: "/admin/subaccount",
+  },
+  {
     id: "support",
     title: "Support",
     icon: <MessageSquare className="size-4" />,
     link: "/admin/support",
+  },
+  {
+    id: "invoices",
+    title: "Invoices",
+    icon: <Receipt className="size-4" />,
+    link: "/admin/invoices",
   },
   {
     id: "reports",
@@ -155,11 +170,17 @@ const dashboardRoutes: Route[] = [
 
 export function DashboardSidebar() {
   const { state } = useSidebar();
+  const router = useRouter();
   const isCollapsed = state === "collapsed";
   const { logout, user } = useAuth();
 
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
+
   return (
-    <Sidebar variant="inset" collapsible="icon">
+    <Sidebar collapsible="offcanvas" className="border-r w-64 min-w-64">
       <SidebarHeader
         className={cn(
           "flex md:pt-3.5",
@@ -189,7 +210,7 @@ export function DashboardSidebar() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          <NotificationsPopover notifications={sampleNotifications} />
+          <NotificationPopover />
           <SidebarTrigger />
           <SocketStatus />
 
@@ -203,7 +224,7 @@ export function DashboardSidebar() {
       <SidebarFooter className="px-2">
         <Button
           className="flex items-center justify-center gap-2 bg-red-600/40 hover:bg-red-600 transition-all p-2 rounded-lg text-secondary"
-          onClick={logout}
+          onClick={handleLogout}
         >
           <LogOut className="size-4" />
           {!isCollapsed && <span className="text-sm font-medium">Log out</span>}

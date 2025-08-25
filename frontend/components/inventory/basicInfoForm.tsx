@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Facility, InventoryItem } from "@/types";
-import { useFacilities } from "@/hooks/useFacilities";
+import { useQuery } from "@tanstack/react-query";
+import { FacilitiesAPI } from "@/lib/api";
 
 interface BasicInfoFormProps {
   formData: Partial<InventoryItem>;
@@ -47,7 +48,11 @@ const BasicInfoForm = ({
     data: facilities,
     isLoading: facilitiesLoading,
     error: facilitiesError,
-  } = useFacilities();
+  } = useQuery({
+    queryKey: ["facilities"],
+    queryFn: () => FacilitiesAPI.listCompany(),
+  });
+
   const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const capitalizedValue = value

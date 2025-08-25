@@ -1,26 +1,37 @@
 import { Router } from "express";
 import * as EmailController from "../controllers/email.controller";
 import { AuthMiddleware } from "../middlewares/auth.middleware";
-import { RequireActiveCompany, RequirePermissions } from "../middlewares/auth.middleware";
+import {
+  RequireActiveCompany,
+  RequirePermissions,
+} from "../middlewares/auth.middleware";
 
 const router = Router();
 
 // All routes require authentication
 router.use(AuthMiddleware);
 
-// Test email configuration - admin only
+// Test email configuration - available to all company admins with email permission
 router.get(
   "/test-config",
   RequireActiveCompany(),
-  RequirePermissions(["manageSettings"]),
+  RequirePermissions(["manageEmails"]),
   EmailController.testEmailConfiguration
 );
 
-// Send test email - admin only
+// Test company email configuration - company admin only
+router.get(
+  "/test-company-config/:companyId",
+  RequireActiveCompany(),
+  RequirePermissions(["manageEmails"]),
+  EmailController.testCompanyEmailConfiguration
+);
+
+// Send test email - available to all company admins with email permission
 router.post(
   "/test",
   RequireActiveCompany(),
-  RequirePermissions(["manageSettings"]),
+  RequirePermissions(["manageEmails"]),
   EmailController.sendTestEmail
 );
 
@@ -30,22 +41,6 @@ router.post(
   RequireActiveCompany(),
   RequirePermissions(["manageUsers"]),
   EmailController.sendWelcomeEmail
-);
-
-// Send invoice email - admin/staff with transaction permissions
-router.post(
-  "/invoice/:invoiceId",
-  RequireActiveCompany(),
-  RequirePermissions(["manageTransactions"]),
-  EmailController.sendInvoiceEmail
-);
-
-// Send receipt email - admin/staff with transaction permissions
-router.post(
-  "/receipt/:receiptId",
-  RequireActiveCompany(),
-  RequirePermissions(["manageTransactions"]),
-  EmailController.sendReceiptEmail
 );
 
 // Send booking confirmation - admin/staff with booking permissions
@@ -64,24 +59,26 @@ router.post(
   EmailController.sendBookingReminder
 );
 
-// Send bulk email - admin only
+// Send bulk email - available to company admins with email permission
 router.post(
   "/bulk",
   RequireActiveCompany(),
-  RequirePermissions(["manageSettings"]),
+  RequirePermissions(["manageEmails"]),
   EmailController.sendBulkEmail
 );
 
 // Email settings management
 router.get(
   "/settings/:companyId",
-  RequirePermissions(["viewSettings"]),
+  RequireActiveCompany(),
+  RequirePermissions(["manageEmails"]),
   EmailController.getEmailSettings
 );
 
 router.put(
   "/settings/:companyId",
-  RequirePermissions(["manageSettings"]),
+  RequireActiveCompany(),
+  RequirePermissions(["manageEmails"]),
   EmailController.updateEmailSettings
 );
 

@@ -19,7 +19,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
@@ -30,10 +29,7 @@ import {
 import {
   CalendarDays,
   CreditCard,
-  Download,
-  FileText,
   MoreHorizontal,
-  Receipt,
   TrendingUp,
   Wallet,
   Clock,
@@ -41,12 +37,21 @@ import {
   XCircle,
   AlertCircle,
   DollarSign,
+  Building2,
+  Home,
+  MessageSquare,
 } from "lucide-react";
-import { InvoicesAPI, TransactionsAPI, BookingsAPI } from "@/lib/api";
+import { TransactionsAPI, BookingsAPI } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { currencyFormat } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
+import Link from "next/link";
+import UserInvitations from "@/components/user/UserInvitations";
+import { EnhancedChatWidget } from "@/components/chat/enhanced-chat-widget";
+import { PaymentStatusBadge } from "@/components/booking/booking-calendar/paymentStatusBadge";
+import { BookingStatusBadge } from "@/components/booking/booking-calendar/bookingStatusBadge";
+import { InvoiceTemplate } from "@/components/templates/invoiceTemplate";
 
 interface DashboardStats {
   totalBookings: number;
@@ -58,6 +63,7 @@ interface DashboardStats {
 const UserDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [viewingInvoice, setViewingInvoice] = useState<string | null>(null);
 
   // Fetch user transactions
   const {
@@ -67,28 +73,6 @@ const UserDashboard = () => {
   } = useQuery({
     queryKey: ["user-transactions"],
     queryFn: () => TransactionsAPI.getUserTransactions(),
-    enabled: !!user,
-  });
-
-  // Fetch user invoices
-  const {
-    data: invoices,
-    isLoading: invoicesLoading,
-    error: invoicesError,
-  } = useQuery({
-    queryKey: ["user-invoices"],
-    queryFn: () => InvoicesAPI.getUserInvoices(),
-    enabled: !!user,
-  });
-
-  // Fetch user receipts
-  const {
-    data: receipts,
-    isLoading: receiptsLoading,
-    error: receiptsError,
-  } = useQuery({
-    queryKey: ["user-receipts"],
-    queryFn: () => InvoicesAPI.getUserReceipts(),
     enabled: !!user,
   });
 
@@ -106,168 +90,43 @@ const UserDashboard = () => {
   // Calculate dashboard stats
   const dashboardStats: DashboardStats = React.useMemo(() => {
     const stats = {
-      totalBookings: (bookings as any)?.data?.length || 0,
+      totalBookings: (bookings as any)?.length || 0,
       totalSpent: 0,
       pendingPayments: 0,
       completedBookings: 0,
     };
 
-    if ((transactions as any)?.data) {
-      stats.totalSpent = (transactions as any).data
-        .filter((t: any) => t.type === "expense")
+    if (transactions as any) {
+      stats.totalSpent = (transactions as any)
+        .filter((t: any) => t.reconciled === true)
+        .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
+      // Calculate pending payments from transactions
+      stats.pendingPayments = (transactions as any)
+        .filter((t: any) => t.reconciled === false)
         .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     }
 
-    if ((invoices as any)?.data) {
-      stats.pendingPayments = (invoices as any).data
-        .filter((inv: any) => inv.status === "pending")
-        .reduce((sum: number, inv: any) => sum + (inv.total || 0), 0);
-    }
-
-    if ((bookings as any)?.data) {
-      stats.completedBookings = (bookings as any).data.filter(
+    if (bookings as any) {
+      stats.completedBookings = (bookings as any).filter(
         (booking: any) => booking.status === "completed"
       ).length;
     }
 
     return stats;
-  }, [transactions, invoices, bookings]);
+  }, [transactions, bookings]);
 
-  const handleDownloadInvoice = async (invoiceId: string, invoiceNumber: string) => {
-    try {
-      const response = await fetch(`/api/v1/invoices/${invoiceId}/download`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to download invoice");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `invoice-${invoiceNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Success",
-        description: "Invoice downloaded successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to download invoice",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDownloadReceipt = async (receiptId: string) => {
-    try {
-      const response = await fetch(`/api/v1/invoices/receipts/${receiptId}/download`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to download receipt");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `receipt-${receiptId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Success",
-        description: "Receipt downloaded successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to download receipt",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleExportTransactions = async (format: "csv" | "excel") => {
-    try {
-      const response = await fetch(`/api/v1/transactions/export/user?format=${format}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to export transactions");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `my-transactions.${format === "excel" ? "xlsx" : "csv"}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Success",
-        description: "Transactions exported successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to export transactions",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "paid":
-      case "completed":
-        return <Badge className="bg-green-100 text-green-800">Paid</Badge>;
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case "failed":
-      case "cancelled":
-        return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "paid":
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "pending":
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      case "failed":
-      case "cancelled":
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return <AlertCircle className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  if (transactionsLoading || invoicesLoading || receiptsLoading || bookingsLoading) {
+  if (transactionsLoading || bookingsLoading) {
     return <Loader text="Loading dashboard..." className="pt-20" />;
   }
+
+  const handleViewInvoice = (transactionId: string) => {
+    setViewingInvoice(transactionId);
+  };
+
+  const handleCloseInvoice = () => {
+    setViewingInvoice(null);
+  };
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8 mt-20 space-y-8">
@@ -279,91 +138,212 @@ const UserDashboard = () => {
             Welcome back, {user?.name}! Here&apos;s your account overview.
           </p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => handleExportTransactions("csv")}>
-              Export as CSV
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExportTransactions("excel")}>
-              Export as Excel
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Total Bookings
+            </CardTitle>
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <CalendarDays className="h-6 w-6 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.totalBookings}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-foreground">
+              {dashboardStats.totalBookings}
+            </div>
+            <p className="text-sm text-muted-foreground">
               {dashboardStats.completedBookings} completed
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <DollarSign className="h-6 w-6 text-emerald-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-foreground">
               {currencyFormat(dashboardStats.totalSpent)}
             </div>
-            <p className="text-xs text-muted-foreground">Across all bookings</p>
+            <p className="text-sm text-muted-foreground">Across all bookings</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Pending Payments
+            </CardTitle>
+            <div className="p-3 bg-amber-100 rounded-xl">
+              <Wallet className="h-6 w-6 text-amber-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-foreground">
               {currencyFormat(dashboardStats.pendingPayments)}
             </div>
-            <p className="text-xs text-muted-foreground">Outstanding invoices</p>
+            <p className="text-sm text-muted-foreground">
+              Outstanding invoices
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Bookings</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Active Bookings
+            </CardTitle>
+            <div className="p-3 bg-green-100 rounded-xl">
+              <TrendingUp className="h-6 w-6 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {(bookings as any)?.data?.filter((b: any) => b.status === "active").length || 0}
+            <div className="text-2xl font-bold text-foreground">
+              {(bookings as any)?.filter(
+                (b: any) =>
+                  b.status !== "cancelled" &&
+                  b.status !== "completed" &&
+                  b.status !== "pending"
+              ).length || 0}
             </div>
-            <p className="text-xs text-muted-foreground">Currently in progress</p>
+            <p className="text-sm text-muted-foreground">
+              Currently in progress
+            </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Quick Access Section */}
+      {!user?.company && (
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Company Access
+            </CardTitle>
+            <CardDescription>
+              Join a company to access business features and manage facilities
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  You&apos;re not currently associated with any company
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Request to join a company or become a host to get started
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button asChild variant="outline">
+                  <Link href="/user/join-requests">
+                    <Building2 className="h-4 w-4 mr-2" />
+                    View Join Requests
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/user/host">
+                    <Home className="h-4 w-4 mr-2" />
+                    Become a Host
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Company Status Section */}
+      {user?.company && (
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Company Status
+            </CardTitle>
+            <CardDescription>
+              You are currently associated with a company
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  Company: {(user.company as any)?.name || "Unknown Company"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Role: {user.role || "User"}
+                </p>
+              </div>
+              <Button asChild>
+                <Link href="/admin">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Go to Dashboard
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
-          <TabsTrigger value="invoices">Invoices</TabsTrigger>
-          <TabsTrigger value="receipts">Receipts</TabsTrigger>
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="invitations">Invitations</TabsTrigger>
+          <TabsTrigger value="support">Support</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          {/* Recent Join Requests */}
+          {!user?.company && (
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Recent Join Requests
+                </CardTitle>
+                <CardDescription>
+                  Your latest company join requests
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* This will be populated by the UserJoinRequests component */}
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">
+                      Loading join requests...
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href="/user/join-requests">
+                      <Building2 className="h-4 w-4 mr-2" />
+                      View All Join Requests
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Recent Transactions */}
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
@@ -377,23 +357,32 @@ const UserDashboard = () => {
                   title="Error loading transactions"
                   message={transactionsError.message}
                 />
-              ) : !(transactions as any)?.data || (transactions as any).data.length === 0 ? (
+              ) : !(transactions as any) ||
+                (transactions as any).length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No transactions found
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {(transactions as any).data.slice(0, 5).map((transaction: any) => (
+                  {(transactions as any).slice(0, 5).map((transaction: any) => (
                     <div
                       key={transaction._id}
                       className="flex items-center justify-between p-4 border rounded-lg"
                     >
                       <div className="flex items-center gap-3">
-                        {getStatusIcon(transaction.status)}
+                        <PaymentStatusBadge
+                          status={
+                            transaction.reconciled ? "completed" : "pending"
+                          }
+                        />
                         <div>
-                          <p className="font-medium">{transaction.description}</p>
+                          <p className="font-medium">
+                            {transaction.description}
+                          </p>
                           <p className="text-sm text-muted-foreground">
-                            {new Date(transaction.createdAt).toLocaleDateString()}
+                            {new Date(
+                              transaction.createdAt
+                            ).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -401,7 +390,14 @@ const UserDashboard = () => {
                         <p className="font-medium">
                           {currencyFormat(transaction.amount)}
                         </p>
-                        {getStatusBadge(transaction.status)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewInvoice(transaction._id)}
+                          className="mt-1 h-6 px-2 text-xs"
+                        >
+                          View Invoice
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -412,7 +408,7 @@ const UserDashboard = () => {
         </TabsContent>
 
         <TabsContent value="bookings" className="space-y-6">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CalendarDays className="h-5 w-5" />
@@ -426,7 +422,7 @@ const UserDashboard = () => {
                   title="Error loading bookings"
                   message={bookingsError.message}
                 />
-              ) : !(bookings as any)?.data || (bookings as any).data.length === 0 ? (
+              ) : !(bookings as any) || (bookings as any).length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No bookings found
                 </p>
@@ -444,10 +440,10 @@ const UserDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(bookings as any).data.map((booking: any) => (
+                    {(bookings as any).map((booking: any) => (
                       <TableRow key={booking._id}>
                         <TableCell className="font-medium">
-                          {booking.bookingNumber}
+                          #{booking._id.slice(-8)}
                         </TableCell>
                         <TableCell>{booking.facility?.name}</TableCell>
                         <TableCell>
@@ -455,9 +451,11 @@ const UserDashboard = () => {
                         </TableCell>
                         <TableCell>{booking.duration} hours</TableCell>
                         <TableCell>
-                          {currencyFormat(booking.totalAmount)}
+                          {currencyFormat(booking.totalPrice)}
                         </TableCell>
-                        <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                        <TableCell>
+                          <BookingStatusBadge status={booking.status} />
+                        </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -468,7 +466,9 @@ const UserDashboard = () => {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem>View Details</DropdownMenuItem>
                               {booking.status === "pending" && (
-                                <DropdownMenuItem>Cancel Booking</DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  Cancel Booking
+                                </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -482,151 +482,178 @@ const UserDashboard = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="invoices" className="space-y-6">
-          <Card>
+        <TabsContent value="transactions" className="space-y-6">
+          {viewingInvoice ? (
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Invoice Details
+                  </CardTitle>
+                  <Button variant="outline" onClick={handleCloseInvoice}>
+                    ← Back to Transactions
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const transaction = (transactions as any)?.find(
+                    (t: any) => t._id === viewingInvoice
+                  );
+                  if (!transaction) {
+                    return (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Transaction not found
+                      </div>
+                    );
+                  }
+                  return <InvoiceTemplate transaction={transaction} />;
+                })()}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  All Transactions
+                </CardTitle>
+                <CardDescription>
+                  Detailed list of all your transactions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {transactionsError ? (
+                  <ErrorComponent
+                    title="Error loading transactions"
+                    message={transactionsError.message}
+                  />
+                ) : !(transactions as any) ||
+                  (transactions as any).length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No transactions found
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(transactions as any).map((transaction: any) => (
+                        <TableRow key={transaction._id}>
+                          <TableCell className="font-medium">
+                            #{transaction._id.slice(-8)}
+                          </TableCell>
+                          <TableCell>{transaction.description}</TableCell>
+                          <TableCell>
+                            {currencyFormat(transaction.amount)}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(
+                              transaction.createdAt
+                            ).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <PaymentStatusBadge
+                              status={
+                                transaction.reconciled ? "completed" : "pending"
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleViewInvoice(transaction._id)
+                                  }
+                                >
+                                  View Invoice
+                                </DropdownMenuItem>
+                                {transaction.status === "pending" && (
+                                  <DropdownMenuItem>
+                                    Cancel Transaction
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="invitations" className="space-y-6">
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                My Invoices
+                <Building2 className="h-5 w-5" />
+                My Invitations
               </CardTitle>
-              <CardDescription>All your invoices and bills</CardDescription>
+              <CardDescription>
+                Invitations you have received to join companies
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {invoicesError ? (
-                <ErrorComponent
-                  title="Error loading invoices"
-                  message={invoicesError.message}
-                />
-              ) : !(invoices as any)?.data || (invoices as any).data.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No invoices found
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(invoices as any).data.map((invoice: any) => (
-                      <TableRow key={invoice._id}>
-                        <TableCell className="font-medium">
-                          #{invoice.invoiceNumber}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(invoice.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          {invoice.currency} {invoice.total.toFixed(2)}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(invoice.status)}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleDownloadInvoice(invoice._id, invoice.invoiceNumber)
-                                }
-                              >
-                                <Download className="mr-2 h-4 w-4" />
-                                Download PDF
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
-                              {invoice.status === "pending" && (
-                                <DropdownMenuItem>Pay Now</DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              <UserInvitations />
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="receipts" className="space-y-6">
-          <Card>
+        <TabsContent value="support" className="space-y-6">
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Receipt className="h-5 w-5" />
-                My Receipts
+                <Home className="h-5 w-5" />
+                Support
               </CardTitle>
-              <CardDescription>Payment receipts for your transactions</CardDescription>
+              <CardDescription>
+                Get help and support from our team
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {receiptsError ? (
-                <ErrorComponent
-                  title="Error loading receipts"
-                  message={receiptsError.message}
-                />
-              ) : !(receipts as any)?.data || (receipts as any).data.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No receipts found
+              <div className="text-center py-8 text-gray-500">
+                <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>Support assistance available</p>
+                <p className="text-sm">
+                  Use the chat widget in the bottom-right corner for immediate
+                  support
                 </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Receipt ID</TableHead>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(receipts as any).data.map((receipt: any) => (
-                      <TableRow key={receipt._id}>
-                        <TableCell className="font-medium">
-                          {receipt._id.slice(-8)}
-                        </TableCell>
-                        <TableCell>#{receipt.invoice?.invoiceNumber}</TableCell>
-                        <TableCell>
-                          {new Date(receipt.timestamp).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          {currencyFormat(receipt.amount)}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleDownloadReceipt(receipt._id)}
-                              >
-                                <Download className="mr-2 h-4 w-4" />
-                                Download PDF
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+                <div className="mt-4">
+                  <Button
+                    onClick={() => setActiveTab("chat")}
+                    className="flex items-center gap-2"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Open Support Chat
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Enhanced Chat Widget - Always visible */}
+      <EnhancedChatWidget />
     </div>
   );
 };

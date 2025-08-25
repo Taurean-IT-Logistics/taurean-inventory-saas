@@ -26,10 +26,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
 import SimplePaginatedList from "@/components/paginatedList";
-import { useAuth } from "@/components/AuthProvider";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
+import { BookingStatusBadge } from "@/components/booking/booking-calendar/bookingStatusBadge";
 
 interface DashboardStats {
   totalBookings: number;
@@ -44,16 +44,11 @@ interface DashboardStats {
 }
 
 const BookingDashboard = () => {
-  const { tokens } = useAuth();
-
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
 
   const queryClient = useQueryClient();
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
 
   // Real-time updates for bookings
   useRealtimeUpdates({
@@ -75,7 +70,7 @@ const BookingDashboard = () => {
   });
 
   const {
-    data: bookings,
+    data: bookings = [] as Booking[],
     isError: bookingsError,
     error: bookingsErrorMessage,
     isLoading: bookingsLoading,
@@ -126,7 +121,22 @@ const BookingDashboard = () => {
   });
 
   const createBookingMutation = useMutation({
-    mutationFn: (booking: Partial<Booking>) => BookingsAPI.create(booking),
+    mutationFn: (booking: Partial<Booking>) => {
+      // Handle facility field properly - it could be a string ID or an object with _id
+      let facilityId = booking.facility;
+      if (typeof facilityId === "object" && facilityId !== null) {
+        facilityId = (facilityId as any)._id;
+      }
+
+      if (!facilityId) {
+        throw new Error("Facility is required");
+      }
+
+      return BookingsAPI.create({
+        ...booking,
+        facility: facilityId,
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Success",
@@ -317,7 +327,22 @@ const BookingDashboard = () => {
 
   const handleUpdateBooking = async (booking: Partial<Booking>) => {
     try {
-      await updateBookingMutation.mutateAsync(booking);
+      const { facility, ...rest } = booking;
+
+      // Handle facility field properly - it could be a string ID or an object with _id
+      let facilityId = facility;
+      if (typeof facilityId === "object" && facilityId !== null) {
+        facilityId = (facilityId as any)._id;
+      }
+
+      if (!facilityId) {
+        throw new Error("Facility is required");
+      }
+
+      await updateBookingMutation.mutateAsync({
+        ...rest,
+        facility: facilityId,
+      });
     } catch (error) {
       console.error("Error updating booking:", error);
     }
@@ -325,49 +350,27 @@ const BookingDashboard = () => {
 
   const handleCreateBooking = async (booking: Partial<Booking>) => {
     const payload = { ...booking };
+
+    // Handle facility field properly
     if (payload.facility) {
-      payload.facility = (payload.facility as any)._id;
+      if (typeof payload.facility === "object" && payload.facility !== null) {
+        payload.facility = (payload.facility as any)._id;
+      }
+      // If it's already a string, keep it as is
     }
+
+    // Handle user field properly
     if (payload.user) {
-      payload.user = (payload.user as any)._id;
+      if (typeof payload.user === "object" && payload.user !== null) {
+        payload.user = (payload.user as any)._id;
+      }
+      // If it's already a string, keep it as is
     }
+
     try {
       await createBookingMutation.mutateAsync(payload);
     } catch (error) {
       console.error("Error creating booking:", error);
-    }
-  };
-
-  const getStatusIcon = (status: string): string => {
-    switch (status) {
-      case "confirmed":
-      case "completed":
-        return "✓";
-      case "pending":
-        return "⏳";
-      case "cancelled":
-        return "✗";
-      case "no_show":
-        return "⚠";
-      default:
-        return "⏳";
-    }
-  };
-
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case "confirmed":
-        return "success";
-      case "pending":
-        return "warning";
-      case "cancelled":
-        return "danger";
-      case "completed":
-        return "info";
-      case "no_show":
-        return "secondary";
-      default:
-        return "primary";
     }
   };
 
@@ -377,19 +380,50 @@ const BookingDashboard = () => {
   };
 
   const safeGetUserName = (booking: Booking): string => {
-    return booking?.user?.name || "Unknown User";
+    // Handle user field properly - it could be a string ID or an object with name
+    if (!booking?.user) return "Unknown User";
+
+    if (typeof booking.user === "object" && booking.user !== null) {
+      // If it's an object, use the name property
+      return (booking.user as any)?.name || "Unknown User";
+    }
+
+    // If it's a string ID, we can't look it up without users data
+    return "Unknown User";
   };
 
   const safeGetUserEmail = (booking: Booking): string => {
-    return booking?.user?.email || "No email";
+    // Handle user field properly - it could be a string ID or an object with email
+    if (!booking?.user) return "No email";
+
+    if (typeof booking.user === "object" && booking.user !== null) {
+      // If it's an object, use the email property
+      return (booking.user as any)?.email || "No email";
+    }
+
+    // If it's a string ID, we can't look it up without users data
+    return "No email";
   };
 
   const safeGetFacilityName = (booking: Booking): string => {
-    // Find the facility in the facilities array
-    const facility = facilities?.facilities?.find(
-      (f: any) => f._id === booking.facility
-    );
-    return facility?.name || "Unknown Facility";
+    // Handle facility field properly - it could be a string ID or an object with name
+    if (!booking?.facility) return "Unknown Facility";
+
+    if (typeof booking.facility === "string") {
+      // If it's a string ID, find the facility in the facilities array
+      const facility = facilities?.facilities?.find(
+        (f: any) => f._id === booking.facility
+      );
+      return facility?.name || "Unknown Facility";
+    } else if (
+      typeof booking.facility === "object" &&
+      booking.facility !== null
+    ) {
+      // If it's an object, use the name property
+      return (booking.facility as any)?.name || "Unknown Facility";
+    }
+
+    return "Unknown Facility";
   };
 
   const handleRetry = () => {
@@ -426,7 +460,7 @@ const BookingDashboard = () => {
             </p>
           </div>
           <div className="flex gap-3 mt-4 sm:mt-0">
-            <Link href="/admin/create-facility">
+            <Link href="/admin/facilities/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 New Facility
@@ -659,10 +693,7 @@ const BookingDashboard = () => {
                         </div>
                       </td>
                       <td className="p-4">
-                        <Badge variant={getStatusColor(booking.status) as any}>
-                          {getStatusIcon(booking.status)}{" "}
-                          {booking.status.toUpperCase()}
-                        </Badge>
+                        <BookingStatusBadge status={booking.status} />
                       </td>
                       <td className="p-4">
                         <span className="font-semibold">
@@ -678,7 +709,6 @@ const BookingDashboard = () => {
 
           <TabsContent value="calendar">
             <BookingCalendar
-              onRefresh={bookingsRefetch}
               facilities={facilities?.facilities as Facility[]}
               bookings={bookings as Booking[]}
               onUpdateBooking={handleUpdateBooking}

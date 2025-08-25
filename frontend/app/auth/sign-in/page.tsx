@@ -6,33 +6,24 @@ import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import { AuthAPI } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { Loader } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
-import { useRedirect } from "@/hooks/useRedirect";
+import { AuthGuard } from "@/components/AuthGuard";
 import Logo from "@/components/logo/Logo";
 
 export default function Login() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
   const { login } = useAuth();
-  const { redirectAfterLogin } = useRedirect();
 
   const loginMutation = useMutation({
     mutationFn: (data: { identifier: string; password: string }) =>
       AuthAPI.login(data.identifier, data.password),
     onSuccess: (data) => {
-      // Update auth state
+      // Update auth state - AuthProvider will handle redirects
       login(data.tokens);
-
-      if (window.history.length > 2) {
-        router.back();
-      } else {
-        redirectAfterLogin();
-      }
     },
     retry: false,
   });
@@ -60,85 +51,93 @@ export default function Login() {
   }, [loginMutation]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="flex flex-1 flex-col justify-center px-4 py-10 lg:px-6">
-        <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-          <Link href="/" className="flex justify-center mb-2">
-            <Logo />
-          </Link>
-          <h2 className="text-center text-xl font-semibold text-foreground">
-            Log in or create account
-          </h2>
-          <form
-            action="#"
-            method="post"
-            className="mt-6 space-y-4"
-            onSubmit={handleSubmit}
-          >
-            <div>
-              <Label
-                htmlFor="identifier"
-                className="text-sm font-medium text-foreground dark:text-foreground"
-              >
-                Email or Username
-              </Label>
-              <Input
-                type="text"
-                id="identifier"
-                name="identifier"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                autoComplete="email"
-                placeholder="yourusername@example.com"
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label
-                htmlFor="password-login-02"
-                className="text-sm font-medium text-foreground dark:text-foreground"
-              >
-                Password
-              </Label>
-              <Input
-                type="password"
-                id="password-login-02"
-                name="password-login-02"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="password"
-                placeholder="**************"
-                className="mt-2"
-              />
-            </div>
-            <Button type="submit" className="mt-4 w-full py-2 font-medium">
-              {loginMutation.isPending ? (
-                <Loader className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                "Log in"
-              )}
-            </Button>
-          </form>
-          <p className="mt-2 text-xs">
-            Don&apos;t have an account?{" "}
-            <Link href="/auth/sign-up" className="underline underline-offset-4">
-              Create an account
+    <AuthGuard requireGuest redirectTo="/">
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-1 flex-col justify-center px-4 py-10 lg:px-6">
+          <div className="sm:mx-auto sm:w-full sm:max-w-sm">
+            <Link href="/" className="flex justify-center mb-2">
+              <Logo />
             </Link>
-          </p>
-
-          <p className="mt-4 text-xs text-muted-foreground dark:text-muted-foreground">
-            By signing in, you agree to our{" "}
-            <Link href="/terms" className="underline underline-offset-4">
-              terms of service
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="underline underline-offset-4">
-              privacy policy
-            </Link>
-            .
-          </p>
+            <h2 className="text-center text-xl font-semibold text-foreground">
+              Log in or create account
+            </h2>
+            <form
+              action="#"
+              method="post"
+              className="mt-6 space-y-4"
+              onSubmit={handleSubmit}
+            >
+              <div>
+                <Label
+                  htmlFor="identifier"
+                  className="text-sm font-medium text-foreground dark:text-foreground"
+                >
+                  Email or Username
+                </Label>
+                <Input
+                  type="text"
+                  id="identifier"
+                  name="identifier"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  autoComplete="email"
+                  placeholder="yourusername@example.com"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label
+                  htmlFor="password-login-02"
+                  className="text-sm font-medium text-foreground dark:text-foreground"
+                >
+                  Password
+                </Label>
+                <Input
+                  type="password"
+                  id="password-login-02"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  className="mt-2"
+                />
+                <div className="mt-2 text-right">
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loginMutation.isPending}
+              >
+                {loginMutation.isPending ? (
+                  <>
+                    <Loader className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
+              </Button>
+            </form>
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/auth/sign-up"
+                className="font-medium text-primary hover:underline"
+              >
+                Sign up
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }

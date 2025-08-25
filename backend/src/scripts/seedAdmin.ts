@@ -9,7 +9,7 @@ async function seedTaureanIT() {
     await connectToMongoDB();
     console.log("Connected to database");
 
-    // Create Taurean IT company
+    // Create Taurean IT company (without subaccount - admin can set it up later)
     const taureanITCompany = await CompanyModel.findOneAndUpdate(
       { name: "Taurean IT" },
       {
@@ -22,6 +22,7 @@ async function seedTaureanIT() {
         currency: "GHS",
         isActive: true,
         feePercent: 5,
+        // Note: paystackSubaccountCode will be set up later through admin panel
         invoiceFormat: {
           type: "prefix",
           prefix: "TIL",
@@ -59,7 +60,8 @@ async function seedTaureanIT() {
           manageFacilities: true,
           manageInventory: true,
           manageTransactions: true,
-          manageCompanySettings: true,
+          manageEmails: true,
+          manageSettings: true,
         },
       },
       { upsert: true, new: true }
@@ -81,7 +83,8 @@ async function seedTaureanIT() {
           manageFacilities: false,
           manageInventory: false,
           manageTransactions: false,
-          manageCompanySettings: false,
+          manageEmails: false,
+          manageSettings: false,
         },
       },
       { upsert: true, new: true }
@@ -103,7 +106,8 @@ async function seedTaureanIT() {
           manageFacilities: false,
           manageInventory: false,
           manageTransactions: false,
-          manageCompanySettings: false,
+          manageEmails: false,
+          manageSettings: false,
         },
       },
       { upsert: true, new: true }

@@ -4,7 +4,7 @@ import { FacilityGrid } from "@/components/facilities/facility-grid";
 import { RentalGrid } from "@/components/rentals/rental-grid";
 import { TopCompanies } from "@/components/hosts/top-companies";
 import { HostBanner } from "@/components/layout/host-banner";
-import { useFacilities } from "@/hooks/useFacilities";
+import { usePublicFacilities } from "@/hooks/useFacilities";
 import { useInventoryItems } from "@/hooks/useInventoryItems";
 import { ErrorComponent } from "@/components/ui/error";
 import { Facility, InventoryItem } from "@/types";
@@ -19,6 +19,8 @@ import {
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Star, Zap, Building2, CreditCard, Shield } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const carouselSlides = [
   {
@@ -83,7 +85,9 @@ const carouselSlides = [
 ];
 
 export default function FacilityRentalPlatform() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  
   const {
     data: inventoryItems,
     isLoading: isLoadingInventory,
@@ -93,18 +97,26 @@ export default function FacilityRentalPlatform() {
   } = useInventoryItems();
 
   const {
-    data: facilities,
-    isLoading: isLoadingFacilities,
-    isError: isErrorFacilities,
-    error: facilitiesError,
-    refetch: refetchFacilities,
-  } = useFacilities();
+    facilities,
+    isLoadingFacilities,
+    facilitiesError,
+    refetchFacilities,
+  } = usePublicFacilities();
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader text="Loading..." />
+      </div>
+    );
+  }
 
   if (isLoadingFacilities || isLoadingInventory) {
     return <Loader />;
   }
 
-  if (isErrorFacilities || isErrorInventory) {
+  if (facilitiesError || inventoryError) {
     return (
       <ErrorComponent
         message={facilitiesError?.message || inventoryError?.message}
@@ -234,14 +246,14 @@ export default function FacilityRentalPlatform() {
 
         <FacilityGrid
           title="Popular facilities"
-          facilities={facilities?.facilities as Facility[]}
+          facilities={facilities as Facility[]}
           isLoading={isLoadingFacilities}
           onRetry={refetchFacilities}
         />
 
         <FacilityGrid
           title="Available this weekend"
-          facilities={facilities?.facilities as Facility[]}
+          facilities={facilities as Facility[]}
           isLoading={isLoadingFacilities}
           onRetry={refetchFacilities}
         />

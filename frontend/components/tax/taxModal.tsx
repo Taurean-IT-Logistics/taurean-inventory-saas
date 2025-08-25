@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Tax } from "@/types";
+import { useAuth } from "../AuthProvider";
 
 interface TaxModalProps {
   tax: Tax | null;
@@ -38,11 +39,13 @@ const TaxModal = ({
   onSave,
   isEdit = false,
 }: TaxModalProps) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<Partial<Tax>>({
     name: "",
     rate: 0,
     type: "",
     appliesTo: "both",
+    isSuperAdminTax: false,
     active: true,
   });
 
@@ -172,6 +175,21 @@ const TaxModal = ({
                 Active (Tax will be applied to applicable transactions)
               </Label>
             </div>
+            {user?.isSuperAdmin && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isSuperAdminTax"
+                  checked={formData.isSuperAdminTax || false}
+                  onCheckedChange={(checked) =>
+                    handleInputChange("isSuperAdminTax", checked)
+                  }
+                />
+
+                <Label htmlFor="isSuperAdminTax">
+                  Super Admin Tax (Tax will be applied to all transactions)
+                </Label>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={onHide}>

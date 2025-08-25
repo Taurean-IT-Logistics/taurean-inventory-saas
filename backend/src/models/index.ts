@@ -20,3 +20,8 @@ export {
   CompanyJoinRequestModel,
   ICompanyJoinRequest,
 } from "./companyJoinRequest.model";
+
+export { SupportTicketModel, ISupportTicket } from "./supportTicket.model";
+export { SupportMessageModel, ISupportMessage } from "./supportMessage.model";
+export { InvoiceModel, InvoiceDocument } from "./invoice.model";
+export { NotificationPreferencesModel, INotificationPreferences } from "./notificationPreferences.model";

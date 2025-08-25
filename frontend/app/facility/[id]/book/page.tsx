@@ -23,12 +23,13 @@ import {
   BookingsAPI,
   FacilitiesAPI,
   getResourceUrl,
+  TaxesAPI,
   TransactionsAPI,
 } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { ErrorComponent } from "@/components/ui/error";
 import { Loader } from "@/components/ui/loader";
-import { Booking, Facility } from "@/types";
+import { Booking, Facility, Tax } from "@/types";
 import { currencyFormat } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
 import { useRedirect } from "@/hooks/useRedirect";
@@ -38,27 +39,6 @@ export default function BookingPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
   const router = useRouter();
   const { redirectToLogin } = useRedirect();
-
-  const bookingsMutation = useMutation({
-    mutationFn: async (bookingData: Partial<Booking>) => {
-      return BookingsAPI.create(bookingData);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Booking Created",
-        description: "Your booking has been sent to facility for confirmation",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      console.error("Booking creation error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create booking",
-        variant: "destructive",
-      });
-    },
-  });
 
   const createTransaction = useMutation({
     mutationFn: async (transactionData: any) => {
@@ -88,6 +68,91 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       toast({
         title: "Error",
         description: error.message || "Failed to create transaction",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const { data: taxes = [] } = useQuery({
+    queryKey: ["taxes"],
+    queryFn: () => TaxesAPI.list(),
+    enabled: !!user,
+  }) as { data: Tax[] };
+
+  // Calculate pricing and taxes
+  const calculateTotal = () => {
+    if (!bookingData.startDate || !bookingData.endDate || !facilityData) {
+      return { subtotal: 0, serviceFee: 0, tax: 0, total: 0, days: 1, basePrice: 0, serviceFeeRate: 0, totalTaxRate: 0, applicableTaxes: [] };
+    }
+
+    const facility = facilityData as Facility;
+    const startDate = new Date(bookingData.startDate);
+    const endDate = new Date(bookingData.endDate);
+    const days = differenceInDays(endDate, startDate) || 1;
+    
+    const basePrice = facility.pricing.find((p) => p.isDefault)?.amount || 0;
+    const subtotal = basePrice * days;
+
+    // Calculate service fee from taxes
+    const serviceFeeRate = taxes.find(
+      (t: Tax) =>
+        t.name.toLowerCase().includes("service") &&
+        t.active &&
+        (t.appliesTo === "facility" || t.appliesTo === "both") &&
+        (t.isSuperAdminTax || t.company === (facility.company as any)?._id)
+    )?.rate || 0;
+
+    const serviceFee = Math.round(subtotal * (serviceFeeRate / 100));
+
+    // Calculate applicable taxes
+    const applicableTaxes = taxes.filter(
+      (t: Tax) =>
+        !t.name.toLowerCase().includes("service") &&
+        t.active &&
+        (t.appliesTo === "facility" || t.appliesTo === "both") &&
+        (t.isSuperAdminTax || t.company === (facility.company as any)?._id)
+    );
+
+    const totalTaxRate = applicableTaxes.reduce((sum, tax) => sum + (tax.rate || 0), 0);
+    const tax = Math.round((subtotal + serviceFee) * (totalTaxRate / 100));
+
+    const total = subtotal + serviceFee + tax;
+
+    return { subtotal, serviceFee, tax, total, days, basePrice, serviceFeeRate, totalTaxRate, applicableTaxes };
+  };
+
+  const { subtotal, serviceFee, tax, total, days, basePrice, serviceFeeRate, totalTaxRate, applicableTaxes } = calculateTotal();
+
+  const bookingsMutation = useMutation({
+    mutationFn: async (bookingData: Partial<Booking>) => {
+      return BookingsAPI.create(bookingData);
+    },
+    onSuccess: (_, variables) => {
+      toast({
+        title: "Booking Created",
+        description: "Your booking has been sent to facility for confirmation",
+        variant: "default",
+      });
+
+      // Create transaction data from the booking
+      const transactionData = {
+        email: user?.email || "",
+        amount: calculateTotal().total,
+        category: "facility",
+        description: `Booking for ${
+          (facilityData as Facility)?.name || "Facility"
+        } - ${calculateDurationString(variables.startDate, variables.endDate)}`,
+        facility: (facilityData as Facility)?._id || "",
+        currency: "GHS",
+      };
+
+      createTransaction.mutate(transactionData);
+    },
+    onError: (error: Error) => {
+      console.error("Booking creation error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create booking",
         variant: "destructive",
       });
     },
@@ -142,7 +207,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
     try {
       const response = await BookingsAPI.checkAvailability({
-        facilityId: facility._id,
+        facilityId: (facilityData as Facility)?._id || "",
         startDate: bookingData.startDate as string,
         endDate: bookingData.endDate as string,
       });
@@ -253,31 +318,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
   let facility = facilityData as Facility;
 
-  const calculateTotal = () => {
-    // Calculate days based on actual dates
-    let days = 1;
-    if (bookingData.startDate && bookingData.endDate) {
-      const startDate = parseDate(bookingData.startDate);
-      const endDate = parseDate(bookingData.endDate);
-      if (startDate && endDate) {
-        days = Math.max(1, differenceInDays(endDate, startDate));
-      }
-    }
 
-    const defaultPricing = facility.pricing.find((p) => p.isDefault);
-    const subtotal = (defaultPricing?.amount || 0) * days;
-    const serviceFee = 45;
-    const tax = Math.round(subtotal * 0.15); // 15% tax
-    return {
-      days,
-      subtotal,
-      serviceFee,
-      tax,
-      total: subtotal + serviceFee + tax,
-    };
-  };
-
-  const { days, subtotal, serviceFee, tax, total } = calculateTotal();
 
   const handleProceedToCheckout = () => {
     // Check if user is authenticated
@@ -291,7 +332,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
     const finalBookingData: Partial<Booking> = {
       ...bookingData,
-      facility: facility._id,
+      facility: (facilityData as Facility)?._id || "",
       totalPrice: total,
       duration: calculateDurationString(
         bookingData.startDate,
@@ -309,19 +350,17 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       email: user?.email || "",
       amount: total,
       category: "facility",
-      description: `Booking for ${facility.name} - ${calculateDurationString(
+      description: `Booking for ${
+        (facilityData as Facility)?.name || "Facility"
+      } - ${calculateDurationString(
         bookingData.startDate,
         bookingData.endDate
       )}`,
-      facility: facility._id,
+      facility: (facilityData as Facility)?._id || "",
       currency: "GHS",
     };
 
     bookingsMutation.mutate(finalBookingData);
-
-    if (bookingsMutation.isSuccess) {
-      createTransaction.mutate(transactionData);
-    }
   };
 
   return (
@@ -813,26 +852,41 @@ export default function BookingPage({ params }: { params: { id: string } }) {
             <div className="border-t pt-4 space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">
-                  {currencyFormat(
-                    facility.pricing.find((p) => p.isDefault)?.amount || 0
-                  )}{" "}
-                  x {days} {facility.pricing.find((p) => p.isDefault)?.unit}
-                  {days > 1 ? "s" : ""}
+                  {currencyFormat(basePrice)} x {days} day{days > 1 ? 's' : ''}
                 </span>
                 <span className="text-gray-900">
                   {currencyFormat(subtotal)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Service fee</span>
-                <span className="text-gray-900">
-                  {currencyFormat(serviceFee)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tax</span>
-                <span className="text-gray-900">{currencyFormat(tax)}</span>
-              </div>
+              
+              {serviceFee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Service fee ({serviceFeeRate}%)</span>
+                  <span className="text-gray-900">
+                    {currencyFormat(serviceFee)}
+                  </span>
+                </div>
+              )}
+              
+              {applicableTaxes.length > 0 && (
+                <>
+                  {applicableTaxes.map((tax: Tax, index: number) => (
+                    <div key={index} className="flex justify-between">
+                      <span className="text-gray-600">{tax.name} ({tax.rate}%)</span>
+                      <span className="text-gray-900">
+                        {currencyFormat(Math.round((subtotal + serviceFee) * (tax.rate / 100)))}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Tax</span>
+                    <span className="text-gray-900">
+                      {currencyFormat(tax)}
+                    </span>
+                  </div>
+                </>
+              )}
+              
               <div className="border-t pt-3 flex justify-between font-semibold text-lg">
                 <span className="text-gray-900">Total</span>
                 <span className="text-gray-900">{currencyFormat(total)}</span>

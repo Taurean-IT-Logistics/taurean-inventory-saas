@@ -1,17 +1,84 @@
 import { Router } from "express";
-import * as InvoiceController from "../controllers/invoice.controller";
-import { AuthMiddleware } from "../middlewares/auth.middleware";
-import { RequireActiveCompany, RequirePermissions } from "../middlewares/auth.middleware";
+import { InvoiceController } from "../controllers/invoice.controller";
+import { AuthMiddleware, AuthorizeRoles } from "../middlewares";
+import {
+  RequireActiveCompany,
+  RequirePermissions,
+  RequireCompanyContext,
+} from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/", AuthMiddleware, RequireActiveCompany(), RequirePermissions(["manageTransactions"]), InvoiceController.create);
-router.post("/:id/pay", AuthMiddleware, RequireActiveCompany(), RequirePermissions(["manageTransactions"]), InvoiceController.pay);
-router.get("/company", AuthMiddleware, RequireActiveCompany(), RequirePermissions(["viewInvoices"]), InvoiceController.listCompanyInvoices);
-router.get("/me", AuthMiddleware, InvoiceController.listUserInvoices);
-router.get("/company/receipts", AuthMiddleware, RequireActiveCompany(), RequirePermissions(["viewInvoices"]), InvoiceController.listCompanyReceipts);
-router.get("/me/receipts", AuthMiddleware, InvoiceController.listUserReceipts);
-router.get("/:id/download", AuthMiddleware, InvoiceController.downloadInvoicePDF);
-router.get("/receipts/:id/download", AuthMiddleware, InvoiceController.downloadReceiptPDF);
+// All invoice routes require authentication
+router.use(AuthMiddleware);
+
+// Get company invoices - finance permissions
+router.get(
+  "/company",
+  RequireCompanyContext(),
+  RequirePermissions(["accessFinancials"]),
+  InvoiceController.getCompanyInvoices
+);
+
+// Get user invoices - no company context required
+router.get("/user", InvoiceController.getUserInvoices);
+
+// Get invoice by ID - user must own invoice or be in same company
+router.get("/:id", InvoiceController.getInvoiceById);
+
+// Create new invoice - finance permissions
+router.post(
+  "/",
+  RequireCompanyContext(),
+  RequirePermissions(["manageInvoices"]),
+  InvoiceController.createInvoice
+);
+
+// Update invoice status - finance permissions
+router.put(
+  "/:id/status",
+  RequireCompanyContext(),
+  RequirePermissions(["manageInvoices"]),
+  InvoiceController.updateInvoiceStatus
+);
+
+// Download invoice PDF - user must own invoice or be in same company
+router.get("/:id/download", InvoiceController.downloadInvoice);
+
+// Download receipt PDF - user must own invoice or be in same company
+router.get("/:id/receipt", InvoiceController.downloadReceipt);
+
+// Get invoice statistics - finance permissions
+router.get(
+  "/stats/company",
+  RequireCompanyContext(),
+  RequirePermissions(["accessFinancials"]),
+  InvoiceController.getInvoiceStats
+);
+
+// Create invoice from transaction - finance permissions
+router.post(
+  "/from-transaction",
+  RequireCompanyContext(),
+  RequirePermissions(["manageInvoices"]),
+  InvoiceController.createInvoiceFromTransaction
+);
+
+// Get company receipts (paid invoices) - finance permissions
+router.get(
+  "/receipts/company",
+  RequireCompanyContext(),
+  RequirePermissions(["accessFinancials"]),
+  InvoiceController.getCompanyReceipts
+);
+
+// Get user receipts (paid invoices) - no company context required
+router.get("/receipts/user", InvoiceController.getUserReceipts);
+
+// Get next invoice number
+router.get("/next-number", AuthMiddleware, InvoiceController.getNextInvoiceNumber);
+
+// Get receipt number for invoice
+router.get("/:invoiceId/receipt-number", AuthMiddleware, InvoiceController.getReceiptNumber);
 
 export default router;

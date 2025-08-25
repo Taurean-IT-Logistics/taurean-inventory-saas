@@ -148,6 +148,7 @@ const UserTable = ({
                   size="sm"
                   onClick={() => onDelete(user._id!)}
                   className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  title="Remove user from company"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -158,6 +159,7 @@ const UserTable = ({
                   size="sm"
                   onClick={() => onRestore(user._id)}
                   className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  title="Restore user to company"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </Button>

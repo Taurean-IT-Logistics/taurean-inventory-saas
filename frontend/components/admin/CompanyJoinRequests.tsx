@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CompanyJoinRequestAPI } from "@/lib/api";
+import { CompanyJoinRequestsAPI } from "@/lib/api";
 import { CompanyJoinRequest } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,14 +27,18 @@ export default function CompanyJoinRequests() {
 
   const { data: requestsData, isLoading } = useQuery({
     queryKey: ["company-join-requests"],
-    queryFn: CompanyJoinRequestAPI.getCompanyPendingRequests,
+    queryFn: CompanyJoinRequestsAPI.getCompanyRequests,
   });
 
   const requests = (requestsData as any)?.requests || requestsData || [];
 
+  // Debug: Log the data structure
+  console.log("CompanyJoinRequests - requestsData:", requestsData);
+  console.log("CompanyJoinRequests - requests:", requests);
+
   const approveMutation = useMutation({
     mutationFn: ({ requestId, notes }: { requestId: string; notes?: string }) =>
-      CompanyJoinRequestAPI.approveRequest(requestId),
+      CompanyJoinRequestsAPI.approveRequest(requestId, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-join-requests"] });
       queryClient.invalidateQueries({ queryKey: ["users-company"] });
@@ -57,7 +61,7 @@ export default function CompanyJoinRequests() {
 
   const rejectMutation = useMutation({
     mutationFn: ({ requestId, notes }: { requestId: string; notes?: string }) =>
-      CompanyJoinRequestAPI.rejectRequest(requestId),
+      CompanyJoinRequestsAPI.rejectRequest(requestId, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-join-requests"] });
       toast({
@@ -129,6 +133,29 @@ export default function CompanyJoinRequests() {
     );
   }
 
+  // Handle error state
+  if (requestsData && (requestsData as any).error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Join Requests
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-red-500">
+            <XCircle className="h-12 w-12 mx-auto mb-4" />
+            <p>Error loading join requests</p>
+            <p className="text-sm">
+              {(requestsData as any).message || "Failed to load data"}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (requests.length === 0) {
     return (
       <Card>
@@ -170,6 +197,9 @@ export default function CompanyJoinRequests() {
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     {getStatusIcon(request.status)}
+                    <p className="text-sm text-gray-500">
+                      {(request.user as any)?.name || "Unknown User"}
+                    </p>
                     <Badge className={getStatusColor(request.status)}>
                       {request.status}
                     </Badge>
@@ -198,15 +228,15 @@ export default function CompanyJoinRequests() {
                         <div className="bg-gray-50 p-3 rounded">
                           <p>
                             <strong>Name:</strong>{" "}
-                            {(request.user as any)?.name || "N/A"}
+                            {(request.user as any)?.name || "Unknown"}
                           </p>
                           <p>
                             <strong>Email:</strong>{" "}
-                            {(request.user as any)?.email || "N/A"}
+                            {(request.user as any)?.email || "Unknown"}
                           </p>
                           <p>
                             <strong>Username:</strong>{" "}
-                            {(request.user as any)?.username || "N/A"}
+                            {(request.user as any)?.username || "Unknown"}
                           </p>
                         </div>
                       </div>
@@ -223,7 +253,9 @@ export default function CompanyJoinRequests() {
                           </p>
                           <p>
                             <strong>Requested By:</strong>{" "}
-                            {(request.requestedBy as any)?.name || "N/A"}
+                            {(request.requestedBy as any)?.name ||
+                              (request.user as any)?.name ||
+                              "Self"}
                           </p>
                         </div>
                       </div>

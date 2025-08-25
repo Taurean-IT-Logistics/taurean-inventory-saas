@@ -1,6 +1,4 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Search,
   Plus,
@@ -11,14 +9,13 @@ import {
   Calendar,
   DollarSign,
   CheckCircle,
-  XCircle,
   Clock,
-  AlertTriangle,
+  Building2,
+  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -26,14 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -43,148 +32,115 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader } from "@/components/ui/loader";
-import type { Booking, Facility } from "@/types";
-import { currencyFormat } from "@/lib/utils";
-import { useAuth } from "../AuthProvider";
-import { DateTimePicker } from "@/components/ui/date-picker";
+import { BookingStatusBadge } from "./booking-calendar/bookingStatusBadge";
+import { PaymentStatusBadge } from "./booking-calendar/paymentStatusBadge";
+import { BookingEditModal } from "./booking-calendar/bookingEditModal";
+import { BookingDetailsModal } from "./booking-calendar/bookingDetailsModal";
 import { toast } from "@/hooks/use-toast";
+import { Booking, Facility, BookingFilters, BookingStats } from "@/types";
+import {
+  currencyFormat,
+  formatDate,
+  formatTime,
+  calculateDuration,
+} from "@/lib/utils";
+import { ErrorComponent } from "../ui/error";
 
 interface BookingManagementProps {
   bookings: Booking[];
   facilities: Facility[];
-  onRefresh?: () => void;
-  onUpdateBooking?: (booking: Booking) => Promise<void>;
-  onDeleteBooking?: (bookingId: string) => Promise<void>;
-  onCreateBooking?: (booking: Partial<Booking>) => Promise<void>;
+  onRefresh: () => void;
+  onUpdateBooking: (booking: Booking) => Promise<void>;
+  onDeleteBooking: (bookingId: string) => Promise<void>;
+  onCreateBooking?: (booking: Booking) => Promise<void>;
 }
 
-import { BookingDetailsModal } from "./booking-calendar/bookingDetailsModal";
-
-const BookingManagement = ({
+export default function BookingManagement({
   bookings,
   facilities,
   onRefresh,
   onUpdateBooking,
   onDeleteBooking,
   onCreateBooking,
-}: BookingManagementProps) => {
-  const { user } = useAuth();
-
-  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [paymentFilter, setPaymentFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+}: BookingManagementProps) {
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  const [formData, setFormData] = useState<Partial<Booking>>({});
 
-  useEffect(() => {
-    const filtered = bookings.filter((booking) => {
-      if (!booking || booking.isDeleted) return false;
+  const [filters, setFilters] = useState<BookingFilters>({
+    search: "",
+    status: "all",
+    paymentStatus: "all",
+    dateRange: "all",
+    facility: "all",
+  });
+
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Filter bookings with useMemo to prevent unnecessary recalculations
+  const filteredBookings = useMemo(() => {
+    return (bookings as Booking[]).filter((booking) => {
+      if (booking.isDeleted) return false;
 
       const facilityName =
-        typeof booking.facility === "string"
-          ? facilities?.find((f) => f._id === booking.facility)?.name || ""
-          : (booking.facility as any)?.name || "";
+        (facilities as Facility[]).find((f) => f._id === booking.facility)
+          ?.name || "";
+      const searchMatch =
+        booking.user.name
+          .toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        booking.user.email
+          .toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        facilityName.toLowerCase().includes(filters.search.toLowerCase());
 
-      const matchesSearch =
-        booking.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        facilityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      const statusMatch =
+        filters.status === "all" || booking.status === filters.status;
+      const paymentMatch =
+        filters.paymentStatus === "all" ||
+        booking.paymentStatus === filters.paymentStatus;
+      const facilityMatch =
+        filters.facility === "all" || booking.facility === filters.facility;
 
-      const matchesStatus =
-        statusFilter === "all" || booking.status === statusFilter;
-      const matchesPayment =
-        paymentFilter === "all" || booking.paymentStatus === paymentFilter;
-
-      let matchesDate = true;
-      if (dateFilter === "today") {
+      let dateMatch = true;
+      if (filters.dateRange === "today") {
         const today = new Date();
-        matchesDate =
-          new Date(booking.startDate).toDateString() === today.toDateString();
-      } else if (dateFilter === "week") {
+        const bookingDate = new Date(booking.startDate);
+        dateMatch = bookingDate.toDateString() === today.toDateString();
+      } else if (filters.dateRange === "week") {
         const weekFromNow = new Date();
         weekFromNow.setDate(weekFromNow.getDate() + 7);
-        matchesDate = new Date(booking.startDate) <= weekFromNow;
-      } else if (dateFilter === "month") {
+        dateMatch = new Date(booking.startDate) <= weekFromNow;
+      } else if (filters.dateRange === "month") {
         const monthFromNow = new Date();
         monthFromNow.setMonth(monthFromNow.getMonth() + 1);
-        matchesDate = new Date(booking.startDate) <= monthFromNow;
+        dateMatch = new Date(booking.startDate) <= monthFromNow;
       }
 
-      return matchesSearch && matchesStatus && matchesPayment && matchesDate;
+      return (
+        searchMatch && statusMatch && paymentMatch && facilityMatch && dateMatch
+      );
     });
+  }, [bookings, facilities, filters]);
 
-    setFilteredBookings(filtered);
-    setCurrentPage(1);
-  }, [
-    searchTerm,
-    statusFilter,
-    paymentFilter,
-    dateFilter,
-    bookings,
-    facilities,
-  ]);
+  // Calculate stats with useMemo
+  const stats: BookingStats = useMemo(() => {
+    return {
+      total: (bookings as Booking[]).length,
+      confirmed: (bookings as Booking[]).filter((b) => b.status === "confirmed")
+        .length,
+      pending: (bookings as Booking[]).filter((b) => b.status === "pending")
+        .length,
+      revenue: (bookings as Booking[])
+        .filter((b) => ["confirmed", "completed"].includes(b.status))
+        .reduce((sum, b) => sum + b.totalPrice, 0),
+    };
+  }, [bookings]);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "confirmed":
-      case "completed":
-        return CheckCircle;
-      case "pending":
-        return Clock;
-      case "cancelled":
-        return XCircle;
-      case "no_show":
-        return AlertTriangle;
-      default:
-        return Clock;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "success";
-      case "pending":
-        return "warning";
-      case "cancelled":
-        return "danger";
-      case "completed":
-        return "info";
-      case "no_show":
-        return "secondary";
-      default:
-        return "primary";
-    }
-  };
-
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "success";
-      case "pending":
-        return "warning";
-      case "failed":
-        return "danger";
-      case "refunded":
-        return "info";
-      case "partial_refund":
-        return "warning";
-      default:
-        return "secondary";
-    }
-  };
-
+  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentBookings = filteredBookings.slice(
@@ -193,328 +149,201 @@ const BookingManagement = ({
   );
   const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
 
-  const handleViewDetails = (booking: Booking) => {
+  // Event handlers with useCallback to prevent recreating functions
+  const handleFilterChange = useCallback(
+    (key: keyof BookingFilters, value: string) => {
+      setFilters((prev: any) => ({ ...prev, [key]: value }));
+      setCurrentPage(1); // Reset to first page when filtering
+    },
+    []
+  );
+
+  const handleEditBooking = useCallback((booking: Booking) => {
+    setEditingBooking(booking);
+    setIsEditModalOpen(true);
+  }, []);
+
+  const handleViewBooking = useCallback((booking: Booking) => {
     setSelectedBooking(booking);
     setShowDetailsModal(true);
-  };
+  }, []);
 
-  const handleEditBooking = (booking: Booking) => {
-    setEditingBooking(booking);
-    setFormData({
-      ...booking,
-      startDate: new Date(booking.startDate),
-      endDate: new Date(booking.endDate),
-    });
-    setShowDetailsModal(false);
-    setShowEditModal(true);
-  };
-
-  const handleStatusChange = async (booking: Booking, newStatus: string) => {
-    setIsSaving(true);
-    setError(null);
-    try {
-      const updatedBooking = {
-        ...booking,
-        status: newStatus as Booking["status"],
-        updatedAt: new Date(),
-      };
-
-      if (onUpdateBooking) {
+  const handleSaveBooking = useCallback(
+    async (bookingId: string, updates: Partial<Booking>) => {
+      try {
+        setIsSaving(true);
+        const updatedBooking = { ...editingBooking, ...updates } as Booking;
         await onUpdateBooking(updatedBooking);
-        setSelectedBooking(updatedBooking);
-        if (onRefresh) onRefresh();
-
+        setEditingBooking(null);
+        setIsEditModalOpen(false);
         toast({
           title: "Success",
-          description: `Booking status updated to ${newStatus}`,
+          description: "Booking updated successfully",
           variant: "default",
         });
+      } catch (err) {
+        console.error("Error updating booking:", err);
+        toast({
+          title: "Error",
+          description: "Failed to update booking",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSaving(false);
       }
-    } catch (err) {
-      console.error("Error updating status:", err);
-      setError("Failed to update booking status");
-      toast({
-        title: "Error",
-        description: "Failed to update booking status",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    },
+    [onUpdateBooking, editingBooking]
+  );
 
-  const handleSaveBooking = async () => {
-    if (!formData.facility || !formData.startDate || !formData.endDate) {
-      setError("Please fill in all required fields");
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const bookingData = {
-        ...formData,
-        user:
-          (formData.user && typeof formData.user === "object"
-            ? (formData.user as any)._id
-            : formData.user) ||
-          user?._id ||
-          undefined,
-        facility:
-          (formData.facility && typeof formData.facility === "object"
-            ? (formData.facility as any)._id
-            : formData.facility) || undefined,
-        duration: calculateDuration(
-          formData.startDate.toISOString(),
-          formData.endDate.toISOString()
-        ),
-      };
-
-      if (editingBooking) {
-        if (onUpdateBooking) {
-          await onUpdateBooking({
-            ...editingBooking,
-            ...bookingData,
-          } as Booking);
-          if (onRefresh) onRefresh();
-
-          toast({
-            title: "Success",
-            description: "Booking updated successfully",
-            variant: "default",
-          });
-        }
-      } else {
-        // Create new booking
-        if (onCreateBooking) {
-          await onCreateBooking({
-            ...bookingData,
-            createdAt: new Date(),
-            isDeleted: false,
-          });
-          if (onRefresh) onRefresh();
-
-          toast({
-            title: "Success",
-            description: "Booking created successfully",
-            variant: "default",
-          });
-        }
+  const handleDeleteBooking = useCallback(
+    async (bookingId: string) => {
+      if (!window.confirm("Are you sure you want to delete this booking?")) {
+        return;
       }
 
-      setShowEditModal(false);
-      setFormData({});
-      setEditingBooking(null);
-    } catch (err) {
-      console.error("Error saving booking:", err);
-      setError("Failed to save booking");
-      toast({
-        title: "Error",
-        description: "Failed to save booking",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteBooking = async (booking: Booking) => {
-    if (!window.confirm("Are you sure you want to delete this booking?")) {
-      return;
-    }
-
-    setIsSaving(true);
-    setError(null);
-    try {
-      if (onDeleteBooking && booking._id) {
-        await onDeleteBooking(booking._id);
+      try {
+        onDeleteBooking(bookingId);
         setShowDetailsModal(false);
-        if (onRefresh) onRefresh();
 
         toast({
           title: "Success",
           description: "Booking deleted successfully",
           variant: "default",
         });
+      } catch (err) {
+        console.error("Error deleting booking:", err);
+        toast({
+          title: "Error",
+          description: "Failed to delete booking",
+          variant: "destructive",
+        });
       }
-    } catch (err) {
-      console.error("Error deleting booking:", err);
-      setError("Failed to delete booking");
-      toast({
-        title: "Error",
-        description: "Failed to delete booking",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    },
+    [onDeleteBooking]
+  );
 
-  const calculateDuration = (start: string, end: string) => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const diffMs = endDate.getTime() - startDate.getTime();
-    const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-    return `${diffHours} hour${diffHours !== 1 ? "s" : ""}`;
-  };
+  const handleCreateBooking = useCallback(() => {
+    toast({
+      title: "Coming Soon",
+      description: "Create new booking functionality will be implemented",
+    });
+  }, []);
 
-  const getStatusVariant = (
-    status: string
-  ): "secondary" | "destructive" | "default" | "outline" | null | undefined => {
-    switch (status) {
-      case "confirmed":
-        return "default";
-      case "pending":
-        return "secondary";
-      case "cancelled":
-        return "destructive";
-      case "completed":
-        return "default";
-      case "no_show":
-        return "outline";
-      default:
-        return "secondary";
-    }
-  };
+  const handleExportBookings = useCallback(() => {
+    toast({
+      title: "Export Started",
+      description: "Your booking data is being prepared for download",
+    });
+  }, []);
 
-  const getPaymentStatusVariant = (
-    status: string
-  ): "secondary" | "destructive" | "default" | "outline" | null | undefined => {
-    switch (status) {
-      case "completed":
-        return "default";
-      case "pending":
-        return "secondary";
-      case "failed":
-        return "destructive";
-      case "refunded":
-        return "outline";
-      case "partial_refund":
-        return "outline";
-      default:
-        return "secondary";
-    }
-  };
+  const handleStatusChange = useCallback(
+    (booking: Booking, newStatus: Booking["status"]) => {
+      onUpdateBooking({ ...booking, status: newStatus });
+    },
+    [onUpdateBooking]
+  );
+
+  if (!bookings || !facilities) {
+    return (
+      <ErrorComponent
+        title="Error loading bookings"
+        message="Please refresh the page"
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
-        {error && (
-          <Alert className="mb-6 border-red-200 bg-red-50">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
-              {error}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div className="container mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Booking Management
             </h1>
-            <p className="text-gray-600">
-              Manage all facility bookings and reservations
+            <p className="text-gray-600 text-lg">
+              Manage facility bookings and reservations with ease
             </p>
           </div>
-          <div className="flex gap-3 mt-4 sm:mt-0">
+          <div className="flex gap-3 mt-6 lg:mt-0">
             <Button
-              onClick={() => {
-                setFormData({
-                  startDate: new Date(),
-                  endDate: new Date(Date.now() + 60 * 60 * 1000),
-                  status: "pending",
-                  paymentStatus: "pending",
-                  totalPrice: 0,
-                  duration: "1 hour",
-                  notes: "",
-                  internalNotes: "",
-                });
-                setEditingBooking(null);
-                setShowEditModal(true);
-              }}
+              onClick={handleCreateBooking}
+              className="flex items-center gap-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4" />
               New Booking
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExportBookings}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
           </div>
         </div>
 
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-white shadow-sm">
+          <Card className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {bookings.length}
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.total}
                   </p>
-                  <p className="text-sm text-gray-600">Total Bookings</p>
+                  <p className="text-sm text-muted-foreground">
+                    Total Bookings
+                  </p>
                 </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
+                <div className="p-3 bg-blue-100 rounded-xl">
                   <Calendar className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm">
+          <Card className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {bookings.filter((b) => b.status === "confirmed").length}
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.confirmed}
                   </p>
-                  <p className="text-sm text-gray-600">Confirmed</p>
+                  <p className="text-sm text-muted-foreground">Confirmed</p>
                 </div>
-                <div className="p-3 bg-green-50 rounded-lg">
+                <div className="p-3 bg-green-100 rounded-xl">
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm">
+          <Card className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {currencyFormat(
-                      bookings
-                        .filter((b) =>
-                          ["confirmed", "completed"].includes(b.status)
-                        )
-                        .reduce((sum, b) => sum + (b.totalPrice || 0), 0)
-                    )}
+                  <p className="text-3xl font-bold text-foreground">
+                    {currencyFormat(stats.revenue)}
                   </p>
-                  <p className="text-sm text-gray-600">Total Revenue</p>
+                  <p className="text-sm text-muted-foreground">Total Revenue</p>
                 </div>
-                <div className="p-3 bg-emerald-50 rounded-lg">
+                <div className="p-3 bg-emerald-100 rounded-xl">
                   <DollarSign className="h-6 w-6 text-emerald-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-sm">
+          <Card className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {bookings.filter((b) => b.status === "pending").length}
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.pending}
                   </p>
-                  <p className="text-sm text-gray-600">Pending Review</p>
+                  <p className="text-sm text-muted-foreground">
+                    Pending Review
+                  </p>
                 </div>
-                <div className="p-3 bg-amber-50 rounded-lg">
+                <div className="p-3 bg-amber-100 rounded-xl">
                   <Clock className="h-6 w-6 text-amber-600" />
                 </div>
               </div>
@@ -522,18 +351,27 @@ const BookingManagement = ({
           </Card>
         </div>
 
-        <Card className="mb-6 bg-white shadow-sm">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
+        {/* Filters */}
+        <Card className="mb-8 hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filter Bookings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="search">Search bookings</Label>
+                <Label htmlFor="search">Search</Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="search"
                     placeholder="Search bookings..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    value={filters.search}
+                    onChange={(e) =>
+                      handleFilterChange("search", e.target.value)
+                    }
                     className="pl-10"
                   />
                 </div>
@@ -541,7 +379,10 @@ const BookingManagement = ({
 
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) => handleFilterChange("status", value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -558,7 +399,12 @@ const BookingManagement = ({
 
               <div className="space-y-2">
                 <Label>Payment</Label>
-                <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                <Select
+                  value={filters.paymentStatus}
+                  onValueChange={(value) =>
+                    handleFilterChange("paymentStatus", value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -573,8 +419,35 @@ const BookingManagement = ({
               </div>
 
               <div className="space-y-2">
+                <Label>Facility</Label>
+                <Select
+                  value={filters.facility}
+                  onValueChange={(value) =>
+                    handleFilterChange("facility", value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Facilities</SelectItem>
+                    {(facilities as Facility[]).map((facility) => (
+                      <SelectItem key={facility._id} value={facility._id}>
+                        {facility.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label>Date Range</Label>
-                <Select value={dateFilter} onValueChange={setDateFilter}>
+                <Select
+                  value={filters.dateRange}
+                  onValueChange={(value) =>
+                    handleFilterChange("dateRange", value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -586,357 +459,175 @@ const BookingManagement = ({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
-              <div className="text-sm text-gray-600 pt-2">
-                Showing {filteredBookings.length} of {bookings.length} bookings
-              </div>
+            <div className="mt-4 text-sm text-muted-foreground">
+              Showing {filteredBookings.length} of{" "}
+              {(bookings as Booking[]).length} bookings
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white shadow-sm">
+        {/* Bookings Table */}
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-gray-200">
-                    <TableHead className="font-semibold text-gray-900">
-                      Booking ID
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-900">
-                      Customer
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-900">
-                      Facility
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-900">
-                      Date & Time
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-900">
-                      Duration
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-900">
-                      Status
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-900">
-                      Payment
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-900">
-                      Amount
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-900">
-                      Actions
-                    </TableHead>
+                  <TableRow>
+                    <TableHead className="font-semibold">Booking ID</TableHead>
+                    <TableHead className="font-semibold">Customer</TableHead>
+                    <TableHead className="font-semibold">Facility</TableHead>
+                    <TableHead className="font-semibold">Date & Time</TableHead>
+                    <TableHead className="font-semibold">Duration</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Payment</TableHead>
+                    <TableHead className="font-semibold">Amount</TableHead>
+                    <TableHead className="font-semibold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredBookings.map((booking) => (
-                    <TableRow key={booking._id} className="hover:bg-gray-50">
-                      <TableCell className="font-mono text-sm">
-                        #{booking._id?.slice(-8) || "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {booking.user?.name || "Unknown User"}
+                  {currentBookings.map((booking: Booking) => {
+                    return (
+                      <TableRow key={booking._id} className="hover:bg-gray-100">
+                        <TableCell className="font-mono text-sm">
+                          #{booking._id.slice(-8)}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {booking.user.name}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {booking.user.email}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {booking.user?.email || "No email"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">
+                              {(booking?.facility as any)?.name || "Unknown"}
+                            </span>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {typeof booking.facility === "string"
-                          ? facilities?.find((f) => f._id === booking.facility)
-                              ?.name || "Unknown Facility"
-                          : (booking.facility as any)?.name ||
-                            "Unknown Facility"}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {new Date(booking.startDate).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {formatDate(booking.startDate)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {formatTime(booking.startDate)}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {new Date(booking.startDate).toLocaleTimeString(
-                              [],
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {calculateDuration(
-                          booking.startDate.toLocaleString(),
-                          booking.endDate.toLocaleString()
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusVariant(booking.status)}>
-                          {booking.status.toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={getPaymentStatusVariant(
-                            booking.paymentStatus
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {calculateDuration(
+                            booking.startDate,
+                            booking.endDate
                           )}
-                        >
-                          {booking.paymentStatus?.toUpperCase() || "PENDING"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {currencyFormat(booking.totalPrice || 0)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedBooking(booking);
-                              setShowDetailsModal(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingBooking(booking);
-                              setFormData({
-                                facility: booking.facility,
-                                user: booking.user,
-                                startDate: new Date(booking.startDate),
-                                endDate: new Date(booking.endDate),
-                                status: booking.status,
-                                paymentStatus:
-                                  booking.paymentStatus || "pending",
-                                totalPrice: booking.totalPrice || 0,
-                                duration: booking.duration || "",
-                                notes: booking.notes || "",
-                                internalNotes: booking.internalNotes || "",
-                              });
-                              setShowEditModal(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteBooking(booking)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>
+                          <BookingStatusBadge status={booking.status} />
+                        </TableCell>
+                        <TableCell>
+                          <PaymentStatusBadge status={booking.paymentStatus} />
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {currencyFormat(booking.totalPrice)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewBooking(booking)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditBooking(booking)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteBooking(booking._id)}
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Showing {indexOfFirstItem + 1} to{" "}
+                  {Math.min(indexOfLastItem, filteredBookings.length)} of{" "}
+                  {filteredBookings.length} results
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage(Math.min(totalPages, currentPage + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingBooking ? "Edit Booking" : "Create New Booking"}
-            </DialogTitle>
-          </DialogHeader>
+      {editingBooking && (
+        <BookingEditModal
+          booking={editingBooking}
+          facilities={facilities as Facility[]}
+          isOpen={!!editingBooking}
+          onSave={handleSaveBooking}
+          onClose={() => setEditingBooking(null)}
+        />
+      )}
 
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="facility">Facility *</Label>
-                <Select
-                  value={
-                    typeof formData.facility === "string"
-                      ? formData.facility
-                      : (formData.facility as any)?._id || ""
-                  }
-                  onValueChange={(value) => {
-                    const facility = facilities.find((f) => f._id === value);
-                    setFormData((prev) => ({
-                      ...prev,
-                      facility: facility?._id || value,
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select facility" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {facilities.map((facility) => (
-                      <SelectItem key={facility._id} value={facility._id}>
-                        {facility.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      status: value as Booking["status"],
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="no_show">No Show</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date & Time *</Label>
-                <DateTimePicker
-                  date={formData.startDate}
-                  onDateChange={(date: Date | undefined) => {
-                    setFormData((prev) => ({ ...prev, startDate: date }));
-                  }}
-                  placeholder="Select start date and time"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="endDate">End Date & Time *</Label>
-                <DateTimePicker
-                  date={formData.endDate}
-                  onDateChange={(date: Date | undefined) => {
-                    setFormData((prev) => ({ ...prev, endDate: date }));
-                  }}
-                  placeholder="Select end date and time"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="paymentStatus">Payment Status</Label>
-                <Select
-                  value={formData.paymentStatus || "pending"}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      paymentStatus: value as Booking["paymentStatus"],
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                    <SelectItem value="refunded">Refunded</SelectItem>
-                    <SelectItem value="partial_refund">
-                      Partial Refund
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="totalPrice">Total Price</Label>
-                <Input
-                  id="totalPrice"
-                  type="number"
-                  step="0.01"
-                  value={formData.totalPrice || 0}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      totalPrice: Number.parseFloat(e.target.value) || 0,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                rows={3}
-                value={formData.notes || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, notes: e.target.value }))
-                }
-                placeholder="Customer notes..."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="internalNotes">Internal Notes</Label>
-              <Textarea
-                id="internalNotes"
-                rows={2}
-                value={formData.internalNotes || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    internalNotes: e.target.value,
-                  }))
-                }
-                placeholder="Internal staff notes..."
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              onClick={handleSaveBooking}
-              disabled={
-                isSaving ||
-                !formData.facility ||
-                !formData.startDate ||
-                !formData.endDate
-              }
-            >
-              {isSaving && <Loader size="sm" className="mr-2" />}
-              {editingBooking ? "Update" : "Create"} Booking
-            </Button>
-            <Button variant="outline" onClick={() => setShowEditModal(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <BookingDetailsModal
-        booking={selectedBooking}
-        onClose={() => setShowDetailsModal(false)}
-        isOpen={showDetailsModal}
-        isSaving={isSaving}
-        onDelete={handleDeleteBooking}
-        onEdit={handleEditBooking}
-        onStatusChange={handleStatusChange}
-      />
+      {selectedBooking && (
+        <BookingDetailsModal
+          booking={selectedBooking}
+          onStatusChange={(booking, newStatus) =>
+            handleStatusChange(booking, newStatus as Booking["status"])
+          }
+          onClose={() => setSelectedBooking(null)}
+          isOpen={!!selectedBooking}
+          isSaving={isSaving}
+          onDelete={handleDeleteBooking}
+          onEdit={handleEditBooking}
+        />
+      )}
     </div>
   );
-};
-
-export default BookingManagement;
+}

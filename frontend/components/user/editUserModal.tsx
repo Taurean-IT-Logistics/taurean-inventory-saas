@@ -7,6 +7,7 @@ import type { User, CompanyRole } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { CompanyRoleAPI } from "@/lib/api";
+import { useAuth } from "../AuthProvider";
 
 interface EditUserModalProps {
   user: User | null;
@@ -25,6 +27,7 @@ interface EditUserModalProps {
 }
 
 const EditUserModal = ({ user, show, onHide, onSave }: EditUserModalProps) => {
+  const { user: admin } = useAuth();
   const [formData, setFormData] = useState<Partial<User>>({});
 
   const { data: rolesData } = useQuery({
@@ -163,6 +166,31 @@ const EditUserModal = ({ user, show, onHide, onSave }: EditUserModalProps) => {
                   Company roles define granular permissions within your company
                 </p>
               </div>
+
+              {admin?.isSuperAdmin && (
+                <div className="space-y-2">
+                  <Label htmlFor="superAdmin">Make User SuperAdmin</Label>
+                  <div className="flex items-start gap-2 justify-center">
+                    <Checkbox
+                      id="superAdmin"
+                      checked={formData.isSuperAdmin || false}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          role: checked
+                            ? "admin"
+                            : prev.role || user?.role || "user",
+                          isSuperAdmin: !!checked,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-gray-500">
+                      Super admins have access to all system features and can
+                      manage other users
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

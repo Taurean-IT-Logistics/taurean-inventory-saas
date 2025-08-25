@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { UserModel } from "../models";
 import { sendSuccess, sendError } from "../utils";
-import * as InvoiceService from "../services/invoice.service";
 
 export async function list(req: Request, res: Response) {
   try {
@@ -91,39 +90,5 @@ export async function clear(req: Request, res: Response) {
     sendSuccess(res, "Cart cleared", { cart: user.cart });
   } catch (e: any) {
     sendError(res, "Failed to clear cart", e.message);
-  }
-}
-
-export async function checkout(req: Request, res: Response) {
-  try {
-    const user = await UserModel.findById((req.user as any).id);
-    if (!user) {
-      sendError(res, "User not found", null, 404);
-      return;
-    }
-
-    const companyId = (req.user as any).companyId;
-    const lines = (user.cart || []).map((c: any) => ({
-      description: c.name || `${c.type} ${c.itemId}`,
-      quantity: c.quantity || 1,
-      unitPrice: c.price || 0,
-    }));
-    if (lines.length === 0) {
-      sendError(res, "Cart is empty", null, 400);
-      return;
-    }
-
-    const invoice = await InvoiceService.createInvoice({
-      companyId,
-      createdBy: (req.user as any).id,
-      customerId: (req.user as any).id,
-      lines,
-    });
-    // clear cart
-    user.cart = [] as any;
-    await user.save();
-    sendSuccess(res, "Checkout created invoice", { invoice });
-  } catch (e: any) {
-    sendError(res, "Checkout failed", e.message);
   }
 }

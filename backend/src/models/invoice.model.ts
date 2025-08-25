@@ -1,92 +1,205 @@
-import { Schema, model, Model, Document, Types } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
-interface InvoiceLineItem {
-  sku?: string;
+export interface InvoiceItem {
   description: string;
   quantity: number;
   unitPrice: number;
-  duration?: number;
-  durationPeriod?: "Hours" | "Days" | "Weeks" | "Months";
-  amount: number; // computed: qty * unitPrice * duration?
-  taxBreakdown?: { name: string; rate: number; amount: number }[]; // snapshot per line
+  amount: number;
+  tax?: number;
+  taxRate?: number;
 }
 
-interface AppliedTaxComponent { name: string; rate: number }
-
-interface InvoiceDocument extends Document {
-  company: Types.ObjectId;
-  createdBy: Types.ObjectId;
-  customer?: Types.ObjectId; // user
+export interface InvoiceDocument extends Document {
   invoiceNumber: string;
-  status: "pending" | "paid" | "failed" | "cancelled";
-  currency: string;
-  lines: InvoiceLineItem[];
+  company: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId;
+  transaction?: mongoose.Types.ObjectId;
+  booking?: mongoose.Types.ObjectId;
+  facility?: mongoose.Types.ObjectId;
+  items: InvoiceItem[];
   subtotal: number;
-  taxTotal: number;
-  total: number;
-  payment: {
-    method?: "cash" | "mobile_money" | "card";
-    provider?: "mtn" | "vodafone" | "airteltigo" | "telecel" | "visa" | "mastercard" | "unknown";
-    status?: "paid" | "pending" | "failed";
-    timestamp?: Date;
-    reference?: string; // Paystack reference only
-  };
-  scheduleSnapshot?: {
+  taxAmount: number;
+  discountAmount: number;
+  totalAmount: number;
+  currency: string;
+  status: "draft" | "sent" | "paid" | "overdue" | "cancelled";
+  dueDate: Date;
+  issueDate: Date;
+  paidDate?: Date;
+  paymentMethod?: string;
+  notes?: string;
+  terms?: string;
+  customerInfo: {
     name: string;
-    components: AppliedTaxComponent[];
-    taxOnTax: boolean;
+    email: string;
+    phone?: string;
+    address?: string;
+  };
+  companyInfo: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    logo?: string;
+    taxId?: string;
   };
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const InvoiceLineItemSchema = new Schema<InvoiceLineItem>({
-  sku: { type: String },
-  description: { type: String, required: true, trim: true },
+const invoiceItemSchema = new Schema<InvoiceItem>({
+  description: { type: String, required: true },
   quantity: { type: Number, required: true, min: 0 },
   unitPrice: { type: Number, required: true, min: 0 },
-  duration: { type: Number, min: 0 },
-  durationPeriod: { type: String, enum: ["Hours", "Days", "Weeks", "Months"] },
   amount: { type: Number, required: true, min: 0 },
-  taxBreakdown: [{ name: String, rate: Number, amount: Number }],
+  tax: { type: Number, default: 0 },
+  taxRate: { type: Number, default: 0 },
 });
 
-const InvoiceSchema = new Schema<InvoiceDocument>(
+const invoiceSchema = new Schema<InvoiceDocument>(
   {
-    company: { type: Schema.Types.ObjectId, ref: "Company", required: true },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    customer: { type: Schema.Types.ObjectId, ref: "User" },
-    invoiceNumber: { type: String, required: true, unique: true },
-    status: { type: String, enum: ["pending", "paid", "failed", "cancelled"], default: "pending" },
-    currency: { type: String, required: true },
-    lines: { type: [InvoiceLineItemSchema], default: [] },
-    subtotal: { type: Number, required: true, min: 0 },
-    taxTotal: { type: Number, required: true, min: 0 },
-    total: { type: Number, required: true, min: 0 },
-    payment: {
-      method: { type: String, enum: ["cash", "mobile_money", "card"] },
-      provider: { type: String, enum: ["mtn", "vodafone", "airteltigo", "telecel", "visa", "mastercard", "unknown"] },
-      status: { type: String, enum: ["paid", "pending", "failed"] },
-      timestamp: { type: Date },
-      reference: { type: String },
+    invoiceNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
     },
-    scheduleSnapshot: {
-      name: { type: String },
-      components: [{ name: String, rate: Number }],
-      taxOnTax: { type: Boolean, default: false },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+      index: true,
     },
-    isDeleted: { type: Boolean, default: false },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    transaction: {
+      type: Schema.Types.ObjectId,
+      ref: "Transaction",
+      index: true,
+    },
+    booking: {
+      type: Schema.Types.ObjectId,
+      ref: "Booking",
+      index: true,
+    },
+    facility: {
+      type: Schema.Types.ObjectId,
+      ref: "Facility",
+      index: true,
+    },
+    items: [invoiceItemSchema],
+    subtotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    taxAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    currency: {
+      type: String,
+      default: "GHS",
+      uppercase: true,
+    },
+    status: {
+      type: String,
+      enum: ["draft", "sent", "paid", "overdue", "cancelled"],
+      default: "draft",
+      index: true,
+    },
+    dueDate: {
+      type: Date,
+      required: true,
+    },
+    issueDate: {
+      type: Date,
+      default: Date.now,
+    },
+    paidDate: {
+      type: Date,
+    },
+    paymentMethod: {
+      type: String,
+    },
+    notes: {
+      type: String,
+    },
+    terms: {
+      type: String,
+    },
+    customerInfo: {
+      name: { type: String, required: true },
+      email: { type: String, required: true },
+      phone: { type: String },
+      address: { type: String },
+    },
+    companyInfo: {
+      name: { type: String, required: true },
+      address: { type: String, required: true },
+      phone: { type: String, required: true },
+      email: { type: String, required: true },
+      logo: { type: String },
+      taxId: { type: String },
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-InvoiceSchema.index({ company: 1, createdAt: -1 });
-InvoiceSchema.index({ invoiceNumber: 1 }, { unique: true });
+// Indexes for better query performance
+invoiceSchema.index({ company: 1, status: 1 });
+invoiceSchema.index({ company: 1, createdAt: -1 });
+invoiceSchema.index({ user: 1, status: 1 });
+invoiceSchema.index({ dueDate: 1, status: 1 });
 
-export const InvoiceModel: Model<InvoiceDocument> = model<InvoiceDocument>(
-  "Invoice",
-  InvoiceSchema
-);
+// Virtual for calculating days overdue
+invoiceSchema.virtual("daysOverdue").get(function () {
+  if (this.status === "paid" || this.status === "cancelled") return 0;
+  const today = new Date();
+  const dueDate = new Date(this.dueDate);
+  const diffTime = today.getTime() - dueDate.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays > 0 ? diffDays : 0;
+});
 
-export { InvoiceDocument, InvoiceLineItem };
+// Pre-save middleware to update status based on due date
+invoiceSchema.pre("save", function (next) {
+  if (this.isModified("dueDate") || this.isModified("status")) {
+    const today = new Date();
+    const dueDate = new Date(this.dueDate);
+    
+    if (this.status !== "paid" && this.status !== "cancelled") {
+      if (today > dueDate) {
+        this.status = "overdue";
+      } else if (this.status === "overdue" && today <= dueDate) {
+        this.status = "sent";
+      }
+    }
+  }
+  next();
+});
+
+export const InvoiceModel = mongoose.model<InvoiceDocument>("Invoice", invoiceSchema);

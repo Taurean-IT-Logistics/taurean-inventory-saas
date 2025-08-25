@@ -1,58 +1,40 @@
 "use client";
 
-import React, { useState } from "react";
-import BookingCalendar from "@/components/booking/booking-calendar";
-import {
-  BookingsAPI,
-  FacilitiesAPI,
-  TransactionsAPI,
-  InvoicesAPI,
-} from "@/lib/api";
-import { Booking, Facility } from "@/types";
+import React, { useMemo, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader } from "@/components/ui/loader";
-import { ErrorComponent } from "@/components/ui/error";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+
 import { toast } from "@/hooks/use-toast";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  CalendarDays,
-  Building2,
-  Users,
-  DollarSign,
-  TrendingUp,
-  Download,
-  FileText,
-  Receipt,
-  BarChart3,
-} from "lucide-react";
-import { currencyFormat } from "@/lib/utils";
+import { useBookings } from "@/hooks/useBookings";
+import { useFacilities } from "@/hooks/useFacilities";
+import { useUsers } from "@/hooks/useUsers";
+import { useInventoryItems } from "@/hooks/useInventoryItems";
+import { useCompanyTransactions } from "@/hooks/useTransactions";
+import { CalendarDays, Building2, Users, Package } from "lucide-react";
+import BookingCalendar from "@/components/booking/booking-calendar";
+import { Booking } from "@/types";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { BookingsAPI } from "@/lib/api";
 
 export default function AdminPage() {
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("overview");
+  // Use the hooks for data fetching
+  const { bookings, isLoadingBookings } = useBookings();
+  const { facilities, isLoadingFacilities } = useFacilities();
+  const { data: usersData, isLoading: isLoadingUsers } = useUsers();
+  const { data: inventoryData, isLoading: isLoadingInventory } =
+    useInventoryItems();
+  const { data: transactionsData, isLoading: isLoadingTransactions } =
+    useCompanyTransactions();
 
-  // Real-time updates for bookings and facilities
+  // Real-time updates
   useRealtimeUpdates({
     queryKeys: [
       "bookings-company",
       "facilities-company",
       "transactions-company",
-      "invoices-company",
+      "users",
+      "inventoryItems",
     ],
     events: [
       "BookingCreated",
@@ -60,220 +42,206 @@ export default function AdminPage() {
       "InventoryCreated",
       "InventoryUpdated",
       "TransactionCreated",
-      "InvoiceCreated",
+      "TransactionUpdated",
     ],
     showNotifications: true,
     notificationTitle: "Admin Dashboard Update",
   });
 
-  const {
-    data: facilities,
-    isError: facilitiesError,
-    isLoading: facilitiesLoading,
-    error: facilitiesErrorMessage,
-    refetch: facilitiesRefetch,
-  } = useQuery({
-    queryKey: ["facilities-company"],
-    queryFn: () => FacilitiesAPI.listCompany(),
-  });
-
-  const {
-    data: bookings,
-    isError: bookingsError,
-    error: bookingsErrorMessage,
-    isLoading: bookingsLoading,
-    refetch: bookingsRefetch,
-  } = useQuery({
-    queryKey: ["bookings-company"],
-    queryFn: () => BookingsAPI.listCompany(),
-  });
-
-  const {
-    data: transactions,
-    isLoading: transactionsLoading,
-    error: transactionsError,
-  } = useQuery({
-    queryKey: ["transactions-company"],
-    queryFn: () => TransactionsAPI.listCompany(),
-  });
-
-  const {
-    data: invoices,
-    isLoading: invoicesLoading,
-    error: invoicesError,
-  } = useQuery({
-    queryKey: ["invoices-company"],
-    queryFn: () => InvoicesAPI.listCompany(),
-  });
-
-  // Mutations with toast notifications
+  const queryClient = useQueryClient();
   const deleteBookingMutation = useMutation({
     mutationFn: (bookingId: string) => BookingsAPI.remove(bookingId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
       toast({
-        title: "Success",
-        description: "Booking deleted successfully",
-        variant: "default",
+        title: "Booking deleted successfully",
+        description: "The booking has been deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete booking",
+        title: "Error deleting booking",
+        description: "An error occurred while deleting the booking",
         variant: "destructive",
       });
     },
   });
 
   const updateBookingMutation = useMutation({
-    mutationFn: (booking: Partial<Booking>) =>
-      BookingsAPI.update(booking._id!, booking),
-    onSuccess: (data) => {
-      toast({
-        title: "Success",
-        description: "Booking updated successfully",
-        variant: "default",
+    mutationFn: (booking: Partial<Booking>) => {
+      const { facility, ...rest } = booking;
+
+      // Handle facility field properly - it could be a string ID or an object with _id
+      let facilityId = facility;
+      if (typeof facilityId === "object" && facilityId !== null) {
+        facilityId = (facilityId as any)._id;
+      }
+
+      if (!facilityId) {
+        throw new Error("Facility is required");
+      }
+
+      if (!booking._id) {
+        throw new Error("Booking ID is required for updates");
+      }
+
+      return BookingsAPI.update(booking._id, {
+        ...rest,
+        facility: facilityId,
       });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      toast({
+        title: "Booking updated successfully",
+        description: "The booking has been updated successfully",
+      });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update booking",
+        title: "Error updating booking",
+        description: "An error occurred while updating the booking",
         variant: "destructive",
       });
+      console.error(error);
     },
   });
 
   const createBookingMutation = useMutation({
-    mutationFn: (booking: Partial<Booking>) => BookingsAPI.create(booking),
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Booking created successfully",
-        variant: "default",
+    mutationFn: (booking: Partial<Booking>) => {
+      // Handle facility field properly - it could be a string ID or an object with _id
+      let facilityId = booking.facility;
+      if (typeof facilityId === "object" && facilityId !== null) {
+        facilityId = (facilityId as any)._id;
+      }
+
+      if (!facilityId) {
+        throw new Error("Facility is required");
+      }
+
+      return BookingsAPI.create({
+        ...booking,
+        facility: facilityId,
       });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings-company"] });
+      toast({
+        title: "Booking created successfully",
+        description: "The booking has been created successfully",
+      });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create booking",
+        title: "Error creating booking",
+        description: "An error occurred while creating the booking",
         variant: "destructive",
       });
     },
   });
 
-  // Calculate dashboard stats
-  const dashboardStats = React.useMemo(() => {
-    const stats = {
-      totalBookings: (bookings as any)?.length || 0,
-      totalFacilities: facilities?.facilities?.length || 0,
-      totalRevenue: 0,
-      pendingInvoices: 0,
-      activeBookings: 0,
-      completedBookings: 0,
-    };
+  // Calculate dashboard metrics - memoized to prevent unnecessary re-renders
+  const metrics = useMemo(
+    () => ({
+      totalInventory: (inventoryData as any)?.data?.length || 0,
+      totalFacilities: (facilities as any)?.facilities?.length || 0,
+      totalUsers: (usersData as any)?.data?.users?.length || 0,
+      activeBookings:
+        (bookings as any)?.filter((b: any) => b.status === "active")?.length ||
+        0,
+    }),
+    [inventoryData, facilities, usersData, bookings]
+  );
 
-    if ((transactions as any)?.data) {
-      stats.totalRevenue = (transactions as any).data
-        .filter((t: any) => t.type === "income")
-        .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
-    }
+  const handleDeleteBooking = useCallback(
+    async (bookingId: string): Promise<void> => {
+      try {
+        deleteBookingMutation.mutate(bookingId);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete booking",
+          variant: "destructive",
+        });
+      }
+    },
+    [deleteBookingMutation]
+  );
 
-    if ((invoices as any)?.invoices) {
-      stats.pendingInvoices = (invoices as any).invoices.filter(
-        (inv: any) => inv.status === "pending"
-      ).length;
-    }
-
-    if (bookings) {
-      stats.activeBookings = (bookings as any).filter(
-        (b: any) => b.status === "active"
-      ).length;
-      stats.completedBookings = (bookings as any).filter(
-        (b: any) => b.status === "completed"
-      ).length;
-    }
-
-    return stats;
-  }, [bookings, facilities, transactions, invoices]);
-
-  const handleDeleteBooking = async (bookingId: string) => {
-    deleteBookingMutation.mutate(bookingId);
-  };
-
-  const handleUpdateBooking = async (booking: Partial<Booking>) => {
-    try {
-      await BookingsAPI.update(booking._id!, booking);
-    } catch (error) {
-      console.error("Error updating booking:", error);
-    }
-  };
-
-  const handleCreateBooking = async (booking: Partial<Booking>) => {
-    const payload = { ...booking };
-    if (payload.facility) {
-      payload.facility = (payload.facility as any)._id;
-    }
-    if (payload.user) {
-      payload.user = (payload.user as any)._id;
-    }
-    try {
-      await createBookingMutation.mutateAsync(payload);
-    } catch (error) {
-      console.error("Error creating booking:", error);
-    }
-  };
-
-  const handleExportData = async (
-    type: "transactions" | "bookings" | "invoices",
-    format: "csv" | "excel"
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/v1/transactions/export/${type}?format=${format}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
+  const handleUpdateBooking = useCallback(
+    async (booking: Partial<Booking>): Promise<void> => {
+      try {
+        // Validate required fields before updating
+        if (!booking._id) {
+          toast({
+            title: "Validation Error",
+            description: "Booking ID is required for updates",
+            variant: "destructive",
+          });
+          return;
         }
-      );
 
-      if (!response.ok) throw new Error(`Failed to export ${type}`);
+        if (!booking.facility) {
+          toast({
+            title: "Validation Error",
+            description: "Facility is required to update a booking",
+            variant: "destructive",
+          });
+          return;
+        }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `${type}-export.${format === "excel" ? "xlsx" : "csv"}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+        updateBookingMutation.mutate(booking);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update booking",
+          variant: "destructive",
+        });
+      }
+    },
+    [updateBookingMutation]
+  );
 
-      toast({
-        title: "Success",
-        description: `${
-          type.charAt(0).toUpperCase() + type.slice(1)
-        } exported successfully`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to export ${type}`,
-        variant: "destructive",
-      });
-    }
-  };
+  const handleCreateBooking = useCallback(
+    async (booking: Partial<Booking>): Promise<void> => {
+      try {
+        // Validate required fields before creating
+        if (!booking.facility) {
+          toast({
+            title: "Validation Error",
+            description: "Facility is required to create a booking",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (!booking.startDate || !booking.endDate) {
+          toast({
+            title: "Validation Error",
+            description: "Start date and end date are required",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        createBookingMutation.mutate(booking);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create booking",
+          variant: "destructive",
+        });
+      }
+    },
+    [createBookingMutation]
+  );
 
   if (
-    facilitiesLoading ||
-    bookingsLoading ||
-    transactionsLoading ||
-    invoicesLoading
+    isLoadingBookings ||
+    isLoadingFacilities ||
+    isLoadingUsers ||
+    isLoadingInventory ||
+    isLoadingTransactions
   ) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -282,315 +250,84 @@ export default function AdminPage() {
     );
   }
 
-  if (facilitiesError || bookingsError) {
-    return (
-      <ErrorComponent
-        message={
-          facilitiesErrorMessage?.message || bookingsErrorMessage?.message
-        }
-        showGoHome={true}
-      />
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Company Dashboard</h1>
+    <div className="min-h-screen">
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
           <p className="text-muted-foreground">
-            Manage your facilities, bookings, and business operations
+            Welcome to the Taurean IT Facility Management System
           </p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export Data
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem
-              onClick={() => handleExportData("transactions", "csv")}
-            >
-              Export Transactions (CSV)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => handleExportData("transactions", "excel")}
-            >
-              Export Transactions (Excel)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => handleExportData("bookings", "csv")}
-            >
-              Export Bookings (CSV)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => handleExportData("invoices", "csv")}
-            >
-              Export Invoices (CSV)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Bookings
-            </CardTitle>
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardStats.totalBookings}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {dashboardStats.activeBookings} active,{" "}
-              {dashboardStats.completedBookings} completed
-            </p>
-          </CardContent>
-        </Card>
+        {/* Dashboard Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Inventory
+              </CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.totalInventory}</div>
+              <p className="text-xs text-muted-foreground">Items in stock</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Facilities
-            </CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardStats.totalFacilities}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Available for booking
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Facilities
+              </CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {metrics.totalFacilities}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Available for booking
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {currencyFormat(dashboardStats.totalRevenue)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              From all transactions
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.totalUsers}</div>
+              <p className="text-xs text-muted-foreground">Registered users</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Invoices
-            </CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardStats.pendingInvoices}
-            </div>
-            <p className="text-xs text-muted-foreground">Awaiting payment</p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Active Bookings
+              </CardTitle>
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics.activeBookings}</div>
+              <p className="text-xs text-muted-foreground">Currently active</p>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Main Content Tabs */}
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-6"
-      >
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="calendar">Booking Calendar</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Bookings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5" />
-                  Recent Bookings
-                </CardTitle>
-                <CardDescription>Latest facility bookings</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!bookings || (bookings as any).length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No bookings found
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {(bookings as any).slice(0, 5).map((booking: any) => (
-                      <div
-                        key={booking._id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div>
-                          <p className="font-medium">
-                            {booking.facility?.name}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {booking.user?.name} •{" "}
-                            {new Date(booking.startDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">
-                            {currencyFormat(booking.totalAmount)}
-                          </p>
-                          <p className="text-sm text-muted-foreground capitalize">
-                            {booking.status}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Recent Transactions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Receipt className="h-5 w-5" />
-                  Recent Transactions
-                </CardTitle>
-                <CardDescription>Latest payment activities</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {transactionsError ? (
-                  <ErrorComponent
-                    title="Error loading transactions"
-                    message={transactionsError.message}
-                  />
-                ) : !(transactions as any)?.data ||
-                  (transactions as any).data.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No transactions found
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {(transactions as any).data
-                      .slice(0, 5)
-                      .map((transaction: any) => (
-                        <div
-                          key={transaction._id}
-                          className="flex items-center justify-between p-4 border rounded-lg"
-                        >
-                          <div>
-                            <p className="font-medium">
-                              {transaction.description}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(
-                                transaction.createdAt
-                              ).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p
-                              className={`font-medium ${
-                                transaction.type === "income"
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {transaction.type === "income" ? "+" : "-"}
-                              {currencyFormat(transaction.amount)}
-                            </p>
-                            <p className="text-sm text-muted-foreground capitalize">
-                              {transaction.status}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="calendar" className="space-y-6">
+        {/* Main Content */}
+        <div className="w-full">
           <BookingCalendar
-            onRefresh={bookingsRefetch}
-            facilities={facilities?.facilities as Facility[]}
-            bookings={bookings as Booking[]}
+            facilities={(facilities as any)?.facilities || []}
+            bookings={(bookings as any) || []}
             onUpdateBooking={handleUpdateBooking}
             onDeleteBooking={handleDeleteBooking}
             onCreateBooking={handleCreateBooking}
           />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Business Analytics
-              </CardTitle>
-              <CardDescription>
-                Insights and performance metrics
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">
-                    {Math.round(
-                      (dashboardStats.completedBookings /
-                        Math.max(dashboardStats.totalBookings, 1)) *
-                        100
-                    )}
-                    %
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Completion Rate
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600">
-                    {currencyFormat(
-                      dashboardStats.totalRevenue /
-                        Math.max(dashboardStats.totalBookings, 1)
-                    )}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Avg. Revenue per Booking
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-purple-600">
-                    {dashboardStats.totalFacilities > 0
-                      ? Math.round(
-                          dashboardStats.totalBookings /
-                            dashboardStats.totalFacilities
-                        )
-                      : 0}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Avg. Bookings per Facility
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

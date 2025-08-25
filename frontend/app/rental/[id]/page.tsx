@@ -152,17 +152,31 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   const normalized = (str: string) =>
     str.trim().replace(/\s/g, "").toLowerCase();
 
+  // Calculate tax rates dynamically from the taxes array
   const serviceFeeRate = (item as InventoryItem).isTaxable
-    ? (taxes as Tax[]).find((t: any) =>
-        normalized(t.name).includes("servicefee")
+    ? (taxes as Tax[]).find(
+        (t: Tax) =>
+          normalized(t.name).includes("servicefee") &&
+          t.active &&
+          (t.appliesTo === "inventory_item" || t.appliesTo === "both") &&
+          (t.isSuperAdminTax || (t.company as any) === (item as any).company)
       )?.rate || 0
     : 0;
 
-  const taxRate = (item as InventoryItem).isTaxable
-    ? (taxes as Tax[]).find(
-        (t: any) => !normalized(t.name).includes("servicefee")
-      )?.rate || 0
-    : 0;
+  const applicableTaxes = (item as InventoryItem).isTaxable
+    ? (taxes as Tax[]).filter(
+        (t: Tax) =>
+          !normalized(t.name).includes("servicefee") &&
+          t.active &&
+          (t.appliesTo === "inventory_item" || t.appliesTo === "both") &&
+          (t.isSuperAdminTax || (t.company as any) === (item as any).company)
+      )
+    : [];
+
+  const totalTaxRate = applicableTaxes.reduce(
+    (sum, tax) => sum + (tax.rate || 0),
+    0
+  );
 
   const price =
     (item as InventoryItem).pricing.find(
@@ -171,7 +185,7 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
 
   const subtotal = price * quantity * rentalDays;
   const serviceFee = Math.round(subtotal * (serviceFeeRate / 100));
-  const tax = Math.round((subtotal + serviceFee) * (taxRate / 100));
+  const tax = Math.round((subtotal + serviceFee) * (totalTaxRate / 100));
   const totalPrice = subtotal + serviceFee + tax;
 
   const handleTransaction = async () => {
@@ -281,7 +295,11 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                       <Label htmlFor="startDate">Start Date</Label>
                       <DatePicker
                         date={startDate ? new Date(startDate) : undefined}
-                        onDateChange={(date) => setStartDate(date ? date.toISOString().split("T")[0] : "")}
+                        onDateChange={(date) =>
+                          setStartDate(
+                            date ? date.toISOString().split("T")[0] : ""
+                          )
+                        }
                         placeholder="Select start date"
                         disabled={!isAvailable}
                       />
@@ -290,7 +308,11 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                       <Label htmlFor="endDate">End Date</Label>
                       <DatePicker
                         date={endDate ? new Date(endDate) : undefined}
-                        onDateChange={(date) => setEndDate(date ? date.toISOString().split("T")[0] : "")}
+                        onDateChange={(date) =>
+                          setEndDate(
+                            date ? date.toISOString().split("T")[0] : ""
+                          )
+                        }
                         placeholder="Select end date"
                         disabled={!isAvailable}
                       />
@@ -347,23 +369,40 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                   {/* Price Breakdown */}
                   <div className="space-y-3 border-t pt-4">
                     <div className="flex justify-between items-center">
-                      <span>Subtotal:</span>
+                      <span>Subtotal ({rentalDays} day{rentalDays > 1 ? 's' : ''} × {quantity} × {currencyFormat(price)}):</span>
                       <span className="text-xl font-semibold text-blue-600">
                         {currencyFormat(subtotal)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span>Service Fee:</span>
-                      <span className="text-xl font-semibold text-blue-600">
-                        {currencyFormat(serviceFee)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Tax:</span>
-                      <span className="text-xl font-semibold text-blue-600">
-                        {currencyFormat(tax)}
-                      </span>
-                    </div>
+                    
+                    {serviceFee > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span>Service Fee ({serviceFeeRate}%):</span>
+                        <span className="text-xl font-semibold text-blue-600">
+                          {currencyFormat(serviceFee)}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {applicableTaxes.length > 0 && (
+                      <>
+                        {applicableTaxes.map((tax: Tax, index: number) => (
+                          <div key={index} className="flex justify-between items-center">
+                            <span>{tax.name} ({tax.rate}%):</span>
+                            <span className="text-xl font-semibold text-blue-600">
+                              {currencyFormat(Math.round((subtotal + serviceFee) * (tax.rate / 100)))}
+                            </span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between items-center">
+                          <span>Total Tax:</span>
+                          <span className="text-xl font-semibold text-blue-600">
+                            {currencyFormat(tax)}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    
                     <div className="flex justify-between items-center border-t pt-3">
                       <span className="font-semibold">Total Cost:</span>
                       <span className="text-2xl font-bold text-blue-600">

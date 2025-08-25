@@ -2,8 +2,6 @@ import { Schema, model, Model, Document } from "mongoose";
 import { Company } from "../types";
 
 interface EmailSettings {
-  sendInvoiceEmails?: boolean;
-  sendReceiptEmails?: boolean;
   sendBookingConfirmations?: boolean;
   sendBookingReminders?: boolean;
   sendPaymentNotifications?: boolean;
@@ -57,7 +55,11 @@ const CompanySchema = new Schema<CompanyDocument>(
       licenseKey: { type: String },
       paymentReference: { type: String },
       activatedAt: { type: Date },
-      status: { type: String, enum: ["active", "expired", "cancelled"], default: "active" },
+      status: {
+        type: String,
+        enum: ["active", "expired", "cancelled"],
+        default: "active",
+      },
       updatedAt: { type: Date },
       hasUsedTrial: { type: Boolean, default: false },
       isTrial: { type: Boolean, default: false },
@@ -67,8 +69,6 @@ const CompanySchema = new Schema<CompanyDocument>(
     paystackRecipientCode: { type: String },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
     emailSettings: {
-      sendInvoiceEmails: { type: Boolean, default: true },
-      sendReceiptEmails: { type: Boolean, default: true },
       sendBookingConfirmations: { type: Boolean, default: true },
       sendBookingReminders: { type: Boolean, default: true },
       sendPaymentNotifications: { type: Boolean, default: true },

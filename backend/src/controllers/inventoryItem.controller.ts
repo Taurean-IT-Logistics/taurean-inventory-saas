@@ -57,9 +57,17 @@ export const getCompanyInventoryItems = async (
   res: Response
 ): Promise<void> => {
   try {
+    if (!req.user?.companyId) {
+      sendError(
+        res,
+        "Company ID not found. User must be associated with a company."
+      );
+      return;
+    }
+
     const showDeleted = true;
     const items = await InventoryItemService.getCompanyInventoryItems(
-      req.user?.companyId!,
+      req.user.companyId,
       showDeleted
     );
     sendSuccess(res, "Company inventory items fetched successfully", items);
@@ -142,7 +150,15 @@ export const createInventoryItem = async (
       );
     }
 
-    itemData.company = req.user?.companyId;
+    if (!req.user?.companyId) {
+      sendError(
+        res,
+        "Company ID not found. User must be associated with a company."
+      );
+      return;
+    }
+
+    itemData.company = req.user.companyId;
 
     const newItem = await InventoryItemService.createInventoryItem(itemData);
     sendSuccess(res, "Inventory item created successfully", newItem);

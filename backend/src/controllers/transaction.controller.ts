@@ -6,7 +6,7 @@ import {
   BookingService,
   FacilityService,
 } from "../services";
-import * as ExportService from "../services/export.service";
+
 import {
   sendSuccess,
   sendError,
@@ -18,11 +18,14 @@ import {
   CompanyModel,
   InventoryItemModel,
   TransactionDocument,
+  UserModel,
+  TransactionModel,
 } from "../models";
 import { Transaction } from "../types";
 import { isValidObjectId } from "mongoose";
 import fs from "fs";
 import { emailService } from "../services/email.service";
+import { notificationService } from "../services/notification.service";
 
 // Initialize payment and create transaction document
 const initializePaymentController = async (
@@ -56,6 +59,14 @@ const initializePaymentController = async (
 
     if (paymentData.booking && !isValidObjectId(paymentData.booking)) {
       sendValidationError(res, "Invalid booking ID");
+      return;
+    }
+
+    if (
+      paymentData.inventoryItem &&
+      !isValidObjectId(paymentData.inventoryItem)
+    ) {
+      sendValidationError(res, "Invalid inventory item ID");
       return;
     }
 
@@ -93,9 +104,51 @@ const initializePaymentController = async (
       }
     }
 
+    // Get company from facility for rentals/bookings, not from user
+    let companyId: string | undefined;
+    if (facility) {
+      const facilityDoc = await FacilityService.getFacilityById(facility);
+      if (facilityDoc?.company) {
+        companyId = facilityDoc.company.toString();
+      }
+    } else if (paymentData.booking) {
+      // If no facility but there's a booking, get company from booking
+      const bookingDoc = await BookingService.getBookingById(
+        paymentData.booking
+      );
+      if (bookingDoc?.company) {
+        companyId = bookingDoc.company.toString();
+      } else if (bookingDoc?.facility) {
+        // Fallback: get company from facility in booking
+        const facilityDoc = await FacilityService.getFacilityById(
+          bookingDoc.facility.toString()
+        );
+        if (facilityDoc?.company) {
+          companyId = facilityDoc.company.toString();
+        }
+      }
+    } else if (paymentData.inventoryItem) {
+      // If no facility/booking but there's an inventory item, get company from item
+      const inventoryItemDoc = await InventoryItemModel.findById(
+        paymentData.inventoryItem
+      );
+      if (inventoryItemDoc?.company) {
+        companyId = inventoryItemDoc.company.toString();
+      } else if (inventoryItemDoc?.associatedFacility) {
+        // Fallback: get company from associated facility
+        const facilityDoc = await FacilityService.getFacilityById(
+          inventoryItemDoc.associatedFacility.toString()
+        );
+        if (facilityDoc?.company) {
+          companyId = facilityDoc.company.toString();
+        }
+      }
+    }
+
     // Initialize payment with Paystack
     const paymentResponse = await PaymentService.initializePayment(
-      formattedPaymentData
+      formattedPaymentData,
+      { companyId }
     );
 
     // Create transaction document
@@ -113,6 +166,7 @@ const initializePaymentController = async (
       accessCode: paymentResponse.data.access_code,
       description: description || `Payment for ${email}`,
       reconciled: false,
+      company: companyId, // Use company from facility/booking, not from user
       ...paymentData,
     };
 
@@ -252,22 +306,50 @@ const verifyPaymentController = async (
     try {
       if (verificationResponse.data.status === "success" && transaction.user) {
         await emailService.sendPaymentSuccessEmail(doc._id!.toString());
-      } else if (verificationResponse.data.status === "failed" && transaction.user) {
-        const userDoc = await UserService.getUserByIdentifier(transaction.user.toString());
+
+        // Update user loyalty profile for successful payments
+        try {
+          await UserService.updateUserLoyaltyProfile(
+            transaction.user.toString(),
+            verificationResponse.data.amount / 100, // Convert from kobo to naira
+            transaction.facility?.toString()
+          );
+          console.log(`Updated loyalty profile for user ${transaction.user}`);
+        } catch (loyaltyError) {
+          console.warn("Failed to update user loyalty profile:", loyaltyError);
+        }
+        
+        // Send payment success notification
+        try {
+          await notificationService.createPaymentNotification(doc._id!.toString(), "successful");
+        } catch (notificationError) {
+          console.warn("Failed to send payment success notification:", notificationError);
+        }
+      } else if (
+        verificationResponse.data.status === "failed" &&
+        transaction.user
+      ) {
+        const userDoc = await UserService.getUserByIdentifier(
+          transaction.user.toString()
+        );
         if (userDoc) {
           await emailService.sendPaymentFailedEmail(
-            {
-              reference: verificationResponse.data.reference,
-              amount: verificationResponse.data.amount / 100,
-              currency: verificationResponse.data.currency,
-            },
             userDoc.email,
-            transaction.company?.toString() || ''
+            verificationResponse.data.amount / 100,
+            verificationResponse.data.currency,
+            "Payment verification failed"
           );
+        }
+        
+        // Send payment failed notification
+        try {
+          await notificationService.createPaymentNotification(doc._id!.toString(), "failed");
+        } catch (notificationError) {
+          console.warn("Failed to send payment failed notification:", notificationError);
         }
       }
     } catch (emailError) {
-      console.warn('Failed to send payment notification email:', emailError);
+      console.warn("Failed to send payment notification email:", emailError);
     }
 
     // Format the response
@@ -379,6 +461,65 @@ const handlePaystackWebhookController = async (
                     paymentStatus: "completed",
                     updatedAt: new Date(),
                   }
+                );
+
+                // Update user loyalty profile for successful booking payments
+                try {
+                  await UserService.updateUserLoyaltyProfile(
+                    transaction.user.toString(),
+                    data.amount / 100,
+                    transaction.facility?.toString()
+                  );
+                  console.log(
+                    `Updated loyalty profile for user ${transaction.user} via webhook`
+                  );
+                } catch (loyaltyError) {
+                  console.warn(
+                    "Failed to update user loyalty profile via webhook:",
+                    loyaltyError
+                  );
+                }
+              }
+            } else if (
+              updatedDoc.category === "facility" &&
+              newData &&
+              newData.reconciled
+            ) {
+              // Update user loyalty profile for successful facility payments
+              try {
+                await UserService.updateUserLoyaltyProfile(
+                  transaction.user.toString(),
+                  data.amount / 100, // Convert from kobo to naira
+                  transaction.facility?.toString()
+                );
+                console.log(
+                  `Updated loyalty profile for user ${transaction.user} for facility payment via webhook`
+                );
+              } catch (loyaltyError) {
+                console.warn(
+                  "Failed to update user loyalty profile for facility payment via webhook:",
+                  loyaltyError
+                );
+              }
+            } else if (
+              updatedDoc.category === "inventory_item" &&
+              newData &&
+              newData.reconciled
+            ) {
+              // Update user loyalty profile for successful inventory item payments
+              try {
+                await UserService.updateUserLoyaltyProfile(
+                  transaction.user.toString(),
+                  data.amount / 100,
+                  transaction.facility?.toString()
+                );
+                console.log(
+                  `Updated loyalty profile for user ${transaction.user} for inventory item payment via webhook`
+                );
+              } catch (loyaltyError) {
+                console.warn(
+                  "Failed to update user loyalty profile for inventory item payment via webhook:",
+                  loyaltyError
                 );
               }
             } else if (
@@ -579,46 +720,96 @@ const getAllTransactions = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Company-scoped transactions for the authenticated user
-    const companyId = (req.user?.companyId ||
-      (req.user as any)?.company) as any;
+    console.log("getAllTransactions called by user:", req.user?.id);
+
+    if (!req.user?.id) {
+      console.log("User not authenticated");
+      sendValidationError(res, "User not authenticated");
+      return;
+    }
+
+    // Get companyId from req.user (set by RequireCompanyContext middleware)
+    const companyId = (req.user as any)?.companyId;
+    console.log("User company ID:", companyId);
+
     if (!companyId) {
+      console.log("User not associated with a company");
       sendValidationError(res, "User is not associated with a company");
       return;
     }
+
+    // Debug: Check if there are any transactions at all
+    const allTransactions = await TransactionModel.find({})
+      .select("company user")
+      .lean();
+    console.log("Total transactions in DB:", allTransactions.length);
+    console.log("Sample transactions:", allTransactions.slice(0, 3));
+
+    // Debug: Check transactions without company field
+    const transactionsWithoutCompany = await TransactionModel.find({
+      company: { $exists: false },
+    })
+      .select("_id user")
+      .lean();
+    console.log(
+      "Transactions without company field:",
+      transactionsWithoutCompany.length
+    );
+
+    // Try to fix transactions without company field first
+    if (transactionsWithoutCompany.length > 0) {
+      try {
+        const { fixTransactionCompanyFields } = await import(
+          "../services/transaction.service"
+        );
+        const result = await fixTransactionCompanyFields();
+        console.log("Fixed transactions:", result);
+      } catch (fixError) {
+        console.warn("Failed to fix transaction company fields:", fixError);
+      }
+    }
+
     const transactions = await TransactionService.getCompanyTransactions(
       companyId.toString()
     );
 
-    if (!transactions) {
-      throw new Error("No transactions found");
-    }
+    console.log("Found transactions for company:", transactions?.length || 0);
 
-    sendSuccess(res, "Payment details retrieved successfully", transactions);
+    // Return empty array if no transactions found (this is normal)
+    sendSuccess(res, "Transactions retrieved successfully", transactions || []);
   } catch (error) {
-    sendError(res, "Failed to retrieve payment details", error);
+    console.error("Error in getAllTransactions:", error);
+    sendError(res, "Failed to retrieve transactions", error);
   }
 };
 
 const getUserTransactions = async (req: Request, res: Response) => {
   try {
+    console.log("getUserTransactions called by user:", req.user?.id);
+
     if (!req.user?.id) {
+      console.log("User not authenticated");
       throw new Error("User not authenticated");
     }
 
     const userId = req.user.id;
+    console.log("Fetching transactions for user ID:", userId);
 
     const transactions = await TransactionService.getAllUserTransactions(
       userId
     );
 
-    if (!transactions) {
-      throw new Error("No transactions found");
-    }
+    console.log("Found user transactions:", transactions?.length || 0);
 
-    sendSuccess(res, "Payment details retrieved successfully", transactions);
+    // Return empty array if no transactions found (this is normal)
+    sendSuccess(
+      res,
+      "User transactions retrieved successfully",
+      transactions || []
+    );
   } catch (error) {
-    sendError(res, "Failed to retrieve payment details", error);
+    console.error("Error in getUserTransactions:", error);
+    sendError(res, "Failed to retrieve user transactions", error);
   }
 };
 
@@ -722,196 +913,6 @@ const getSubAccountDetails = async (
   }
 };
 
-const exportTransactions = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { format = 'csv', startDate, endDate, type = 'all' } = req.query;
-    const user = req.user as any;
-    const companyId = user.companyId;
-
-    if (!companyId) {
-      sendValidationError(res, "User is not associated with a company");
-      return;
-    }
-
-    const options = {
-      format: format as 'csv' | 'excel',
-      companyId: companyId.toString(),
-      startDate: startDate ? new Date(startDate as string) : undefined,
-      endDate: endDate ? new Date(endDate as string) : undefined,
-      type: type as 'income' | 'expense' | 'all'
-    };
-
-    const filePath = await ExportService.exportTransactions(options);
-    const fileName = `transactions-export.${format}`;
-
-    // Set appropriate headers
-    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-
-    // Clean up the file after streaming
-    fileStream.on('end', async () => {
-      await ExportService.cleanupTempFile(filePath);
-    });
-
-    fileStream.on('error', async (error) => {
-      console.error('Error streaming file:', error);
-      await ExportService.cleanupTempFile(filePath);
-      if (!res.headersSent) {
-        sendError(res, "Failed to export transactions", error);
-      }
-    });
-
-  } catch (error) {
-    sendError(res, "Failed to export transactions", error);
-  }
-};
-
-const exportUserTransactions = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { format = 'csv', startDate, endDate } = req.query;
-    const user = req.user as any;
-    const userId = user.id;
-
-    if (!userId) {
-      sendValidationError(res, "User not authenticated");
-      return;
-    }
-
-    const options = {
-      format: format as 'csv' | 'excel',
-      userId: userId.toString(),
-      startDate: startDate ? new Date(startDate as string) : undefined,
-      endDate: endDate ? new Date(endDate as string) : undefined,
-      type: 'all' as const
-    };
-
-    const filePath = await ExportService.exportTransactions(options);
-    const fileName = `my-transactions-export.${format}`;
-
-    // Set appropriate headers
-    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-
-    // Clean up the file after streaming
-    fileStream.on('end', async () => {
-      await ExportService.cleanupTempFile(filePath);
-    });
-
-    fileStream.on('error', async (error) => {
-      console.error('Error streaming file:', error);
-      await ExportService.cleanupTempFile(filePath);
-      if (!res.headersSent) {
-        sendError(res, "Failed to export transactions", error);
-      }
-    });
-
-  } catch (error) {
-    sendError(res, "Failed to export user transactions", error);
-  }
-};
-
-const exportBookings = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { format = 'csv', startDate, endDate } = req.query;
-    const user = req.user as any;
-    const companyId = user.companyId;
-
-    if (!companyId) {
-      sendValidationError(res, "User is not associated with a company");
-      return;
-    }
-
-    const options = {
-      format: format as 'csv' | 'excel',
-      companyId: companyId.toString(),
-      startDate: startDate ? new Date(startDate as string) : undefined,
-      endDate: endDate ? new Date(endDate as string) : undefined
-    };
-
-    const filePath = await ExportService.exportBookings(options);
-    const fileName = `bookings-export.${format}`;
-
-    // Set appropriate headers
-    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-
-    // Clean up the file after streaming
-    fileStream.on('end', async () => {
-      await ExportService.cleanupTempFile(filePath);
-    });
-
-    fileStream.on('error', async (error) => {
-      console.error('Error streaming file:', error);
-      await ExportService.cleanupTempFile(filePath);
-      if (!res.headersSent) {
-        sendError(res, "Failed to export bookings", error);
-      }
-    });
-
-  } catch (error) {
-    sendError(res, "Failed to export bookings", error);
-  }
-};
-
-const exportInvoices = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { format = 'csv', startDate, endDate } = req.query;
-    const user = req.user as any;
-    const companyId = user.companyId;
-
-    if (!companyId) {
-      sendValidationError(res, "User is not associated with a company");
-      return;
-    }
-
-    const options = {
-      format: format as 'csv' | 'excel',
-      companyId: companyId.toString(),
-      startDate: startDate ? new Date(startDate as string) : undefined,
-      endDate: endDate ? new Date(endDate as string) : undefined
-    };
-
-    const filePath = await ExportService.exportInvoices(options);
-    const fileName = `invoices-export.${format}`;
-
-    // Set appropriate headers
-    res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-
-    // Clean up the file after streaming
-    fileStream.on('end', async () => {
-      await ExportService.cleanupTempFile(filePath);
-    });
-
-    fileStream.on('error', async (error) => {
-      console.error('Error streaming file:', error);
-      await ExportService.cleanupTempFile(filePath);
-      if (!res.headersSent) {
-        sendError(res, "Failed to export invoices", error);
-      }
-    });
-
-  } catch (error) {
-    sendError(res, "Failed to export invoices", error);
-  }
-};
-
 export {
   initializePaymentController,
   verifyPaymentController,
@@ -925,8 +926,4 @@ export {
   updateSubAccount,
   listBanks,
   getSubAccountDetails,
-  exportTransactions,
-  exportUserTransactions,
-  exportBookings,
-  exportInvoices,
 };

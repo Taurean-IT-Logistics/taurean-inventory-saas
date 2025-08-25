@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { sendSuccess, sendError, sendValidationError } from "../utils";
 import { SubscriptionService } from "../services/subscription.service";
 import { initializePayment, verifyPayment } from "../services/payment.service";
+import { CompanyModel } from "../models/company.model";
 
 // Start free trial
 export async function startFreeTrial(req: Request, res: Response) {
@@ -46,11 +47,31 @@ export async function initializeSubscriptionPayment(
       return;
     }
 
+    // Get company details to determine currency
+    const company = await CompanyModel.findById(companyId).lean();
+    if (!company) {
+      sendValidationError(res, "Company not found");
+      return;
+    }
+
+    // Use company's currency or default to GHS (Ghanaian Cedi)
+    const currency = company.currency || "GHS";
+
+    // Validate currency support (Paystack supports GHS, NGN, USD, etc.)
+    const supportedCurrencies = ["GHS", "NGN", "USD", "EUR", "GBP"];
+    if (!supportedCurrencies.includes(currency)) {
+      sendValidationError(
+        res,
+        `Currency ${currency} is not supported. Please contact support.`
+      );
+      return;
+    }
+
     // Initialize payment with Paystack
     const paymentData = {
       email,
       amount: plan.price * 100, // Convert to kobo/pesewas
-      currency: "NGN",
+      currency: currency,
       metadata: {
         full_name: "Company Subscription", // Add required full_name
         companyId,
@@ -61,7 +82,8 @@ export async function initializeSubscriptionPayment(
       },
     };
 
-    const paymentResponse = await initializePayment(paymentData, { companyId });
+    // Initialize payment with Paystack - NO companyId for subscriptions (goes directly to Taurean)
+    const paymentResponse = await initializePayment(paymentData);
 
     sendSuccess(res, "Subscription payment initialized", {
       payment: paymentResponse.data,
@@ -233,11 +255,31 @@ export async function renewSubscription(req: Request, res: Response) {
       return;
     }
 
+    // Get company details to determine currency
+    const company = await CompanyModel.findById(companyId).lean();
+    if (!company) {
+      sendValidationError(res, "Company not found");
+      return;
+    }
+
+    // Use company's currency or default to GHS (Ghanaian Cedi)
+    const currency = company.currency || "GHS";
+
+    // Validate currency support (Paystack supports GHS, NGN, USD, etc.)
+    const supportedCurrencies = ["GHS", "NGN", "USD", "EUR", "GBP"];
+    if (!supportedCurrencies.includes(currency)) {
+      sendValidationError(
+        res,
+        `Currency ${currency} is not supported. Please contact support.`
+      );
+      return;
+    }
+
     // Initialize payment for renewal
     const paymentData = {
       email,
       amount: plan.price * 100,
-      currency: "NGN",
+      currency: currency,
       metadata: {
         full_name: "Company Subscription Renewal", // Add required full_name
         companyId,
@@ -248,7 +290,8 @@ export async function renewSubscription(req: Request, res: Response) {
       },
     };
 
-    const paymentResponse = await initializePayment(paymentData, { companyId });
+    // Initialize payment with Paystack - NO companyId for subscriptions (goes directly to Taurean)
+    const paymentResponse = await initializePayment(paymentData);
 
     sendSuccess(res, "Subscription renewal payment initialized", {
       payment: paymentResponse.data,
@@ -291,11 +334,31 @@ export async function upgradeSubscription(req: Request, res: Response) {
       return;
     }
 
+    // Get company details to determine currency
+    const company = await CompanyModel.findById(companyId).lean();
+    if (!company) {
+      sendValidationError(res, "Company not found");
+      return;
+    }
+
+    // Use company's currency or default to GHS (Ghanaian Cedi)
+    const currency = company.currency || "GHS";
+
+    // Validate currency support (Paystack supports GHS, NGN, USD, etc.)
+    const supportedCurrencies = ["GHS", "NGN", "USD", "EUR", "GBP"];
+    if (!supportedCurrencies.includes(currency)) {
+      sendValidationError(
+        res,
+        `Currency ${currency} is not supported. Please contact support.`
+      );
+      return;
+    }
+
     // Initialize payment for upgrade
     const paymentData = {
       email,
       amount: plan.price * 100,
-      currency: "NGN",
+      currency: currency,
       metadata: {
         full_name: "Company Subscription Upgrade", // Add required full_name
         companyId,
@@ -306,7 +369,8 @@ export async function upgradeSubscription(req: Request, res: Response) {
       },
     };
 
-    const paymentResponse = await initializePayment(paymentData, { companyId });
+    // Initialize payment with Paystack - NO companyId for subscriptions (goes directly to Taurean)
+    const paymentResponse = await initializePayment(paymentData);
 
     sendSuccess(res, "Subscription upgrade payment initialized", {
       payment: paymentResponse.data,
@@ -341,8 +405,16 @@ export async function cancelSubscription(req: Request, res: Response) {
     }
 
     // Check if user has permission to manage subscriptions
-    if (!(req.user as any)?.isSuperAdmin && (req.user as any)?.role !== "admin") {
-      sendError(res, "Forbidden: Only Taurean IT super admins or company admins can manage subscriptions", null, 403);
+    if (
+      !(req.user as any)?.isSuperAdmin &&
+      (req.user as any)?.role !== "admin"
+    ) {
+      sendError(
+        res,
+        "Forbidden: Only Taurean IT super admins or company admins can manage subscriptions",
+        null,
+        403
+      );
       return;
     }
 

@@ -108,6 +108,10 @@ const updateTax = async (
   updateData: Partial<Tax>
 ): Promise<TaxDocument | null> => {
   try {
+    if (updateData.isSuperAdminTax) {
+      updateData.company = undefined;
+    }
+
     return await TaxModel.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,

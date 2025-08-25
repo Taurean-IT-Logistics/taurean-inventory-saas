@@ -38,7 +38,6 @@ export class CompanyRoleService {
     roleData: {
       name: string;
       permissions: {
-        viewInvoices?: boolean;
         accessFinancials?: boolean;
         viewBookings?: boolean;
         viewInventory?: boolean;
@@ -48,6 +47,8 @@ export class CompanyRoleService {
         manageFacilities?: boolean;
         manageInventory?: boolean;
         manageTransactions?: boolean;
+        manageEmails?: boolean;
+        manageSettings?: boolean;
       };
     }
   ) {
@@ -90,6 +91,8 @@ export class CompanyRoleService {
         manageFacilities?: boolean;
         manageInventory?: boolean;
         manageTransactions?: boolean;
+        manageEmails?: boolean;
+        manageSettings?: boolean;
       };
     }
   ) {
@@ -214,7 +217,6 @@ export class CompanyRoleService {
       {
         name: "Admin",
         permissions: {
-          viewInvoices: true,
           accessFinancials: true,
           viewBookings: true,
           viewInventory: true,
@@ -224,12 +226,13 @@ export class CompanyRoleService {
           manageFacilities: true,
           manageInventory: true,
           manageTransactions: true,
+          manageEmails: true,
+          manageSettings: true,
         },
       },
       {
         name: "Staff",
         permissions: {
-          viewInvoices: false,
           accessFinancials: false,
           viewBookings: true,
           viewInventory: true,
@@ -239,12 +242,13 @@ export class CompanyRoleService {
           manageFacilities: false,
           manageInventory: false,
           manageTransactions: false,
+          manageEmails: false,
+          manageSettings: false,
         },
       },
       {
         name: "User",
         permissions: {
-          viewInvoices: false,
           accessFinancials: false,
           viewBookings: true,
           viewInventory: true,
@@ -254,8 +258,69 @@ export class CompanyRoleService {
           manageFacilities: false,
           manageInventory: false,
           manageTransactions: false,
+          manageEmails: false,
+          manageSettings: false,
         },
       },
     ];
+  }
+
+  // Initialize default roles for a company
+  static async initializeDefaultRoles(companyId: string) {
+    try {
+      const defaultRoles = await this.getDefaultRoles();
+      const createdRoles = [];
+
+      for (const roleData of defaultRoles) {
+        // Check if role already exists
+        let role = await CompanyRoleModel.findOne({
+          company: companyId,
+          name: roleData.name,
+        });
+
+        if (!role) {
+          // Create the role if it doesn't exist
+          role = await CompanyRoleModel.create({
+            company: companyId,
+            name: roleData.name,
+            permissions: roleData.permissions,
+          });
+        }
+
+        createdRoles.push(role);
+      }
+
+      return createdRoles;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
+
+  // Get or create default staff role for a company
+  static async getOrCreateDefaultStaffRole(companyId: string) {
+    try {
+      // Try to find existing staff role
+      let staffRole = await CompanyRoleModel.findOne({
+        company: companyId,
+        name: "Staff",
+      });
+
+      if (!staffRole) {
+        // Initialize default roles if staff role doesn't exist
+        await this.initializeDefaultRoles(companyId);
+        staffRole = await CompanyRoleModel.findOne({
+          company: companyId,
+          name: "Staff",
+        });
+      }
+
+      if (!staffRole) {
+        throw new Error("Failed to create default staff role");
+      }
+
+      return staffRole;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
   }
 }

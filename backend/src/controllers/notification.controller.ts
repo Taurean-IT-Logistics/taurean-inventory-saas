@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { sendSuccess, sendError, sendNotFound } from "../utils";
-import { NotificationModel } from "../models/notification.model";
+import { notificationService } from "../services/notification.service";
 import { NotificationPreferencesModel } from "../models/notificationPreferences.model";
 
 // Get user notifications
@@ -12,14 +12,12 @@ export async function getUserNotifications(req: Request, res: Response) {
       return;
     }
 
-    const notifications = await NotificationModel.find({
-      userId,
-      isDeleted: { $ne: true },
-    })
-      .sort({ createdAt: -1 })
-      .limit(50);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
 
-    sendSuccess(res, "User notifications retrieved", { notifications });
+    const result = await notificationService.getUserNotifications(userId, page, limit);
+
+    sendSuccess(res, "User notifications retrieved", result);
   } catch (error: any) {
     sendError(res, "Failed to retrieve notifications", error.message);
   }
@@ -31,18 +29,9 @@ export async function markAsRead(req: Request, res: Response) {
     const { id } = req.params;
     const userId = (req.user as any)?.id;
 
-    const notification = await NotificationModel.findOneAndUpdate(
-      { _id: id, userId, isDeleted: { $ne: true } },
-      { isRead: true },
-      { new: true }
-    );
+    await notificationService.markAsRead(id, userId);
 
-    if (!notification) {
-      sendNotFound(res, "Notification not found");
-      return;
-    }
-
-    sendSuccess(res, "Notification marked as read", { notification });
+    sendSuccess(res, "Notification marked as read");
   } catch (error: any) {
     sendError(res, "Failed to mark notification as read", error.message);
   }
@@ -53,10 +42,7 @@ export async function markAllAsRead(req: Request, res: Response) {
   try {
     const userId = (req.user as any)?.id;
 
-    await NotificationModel.updateMany(
-      { userId, isRead: false, isDeleted: { $ne: true } },
-      { isRead: true }
-    );
+    await notificationService.markAllAsRead(userId);
 
     sendSuccess(res, "All notifications marked as read");
   } catch (error: any) {
@@ -70,16 +56,7 @@ export async function deleteNotification(req: Request, res: Response) {
     const { id } = req.params;
     const userId = (req.user as any)?.id;
 
-    const notification = await NotificationModel.findOneAndUpdate(
-      { _id: id, userId, isDeleted: { $ne: true } },
-      { isDeleted: true },
-      { new: true }
-    );
-
-    if (!notification) {
-      sendNotFound(res, "Notification not found");
-      return;
-    }
+    await notificationService.deleteNotification(id, userId);
 
     sendSuccess(res, "Notification deleted");
   } catch (error: any) {
@@ -96,12 +73,12 @@ export async function getPreferences(req: Request, res: Response) {
       return;
     }
 
-    let preferences = await NotificationPreferencesModel.findOne({ userId });
+    let preferences = await NotificationPreferencesModel.findOne({ user: userId });
 
     if (!preferences) {
       // Create default preferences if none exist
       preferences = await NotificationPreferencesModel.create({
-        userId,
+        user: userId,
         email: true,
         push: true,
         sms: false,
@@ -130,7 +107,7 @@ export async function updatePreferences(req: Request, res: Response) {
     const updateData = req.body;
 
     const preferences = await NotificationPreferencesModel.findOneAndUpdate(
-      { userId },
+      { user: userId },
       { $set: updateData },
       { new: true, upsert: true }
     );
@@ -150,11 +127,7 @@ export async function getUnreadCount(req: Request, res: Response) {
       return;
     }
 
-    const count = await NotificationModel.countDocuments({
-      userId,
-      isRead: false,
-      isDeleted: { $ne: true },
-    });
+    const count = await notificationService.getUnreadCount(userId);
 
     sendSuccess(res, "Unread count retrieved", { count });
   } catch (error: any) {

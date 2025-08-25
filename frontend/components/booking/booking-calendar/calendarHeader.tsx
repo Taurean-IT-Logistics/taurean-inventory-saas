@@ -41,7 +41,7 @@ export const CalendarHeader = ({
         </Button>
         <Button
           onClick={onNewBooking}
-          className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+          className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Booking

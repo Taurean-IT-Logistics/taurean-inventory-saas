@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CompanyRoleAPI, CompanyJoinRequestAPI } from "@/lib/api";
+import { CompanyRoleAPI, CompanyJoinRequestsAPI, UsersAPI } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
 export function useCompanyRoles() {
@@ -31,7 +31,7 @@ export function useUsersWithRole(roleId: string) {
 export function useUserJoinRequests() {
   return useQuery({
     queryKey: ["company-join-requests", "user"],
-    queryFn: () => CompanyJoinRequestAPI.getUserRequests(),
+    queryFn: () => CompanyJoinRequestsAPI.getUserRequests(),
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -39,7 +39,7 @@ export function useUserJoinRequests() {
 export function useCompanyPendingRequests() {
   return useQuery({
     queryKey: ["company-join-requests", "company", "pending"],
-    queryFn: () => CompanyJoinRequestAPI.getCompanyPendingRequests(),
+    queryFn: () => CompanyJoinRequestsAPI.getCompanyRequests(),
     staleTime: 1 * 60 * 1000, // 1 minute - pending requests should be fresh
   });
 }
@@ -199,7 +199,7 @@ export function useRequestToJoinCompany() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (companyId: string) => CompanyJoinRequestAPI.requestToJoin(companyId),
+    mutationFn: (companyId: string) => CompanyJoinRequestsAPI.requestToJoin(companyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-join-requests"] });
       toast({
@@ -222,7 +222,7 @@ export function useInviteUser() {
 
   return useMutation({
     mutationFn: ({ userId, companyId }: { userId: string; companyId: string }) =>
-      CompanyJoinRequestAPI.inviteUser(userId, companyId),
+      CompanyJoinRequestsAPI.inviteUser(userId, companyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-join-requests"] });
       toast({
@@ -244,7 +244,7 @@ export function useApproveJoinRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (requestId: string) => CompanyJoinRequestAPI.approveRequest(requestId),
+    mutationFn: (requestId: string) => CompanyJoinRequestsAPI.approveRequest(requestId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-join-requests"] });
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -267,7 +267,7 @@ export function useRejectJoinRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (requestId: string) => CompanyJoinRequestAPI.rejectRequest(requestId),
+    mutationFn: (requestId: string) => CompanyJoinRequestsAPI.rejectRequest(requestId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-join-requests"] });
       toast({
@@ -289,7 +289,7 @@ export function useRemoveUserFromCompany() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (userId: string) => CompanyJoinRequestAPI.removeUserFromCompany(userId),
+    mutationFn: (userId: string) => UsersAPI.removeUserFromCompany(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["company-join-requests"] });

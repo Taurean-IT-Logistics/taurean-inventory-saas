@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { IPaymentFormData } from "../types";
 import { CONFIG } from "../config";
 import { CompanyModel } from "../models/company.model";
+import { notificationService } from "./notification.service";
 
 const PAYSTACK_SECRET_KEY = CONFIG.PAYSTACK_SECRET_KEY;
 
@@ -17,7 +18,11 @@ const initializePayment = async (
     const payload: any = { ...form };
     if (options?.companyId) {
       const company = await CompanyModel.findById(options.companyId).lean();
-      if (company && (company as any).paystackSubaccountCode) {
+      if (
+        company &&
+        company.name !== "Taurean IT" &&
+        (company as any).paystackSubaccountCode
+      ) {
         payload.subaccount = (company as any).paystackSubaccountCode;
         const feePercent = (company as any).feePercent || 0;
         if (feePercent > 0) {

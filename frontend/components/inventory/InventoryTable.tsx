@@ -5,7 +5,7 @@ import { currencyFormat } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, RotateCcw } from "lucide-react";
+import { Edit, Trash2, RotateCcw, Package } from "lucide-react";
 import SimplePaginatedList from "../paginatedList";
 
 interface InventoryTableProps {
@@ -13,6 +13,7 @@ interface InventoryTableProps {
   onEdit: (item: InventoryItem) => void;
   onDelete: (itemId: string) => void;
   onRestore: (itemId: string) => void;
+  onReturnRequest?: (item: InventoryItem) => void;
 }
 
 const InventoryTable = ({
@@ -20,6 +21,7 @@ const InventoryTable = ({
   onEdit,
   onDelete,
   onRestore,
+  onReturnRequest,
 }: InventoryTableProps) => {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -172,6 +174,17 @@ const InventoryTable = ({
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
+                  {onReturnRequest && item.status === "rented" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onReturnRequest(item)}
+                      className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      title="Request Return"
+                    >
+                      <Package className="h-4 w-4" />
+                    </Button>
+                  )}
                   {!item.isDeleted && (
                     <Button
                       variant="outline"

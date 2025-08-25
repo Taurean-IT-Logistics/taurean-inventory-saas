@@ -5,7 +5,7 @@ export interface ISupportTicket extends Document {
   ticketNumber: string;
   title: string;
   description: string;
-  status: "open" | "in_progress" | "resolved" | "closed";
+  status: "open" | "in_progress" | "waiting" | "resolved" | "closed";
   priority: "low" | "medium" | "high" | "urgent";
   category:
     | "technical"
@@ -13,7 +13,8 @@ export interface ISupportTicket extends Document {
     | "feature_request"
     | "bug_report"
     | "general";
-  company: mongoose.Types.ObjectId;
+  ticketType?: "general" | "company";
+  company?: mongoose.Types.ObjectId;
   user: mongoose.Types.ObjectId;
   assignedTo?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -41,7 +42,7 @@ const supportTicketSchema = new Schema<ISupportTicket>(
     },
     status: {
       type: String,
-      enum: ["open", "in_progress", "resolved", "closed"],
+      enum: ["open", "in_progress", "waiting", "resolved", "closed"],
       default: "open",
     },
     priority: {
@@ -60,10 +61,15 @@ const supportTicketSchema = new Schema<ISupportTicket>(
       ],
       default: "general",
     },
+    ticketType: {
+      type: String,
+      enum: ["general", "company"],
+      default: "general",
+    },
     company: {
       type: Schema.Types.ObjectId,
       ref: "Company",
-      required: true,
+      required: false, // Allow general tickets without company
     },
     user: {
       type: Schema.Types.ObjectId,

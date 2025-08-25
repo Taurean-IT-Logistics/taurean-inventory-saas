@@ -54,8 +54,9 @@ export const SocketEvents = {
   TransactionUpdated: "transaction:updated",
   InvoiceCreated: "invoice:created",
   InvoicePaid: "invoice:paid",
-  NotificationUser: "notification:user",
-  NotificationCompany: "notification:company",
+  NotificationCreated: "notification:created",
+  NotificationUpdated: "notification:updated",
+  NotificationDeleted: "notification:deleted",
 } as const;
 
 export type SocketEventName = (typeof SocketEvents)[keyof typeof SocketEvents];

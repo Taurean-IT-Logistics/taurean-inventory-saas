@@ -87,10 +87,26 @@ const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
         <div ref={invoiceRef} className="bg-white p-8">
           <div className="flex justify-between items-start mb-8 pb-4 border-b-2 border-blue-600">
             <div>
-              <h1 className="text-xl font-bold mb-2">Company Name</h1>
-              <div className="text-gray-600 text-sm">
-                <div>123 Business Street</div>
-                <div>Phone: (555) 123-4567 | Email: info@company.com</div>
+              {/* Taurean IT as the parent company issuer */}
+              <div className="mb-4">
+                <h1 className="text-2xl font-bold mb-2 text-blue-600">
+                  Taurean IT
+                </h1>
+                <div className="text-gray-600 text-sm">
+                  <div>
+                    Creator and operator of the Taurean Inventory SaaS platform
+                  </div>
+                  <div>Ghana | admin@taureanit.com | +233000000000</div>
+                </div>
+              </div>
+
+              {/* Company branding details */}
+              <div className="border-t pt-4">
+                <h2 className="text-lg font-semibold mb-2">Company Name</h2>
+                <div className="text-gray-600 text-sm">
+                  <div>123 Business Street</div>
+                  <div>Phone: (555) 123-4567 | Email: info@company.com</div>
+                </div>
               </div>
             </div>
             <div className="text-right">
