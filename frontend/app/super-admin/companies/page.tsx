@@ -150,7 +150,7 @@ export default function SuperAdminCompaniesPage() {
   };
 
   const handleSubscriptionActivation = (companyId: string) => {
-    setSelectedCompany(companiesData?.find((c: any) => c._id === companyId));
+    setSelectedCompany((companiesData as any[])?.find((c: any) => c._id === companyId));
     setIsSubscriptionModalOpen(true);
   };
 
@@ -158,7 +158,7 @@ export default function SuperAdminCompaniesPage() {
     deactivateSubscriptionMutation.mutate(companyId);
   };
 
-  const filteredCompanies = companiesData?.filter((company: any) =>
+  const filteredCompanies = (companiesData as any[])?.filter((company: any) =>
     company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     company.email?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];

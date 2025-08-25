@@ -155,7 +155,7 @@ export default function SuperAdminUsersPage() {
   };
 
   const handleAssignCompany = (userId: string) => {
-    setSelectedUser(usersData?.find((u: any) => u._id === userId));
+    setSelectedUser((usersData as any[])?.find((u: any) => u._id === userId));
     setIsAssignCompanyModalOpen(true);
   };
 
@@ -163,7 +163,7 @@ export default function SuperAdminUsersPage() {
     removeUserFromCompanyMutation.mutate(userId);
   };
 
-  const filteredUsers = usersData?.filter((user: any) =>
+  const filteredUsers = (usersData as any[])?.filter((user: any) =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.username.toLowerCase().includes(searchQuery.toLowerCase())
@@ -417,7 +417,7 @@ export default function SuperAdminUsersPage() {
                   <SelectValue placeholder="Choose a company" />
                 </SelectTrigger>
                 <SelectContent>
-                  {companiesData?.map((company: any) => (
+                  {(companiesData as any[])?.map((company: any) => (
                     <SelectItem key={company._id} value={company._id}>
                       {company.name}
                     </SelectItem>

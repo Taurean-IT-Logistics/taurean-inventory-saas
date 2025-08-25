@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { InventoryAPI, BookingsAPI } from "@/lib/api";
+import { InventoryReturnsAPI, BookingsAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -68,7 +68,7 @@ export default function UserReturnsPage() {
     refetch: refetchReturns,
   } = useQuery({
     queryKey: ["user-returns"],
-    queryFn: () => InventoryAPI.getUserReturns(user?._id || ""),
+    queryFn: () => InventoryReturnsAPI.listUser(),
     enabled: !!user?._id,
   });
 
@@ -79,14 +79,14 @@ export default function UserReturnsPage() {
     refetch: refetchActiveRentals,
   } = useQuery({
     queryKey: ["user-active-rentals"],
-    queryFn: () => InventoryAPI.getUserActiveRentals(user?._id || ""),
+    queryFn: () => BookingsAPI.getUserBookings(),
     enabled: !!user?._id,
   });
 
   // Mutations
   const createReturnMutation = useMutation({
     mutationFn: async (returnData: any) => {
-      return InventoryAPI.returnItem(returnData.itemId, returnData);
+      return InventoryReturnsAPI.create(returnData);
     },
     onSuccess: () => {
       toast({
@@ -136,12 +136,12 @@ export default function UserReturnsPage() {
     });
   };
 
-  const filteredReturns = returnsData?.filter((returnItem: any) =>
+  const filteredReturns = (returnsData as any[])?.filter((returnItem: any) =>
     returnItem.item?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     returnItem.status.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  const filteredActiveRentals = activeRentalsData?.filter((rental: any) =>
+  const filteredActiveRentals = (activeRentalsData as any[])?.filter((rental: any) =>
     rental.item?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     rental.status.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];

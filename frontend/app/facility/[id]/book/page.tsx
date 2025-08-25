@@ -77,12 +77,12 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     queryKey: ["taxes"],
     queryFn: () => TaxesAPI.list(),
     enabled: !!user,
-  });
+  }) as { data: Tax[] };
 
   // Calculate pricing and taxes
   const calculateTotal = () => {
     if (!bookingData.startDate || !bookingData.endDate || !facilityData) {
-      return { subtotal: 0, serviceFee: 0, tax: 0, total: 0 };
+      return { subtotal: 0, serviceFee: 0, tax: 0, total: 0, days: 1, basePrice: 0, serviceFeeRate: 0, totalTaxRate: 0, applicableTaxes: [] };
     }
 
     const facility = facilityData as Facility;
@@ -99,7 +99,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
         t.name.toLowerCase().includes("service") &&
         t.active &&
         (t.appliesTo === "facility" || t.appliesTo === "both") &&
-        (t.isSuperAdminTax || t.company === facility.company)
+        (t.isSuperAdminTax || t.company === (facility.company as any)?._id)
     )?.rate || 0;
 
     const serviceFee = Math.round(subtotal * (serviceFeeRate / 100));
@@ -110,7 +110,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
         !t.name.toLowerCase().includes("service") &&
         t.active &&
         (t.appliesTo === "facility" || t.appliesTo === "both") &&
-        (t.isSuperAdminTax || t.company === facility.company)
+        (t.isSuperAdminTax || t.company === (facility.company as any)?._id)
     );
 
     const totalTaxRate = applicableTaxes.reduce((sum, tax) => sum + (tax.rate || 0), 0);
@@ -318,62 +318,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
   let facility = facilityData as Facility;
 
-  const calculateTotal = () => {
-    // Calculate days based on actual dates
-    let days = 1;
-    if (bookingData.startDate && bookingData.endDate) {
-      const startDate = parseDate(bookingData.startDate);
-      const endDate = parseDate(bookingData.endDate);
-      if (startDate && endDate) {
-        days = Math.max(1, differenceInDays(endDate, startDate));
-      }
-    }
 
-    const normalized = (str: string) =>
-      str.trim().replace(/\s/g, "").toLowerCase();
-
-    const defaultPricing = facility.pricing.find((p) => p.isDefault);
-    const subtotal = (defaultPricing?.amount || 0) * days;
-    const serviceFeeRate = (facility as Facility).isTaxable
-      ? (taxes as Tax[]).find(
-          (t: Tax) =>
-            normalized(t.name).includes("servicefee") &&
-            t.active &&
-            (t.appliesTo === "facility" || t.appliesTo === "both") &&
-            (t.isSuperAdminTax || (t.company as any) === facility.company)
-        )?.rate || 0
-      : 0;
-
-    const applicableTaxes = (facility as Facility).isTaxable
-      ? (taxes as Tax[]).filter(
-          (t: Tax) =>
-            !normalized(t.name).includes("servicefee") &&
-            t.active &&
-            (t.appliesTo === "facility" || t.appliesTo === "both") &&
-            (t.isSuperAdminTax || (t.company as any) === facility.company)
-        )
-      : [];
-
-    const totalTaxRate = applicableTaxes.reduce(
-      (sum, tax) => sum + (tax.rate || 0),
-      0
-    );
-    return {
-      days,
-      subtotal,
-      serviceFeeRate,
-      taxRate: totalTaxRate,
-      total: subtotal + serviceFeeRate + totalTaxRate,
-    };
-  };
-
-  const {
-    days,
-    subtotal,
-    serviceFeeRate,
-    taxRate: totalTaxRate,
-    total,
-  } = calculateTotal();
 
   const handleProceedToCheckout = () => {
     // Check if user is authenticated
