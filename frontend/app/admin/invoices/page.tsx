@@ -72,7 +72,7 @@ export default function InvoicesPage() {
   const downloadInvoice = useDownloadInvoice();
   const downloadReceipt = useDownloadReceipt();
 
-  const invoices = invoicesData?.invoices || [];
+  const invoices = (invoicesData as any)?.invoices || [];
   const stats = invoiceStats as any;
 
   const filteredInvoices = invoices.filter((invoice: any) => {
@@ -112,7 +112,7 @@ export default function InvoicesPage() {
   const handleDownloadInvoice = async (invoiceId: string) => {
     try {
       const blob = await InvoicesAPI.downloadInvoice(invoiceId);
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob as Blob);
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = url;
@@ -133,7 +133,7 @@ export default function InvoicesPage() {
   const handleDownloadReceipt = async (invoiceId: string) => {
     try {
       const blob = await InvoicesAPI.downloadReceipt(invoiceId);
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob as Blob);
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = url;

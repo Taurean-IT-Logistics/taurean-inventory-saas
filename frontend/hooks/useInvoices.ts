@@ -61,7 +61,7 @@ export function usePayInvoice() {
 
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) =>
-      InvoicesAPI.pay(id, payload),
+      InvoicesAPI.updateStatus(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       queryClient.invalidateQueries({ queryKey: ["receipts"] });

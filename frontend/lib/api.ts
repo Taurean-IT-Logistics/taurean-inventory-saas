@@ -1400,6 +1400,83 @@ export const HealthAPI = {
     apiFetch("/health/external", { method: "GET" }),
 };
 
+export const SuperAdminAPI = {
+  // Get system statistics
+  getSystemStatistics: () => apiFetch("/super-admin/stats", { method: "GET" }),
+
+  // Get all companies
+  getAllCompanies: () => apiFetch("/super-admin/companies", { method: "GET" }),
+
+  // Search companies
+  searchCompanies: (query: string) =>
+    apiFetch(`/super-admin/companies/search?q=${encodeURIComponent(query)}`, { method: "GET" }),
+
+  // Get company details
+  getCompanyDetails: (companyId: string) =>
+    apiFetch(`/super-admin/companies/${companyId}`, { method: "GET" }),
+
+  // Get all users
+  getAllUsers: () => apiFetch("/super-admin/users", { method: "GET" }),
+
+  // Get unassigned users
+  getUnassignedUsers: () => apiFetch("/super-admin/users/unassigned", { method: "GET" }),
+
+  // Search users
+  searchUsers: (query: string) =>
+    apiFetch(`/super-admin/users/search?q=${encodeURIComponent(query)}`, { method: "GET" }),
+
+  // Get recent activity
+  getRecentActivity: (limit: number = 10) =>
+    apiFetch(`/super-admin/activity?limit=${limit}`, { method: "GET" }),
+
+  // Update company status
+  updateCompanyStatus: (companyId: string, status: string) =>
+    apiFetch(`/super-admin/companies/${companyId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    }),
+
+  // Update user status
+  updateUserStatus: (userId: string, status: string) =>
+    apiFetch(`/super-admin/users/${userId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    }),
+
+  // Activate company subscription
+  activateCompanySubscription: (companyId: string, plan: string, duration: number) =>
+    apiFetch(`/super-admin/companies/${companyId}/subscription`, {
+      method: "POST",
+      body: JSON.stringify({ plan, duration }),
+    }),
+
+  // Deactivate company subscription
+  deactivateCompanySubscription: (companyId: string) =>
+    apiFetch(`/super-admin/companies/${companyId}/subscription`, {
+      method: "DELETE",
+    }),
+
+  // Update user role
+  updateUserRole: (userId: string, role: string) =>
+    apiFetch(`/super-admin/users/${userId}/role`, {
+      method: "PUT",
+      body: JSON.stringify({ role }),
+    }),
+
+  // Assign user to company
+  assignUserToCompany: (userId: string, companyId: string) =>
+    apiFetch(`/super-admin/users/${userId}/assign`, {
+      method: "POST",
+      body: JSON.stringify({ companyId }),
+    }),
+
+  // Remove user from company
+  removeUserFromCompany: (userId: string) =>
+    apiFetch(`/super-admin/users/${userId}/remove`, {
+      method: "DELETE",
+    }),
+};
+
 export const getResourceUrl = (path: string): string => {
   if (!path) return "";
 

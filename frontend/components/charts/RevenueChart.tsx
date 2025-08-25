@@ -211,7 +211,7 @@ export const RevenueChart: React.FC<ChartProps> = ({
         );
 
       default:
-        return null;
+        return <div>Unsupported chart type</div>;
     }
   };
 

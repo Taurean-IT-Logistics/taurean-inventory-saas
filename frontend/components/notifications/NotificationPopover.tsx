@@ -174,7 +174,7 @@ export const NotificationPopover: React.FC = () => {
               <div className="p-8 text-center">
                 <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-sm text-gray-600">No notifications yet</p>
-                <p className="text-xs text-gray-500 mt-1">We'll notify you when something important happens</p>
+                <p className="text-xs text-gray-500 mt-1">We&apos;ll notify you when something important happens</p>
               </div>
             ) : (
               <div className="max-h-[400px] overflow-y-auto">

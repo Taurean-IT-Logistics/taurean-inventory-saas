@@ -67,11 +67,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Update unread count when data changes
   useEffect(() => {
-    if (unreadCountData !== undefined) {
-      setUnreadCount(unreadCountData);
+    if (unreadCountData !== undefined && unreadCountData !== null) {
+      setUnreadCount(unreadCountData as number);
     } else {
       // Fallback: calculate from notifications
-      const count = notifications.filter((n: Notification) => !n.isRead).length;
+      const count = (notifications as Notification[]).filter((n: Notification) => !n.isRead).length;
       setUnreadCount(count);
     }
   }, [unreadCountData, notifications]);
@@ -193,7 +193,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const value: NotificationContextType = {
-    notifications,
+    notifications: notifications as Notification[],
     unreadCount,
     isLoading,
     markAsRead,

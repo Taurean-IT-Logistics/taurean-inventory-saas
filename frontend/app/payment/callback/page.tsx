@@ -138,14 +138,14 @@ const PaymentCallbackPage = () => {
         const invoice = await InvoicesAPI.createFromTransaction(
           paymentData.transaction._id
         );
-        invoiceId = invoice._id;
+        invoiceId = (invoice as any)._id;
       } catch (createError) {
         // If invoice already exists or creation fails, use transaction ID
         console.log("Invoice creation failed, using transaction ID:", createError);
       }
 
       const blob = await InvoicesAPI.downloadInvoice(invoiceId);
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob as Blob);
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = url;
@@ -180,14 +180,14 @@ const PaymentCallbackPage = () => {
         const invoice = await InvoicesAPI.createFromTransaction(
           paymentData.transaction._id
         );
-        invoiceId = invoice._id;
+        invoiceId = (invoice as any)._id;
       } catch (createError) {
         // If invoice already exists or creation fails, use transaction ID
         console.log("Invoice creation failed, using transaction ID:", createError);
       }
 
       const blob = await InvoicesAPI.downloadReceipt(invoiceId);
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob as Blob);
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = url;
