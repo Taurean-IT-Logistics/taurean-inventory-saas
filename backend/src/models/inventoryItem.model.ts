@@ -57,7 +57,11 @@ const InventoryItemSchema = new Schema<InventoryItemDocument>(
       {
         date: { type: Date, default: Date.now },
         returnedBy: { type: Schema.Types.ObjectId, ref: "User" },
-        condition: { type: String, enum: ["good", "fair", "damaged"], default: "good" },
+        condition: {
+          type: String,
+          enum: ["good", "fair", "damaged"],
+          default: "good",
+        },
         quantity: { type: Number, min: 0 },
         notes: { type: String, trim: true },
       },
@@ -78,6 +82,7 @@ const InventoryItemSchema = new Schema<InventoryItemDocument>(
       },
     ],
     currentBookings: [{ type: Schema.Types.ObjectId, ref: "Booking" }],
+    company: { type: Schema.Types.ObjectId, ref: "Company", required: true },
     specifications: { type: Map, of: Schema.Types.Mixed },
     alerts: {
       lowStock: { type: Boolean, default: false },

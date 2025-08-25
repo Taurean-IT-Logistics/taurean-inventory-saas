@@ -6,7 +6,7 @@ const CONFIG = {
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
   SALT_ROUNDS: process.env.SALT_ROUNDS || 10,
   CONFIG_LEVEL: process.env.CONFIG_LEVEL,
-  PORT: process.env.PORT || 3000,
+  PORT: process.env.PORT || 3001,
   ENV: process.env.NODE_ENV || "development",
   JWT_EXPIRATION: process.env.JWT_EXPIRATION || "1h",
   JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION || "7d",
@@ -16,6 +16,8 @@ const CONFIG = {
   EMAIL_TOKEN_SECRET: process.env.EMAIL_TOKEN_SECRET,
   EMAIL_TOKEN_EXPIRATION: process.env.EMAIL_TOKEN_EXPIRATION,
   PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
+  FRONTEND_BASE_URL: process.env.FRONTEND_BASE_URL || "http://localhost:3000",
+  BACKEND_BASE_URL: process.env.BACKEND_BASE_URL || "http://localhost:3001",
   REDIS_URL:
     process.env.REDIS_URL ||
     "redis://:l5B6sKuMdrKkJ3EKhTTrxVkPVLiAkLPK@redis-12366.c11.us-east-1-2.ec2.redns.redis-cloud.com:12366",

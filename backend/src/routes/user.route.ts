@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { UserController } from "../controllers";
-import { AuthMiddleware, AuthorizeRoles } from "../middlewares";
+import {
+  AuthMiddleware,
+  AuthorizeRoles,
+  RequireActiveCompany,
+  RequirePermissions,
+} from "../middlewares";
 
 const router = Router();
 
@@ -31,6 +36,15 @@ router.get(
   AuthMiddleware,
   AuthorizeRoles("admin", "staff"),
   UserController.getAllUsers
+);
+
+// Company-specific: Get users for the authenticated user's company
+router.get(
+  "/company",
+  AuthMiddleware,
+  RequireActiveCompany(),
+  RequirePermissions(["manageUsers"]),
+  UserController.getCompanyUsers
 );
 
 router.get(
@@ -65,5 +79,11 @@ router.post(
   AuthorizeRoles("admin", "staff"),
   UserController.updateUserLoyalty
 );
+
+// Get user loyalty profile
+router.get("/loyalty", AuthMiddleware, UserController.getLoyaltyProfile);
+
+// Get loyalty tier information
+router.get("/loyalty/tiers", AuthMiddleware, UserController.getLoyaltyTierInfo);
 
 export default router;

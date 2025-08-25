@@ -6,6 +6,7 @@ import {
   BookingService,
   FacilityService,
 } from "../services";
+
 import {
   sendSuccess,
   sendError,
@@ -14,11 +15,17 @@ import {
 } from "../utils";
 import {
   BookingDocument,
+  CompanyModel,
   InventoryItemModel,
   TransactionDocument,
+  UserModel,
+  TransactionModel,
 } from "../models";
 import { Transaction } from "../types";
 import { isValidObjectId } from "mongoose";
+import fs from "fs";
+import { emailService } from "../services/email.service";
+import { notificationService } from "../services/notification.service";
 
 // Initialize payment and create transaction document
 const initializePaymentController = async (
@@ -52,6 +59,14 @@ const initializePaymentController = async (
 
     if (paymentData.booking && !isValidObjectId(paymentData.booking)) {
       sendValidationError(res, "Invalid booking ID");
+      return;
+    }
+
+    if (
+      paymentData.inventoryItem &&
+      !isValidObjectId(paymentData.inventoryItem)
+    ) {
+      sendValidationError(res, "Invalid inventory item ID");
       return;
     }
 
@@ -89,9 +104,51 @@ const initializePaymentController = async (
       }
     }
 
+    // Get company from facility for rentals/bookings, not from user
+    let companyId: string | undefined;
+    if (facility) {
+      const facilityDoc = await FacilityService.getFacilityById(facility);
+      if (facilityDoc?.company) {
+        companyId = facilityDoc.company.toString();
+      }
+    } else if (paymentData.booking) {
+      // If no facility but there's a booking, get company from booking
+      const bookingDoc = await BookingService.getBookingById(
+        paymentData.booking
+      );
+      if (bookingDoc?.company) {
+        companyId = bookingDoc.company.toString();
+      } else if (bookingDoc?.facility) {
+        // Fallback: get company from facility in booking
+        const facilityDoc = await FacilityService.getFacilityById(
+          bookingDoc.facility.toString()
+        );
+        if (facilityDoc?.company) {
+          companyId = facilityDoc.company.toString();
+        }
+      }
+    } else if (paymentData.inventoryItem) {
+      // If no facility/booking but there's an inventory item, get company from item
+      const inventoryItemDoc = await InventoryItemModel.findById(
+        paymentData.inventoryItem
+      );
+      if (inventoryItemDoc?.company) {
+        companyId = inventoryItemDoc.company.toString();
+      } else if (inventoryItemDoc?.associatedFacility) {
+        // Fallback: get company from associated facility
+        const facilityDoc = await FacilityService.getFacilityById(
+          inventoryItemDoc.associatedFacility.toString()
+        );
+        if (facilityDoc?.company) {
+          companyId = facilityDoc.company.toString();
+        }
+      }
+    }
+
     // Initialize payment with Paystack
     const paymentResponse = await PaymentService.initializePayment(
-      formattedPaymentData
+      formattedPaymentData,
+      { companyId }
     );
 
     // Create transaction document
@@ -109,6 +166,7 @@ const initializePaymentController = async (
       accessCode: paymentResponse.data.access_code,
       description: description || `Payment for ${email}`,
       reconciled: false,
+      company: companyId, // Use company from facility/booking, not from user
       ...paymentData,
     };
 
@@ -235,10 +293,63 @@ const verifyPaymentController = async (
             }
           );
         }
-      } else if (updatedDoc.category === "account" && updatedDoc.account) {
-        // Optionally, update account balance or reconciliation status
-        // e.g., AccountService.reconcileAccount(updatedDoc.account as any)
+      } else if (updatedDoc.category === "activation" && transaction.company) {
+        await CompanyModel.findByIdAndUpdate(
+          transaction.company,
+          { isActive: true },
+          { new: true }
+        );
       }
+    }
+
+    // Send email notification based on payment status
+    try {
+      if (verificationResponse.data.status === "success" && transaction.user) {
+        await emailService.sendPaymentSuccessEmail(doc._id!.toString());
+
+        // Update user loyalty profile for successful payments
+        try {
+          await UserService.updateUserLoyaltyProfile(
+            transaction.user.toString(),
+            verificationResponse.data.amount / 100, // Convert from kobo to naira
+            transaction.facility?.toString()
+          );
+          console.log(`Updated loyalty profile for user ${transaction.user}`);
+        } catch (loyaltyError) {
+          console.warn("Failed to update user loyalty profile:", loyaltyError);
+        }
+        
+        // Send payment success notification
+        try {
+          await notificationService.createPaymentNotification(doc._id!.toString(), "successful");
+        } catch (notificationError) {
+          console.warn("Failed to send payment success notification:", notificationError);
+        }
+      } else if (
+        verificationResponse.data.status === "failed" &&
+        transaction.user
+      ) {
+        const userDoc = await UserService.getUserByIdentifier(
+          transaction.user.toString()
+        );
+        if (userDoc) {
+          await emailService.sendPaymentFailedEmail(
+            userDoc.email,
+            verificationResponse.data.amount / 100,
+            verificationResponse.data.currency,
+            "Payment verification failed"
+          );
+        }
+        
+        // Send payment failed notification
+        try {
+          await notificationService.createPaymentNotification(doc._id!.toString(), "failed");
+        } catch (notificationError) {
+          console.warn("Failed to send payment failed notification:", notificationError);
+        }
+      }
+    } catch (emailError) {
+      console.warn("Failed to send payment notification email:", emailError);
     }
 
     // Format the response
@@ -351,13 +462,75 @@ const handlePaystackWebhookController = async (
                     updatedAt: new Date(),
                   }
                 );
+
+                // Update user loyalty profile for successful booking payments
+                try {
+                  await UserService.updateUserLoyaltyProfile(
+                    transaction.user.toString(),
+                    data.amount / 100,
+                    transaction.facility?.toString()
+                  );
+                  console.log(
+                    `Updated loyalty profile for user ${transaction.user} via webhook`
+                  );
+                } catch (loyaltyError) {
+                  console.warn(
+                    "Failed to update user loyalty profile via webhook:",
+                    loyaltyError
+                  );
+                }
               }
             } else if (
-              updatedDoc.category === "account" &&
-              updatedDoc.account
+              updatedDoc.category === "facility" &&
+              newData &&
+              newData.reconciled
             ) {
-              // Optionally, update account balance or reconciliation status
-              // e.g., AccountService.reconcileAccount(updatedDoc.account as any)
+              // Update user loyalty profile for successful facility payments
+              try {
+                await UserService.updateUserLoyaltyProfile(
+                  transaction.user.toString(),
+                  data.amount / 100, // Convert from kobo to naira
+                  transaction.facility?.toString()
+                );
+                console.log(
+                  `Updated loyalty profile for user ${transaction.user} for facility payment via webhook`
+                );
+              } catch (loyaltyError) {
+                console.warn(
+                  "Failed to update user loyalty profile for facility payment via webhook:",
+                  loyaltyError
+                );
+              }
+            } else if (
+              updatedDoc.category === "inventory_item" &&
+              newData &&
+              newData.reconciled
+            ) {
+              // Update user loyalty profile for successful inventory item payments
+              try {
+                await UserService.updateUserLoyaltyProfile(
+                  transaction.user.toString(),
+                  data.amount / 100,
+                  transaction.facility?.toString()
+                );
+                console.log(
+                  `Updated loyalty profile for user ${transaction.user} for inventory item payment via webhook`
+                );
+              } catch (loyaltyError) {
+                console.warn(
+                  "Failed to update user loyalty profile for inventory item payment via webhook:",
+                  loyaltyError
+                );
+              }
+            } else if (
+              updatedDoc.category === "activation" &&
+              transaction.company
+            ) {
+              await CompanyModel.findByIdAndUpdate(
+                transaction.company,
+                { isActive: true },
+                { new: true }
+              );
             }
           }
         }
@@ -547,37 +720,96 @@ const getAllTransactions = async (
   res: Response
 ): Promise<void> => {
   try {
-    const transactions = await TransactionService.getAllTransactions();
+    console.log("getAllTransactions called by user:", req.user?.id);
 
-    if (!transactions) {
-      throw new Error("No transactions found");
+    if (!req.user?.id) {
+      console.log("User not authenticated");
+      sendValidationError(res, "User not authenticated");
+      return;
     }
 
-    sendSuccess(res, "Payment details retrieved successfully", transactions);
+    // Get companyId from req.user (set by RequireCompanyContext middleware)
+    const companyId = (req.user as any)?.companyId;
+    console.log("User company ID:", companyId);
+
+    if (!companyId) {
+      console.log("User not associated with a company");
+      sendValidationError(res, "User is not associated with a company");
+      return;
+    }
+
+    // Debug: Check if there are any transactions at all
+    const allTransactions = await TransactionModel.find({})
+      .select("company user")
+      .lean();
+    console.log("Total transactions in DB:", allTransactions.length);
+    console.log("Sample transactions:", allTransactions.slice(0, 3));
+
+    // Debug: Check transactions without company field
+    const transactionsWithoutCompany = await TransactionModel.find({
+      company: { $exists: false },
+    })
+      .select("_id user")
+      .lean();
+    console.log(
+      "Transactions without company field:",
+      transactionsWithoutCompany.length
+    );
+
+    // Try to fix transactions without company field first
+    if (transactionsWithoutCompany.length > 0) {
+      try {
+        const { fixTransactionCompanyFields } = await import(
+          "../services/transaction.service"
+        );
+        const result = await fixTransactionCompanyFields();
+        console.log("Fixed transactions:", result);
+      } catch (fixError) {
+        console.warn("Failed to fix transaction company fields:", fixError);
+      }
+    }
+
+    const transactions = await TransactionService.getCompanyTransactions(
+      companyId.toString()
+    );
+
+    console.log("Found transactions for company:", transactions?.length || 0);
+
+    // Return empty array if no transactions found (this is normal)
+    sendSuccess(res, "Transactions retrieved successfully", transactions || []);
   } catch (error) {
-    sendError(res, "Failed to retrieve payment details", error);
+    console.error("Error in getAllTransactions:", error);
+    sendError(res, "Failed to retrieve transactions", error);
   }
 };
 
 const getUserTransactions = async (req: Request, res: Response) => {
   try {
+    console.log("getUserTransactions called by user:", req.user?.id);
+
     if (!req.user?.id) {
+      console.log("User not authenticated");
       throw new Error("User not authenticated");
     }
 
     const userId = req.user.id;
+    console.log("Fetching transactions for user ID:", userId);
 
     const transactions = await TransactionService.getAllUserTransactions(
       userId
     );
 
-    if (!transactions) {
-      throw new Error("No transactions found");
-    }
+    console.log("Found user transactions:", transactions?.length || 0);
 
-    sendSuccess(res, "Payment details retrieved successfully", transactions);
+    // Return empty array if no transactions found (this is normal)
+    sendSuccess(
+      res,
+      "User transactions retrieved successfully",
+      transactions || []
+    );
   } catch (error) {
-    sendError(res, "Failed to retrieve payment details", error);
+    console.error("Error in getUserTransactions:", error);
+    sendError(res, "Failed to retrieve user transactions", error);
   }
 };
 
@@ -606,6 +838,81 @@ const updateTransaction = async (
   }
 };
 
+const listBanks = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { country, currency, type } = req.query;
+    let countryCode = (country as string) || "Ghana";
+    const banks = await PaymentService.getAllBanks(
+      countryCode as string,
+      currency as string,
+      type as string
+    );
+
+    if (!banks) {
+      throw new Error("No banks found");
+    }
+
+    sendSuccess(res, "Banks retrieved successfully", banks);
+  } catch (error) {
+    sendError(res, "Failed to retrieve banks", error);
+  }
+};
+
+const getBankMomoDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { bankCode, accountNumber } = req.params;
+
+    const momoDetails = await PaymentService.getMomoBankDetails(
+      bankCode,
+      accountNumber
+    );
+
+    sendSuccess(res, "Momo bank details retrieved successfully", momoDetails);
+  } catch (error) {
+    sendError(res, "Failed to retrieve momo bank details", error);
+  }
+};
+
+const updateSubAccount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { subaccountCode } = req.params;
+    const data = req.body;
+
+    const updatedSubAccount = await PaymentService.updateSubAccount(
+      subaccountCode,
+      data
+    );
+
+    sendSuccess(res, "Subaccount updated successfully", updatedSubAccount);
+  } catch (error) {
+    sendError(res, "Failed to update subaccount", error);
+  }
+};
+
+const getSubAccountDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { subaccountCode } = req.params;
+
+    const subaccountDetails = await PaymentService.getSubaccountDetails(
+      subaccountCode
+    );
+
+    sendSuccess(
+      res,
+      "Subaccount details retrieved successfully",
+      subaccountDetails
+    );
+  } catch (error) {
+    sendError(res, "Failed to retrieve subaccount details", error);
+  }
+};
+
 export {
   initializePaymentController,
   verifyPaymentController,
@@ -615,4 +922,8 @@ export {
   getAllTransactions,
   updateTransaction,
   getUserTransactions,
+  getBankMomoDetails,
+  updateSubAccount,
+  listBanks,
+  getSubAccountDetails,
 };

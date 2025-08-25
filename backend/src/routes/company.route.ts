@@ -1,102 +1,73 @@
-import { Router, Request, Response } from "express";
-import { CompanyModel, CompanyRoleModel } from "../models";
-import { sendSuccess, sendError } from "../utils";
-import { AuthMiddleware, AuthorizeRoles } from "../middlewares/auth.middleware";
-import * as CompanyController from "../controllers/company.controller";
+import express from "express";
+import { CompanyController } from "../controllers/company.controller";
+import {
+  AuthMiddleware,
+  RequireActiveCompany,
+} from "../middlewares/auth.middleware";
+import { AuthorizeRoles } from "../middlewares/auth.middleware";
+import { fileFilter, storage } from "../middlewares";
+import multer from "multer";
 
-const router = Router();
+const router = express.Router();
 
-// Public onboarding
-router.post("/onboard", async (req: Request, res: Response) => {
-  try {
-    const {
-      name,
-      logoUrl,
-      registrationDocs,
-      location,
-      contactEmail,
-      contactPhone,
-      invoiceFormat,
-      currency,
-    } = req.body;
-    if (!name) {
-      sendError(res, "Company name is required", null, 400);
-      return;
-    }
+// Ensure uploads directory exists
+const uploadConfig = {
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+    files: 10, // Maximum 10 files
+  },
+};
 
-    const company = await CompanyModel.create({
-      name,
-      logoUrl,
-      registrationDocs,
-      location,
-      contactEmail,
-      contactPhone,
-      invoiceFormat,
-      currency,
-      isActive: true,
-    } as any);
-    // Default roles
-    await CompanyRoleModel.create([
-      {
-        company: company._id,
-        name: "Admin",
-        permissions: {
-          viewInvoices: true,
-          accessFinancials: true,
-          viewBookings: true,
-          viewInventory: true,
-          createRecords: true,
-          editRecords: true,
-          manageUsers: true,
-          manageFacilities: true,
-          manageInventory: true,
-          manageTransactions: true,
-        },
-      },
-      {
-        company: company._id,
-        name: "Staff",
-        permissions: {
-          viewInvoices: false,
-          accessFinancials: false,
-          viewBookings: true,
-          viewInventory: true,
-          createRecords: true,
-          editRecords: true,
-        },
-      },
-      {
-        company: company._id,
-        name: "User",
-        permissions: { viewBookings: true, viewInventory: true },
-      },
-    ] as any);
-
-    sendSuccess(res, "Company onboarded", { company }, 201);
-  } catch (e: any) {
-    sendError(res, "Onboarding failed", e.message);
-  }
-});
-
-// Public pricing
+// Public routes (no authentication required)
+router.get("/public", CompanyController.getPublicCompanies);
 router.get("/pricing", CompanyController.pricing);
 
-// Super admin: activate and renew subscriptions
+// Protected routes
+router.use(AuthMiddleware);
+
+// Company onboarding route
 router.post(
-  "/subscription/activate",
-  AuthMiddleware,
+  "/onboard",
+  multer(uploadConfig).single("file"),
+  CompanyController.onboardCompany
+);
+
+// Company management routes
+router.put(
+  "/:companyId",
+  multer(uploadConfig).single("file"),
+  RequireActiveCompany(),
+  CompanyController.updateCompany
+);
+router.post("/:companyId/join-request", CompanyController.handleJoinRequest);
+router.get("/join-requests/pending", CompanyController.getPendingJoinRequests);
+router.post(
+  "/join-requests/:requestId/respond",
+  CompanyController.handleJoinRequestResponse
+);
+router.get("/join-requests/user", CompanyController.getUserJoinRequests);
+
+// Super admin only routes
+router.get(
+  "/all",
+  AuthorizeRoles("super_admin"),
+  CompanyController.getAllCompanies
+);
+router.post(
+  "/activate-subscription",
+  AuthorizeRoles("super_admin"),
   CompanyController.activateSubscription
 );
 router.post(
-  "/subscription/renew",
-  AuthMiddleware,
+  "/renew-subscription",
+  AuthorizeRoles("super_admin"),
   CompanyController.renewSubscription
 );
-
-// Super admin: update payout config (paystack subaccount, feePercent)
-router.post(
+router.put(
   "/payout-config",
-  AuthMiddleware,
+  AuthorizeRoles("super_admin"),
   CompanyController.updatePayoutConfig
 );
 

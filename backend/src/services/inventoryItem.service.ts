@@ -26,10 +26,44 @@ const getAllInventoryItems = async (
   showDeleted = false
 ): Promise<InventoryItemDocument[]> => {
   try {
-    const filter = showDeleted ? {} : { isDeleted: false };
-    return await InventoryItemModel.find(filter).populate("associatedFacility");
+    const now = new Date();
+    const items = await InventoryItemModel.aggregate([
+      {
+        $lookup: {
+          from: "companies",
+          localField: "company",
+          foreignField: "_id",
+          as: "company",
+        },
+      },
+      { $unwind: "$company" },
+      {
+        $match: {
+          ...(showDeleted ? {} : { isDeleted: false }),
+          "company.isActive": true,
+          "company.subscription.expiresAt": { $gt: now },
+        },
+      },
+    ]);
+    return items as any;
   } catch (error) {
     throw new Error("Error fetching inventory items");
+  }
+};
+
+// Get company-specific inventory items
+const getCompanyInventoryItems = async (
+  companyId: string,
+  showDeleted = false
+): Promise<InventoryItemDocument[]> => {
+  try {
+    const filter: any = { company: companyId };
+    if (!showDeleted) {
+      filter.isDeleted = false;
+    }
+    return await InventoryItemModel.find(filter).populate("associatedFacility");
+  } catch (error) {
+    throw new Error("Error fetching company inventory items");
   }
 };
 
@@ -97,9 +131,13 @@ const updateInventoryItem = async (
       updateData.images = updatedImages;
     }
 
-    const updated = await InventoryItemModel.findOneAndUpdate(filter, updateData, {
-      new: true,
-    }).populate("associatedFacility");
+    const updated = await InventoryItemModel.findOneAndUpdate(
+      filter,
+      updateData,
+      {
+        new: true,
+      }
+    ).populate("associatedFacility");
     if (updated) {
       try {
         const { emitEvent } = await import("../realtime/socket");
@@ -256,7 +294,12 @@ const getLowStockItems = async (
 
 const returnItem = async (
   id: string,
-  data: { quantity: number; condition?: string; notes?: string; userId?: string }
+  data: {
+    quantity: number;
+    condition?: string;
+    notes?: string;
+    userId?: string;
+  }
 ): Promise<InventoryItemDocument | null> => {
   try {
     if (!Types.ObjectId.isValid(id)) throw new Error("Invalid ID format");
@@ -283,7 +326,9 @@ const returnItem = async (
         },
       },
     };
-    const updated = await InventoryItemModel.findByIdAndUpdate(id, update, { new: true });
+    const updated = await InventoryItemModel.findByIdAndUpdate(id, update, {
+      new: true,
+    });
     if (updated) {
       try {
         const { emitEvent } = await import("../realtime/socket");
@@ -300,6 +345,7 @@ const returnItem = async (
 export {
   createInventoryItem,
   getAllInventoryItems,
+  getCompanyInventoryItems,
   getInventoryItemById,
   updateInventoryItem,
   deleteInventoryItem,

@@ -9,6 +9,5 @@ router.get("/", AuthMiddleware, CartController.list);
 router.post("/add", AuthMiddleware, CartController.add);
 router.post("/remove", AuthMiddleware, CartController.remove);
 router.post("/clear", AuthMiddleware, CartController.clear);
-router.post("/checkout", AuthMiddleware, RequireActiveCompany(), CartController.checkout);
 
 export default router;

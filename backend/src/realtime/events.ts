@@ -8,8 +8,11 @@ export const Events = {
   TransactionUpdated: "transaction:updated",
   InvoiceCreated: "invoice:created",
   InvoicePaid: "invoice:paid",
-  NotificationUser: "notification:user",
-  NotificationCompany: "notification:company",
+  NotificationCreated: "notification:created",
+  NotificationUpdated: "notification:updated",
+  NotificationDeleted: "notification:deleted",
+  EmailSent: "email:sent",
+  EmailFailed: "email:failed",
 } as const;
 
 export type EventName = typeof Events[keyof typeof Events];

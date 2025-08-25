@@ -61,6 +61,7 @@ const BookingSchema = new Schema<BookingDocument>(
     notes: { type: String, trim: true },
     internalNotes: { type: String, trim: true },
     isDeleted: { type: Boolean, default: false },
+    company: { type: Schema.Types.ObjectId, ref: "Company" },
   },
   { timestamps: true }
 );

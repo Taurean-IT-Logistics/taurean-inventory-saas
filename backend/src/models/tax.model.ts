@@ -13,6 +13,8 @@ const TaxSchema: Schema = new Schema<TaxDocument>(
       enum: ["inventory_item", "facility", "both"],
       default: "both",
     },
+    isSuperAdminTax: { type: Boolean, default: false },
+    company: { type: Schema.Types.ObjectId, ref: "Company" },
     active: { type: Boolean, default: false },
   },
   {

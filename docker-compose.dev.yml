@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: facility-mongodb-dev
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password123}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-facility_management_dev}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_dev_data:/data/db
+    networks:
+      - facility-dev-network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7.2-alpine
+    container_name: facility-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - facility-dev-network
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+
+  # Backend API (Development mode with hot reload)
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: facility-backend-dev
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+      - "9229:9229" # Debug port
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password123}@mongodb:27017/${MONGO_DATABASE:-facility_management_dev}?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret}
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY}
+      PAYSTACK_PUBLIC_KEY: ${PAYSTACK_PUBLIC_KEY}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - backend_dev_uploads:/app/uploads
+      - backend_dev_temp:/app/temp
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - facility-dev-network
+
+  # Frontend Application (Development mode with hot reload)
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: facility-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:3001/api/v1}
+      NEXT_PUBLIC_FRONTEND_URL: ${NEXT_PUBLIC_FRONTEND_URL:-http://localhost:3000}
+      NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${PAYSTACK_PUBLIC_KEY}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend-dev
+    networks:
+      - facility-dev-network
+
+volumes:
+  mongodb_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+  backend_dev_uploads:
+    driver: local
+  backend_dev_temp:
+    driver: local
+
+networks:
+  facility-dev-network:
+    driver: bridge

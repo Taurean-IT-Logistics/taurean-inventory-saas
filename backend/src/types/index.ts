@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 export interface CartItem {
   type: string;
   itemId: string;
@@ -9,26 +11,22 @@ export interface CartItem {
 }
 
 export interface User {
+  _id?: string;
   name: string;
   username: string;
   email: string;
-  phone?: string;
   password: string;
+  phone?: string;
   role: "user" | "staff" | "admin";
-  loyaltyProfile?: {
-    totalBookings: number;
-    totalSpent: number;
-    preferredFacilities: Facility[];
-    lastBookingDate?: Date;
-    loyaltyTier?: "bronze" | "silver" | "gold" | "platinum";
-  };
-  cart: CartItem[];
-  isDeleted?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-  company?: string; // Company ObjectId string
-  companyRole?: string; // CompanyRole ObjectId string
-  isSuperAdmin?: boolean;
+  isSuperAdmin?: boolean; // Only for Taurean IT users
+  company?: string | Company;
+  companyRole?: string | CompanyRole;
+  cart?: CartItem[];
+  loyaltyProfile?: any;
+  status: "active" | "inactive" | "suspended";
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface TokenPayload {
@@ -129,6 +127,7 @@ export interface Facility {
   isActive: boolean;
   isTaxable: boolean;
   isDeleted: boolean;
+  company: any;
   createdBy: User;
   createdAt: Date;
   updatedAt: Date;
@@ -175,6 +174,7 @@ export interface Booking {
     refundAmount?: number;
   };
   notes?: string;
+  company: Company;
   internalNotes?: string;
   isDeleted: boolean;
   createdAt: Date;
@@ -183,7 +183,7 @@ export interface Booking {
 
 export interface Transaction {
   booking?: Booking;
-  user: User;
+  user: mongoose.Types.ObjectId | string;
   account?: Account;
   type: string;
   category: string;
@@ -217,7 +217,7 @@ export interface Transaction {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
-  company?: string; // Company owning this transaction
+  company?: mongoose.Types.ObjectId | string;
   isPlatformRevenue?: boolean;
 }
 
@@ -276,6 +276,7 @@ export interface InventoryItem {
     maintenanceDue: boolean;
     warrantyExpiring: boolean;
   };
+  company: any;
   isTaxable: boolean;
   isDeleted: boolean;
   createdAt: Date;
@@ -400,13 +401,20 @@ export interface Tax {
   name: string;
   rate: number;
   type: string;
-  appliesTo: "inventory_item" | "facitlity" | "both";
+  appliesTo: "inventory_item" | "facility" | "both";
+  isSuperAdminTax?: boolean;
+  company?: Company;
   active: boolean;
 }
 
 export interface Company {
   name: string;
-  logoUrl?: string;
+  logo?: {
+    path: string;
+    originalName: string;
+    mimetype: string;
+    size: number;
+  };
   registrationDocs?: string[];
   location?: string;
   contactEmail?: string;
@@ -420,10 +428,17 @@ export interface Company {
   currency?: string; // GHS, USD, etc.
   isActive: boolean;
   subscription?: {
-    plan: "monthly" | "biannual" | "annual" | "triannual";
+    plan: "free_trial" | "monthly" | "biannual" | "annual" | "triannual";
     expiresAt: Date;
     licenseKey: string;
+    paymentReference?: string;
+    activatedAt?: Date;
+    status?: "active" | "expired" | "cancelled";
+    updatedAt?: Date;
+    hasUsedTrial?: boolean;
+    isTrial?: boolean;
   };
+  owner: User;
   paystackSubaccountCode?: string;
   paystackRecipientCode?: string;
   feePercent?: number;
@@ -437,7 +452,13 @@ export interface Payout {
   amount: number;
   currency: string;
   recipientCode?: string;
-  status: "pending" | "approved" | "processing" | "paid" | "failed" | "rejected";
+  status:
+    | "pending"
+    | "approved"
+    | "processing"
+    | "paid"
+    | "failed"
+    | "rejected";
   requestedBy: string;
   processedBy?: string;
   paystackTransferCode?: string;
@@ -461,18 +482,22 @@ export interface CompanyRole {
     manageFacilities?: boolean;
     manageInventory?: boolean;
     manageTransactions?: boolean;
+    manageEmails?: boolean;
+    manageSettings?: boolean;
   };
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface Notification {
-  company?: string;
-  user?: string;
+  company?: mongoose.Types.ObjectId | string;
+  user?: mongoose.Types.ObjectId | string;
   type: "info" | "warning" | "success" | "error";
   title: string;
   message: string;
+  category: "booking" | "payment" | "invoice" | "system" | "support";
   data?: any;
   isRead: boolean;
+  isDeleted: boolean;
   createdAt: Date;
 }

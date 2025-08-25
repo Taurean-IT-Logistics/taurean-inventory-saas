@@ -1,20 +1,46 @@
-import { BookingDocument, BookingModel, InventoryItemModel } from "../models";
+import {
+  BookingDocument,
+  BookingModel,
+  FacilityModel,
+  InventoryItemModel,
+} from "../models";
 import { Types } from "mongoose";
 import { Booking } from "../types";
+import { emailService } from "./email.service";
+import { notificationService } from "./notification.service";
 
-function hasOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
+function hasOverlap(
+  aStart: Date,
+  aEnd: Date,
+  bStart: Date,
+  bEnd: Date
+): boolean {
   return aStart < bEnd && bStart < aEnd;
 }
 
-async function assertNoFacilityConflicts(facilityId: string, start: Date, end: Date, excludeId?: string) {
+// Extract common filter logic to ensure consistency
+function buildConflictFilter(facilityId: string, excludeId?: string) {
   const filter: any = {
     facility: new Types.ObjectId(facilityId),
     status: { $in: ["pending", "confirmed"] },
+    isDeleted: false,
   };
   if (excludeId && Types.ObjectId.isValid(excludeId)) {
     filter._id = { $ne: new Types.ObjectId(excludeId) };
   }
-  const candidates = await BookingModel.find(filter).select("startDate endDate");
+  return filter;
+}
+
+async function assertNoFacilityConflicts(
+  facilityId: string,
+  start: Date,
+  end: Date,
+  excludeId?: string
+) {
+  const filter = buildConflictFilter(facilityId, excludeId);
+  const candidates = await BookingModel.find(filter).select(
+    "startDate endDate"
+  );
   for (const c of candidates) {
     if (hasOverlap(start, end, c.startDate as any, c.endDate as any)) {
       throw new Error("Booking conflict: overlapping time for this facility");
@@ -22,7 +48,10 @@ async function assertNoFacilityConflicts(facilityId: string, start: Date, end: D
   }
 }
 
-async function adjustInventoryForItems(items: { inventoryItem: any; quantity: number }[], direction: "decrement" | "increment") {
+async function adjustInventoryForItems(
+  items: { inventoryItem: any; quantity: number }[],
+  direction: "decrement" | "increment"
+) {
   if (!items || items.length === 0) return;
   for (const it of items) {
     if (!it?.inventoryItem || !it?.quantity) continue;
@@ -32,7 +61,8 @@ async function adjustInventoryForItems(items: { inventoryItem: any; quantity: nu
     if (!doc) throw new Error("Inventory item not found");
     let newQty = doc.quantity;
     if (direction === "decrement") {
-      if (doc.quantity < qty) throw new Error("Insufficient inventory for booking");
+      if (doc.quantity < qty)
+        throw new Error("Insufficient inventory for booking");
       newQty = doc.quantity - qty;
     } else {
       newQty = doc.quantity + qty;
@@ -52,15 +82,56 @@ const createBooking = async (
     if (new Date(bookingData.startDate) >= new Date(bookingData.endDate)) {
       throw new Error("End date must be after start date");
     }
-    await assertNoFacilityConflicts((bookingData as any).facility, new Date(bookingData.startDate), new Date(bookingData.endDate));
-    await adjustInventoryForItems((bookingData as any).items || [], "decrement");
+    await assertNoFacilityConflicts(
+      (bookingData as any).facility,
+      new Date(bookingData.startDate),
+      new Date(bookingData.endDate)
+    );
+    await adjustInventoryForItems(
+      (bookingData as any).items || [],
+      "decrement"
+    );
+
+    const facility = await FacilityModel.findById(
+      bookingData.facility
+    ).populate("company");
+
+    bookingData.company = (facility?.company as any)?._id;
     const booking = new BookingModel(bookingData);
     const saved = await booking.save();
+
+    // Update user loyalty profile to increment total bookings
+    try {
+      const { updateUserLoyaltyProfile } = await import("./user.service");
+      await updateUserLoyaltyProfile(
+        saved.user.toString(),
+        0, // No amount for booking creation, just increment count
+        saved.facility?.toString(),
+        true // This is a booking creation
+      );
+      console.log(
+        `Updated loyalty profile for user ${saved.user} - booking created`
+      );
+    } catch (loyaltyError) {
+      console.warn(
+        "Failed to update user loyalty profile for booking creation:",
+        loyaltyError
+      );
+    }
+
     try {
       const { emitEvent } = await import("../realtime/socket");
       const { Events } = await import("../realtime/events");
       emitEvent(Events.BookingCreated, { id: saved._id, booking: saved });
-    } catch {}
+
+      // Send booking confirmation email
+      await emailService.sendBookingConfirmation((saved as any)._id.toString());
+      
+      // Send booking notification
+      await notificationService.createBookingNotification(saved._id.toString(), "created");
+    } catch (error) {
+      console.warn("Failed to send booking confirmation:", error);
+    }
     return saved;
   } catch (error) {
     throw new Error((error as Error).message || "Error creating booking");
@@ -126,15 +197,24 @@ const updateBooking = async (
     }
     const current = await BookingModel.findById(bookingId);
     if (current) {
-      const facility = (updateData as any).facility?.toString?.() || current.facility?.toString?.();
-      const start = new Date((updateData.startDate as any) || (current.startDate as any));
-      const end = new Date((updateData.endDate as any) || (current.endDate as any));
+      const facility =
+        (updateData as any).facility?.toString?.() ||
+        current.facility?.toString?.();
+      const start = new Date(
+        (updateData.startDate as any) || (current.startDate as any)
+      );
+      const end = new Date(
+        (updateData.endDate as any) || (current.endDate as any)
+      );
       await assertNoFacilityConflicts(facility, start, end, bookingId);
       // Adjust inventory if items changed
       const newItems = (updateData as any).items;
       if (newItems) {
         // First revert previous items
-        await adjustInventoryForItems(((current as any).items || []) as any, "increment");
+        await adjustInventoryForItems(
+          ((current as any).items || []) as any,
+          "increment"
+        );
         // Then decrement for new items
         await adjustInventoryForItems(newItems as any, "decrement");
       }
@@ -150,7 +230,20 @@ const updateBooking = async (
         const { emitEvent } = await import("../realtime/socket");
         const { Events } = await import("../realtime/events");
         emitEvent(Events.BookingUpdated, { id: updated._id, booking: updated });
-      } catch {}
+        
+        // Send notifications based on status change
+        if (updateData.status) {
+          if (updateData.status === "confirmed") {
+            await notificationService.createBookingNotification(updated._id.toString(), "confirmed");
+          } else if (updateData.status === "cancelled") {
+            await notificationService.createBookingNotification(updated._id.toString(), "cancelled");
+          } else if (updateData.status === "completed") {
+            await notificationService.createBookingNotification(updated._id.toString(), "completed");
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to send booking update notification:", error);
+      }
     }
     return updated;
   } catch (error) {
@@ -194,6 +287,114 @@ const getAllBookings = async (
   }
 };
 
+// Get company-specific bookings
+const getCompanyBookings = async (
+  companyId: string,
+  showDeleted = false
+): Promise<BookingDocument[]> => {
+  try {
+    // Validate companyId is a valid ObjectId
+    if (!Types.ObjectId.isValid(companyId)) {
+      throw new Error("Invalid company ID format");
+    }
+
+    const filter: any = { company: companyId };
+    if (!showDeleted) {
+      filter.isDeleted = false;
+    }
+    return await BookingModel.find(filter).populate(
+      "user facility paymentDetails"
+    );
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+};
+
+// Check if a facility is available for the given date range
+const checkAvailability = async (
+  facilityId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<boolean> => {
+  try {
+    if (!Types.ObjectId.isValid(facilityId)) {
+      throw new Error("Invalid facility ID");
+    }
+
+    // Use the same filter logic as assertNoFacilityConflicts for consistency
+    const filter = buildConflictFilter(facilityId);
+    const existingBookings = await BookingModel.find(filter).select(
+      "startDate endDate"
+    );
+
+    for (const booking of existingBookings) {
+      if (
+        hasOverlap(
+          startDate,
+          endDate,
+          booking.startDate as any,
+          booking.endDate as any
+        )
+      ) {
+        return false; // Conflict found
+      }
+    }
+
+    return true; // No conflicts found
+  } catch (error) {
+    throw new Error("Error checking availability");
+  }
+};
+
+// Get suggested available dates around the requested date range
+const getSuggestedDates = async (
+  facilityId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<{ startDate: Date; endDate: Date; duration: number }[]> => {
+  try {
+    if (!Types.ObjectId.isValid(facilityId)) {
+      throw new Error("Invalid facility ID");
+    }
+
+    const duration = Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const suggestions: { startDate: Date; endDate: Date; duration: number }[] =
+      [];
+
+    // Check availability for the next 30 days
+    for (let i = 1; i <= 30; i++) {
+      const newStartDate = new Date(startDate);
+      newStartDate.setDate(newStartDate.getDate() + i);
+
+      const newEndDate = new Date(newStartDate);
+      newEndDate.setDate(newEndDate.getDate() + duration);
+
+      const isAvailable = await checkAvailability(
+        facilityId,
+        newStartDate,
+        newEndDate
+      );
+
+      if (isAvailable) {
+        suggestions.push({
+          startDate: newStartDate,
+          endDate: newEndDate,
+          duration,
+        });
+
+        // Limit to 5 suggestions
+        if (suggestions.length >= 5) break;
+      }
+    }
+
+    return suggestions;
+  } catch (error) {
+    throw new Error("Error getting suggested dates");
+  }
+};
+
 export {
   createBooking,
   getBookingById,
@@ -201,4 +402,7 @@ export {
   updateBooking,
   deleteBooking,
   getAllBookings,
+  getCompanyBookings,
+  checkAvailability,
+  getSuggestedDates,
 };

@@ -1,0 +1,179 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Taurean Brand Colors */
+  .text-taurean-blue {
+    color: hsl(220 70% 35%);
+  }
+
+  .text-taurean-orange {
+    color: hsl(25 95% 53%);
+  }
+
+  .text-taurean-grey {
+    color: hsl(220 13% 25%);
+  }
+
+  .bg-taurean-blue {
+    background-color: hsl(220 70% 35%);
+  }
+
+  .bg-taurean-orange {
+    background-color: hsl(25 95% 53%);
+  }
+
+  .bg-taurean-grey {
+    background-color: hsl(220 13% 95%);
+  }
+
+  .border-taurean-blue {
+    border-color: hsl(220 70% 35%);
+  }
+
+  .border-taurean-orange {
+    border-color: hsl(25 95% 53%);
+  }
+
+  .hover\:bg-taurean-blue:hover {
+    background-color: hsl(220 70% 45%);
+  }
+
+  .hover\:bg-taurean-orange:hover {
+    background-color: hsl(25 95% 63%);
+  }
+}
+
+@layer base {
+  :root {
+    /* Taurean Logo Color Palette */
+    --background: 0 0% 100%;
+    --foreground: 220 13% 18%; /* Dark blue-grey */
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 18%;
+
+    /* Primary: Blue from logo */
+    --primary: 220 70% 35%; /* Deep blue */
+    --primary-foreground: 0 0% 98%;
+
+    /* Secondary: Grey from logo */
+    --secondary: 220 13% 95%;
+    --secondary-foreground: 220 13% 25%;
+
+    /* Accent: Orange energy glow from logo */
+    --accent: 25 95% 53%; /* Vibrant orange */
+    --accent-foreground: 0 0% 98%;
+
+    /* Muted: Light grey */
+    --muted: 220 13% 96%;
+    --muted-foreground: 220 13% 45%;
+
+    /* Destructive: Keep red for errors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Border and input: Blue-grey */
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 220 70% 35%;
+
+    /* Chart colors: Blue, grey, orange theme */
+    --chart-1: 220 70% 50%; /* Blue */
+    --chart-2: 220 13% 60%; /* Grey */
+    --chart-3: 25 95% 53%; /* Orange */
+    --chart-4: 220 70% 70%; /* Light blue */
+    --chart-5: 25 95% 70%; /* Light orange */
+
+    --radius: 0.5rem;
+
+    /* Sidebar: Blue theme */
+    --sidebar-background: 220 13% 98%;
+    --sidebar-foreground: 220 13% 25%;
+    --sidebar-primary: 220 70% 35%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 13% 95%;
+    --sidebar-accent-foreground: 220 13% 25%;
+    --sidebar-border: 220 13% 90%;
+    --sidebar-ring: 220 70% 35%;
+  }
+
+  .dark {
+    --background: 220 13% 8%; /* Dark blue-grey */
+    --foreground: 220 13% 95%;
+    --card: 220 13% 12%;
+    --card-foreground: 220 13% 95%;
+    --popover: 220 13% 12%;
+    --popover-foreground: 220 13% 95%;
+
+    /* Primary: Blue from logo */
+    --primary: 220 70% 60%; /* Lighter blue for dark mode */
+    --primary-foreground: 220 13% 8%;
+
+    /* Secondary: Darker grey */
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 220 13% 85%;
+
+    /* Accent: Orange energy glow */
+    --accent: 25 95% 60%; /* Brighter orange for dark mode */
+    --accent-foreground: 220 13% 8%;
+
+    /* Muted: Darker grey */
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 13% 65%;
+
+    /* Destructive: Darker red */
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Border and input: Darker blue-grey */
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 220 70% 60%;
+
+    /* Chart colors: Dark mode versions */
+    --chart-1: 220 70% 60%; /* Blue */
+    --chart-2: 220 13% 50%; /* Grey */
+    --chart-3: 25 95% 60%; /* Orange */
+    --chart-4: 220 70% 80%; /* Light blue */
+    --chart-5: 25 95% 80%; /* Light orange */
+
+    /* Sidebar: Dark blue theme */
+    --sidebar-background: 220 13% 10%;
+    --sidebar-foreground: 220 13% 85%;
+    --sidebar-primary: 220 70% 60%;
+    --sidebar-primary-foreground: 220 13% 10%;
+    --sidebar-accent: 220 13% 15%;
+    --sidebar-accent-foreground: 220 13% 85%;
+    --sidebar-border: 220 13% 20%;
+    --sidebar-ring: 220 70% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Ensure popover content is above other elements */
+  [data-radix-popper-content-wrapper] {
+    z-index: 50 !important;
+  }
+
+  /* Fix for any calendar components */
+  .rdp,
+  .calendar,
+  [role="dialog"] {
+    z-index: 50 !important;
+    position: relative;
+  }
+}

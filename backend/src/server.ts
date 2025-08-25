@@ -11,23 +11,7 @@ import {
 } from "./middlewares";
 import { Logger } from "./utils";
 import swaggerUi from "swagger-ui-express";
-import {
-  userRoutes,
-  authRoutes,
-  facilityRoutes,
-  inventoryItemRoutes,
-  transactionRoutes,
-  bookingRoutes,
-  resourceRoutes,
-  taxRoutes,
-  companyRoutes,
-  invoiceRoutes,
-  taxScheduleRoutes,
-  cartRoutes,
-  cashflowRoutes,
-  payoutRoutes,
-  deletionRoutes,
-} from "./routes";
+import routes from "./routes";
 import { initSocket } from "./realtime/socket";
 
 const app: express.Application = express();
@@ -40,6 +24,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.disable("x-powered-by");
+
+// Serve static files
+app.use(express.static("public"));
+
 app.use(LoggerMiddleware);
 app.use(ErrorMiddleware);
 app.use(APIRateLimiter);
@@ -47,21 +35,7 @@ app.use(APIRateLimiter);
 const swaggerDocument = YAML.load("./src/utils/swagger/swagger.yaml");
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-app.use("/api/v1/users", userRoutes);
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/facilities", facilityRoutes);
-app.use("/api/v1/inventory-items", inventoryItemRoutes);
-app.use("/api/v1/transaction", transactionRoutes);
-app.use("/api/v1/bookings", bookingRoutes);
-app.use("/api/v1/resources", resourceRoutes);
-app.use("/api/v1/taxes", taxRoutes);
-app.use("/api/v1/companies", companyRoutes);
-app.use("/api/v1/invoices", invoiceRoutes);
-app.use("/api/v1/tax-schedules", taxScheduleRoutes);
-app.use("/api/v1/cart", cartRoutes);
-app.use("/api/v1/cashflow", cashflowRoutes);
-app.use("/api/v1/payouts", payoutRoutes);
-app.use("/api/v1/deletions", deletionRoutes);
+app.use("/api/v1", routes);
 
 function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");
@@ -88,3 +62,8 @@ function stopServer() {
 }
 
 export { startServer, stopServer };
+
+// Start the server if this file is run directly
+if (require.main === module) {
+  startServer();
+}

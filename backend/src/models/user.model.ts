@@ -1,63 +1,40 @@
 import { Schema, model, Document } from "mongoose";
 import { User, CartItem } from "../types";
 
-interface UserDocument extends Document, User {}
+interface UserDocument extends Document, Omit<User, "_id"> {}
 
 const UserSchema = new Schema<UserDocument>(
   {
     name: { type: String, required: true, trim: true },
-    username: {
+    username: { type: String, required: true, unique: true, trim: true },
+    email: { type: String, required: true, unique: true, trim: true },
+    password: { type: String, required: true },
+    phone: { type: String, trim: true },
+    role: {
       type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
+      enum: ["user", "staff", "admin"],
+      default: "user",
     },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-    },
-    phone: {
-      type: String,
-      default: null,
-    },
-    password: { type: String, required: true, minlength: 6 },
-    role: { type: String, enum: ["admin", "staff", "user"], default: "user" },
-    isSuperAdmin: { type: Boolean, default: false },
+    isSuperAdmin: { type: Boolean, default: false }, // Only for Taurean IT users
     company: { type: Schema.Types.ObjectId, ref: "Company" },
     companyRole: { type: Schema.Types.ObjectId, ref: "CompanyRole" },
+    cart: [{ type: Schema.Types.ObjectId, ref: "InventoryItem" }],
     loyaltyProfile: {
       totalBookings: { type: Number, default: 0 },
       totalSpent: { type: Number, default: 0 },
       preferredFacilities: [{ type: Schema.Types.ObjectId, ref: "Facility" }],
-      lastBookingDate: Date,
+      lastBookingDate: { type: Date },
       loyaltyTier: {
         type: String,
         enum: ["bronze", "silver", "gold", "platinum"],
         default: "bronze",
       },
     },
-    cart: [
-      {
-        type: {
-          type: String,
-          enum: ["Facility", "InventoryItem"],
-          required: true,
-        },
-        itemId: {
-          type: Schema.Types.ObjectId,
-          required: true,
-          refPath: "cart.type",
-        },
-        quantity: { type: Number, default: 1 },
-        name: { type: String },
-        price: { type: Number },
-        imageUrl: { type: String },
-        notes: { type: String },
-      },
-    ],
+    status: {
+      type: String,
+      enum: ["active", "inactive", "suspended"],
+      default: "active",
+    },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

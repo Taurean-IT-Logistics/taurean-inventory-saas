@@ -18,6 +18,15 @@ const storage = multer.diskStorage({
       case "/api/v1/inventory-items":
         uploadPath = path.join(uploadPath, "inventory");
         break;
+      case "/api/v1/companies":
+        uploadPath = path.join(uploadPath, "companies");
+        break;
+      case "/api/v1/company":
+        uploadPath = path.join(uploadPath, "company");
+        break;
+      case "/api/v1/support":
+        uploadPath = path.join(uploadPath, "support");
+        break;
       default:
         uploadPath = path.join(uploadPath, "general");
     }
@@ -41,6 +50,14 @@ const storage = multer.diskStorage({
       prefix = "facility";
     } else if (req.baseUrl === "/api/v1/users") {
       prefix = "user";
+    } else if (req.baseUrl === "/api/v1/inventory-items") {
+      prefix = "inventory";
+    } else if (req.baseUrl === "/api/v1/companies") {
+      prefix = "company";
+    } else if (req.baseUrl === "/api/v1/support") {
+      prefix = "support";
+    } else if (req.baseUrl === "/api/v1/company") {
+      prefix = "company";
     }
 
     const extension = path.extname(sanitizedOriginalName);

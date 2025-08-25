@@ -1,12 +1,34 @@
 import { Schema, model, Model, Document } from "mongoose";
 import { Company } from "../types";
 
-interface CompanyDocument extends Document, Company {}
+interface EmailSettings {
+  sendBookingConfirmations?: boolean;
+  sendBookingReminders?: boolean;
+  sendPaymentNotifications?: boolean;
+  sendWelcomeEmails?: boolean;
+  sendSubscriptionNotices?: boolean;
+  customFromName?: string;
+  customFromEmail?: string;
+  emailSignature?: string;
+  updatedAt?: Date;
+  updatedBy?: Schema.Types.ObjectId;
+}
+
+interface CompanyWithEmail extends Company {
+  emailSettings?: EmailSettings;
+}
+
+interface CompanyDocument extends Document, CompanyWithEmail {}
 
 const CompanySchema = new Schema<CompanyDocument>(
   {
     name: { type: String, required: true, trim: true },
-    logoUrl: { type: String },
+    logo: {
+      path: { type: String },
+      originalName: { type: String },
+      mimetype: { type: String },
+      size: { type: Number },
+    },
     registrationDocs: [{ type: String }],
     location: { type: String },
     contactEmail: { type: String },
@@ -26,15 +48,38 @@ const CompanySchema = new Schema<CompanyDocument>(
     subscription: {
       plan: {
         type: String,
-        enum: ["monthly", "biannual", "annual", "triannual"],
+        enum: ["free_trial", "monthly", "biannual", "annual", "triannual"],
         default: "monthly",
       },
       expiresAt: { type: Date },
       licenseKey: { type: String },
+      paymentReference: { type: String },
+      activatedAt: { type: Date },
+      status: {
+        type: String,
+        enum: ["active", "expired", "cancelled"],
+        default: "active",
+      },
+      updatedAt: { type: Date },
+      hasUsedTrial: { type: Boolean, default: false },
+      isTrial: { type: Boolean, default: false },
     },
     paystackSubaccountCode: { type: String },
     feePercent: { type: Number, default: 5 },
     paystackRecipientCode: { type: String },
+    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    emailSettings: {
+      sendBookingConfirmations: { type: Boolean, default: true },
+      sendBookingReminders: { type: Boolean, default: true },
+      sendPaymentNotifications: { type: Boolean, default: true },
+      sendWelcomeEmails: { type: Boolean, default: true },
+      sendSubscriptionNotices: { type: Boolean, default: true },
+      customFromName: { type: String },
+      customFromEmail: { type: String },
+      emailSignature: { type: String },
+      updatedAt: { type: Date },
+      updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    },
   },
   { timestamps: true }
 );
