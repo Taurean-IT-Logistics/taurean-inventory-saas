@@ -264,8 +264,8 @@ docker-compose logs mongodb
 
 ## Workflow Status
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/theniitettey/taurean-inventory-saas/ci-cd.yml?branch=main&label=Build&style=flat-square)](https://github.com/{owner}/{repo}/actions/workflows/ci-cd.yml)
-[![Test Status](https://img.shields.io/github/actions/workflow/status/theniitettey/taurean-inventory-saas/pr-check.yml?branch=main&label=Tests&style=flat-square)](https://github.com/{owner}/{repo}/actions/workflows/pr-check.yml)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/theniitettey/taurean-inventory-saas/ci-cd.yml?branch=main&label=Build&style=flat-square)](https://github.com/theniitettey//taurean-inventory-saas/actions/workflows/ci-cd.yml)
+[![Test Status](https://img.shields.io/github/actions/workflow/status/theniitettey/taurean-inventory-saas/pr-check.yml?branch=main&label=Tests&style=flat-square)](https://github.com/theniitettey/taurean-inventory-saas/actions/workflows/pr-check.yml)
 
 ## Support
 
