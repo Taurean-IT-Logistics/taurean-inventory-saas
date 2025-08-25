@@ -25,6 +25,7 @@ import { Transaction } from "../types";
 import { isValidObjectId } from "mongoose";
 import fs from "fs";
 import { emailService } from "../services/email.service";
+import { notificationService } from "../services/notification.service";
 
 // Initialize payment and create transaction document
 const initializePaymentController = async (
@@ -317,6 +318,13 @@ const verifyPaymentController = async (
         } catch (loyaltyError) {
           console.warn("Failed to update user loyalty profile:", loyaltyError);
         }
+        
+        // Send payment success notification
+        try {
+          await notificationService.createPaymentNotification(doc._id!.toString(), "successful");
+        } catch (notificationError) {
+          console.warn("Failed to send payment success notification:", notificationError);
+        }
       } else if (
         verificationResponse.data.status === "failed" &&
         transaction.user
@@ -326,14 +334,18 @@ const verifyPaymentController = async (
         );
         if (userDoc) {
           await emailService.sendPaymentFailedEmail(
-            {
-              reference: verificationResponse.data.reference,
-              amount: verificationResponse.data.amount / 100,
-              currency: verificationResponse.data.currency,
-            },
             userDoc.email,
-            transaction.company?.toString() || ""
+            verificationResponse.data.amount / 100,
+            verificationResponse.data.currency,
+            "Payment verification failed"
           );
+        }
+        
+        // Send payment failed notification
+        try {
+          await notificationService.createPaymentNotification(doc._id!.toString(), "failed");
+        } catch (notificationError) {
+          console.warn("Failed to send payment failed notification:", notificationError);
         }
       }
     } catch (emailError) {

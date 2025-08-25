@@ -582,30 +582,13 @@ export interface Notification {
 }
 
 export interface NotificationPreferences {
-  email: {
-    invoices: boolean;
-    receipts: boolean;
-    bookings: boolean;
-    payments: boolean;
-    support: boolean;
-    marketing: boolean;
-  };
-  push: {
-    invoices: boolean;
-    receipts: boolean;
-    bookings: boolean;
-    payments: boolean;
-    support: boolean;
-    marketing: boolean;
-  };
-  sms: {
-    invoices: boolean;
-    receipts: boolean;
-    bookings: boolean;
-    payments: boolean;
-    support: boolean;
-    marketing: boolean;
-  };
+  email: boolean;
+  push: boolean;
+  sms: boolean;
+  bookingNotifications: boolean;
+  paymentNotifications: boolean;
+  systemNotifications: boolean;
+  marketingNotifications: boolean;
 }
 
 export interface CompanyJoinRequest {

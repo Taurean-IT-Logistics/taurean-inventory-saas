@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Eye, EyeOff, Save, X } from "lucide-react";
 
 interface EditProfileModalProps {
@@ -88,19 +89,19 @@ export function EditProfileModal({
       newErrors.phone = "Please enter a valid phone number";
     }
 
-    // Password validation
+    // Password validation - only validate if user is actually changing password
     const isChangingPassword =
-      formData.currentPassword ||
-      formData.newPassword ||
-      formData.confirmPassword;
+      formData.currentPassword.trim() ||
+      formData.newPassword.trim() ||
+      formData.confirmPassword.trim();
 
     if (isChangingPassword) {
       if (!formData.currentPassword.trim()) {
-        newErrors.currentPassword = "Current password is required";
+        newErrors.currentPassword = "Current password is required when changing password";
       }
 
       if (!formData.newPassword.trim()) {
-        newErrors.newPassword = "New password is required";
+        newErrors.newPassword = "New password is required when changing password";
       } else if (formData.newPassword.length < 6) {
         newErrors.newPassword = "New password must be at least 6 characters";
       }
@@ -162,7 +163,7 @@ export function EditProfileModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Save className="h-5 w-5" />
@@ -170,7 +171,8 @@ export function EditProfileModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <ScrollArea className="max-h-[60vh]">
+          <div className="space-y-6 py-4 pr-4">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -351,6 +353,7 @@ export function EditProfileModal({
             <span className="text-red-500">*</span> Required fields
           </div>
         </div>
+        </ScrollArea>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isLoading}>

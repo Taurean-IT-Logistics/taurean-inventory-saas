@@ -19,6 +19,7 @@ import {
   LogOut,
   Package2,
   PieChart,
+  Receipt,
   ShoppingBag,
   Users,
   MessageSquare,
@@ -29,7 +30,7 @@ import {
 import Logo from "../logo/Logo";
 import type { Route } from "./NavMain";
 import DashboardNavigation from "./NavMain";
-import { NotificationsPopover } from "./NavNotifications";
+import { NotificationPopover } from "../notifications/NotificationPopover";
 import { Button } from "../ui/button";
 import { useAuth } from "../AuthProvider";
 import { getResourceUrl } from "@/lib/api";
@@ -148,6 +149,12 @@ const dashboardRoutes: Route[] = [
     link: "/admin/support",
   },
   {
+    id: "invoices",
+    title: "Invoices",
+    icon: <Receipt className="size-4" />,
+    link: "/admin/invoices",
+  },
+  {
     id: "reports",
     title: "Reports",
     icon: <BarChart3 className="size-4" />,
@@ -203,7 +210,7 @@ export function DashboardSidebar() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          <NotificationsPopover notifications={sampleNotifications} />
+          <NotificationPopover />
           <SidebarTrigger />
           <SocketStatus />
 

@@ -10,6 +10,7 @@ router.use(AuthMiddleware);
 // Company management
 router.get("/companies", SuperAdminController.getAllCompanies);
 router.get("/companies/:companyId", SuperAdminController.getCompanyDetails);
+router.put("/companies/:companyId/status", SuperAdminController.updateCompanyStatus);
 router.post(
   "/companies/:companyId/subscription/activate",
   SuperAdminController.activateCompanySubscription

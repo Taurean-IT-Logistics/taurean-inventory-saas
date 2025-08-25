@@ -15,6 +15,9 @@ import {
 } from "../helpers";
 import { Types } from "mongoose";
 import { emailService } from "../services/email.service";
+import { notificationService } from "../services/notification.service";
+import { CompanyModel } from "../models/company.model";
+import { CONFIG } from "../config";
 
 // Register new user
 const register = async (req: Request, res: Response): Promise<void> => {
@@ -438,10 +441,44 @@ const forgotPassword = async (req: Request, res: Response): Promise<void> => {
       role: user.role,
     });
 
-    // Send password reset email (implement email service)
-    // await EmailService.sendPasswordResetEmail(user.email, resetToken);
+    // Get company info for email
+    const company = user.company
+      ? await CompanyModel.findById(user.company)
+      : null;
 
-    sendSuccess(res, "Password reset link has been sent to your email");
+    // Create reset URL
+    const resetUrl = `${CONFIG.FRONTEND_BASE_URL}/reset-password?token=${resetToken}`;
+
+    // Send password reset email
+    try {
+      await emailService.sendEmail({
+        to: user.email,
+        subject: "Reset Your Password",
+        template: "password-reset",
+        context: {
+          company: company || { name: "FacilityHub" },
+          user: {
+            name: user.name,
+            email: user.email,
+          },
+          resetLink: resetUrl,
+          data: {
+            requestTime: new Date().toLocaleString(),
+            ipAddress: req.ip || "Unknown",
+            expiryTime: new Date(Date.now() + 60 * 60 * 1000).toLocaleString(),
+          },
+        },
+        companyId: user.company?.toString(),
+      });
+
+      sendSuccess(
+        res,
+        "If the email exists, a password reset link has been sent"
+      );
+    } catch (emailError) {
+      console.error("Failed to send password reset email:", emailError);
+      sendError(res, "Failed to send password reset email");
+    }
   } catch (error: any) {
     sendError(res, "Failed to process password reset request", error.message);
   }
@@ -480,6 +517,36 @@ const resetPassword = async (req: Request, res: Response): Promise<void> => {
     await UserService.updateUser(user.id, { password: newPassword });
 
     await invalidateToken(user.id, "passwordResetToken");
+
+    // Get user and company info for email
+    const userDoc = await UserService.getUserById(user.id);
+    const company = userDoc?.company
+      ? await CompanyModel.findById(userDoc.company)
+      : null;
+
+    // Send password changed confirmation email
+    try {
+      await emailService.sendEmail({
+        to: userDoc?.email || "",
+        subject: "Password Changed Successfully",
+        template: "custom",
+        context: {
+          company: company || { name: "FacilityHub" },
+          user: {
+            name: userDoc?.name || "",
+            email: userDoc?.email || "",
+          },
+          data: {
+            message: `Your password has been successfully changed at ${new Date().toLocaleString()}. If you did not make this change, please contact support immediately.`,
+            changedTime: new Date().toLocaleString(),
+            ipAddress: req.ip || "Unknown",
+          },
+        },
+        companyId: userDoc?.company?.toString(),
+      });
+    } catch (emailError) {
+      console.error("Failed to send password changed email:", emailError);
+    }
 
     sendSuccess(res, "Password reset successfully");
   } catch (error: any) {

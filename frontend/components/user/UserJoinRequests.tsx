@@ -129,7 +129,7 @@ export default function UserJoinRequests() {
             <Building className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <p>No join requests yet</p>
             <p className="text-sm">
-              You haven't requested to join any companies yet.
+              You haven&apos;t requested to join any companies yet.
             </p>
           </div>
         </CardContent>

@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TransactionsAPI, InvoicesAPI } from "@/lib/api";
+import InvoiceGenerator, { InvoiceData } from "@/components/invoices/InvoiceGenerator";
+import ReceiptGenerator, { ReceiptData } from "@/components/invoices/ReceiptGenerator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
@@ -19,6 +21,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import Link from "next/link";
+import { useRef } from "react";
 
 interface PaymentResult {
   reference: string;
@@ -71,6 +74,10 @@ const PaymentCallbackPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<ReceiptData | null>(null);
+  const invoiceGeneratorRef = useRef<any>(null);
+  const receiptGeneratorRef = useRef<any>(null);
 
   const reference = searchParams.get("reference");
   const trxref = searchParams.get("trxref");
@@ -130,27 +137,58 @@ const PaymentCallbackPage = () => {
     if (!paymentData?.transaction?._id) return;
 
     try {
-      const blob = await InvoicesAPI.downloadInvoice(
-        paymentData.transaction._id
-      );
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `invoice-${paymentData.reference}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Get invoice number from backend
+      const invoiceNumberData = await InvoicesAPI.getInvoiceNumber();
+      const invoiceNumber = (invoiceNumberData as any)?.invoiceNumber || `INV-${Date.now()}`;
+
+      // Prepare invoice data
+      const invoiceData: InvoiceData = {
+        invoiceNumber,
+        issueDate: new Date(),
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        company: {
+          name: "Your Company",
+          address: "Company Address",
+          phone: "+233 XX XXX XXXX",
+          email: "info@company.com",
+        },
+        customer: {
+          name: `${paymentData.customer.first_name || ""} ${paymentData.customer.last_name || ""}`.trim() || "Customer",
+          email: paymentData.customer.email,
+          phone: paymentData.customer.phone || "",
+        },
+        items: [
+          {
+            description: paymentData.transaction.description || "Payment for services",
+            quantity: 1,
+            unitPrice: paymentData.amount,
+            amount: paymentData.amount,
+            taxRate: 0,
+          },
+        ],
+        subtotal: paymentData.amount,
+        taxAmount: 0,
+        discountAmount: 0,
+        totalAmount: paymentData.amount,
+        currency: paymentData.currency,
+        status: "paid",
+      };
+
+      setSelectedInvoice(invoiceData);
+      
+      // Trigger PDF generation
+      setTimeout(() => {
+        invoiceGeneratorRef.current?.download();
+      }, 100);
 
       toast({
         title: "Success",
-        description: "Invoice downloaded successfully",
+        description: "Invoice generated successfully",
       });
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to download invoice",
+        description: error.message || "Failed to generate invoice",
         variant: "destructive",
       });
     }
@@ -160,27 +198,58 @@ const PaymentCallbackPage = () => {
     if (!paymentData?.transaction?._id) return;
 
     try {
-      const blob = await InvoicesAPI.downloadReceipt(
-        paymentData.transaction._id
-      );
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `receipt-${paymentData.reference}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Get receipt number from backend
+      const receiptNumberData = await InvoicesAPI.getReceiptNumber(paymentData.transaction._id);
+      const receiptNumber = (receiptNumberData as any)?.receiptNumber || `RCP-${Date.now()}`;
+
+      // Prepare receipt data
+      const receiptData: ReceiptData = {
+        receiptNumber,
+        invoiceNumber: `INV-${paymentData.transaction._id}`,
+        paymentDate: new Date(paymentData.paid_at || new Date()),
+        paymentMethod: paymentData.channel || "Online Payment",
+        company: {
+          name: "Your Company",
+          address: "Company Address",
+          phone: "+233 XX XXX XXXX",
+          email: "info@company.com",
+        },
+        customer: {
+          name: `${paymentData.customer.first_name || ""} ${paymentData.customer.last_name || ""}`.trim() || "Customer",
+          email: paymentData.customer.email,
+          phone: paymentData.customer.phone || "",
+        },
+        items: [
+          {
+            description: paymentData.transaction.description || "Payment for services",
+            quantity: 1,
+            unitPrice: paymentData.amount,
+            amount: paymentData.amount,
+          },
+        ],
+        subtotal: paymentData.amount,
+        taxAmount: 0,
+        discountAmount: 0,
+        totalAmount: paymentData.amount,
+        currency: paymentData.currency,
+        transactionId: paymentData.transaction._id,
+      };
+
+      setSelectedReceipt(receiptData);
+      
+      // Trigger PDF generation
+      setTimeout(() => {
+        receiptGeneratorRef.current?.download();
+      }, 100);
 
       toast({
         title: "Success",
-        description: "Receipt downloaded successfully",
+        description: "Receipt generated successfully",
       });
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to download receipt",
+        description: error.message || "Failed to generate receipt",
         variant: "destructive",
       });
     }
@@ -425,6 +494,30 @@ const PaymentCallbackPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Invoice Generator (hidden) */}
+      {selectedInvoice && (
+        <InvoiceGenerator
+          ref={invoiceGeneratorRef}
+          data={selectedInvoice}
+          onGenerate={(pdfBlob) => {
+            // Handle PDF generation if needed
+            console.log('Invoice PDF generated:', pdfBlob);
+          }}
+        />
+      )}
+
+      {/* Receipt Generator (hidden) */}
+      {selectedReceipt && (
+        <ReceiptGenerator
+          ref={receiptGeneratorRef}
+          data={selectedReceipt}
+          onGenerate={(pdfBlob) => {
+            // Handle PDF generation if needed
+            console.log('Receipt PDF generated:', pdfBlob);
+          }}
+        />
+      )}
     </div>
   );
 };

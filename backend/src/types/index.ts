@@ -495,6 +495,7 @@ export interface Notification {
   type: "info" | "warning" | "success" | "error";
   title: string;
   message: string;
+  category: "booking" | "payment" | "invoice" | "system" | "support";
   data?: any;
   isRead: boolean;
   isDeleted: boolean;

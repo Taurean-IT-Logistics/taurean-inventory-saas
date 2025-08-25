@@ -140,16 +140,16 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
     };
 
     // Subscribe to notification events
-    subscribeToEvent(SocketEvents.NotificationUser, handleNewNotification);
-    subscribeToEvent(SocketEvents.NotificationCompany, handleNewNotification);
+    subscribeToEvent(SocketEvents.NotificationCreated, handleNewNotification);
+    subscribeToEvent(SocketEvents.NotificationUpdated, handleNewNotification);
 
     return () => {
       unsubscribeFromEvent(
-        SocketEvents.NotificationUser,
+        SocketEvents.NotificationCreated,
         handleNewNotification
       );
       unsubscribeFromEvent(
-        SocketEvents.NotificationCompany,
+        SocketEvents.NotificationUpdated,
         handleNewNotification
       );
     };

@@ -6,3 +6,4 @@ export * as TransactionController from "./transaction.controller";
 export * as BookingController from "./booking.controller";
 export * as ResourceController from "./resource.controller";
 export * as TaxController from "./tax.controller";
+export * as InvoiceController from "./invoice.controller";

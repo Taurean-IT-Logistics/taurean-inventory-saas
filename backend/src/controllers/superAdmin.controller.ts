@@ -24,6 +24,24 @@ export class SuperAdminController {
     }
   }
 
+  // Update company status
+  static async updateCompanyStatus(req: Request, res: Response) {
+    try {
+      const { companyId } = req.params;
+      const { status } = req.body;
+
+      if (!status) {
+        sendError(res, "Status is required", null, 400);
+        return;
+      }
+
+      const company = await SuperAdminService.updateCompanyStatus(companyId, status);
+      sendSuccess(res, "Company status updated successfully", { company });
+    } catch (error: any) {
+      sendError(res, error.message, null, 400);
+    }
+  }
+
   // Activate company subscription
   static async activateCompanySubscription(req: Request, res: Response) {
     try {
