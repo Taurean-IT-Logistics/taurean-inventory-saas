@@ -1,11 +1,6 @@
 "use client";
 
-import React, {
-  forwardRef,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import React, { useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,18 +11,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Eye,
   Check,
-  Printer,
   Download,
-  AlertTriangle,
   FileSpreadsheet,
+  MoreVertical,
   FileText,
-  Receipt,
+  Printer,
 } from "lucide-react";
 import type { Transaction } from "@/types";
 import { currencyFormat } from "@/lib/utils";
 import SimplePaginatedList from "../paginatedList";
+import { InvoiceTemplate as InvoiceViewTemplate } from "@/components/templates/invoiceTemplate";
+import { ReceiptTemplate as ReceiptViewTemplate } from "@/components/templates/receiptTemplate";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -35,160 +30,20 @@ interface TransactionTableProps {
   onReconcile: (transactionId: string) => void;
 }
 
-interface InvoiceTemplateRef {
-  print: () => void;
-  exportToPDF: (isDownload: boolean) => void;
-  getDomElement: () => HTMLDivElement | null;
-}
-
-interface InvoiceTemplateProps {
-  transaction: Transaction;
-}
-
-const InvoiceTemplate = forwardRef<InvoiceTemplateRef, InvoiceTemplateProps>(
-  ({ transaction }, ref) => {
-    const invoiceRef = useRef<HTMLDivElement>(null);
-
-    const printInvoice = async (isDownload = false) => {
-      if (!invoiceRef.current) return;
-
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head>
-              <title>Invoice - ${transaction.ref}</title>
-              <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
-                .invoice-title { font-size: 24px; font-weight: bold; color: #dc2626; }
-                .details { margin: 20px 0; }
-                .amount { font-size: 20px; font-weight: bold; }
-              </style>
-            </head>
-            <body>
-              ${invoiceRef.current.innerHTML}
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
-      }
-    };
-
-    useImperativeHandle(ref, () => ({
-      print: printInvoice,
-      exportToPDF: printInvoice,
-      getDomElement: () => invoiceRef.current,
-    }));
-
-    return (
-      <div className="hidden">
-        <div ref={invoiceRef} className="bg-white p-8">
-          <div className="flex justify-between items-start mb-8 pb-4 border-b-2 border-blue-600">
-            <div>
-              {/* Taurean IT as the parent company issuer */}
-              <div className="mb-4">
-                <h1 className="text-2xl font-bold mb-2 text-blue-600">
-                  Taurean IT
-                </h1>
-                <div className="text-gray-600 text-sm">
-                  <div>
-                    Creator and operator of the Taurean Inventory SaaS platform
-                  </div>
-                  <div>Ghana | admin@taureanit.com | +233000000000</div>
-                </div>
-              </div>
-
-              {/* Company branding details */}
-              <div className="border-t pt-4">
-                <h2 className="text-lg font-semibold mb-2">Company Name</h2>
-                <div className="text-gray-600 text-sm">
-                  <div>123 Business Street</div>
-                  <div>Phone: (555) 123-4567 | Email: info@company.com</div>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <h1 className="text-2xl font-bold text-red-600 mb-1">INVOICE</h1>
-              <div className="text-lg font-bold mb-1">{transaction.ref}</div>
-              <div className="text-gray-600 text-sm">
-                <div>
-                  <strong>Date:</strong>{" "}
-                  {new Date(transaction.createdAt).toLocaleDateString()}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <div>
-              <h5 className="text-blue-600 font-semibold mb-2">Bill To:</h5>
-              <div className="font-bold mb-1">{transaction.user.name}</div>
-              <div className="text-gray-600 text-sm">
-                <div>{transaction.user.email}</div>
-                <div>{transaction.user.phone}</div>
-              </div>
-            </div>
-
-            <div className="border border-blue-600 rounded p-4">
-              <h5 className="text-blue-600 font-semibold mb-3 flex items-center">
-                <Receipt className="w-4 h-4 mr-2" />
-                Transaction Details
-              </h5>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <strong>Type:</strong>{" "}
-                  <span className="capitalize">
-                    {transaction.type.replace("_", " ")}
-                  </span>
-                </div>
-                <div>
-                  <strong>Method:</strong>{" "}
-                  <span className="capitalize">{transaction.method}</span>
-                </div>
-                <div>
-                  <strong>Amount:</strong>{" "}
-                  <span className="font-bold text-lg">
-                    {currencyFormat(transaction.amount)}
-                  </span>
-                </div>
-                <div>
-                  <strong>Reference:</strong>{" "}
-                  <span className="font-mono">{transaction.ref}</span>
-                </div>
-                {transaction.description && (
-                  <div className="border-t pt-2 mt-2">
-                    <strong>Description:</strong>
-                    <p className="mt-1">{transaction.description}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-);
-
-InvoiceTemplate.displayName = "InvoiceTemplate";
+// Modal state for viewing Invoice/Receipt
 
 const TransactionTable = ({
   transactions,
   onView,
   onReconcile,
 }: TransactionTableProps) => {
-  const [invoiceRefs] = useState(
-    new Map<string, React.RefObject<InvoiceTemplateRef>>()
-  );
   const reportRef = useRef<HTMLDivElement>(null);
+  const [showInvoice, setShowInvoice] = useState<string | null>(null);
+  const [showReceipt, setShowReceipt] = useState<string | null>(null);
 
-  const getInvoiceRef = (transactionRef: string) => {
-    if (!invoiceRefs.has(transactionRef)) {
-      invoiceRefs.set(transactionRef, React.createRef<InvoiceTemplateRef>());
-    }
-    return invoiceRefs.get(transactionRef)!;
+  const closeModals = () => {
+    setShowInvoice(null);
+    setShowReceipt(null);
   };
 
   const getStatusBadge = (reconciled: boolean) =>
@@ -224,10 +79,7 @@ const TransactionTable = ({
     );
   };
 
-  const handlePrintInvoice = (transaction: Transaction) => {
-    const invoiceRef = getInvoiceRef(transaction.ref || "");
-    invoiceRef.current?.print();
-  };
+  // Removed legacy print via hidden template; printing can be done from template UIs
 
   const exportToExcel = () => {
     // Excel export functionality would go here
@@ -344,40 +196,32 @@ const TransactionTable = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onView(txn)}
-            title="View Details"
+            onClick={() => onReconcile(txn.ref || "")}
+            title={txn.reconciled ? "Unreconcile" : "Reconcile"}
+            className={
+              txn.reconciled
+                ? "border-red-300 text-red-600 hover:bg-red-50"
+                : "border-green-300 text-green-600 hover:bg-green-50"
+            }
           >
-            <Eye className="w-4 h-4" />
+            <Check className="w-4 h-4" />
           </Button>
-          {!txn.reconciled ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onReconcile(txn.ref || "")}
-              title="Reconcile"
-              className="border-green-300 text-green-600 hover:bg-green-50"
-            >
-              <Check className="w-4 h-4" />
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onReconcile(txn.ref || "")}
-              title="Unreconcile"
-              className="border-red-300 text-red-600 hover:bg-red-50"
-            >
-              <AlertTriangle className="w-4 h-4" />
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePrintInvoice(txn)}
-            title="Print Invoice"
-          >
-            <Printer className="w-4 h-4" />
-          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" title="More">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setShowInvoice(txn._id)}>
+                View Invoice
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowReceipt(txn._id)}>
+                View Receipt
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </td>
     </tr>
@@ -424,13 +268,91 @@ const TransactionTable = ({
         </div>
       </Card>
 
-      {transactions.map((txn) => (
-        <InvoiceTemplate
-          key={txn.ref}
-          ref={getInvoiceRef(txn.ref || "")}
-          transaction={txn}
-        />
-      ))}
+      {showInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Invoice</h2>
+              <Button onClick={closeModals} variant="outline">
+                Close
+              </Button>
+            </div>
+            <div className="p-4">
+              {(() => {
+                const txn = transactions.find((t) => t._id === showInvoice);
+                return txn ? (
+                  <InvoiceViewTemplate
+                    transaction={
+                      // Reuse the same shape already used by the invoice template component
+                      {
+                        ...txn,
+                        company: {
+                          // Best-effort mapping; admin transactions may not embed company
+                          logo: undefined,
+                          invoiceFormat: {
+                            type: "auto",
+                            prefix: "INV",
+                            nextNumber: 1,
+                            padding: 4,
+                          },
+                          _id: txn.company || "company-id",
+                          name: "Company",
+                          location: txn.facility?.location?.address || "",
+                          contactEmail: txn.user?.email || "",
+                          contactPhone: txn.user?.phone || "",
+                          currency: "GHS",
+                        },
+                      } as any
+                    }
+                  />
+                ) : null;
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReceipt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Receipt</h2>
+              <Button onClick={closeModals} variant="outline">
+                Close
+              </Button>
+            </div>
+            <div className="p-4">
+              {(() => {
+                const txn = transactions.find((t) => t._id === showReceipt);
+                return txn ? (
+                  <ReceiptViewTemplate
+                    transaction={{
+                      _id: txn._id,
+                      user: txn.user as any,
+                      amount: txn.amount,
+                      method: txn.method,
+                      ref: txn.ref || "",
+                      reconciled: txn.reconciled,
+                      facility: txn.facility as any,
+                      description: txn.description,
+                      company: {
+                        logo: undefined,
+                        _id: txn.company || "company-id",
+                        name: "Company",
+                        location: txn.facility?.location?.address || "",
+                        contactEmail: txn.user?.email || "",
+                        contactPhone: txn.user?.phone || "",
+                        currency: "GHS",
+                      },
+                      createdAt: txn.createdAt as any as string,
+                    }}
+                  />
+                ) : null;
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hidden Report Template for Printing */}
       <div className="hidden">

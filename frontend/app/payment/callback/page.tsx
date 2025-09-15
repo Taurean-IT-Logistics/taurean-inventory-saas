@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { TransactionsAPI, InvoicesAPI } from "@/lib/api";
-import InvoiceGenerator, { InvoiceData } from "@/components/invoices/InvoiceGenerator";
-import ReceiptGenerator, { ReceiptData } from "@/components/invoices/ReceiptGenerator";
+import { TransactionsAPI } from "@/lib/api";
+import { InvoiceTemplate } from "@/components/templates/invoiceTemplate";
+import { ReceiptTemplate } from "@/components/templates/receiptTemplate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
@@ -15,13 +15,11 @@ import {
   Receipt,
   ArrowLeft,
   Home,
-  Download,
   FileText,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { useRef } from "react";
 
 interface PaymentResult {
   reference: string;
@@ -50,6 +48,26 @@ interface PaymentResult {
     ref: string;
     type: string;
     facility: any;
+    company?: {
+      _id: string;
+      name: string;
+      logo?: {
+        path: string;
+        originalName: string;
+        mimetype: string;
+        size: number;
+      };
+      contactEmail: string;
+      contactPhone: string;
+      location: string;
+      currency: string;
+      invoiceFormat: {
+        type: string;
+        prefix: string;
+        nextNumber: number;
+        padding: number;
+      };
+    };
     user: {
       _id: string;
       name: string;
@@ -74,10 +92,8 @@ const PaymentCallbackPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
-  const [selectedReceipt, setSelectedReceipt] = useState<ReceiptData | null>(null);
-  const invoiceGeneratorRef = useRef<any>(null);
-  const receiptGeneratorRef = useRef<any>(null);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   const reference = searchParams.get("reference");
   const trxref = searchParams.get("trxref");
@@ -132,127 +148,99 @@ const PaymentCallbackPage = () => {
     }
   }, [error]);
 
-  // Download functions
-  const handleDownloadInvoice = async () => {
-    if (!paymentData?.transaction?._id) return;
-
-    try {
-      // Get invoice number from backend
-      const invoiceNumberData = await InvoicesAPI.getInvoiceNumber();
-      const invoiceNumber = (invoiceNumberData as any)?.invoiceNumber || `INV-${Date.now()}`;
-
-      // Prepare invoice data
-      const invoiceData: InvoiceData = {
-        invoiceNumber,
-        issueDate: new Date(),
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        company: {
-          name: "Your Company",
-          address: "Company Address",
-          phone: "+233 XX XXX XXXX",
-          email: "info@company.com",
-        },
-        customer: {
-          name: `${paymentData.customer.first_name || ""} ${paymentData.customer.last_name || ""}`.trim() || "Customer",
-          email: paymentData.customer.email,
-          phone: paymentData.customer.phone || "",
-        },
-        items: [
-          {
-            description: paymentData.transaction.description || "Payment for services",
-            quantity: 1,
-            unitPrice: paymentData.amount,
-            amount: paymentData.amount,
-            taxRate: 0,
+  // Helper function to map payment data to transaction format
+  const mapPaymentToTransaction = (paymentData: PaymentResult) => {
+    return {
+      _id: paymentData.transaction._id,
+      user: {
+        _id: paymentData.transaction.user._id,
+        name: paymentData.transaction.user.name,
+        email: paymentData.transaction.user.email,
+        phone: paymentData.transaction.user.phone,
+      },
+      type: paymentData.transaction.type,
+      category: "payment",
+      amount: paymentData.amount,
+      method: paymentData.transaction.method,
+      ref: paymentData.reference,
+      reconciled: paymentData.transaction.reconciled,
+      facility: paymentData.transaction.facility
+        ? {
+            _id: paymentData.transaction.facility._id || "",
+            name: paymentData.transaction.facility.name || "",
+            description: paymentData.transaction.facility.description || "",
+            location: {
+              coordinates: {
+                latitude:
+                  paymentData.transaction.facility.location?.coordinates
+                    ?.latitude || 0,
+                longitude:
+                  paymentData.transaction.facility.location?.coordinates
+                    ?.longitude || 0,
+              },
+              address: paymentData.transaction.facility.location?.address || "",
+            },
+            pricing: paymentData.transaction.facility.pricing || [],
+          }
+        : {
+            _id: "",
+            name: "",
+            description: "",
+            location: {
+              coordinates: { latitude: 0, longitude: 0 },
+              address: "",
+            },
+            pricing: [],
           },
-        ],
-        subtotal: paymentData.amount,
-        taxAmount: 0,
-        discountAmount: 0,
-        totalAmount: paymentData.amount,
-        currency: paymentData.currency,
-        status: "paid",
-      };
-
-      setSelectedInvoice(invoiceData);
-      
-      // Trigger PDF generation
-      setTimeout(() => {
-        invoiceGeneratorRef.current?.download();
-      }, 100);
-
-      toast({
-        title: "Success",
-        description: "Invoice generated successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate invoice",
-        variant: "destructive",
-      });
-    }
+      description: paymentData.transaction.description,
+      company: paymentData.transaction.company
+        ? {
+            logo: paymentData.transaction.company.logo,
+            invoiceFormat: paymentData.transaction.company.invoiceFormat,
+            _id: paymentData.transaction.company._id,
+            name: paymentData.transaction.company.name,
+            location: paymentData.transaction.company.location,
+            contactEmail: paymentData.transaction.company.contactEmail,
+            contactPhone: paymentData.transaction.company.contactPhone,
+            currency: paymentData.transaction.company.currency,
+          }
+        : {
+            logo: undefined,
+            invoiceFormat: {
+              type: "auto",
+              prefix: "INV",
+              nextNumber: 1,
+              padding: 4,
+            },
+            _id: "default-company",
+            name: "Your Company",
+            location: "Company Address",
+            contactEmail: "info@company.com",
+            contactPhone: "+233 XX XXX XXXX",
+            currency: paymentData.currency,
+          },
+      paymentDetails: {
+        paystackReference: paymentData.reference,
+      },
+      createdAt: paymentData.created_at,
+      updatedAt: paymentData.transaction.updatedAt,
+    };
   };
 
-  const handleDownloadReceipt = async () => {
-    if (!paymentData?.transaction?._id) return;
+  // Show/hide functions
+  const handleShowInvoice = () => {
+    setShowInvoice(true);
+    setShowReceipt(false);
+  };
 
-    try {
-      // Get receipt number from backend
-      const receiptNumberData = await InvoicesAPI.getReceiptNumber(paymentData.transaction._id);
-      const receiptNumber = (receiptNumberData as any)?.receiptNumber || `RCP-${Date.now()}`;
+  const handleShowReceipt = () => {
+    setShowReceipt(true);
+    setShowInvoice(false);
+  };
 
-      // Prepare receipt data
-      const receiptData: ReceiptData = {
-        receiptNumber,
-        invoiceNumber: `INV-${paymentData.transaction._id}`,
-        paymentDate: new Date(paymentData.paid_at || new Date()),
-        paymentMethod: paymentData.channel || "Online Payment",
-        company: {
-          name: "Your Company",
-          address: "Company Address",
-          phone: "+233 XX XXX XXXX",
-          email: "info@company.com",
-        },
-        customer: {
-          name: `${paymentData.customer.first_name || ""} ${paymentData.customer.last_name || ""}`.trim() || "Customer",
-          email: paymentData.customer.email,
-          phone: paymentData.customer.phone || "",
-        },
-        items: [
-          {
-            description: paymentData.transaction.description || "Payment for services",
-            quantity: 1,
-            unitPrice: paymentData.amount,
-            amount: paymentData.amount,
-          },
-        ],
-        subtotal: paymentData.amount,
-        taxAmount: 0,
-        discountAmount: 0,
-        totalAmount: paymentData.amount,
-        currency: paymentData.currency,
-        transactionId: paymentData.transaction._id,
-      };
-
-      setSelectedReceipt(receiptData);
-      
-      // Trigger PDF generation
-      setTimeout(() => {
-        receiptGeneratorRef.current?.download();
-      }, 100);
-
-      toast({
-        title: "Success",
-        description: "Receipt generated successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate receipt",
-        variant: "destructive",
-      });
-    }
+  const handleCloseTemplates = () => {
+    setShowInvoice(false);
+    setShowReceipt(false);
   };
 
   if (isLoading) {
@@ -376,23 +364,23 @@ const PaymentCallbackPage = () => {
               {/* Download Options */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-semibold text-blue-900 mb-3">
-                  Download Documents
+                  View Documents
                 </h3>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
-                    onClick={handleDownloadInvoice}
+                    onClick={handleShowInvoice}
                     className="flex-1 bg-blue-600 hover:bg-blue-700"
                   >
                     <FileText className="w-4 h-4 mr-2" />
-                    Download Invoice
+                    View Invoice
                   </Button>
 
                   <Button
-                    onClick={handleDownloadReceipt}
+                    onClick={handleShowReceipt}
                     className="flex-1 bg-green-600 hover:bg-green-700"
                   >
                     <Receipt className="w-4 h-4 mr-2" />
-                    Download Receipt
+                    View Receipt
                   </Button>
                 </div>
               </div>
@@ -495,28 +483,42 @@ const PaymentCallbackPage = () => {
         </CardContent>
       </Card>
 
-      {/* Invoice Generator (hidden) */}
-      {selectedInvoice && (
-        <InvoiceGenerator
-          ref={invoiceGeneratorRef}
-          data={selectedInvoice}
-          onGenerate={(pdfBlob) => {
-            // Handle PDF generation if needed
-            console.log('Invoice PDF generated:', pdfBlob);
-          }}
-        />
+      {/* Invoice Template */}
+      {showInvoice && paymentData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Invoice</h2>
+              <Button onClick={handleCloseTemplates} variant="outline">
+                Close
+              </Button>
+            </div>
+            <div className="p-4">
+              <InvoiceTemplate
+                transaction={mapPaymentToTransaction(paymentData)}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Receipt Generator (hidden) */}
-      {selectedReceipt && (
-        <ReceiptGenerator
-          ref={receiptGeneratorRef}
-          data={selectedReceipt}
-          onGenerate={(pdfBlob) => {
-            // Handle PDF generation if needed
-            console.log('Receipt PDF generated:', pdfBlob);
-          }}
-        />
+      {/* Receipt Template */}
+      {showReceipt && paymentData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Receipt</h2>
+              <Button onClick={handleCloseTemplates} variant="outline">
+                Close
+              </Button>
+            </div>
+            <div className="p-4">
+              <ReceiptTemplate
+                transaction={mapPaymentToTransaction(paymentData)}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1003,7 +1003,7 @@ export function EnhancedChatWidget() {
                                           )
                                         )
                                       ) : (
-                                        <SelectItem value="" disabled>
+                                        <SelectItem value="not_found" disabled>
                                           No companies found
                                         </SelectItem>
                                       )}
