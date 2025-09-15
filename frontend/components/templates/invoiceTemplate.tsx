@@ -107,16 +107,16 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log("InvoiceTemplate rendered with transaction:", {
-      id: transaction._id,
-      amount: transaction.amount,
-      company: transaction.company.name,
-      user: transaction.user.name,
-      facility: transaction.facility?.name,
-    });
-  }, [transaction]);
+  // // Debug logging
+  // React.useEffect(() => {
+  //   console.log("InvoiceTemplate rendered with transaction:", {
+  //     id: transaction._id,
+  //     amount: transaction.amount,
+  //     company: transaction.company,
+  //     user: transaction.user.name,
+  //     facility: transaction.facility?.name,
+  //   });
+  // }, [transaction]);
 
   // Fetch taxes using Tanstack Query
   const {
@@ -298,30 +298,46 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
             .bg-green-600 { background-color: #059669 !important; color: white !important; }
             .bg-yellow-600 { background-color: #ca8a04 !important; color: white !important; }
             .text-primary { color: #3b82f6 !important; }
+            .text-muted-foreground { color: #6b7280 !important; }
             .text-muted { color: #6b7280 !important; }
             .font-bold { font-weight: 700 !important; }
             .border { border: 1px solid #e5e7eb !important; }
             .border-t { border-top: 1px solid #e5e7eb !important; }
             .border-b { border-bottom: 1px solid #e5e7eb !important; }
             .border-primary { border-color: #3b82f6 !important; }
+            .border-b-2 { border-bottom: 2px solid #3b82f6 !important; }
             .rounded { border-radius: 0.5rem !important; }
+            .rounded-full { border-radius: 9999px !important; }
             .p-4 { padding: 1rem !important; }
             .p-6 { padding: 1.5rem !important; }
             .p-8 { padding: 2rem !important; }
+            .pb-3 { padding-bottom: 0.75rem !important; }
+            .pb-6 { padding-bottom: 1.5rem !important; }
+            .pt-2 { padding-top: 0.5rem !important; }
+            .pt-3 { padding-top: 0.75rem !important; }
+            .mb-1 { margin-bottom: 0.25rem !important; }
             .mb-2 { margin-bottom: 0.5rem !important; }
+            .mb-3 { margin-bottom: 0.75rem !important; }
             .mb-4 { margin-bottom: 1rem !important; }
             .mb-6 { margin-bottom: 1.5rem !important; }
             .mb-8 { margin-bottom: 2rem !important; }
+            .mt-1 { margin-top: 0.25rem !important; }
+            .mt-2 { margin-top: 0.5rem !important; }
+            .my-2 { margin: 0.5rem 0 !important; }
+            .ml-2 { margin-left: 0.5rem !important; }
             .text-center { text-align: center !important; }
             .text-right { text-align: right !important; }
             .flex { display: flex !important; }
             .justify-between { justify-content: space-between !important; }
             .justify-end { justify-content: flex-end !important; }
+            .justify-center { justify-content: center !important; }
             .items-center { align-items: center !important; }
             .items-start { align-items: flex-start !important; }
+            .flex-shrink-0 { flex-shrink: 0 !important; }
             .grid { display: grid !important; }
             .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
             .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            .gap-1 { gap: 0.25rem !important; }
             .gap-2 { gap: 0.5rem !important; }
             .gap-3 { gap: 0.75rem !important; }
             .gap-4 { gap: 1rem !important; }
@@ -345,27 +361,25 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
             .font-medium { font-weight: 500 !important; }
             .capitalize { text-transform: capitalize !important; }
             .font-mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace !important; }
-            .rounded-full { border-radius: 9999px !important; }
             .w-4 { width: 1rem !important; }
             .w-5 { width: 1.25rem !important; }
             .h-4 { height: 1rem !important; }
             .h-5 { height: 1.25rem !important; }
             .h-100 { height: 6.25rem !important; }
             .w-100 { width: 6.25rem !important; }
-            .pb-3 { padding-bottom: 0.75rem !important; }
-            .pb-6 { padding-bottom: 1.5rem !important; }
-            .pt-2 { padding-top: 0.5rem !important; }
-            .pt-3 { padding-top: 0.75rem !important; }
-            .my-2 { margin: 0.5rem 0 !important; }
-            .ml-2 { margin-left: 0.5rem !important; }
-            .mt-1 { margin-top: 0.25rem !important; }
-            .mt-2 { margin-top: 0.5rem !important; }
-            .flex-shrink-0 { flex-shrink: 0 !important; }
             .border-t-2 { border-top-width: 2px !important; }
             .border-b-2 { border-bottom-width: 2px !important; }
+            img { max-width: 100%; height: auto; object-fit: contain; }
+            .logo-container img { width: 100px !important; height: 100px !important; object-fit: contain !important; }
             @media print {
               body { margin: 0; padding: 10px; }
               .invoice-container { box-shadow: none; }
+              .grid { display: grid !important; }
+              .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+              .lg\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            }
+            @media screen and (min-width: 1024px) {
+              .lg\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
             }
           </style>
         `;
@@ -471,23 +485,25 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
           <div className="flex justify-between items-start mb-8 pb-6 border-b-2 border-primary">
             <div className="space-y-2">
               <div className="flex items-center gap-3 mb-4">
-                <Image
-                  src={
-                    transaction.company?.logo?.path
-                      ? getResourceUrl(transaction.company?.logo?.path)
-                      : logo
-                  }
-                  alt="logo"
-                  className="rounded-full"
-                  width={100}
-                  height={100}
-                  style={{ objectFit: "contain" }}
-                  onError={(e) => {
-                    // Fallback to default logo if company logo fails to load
-                    const target = e.target as HTMLImageElement;
-                    target.src = typeof logo === "string" ? logo : logo.src;
-                  }}
-                />
+                <div className="logo-container">
+                  <Image
+                    src={
+                      transaction.company?.logo?.path
+                        ? getResourceUrl(transaction.company?.logo?.path)
+                        : logo
+                    }
+                    alt="logo"
+                    className="rounded-full"
+                    width={100}
+                    height={100}
+                    style={{ objectFit: "contain" }}
+                    onError={(e) => {
+                      // Fallback to default logo if company logo fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.src = typeof logo === "string" ? logo : logo.src;
+                    }}
+                  />
+                </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">
                     {transaction.company.name}
