@@ -23,6 +23,7 @@ import { currencyFormat } from "@/lib/utils";
 import SimplePaginatedList from "../paginatedList";
 import { InvoiceTemplate as InvoiceViewTemplate } from "@/components/templates/invoiceTemplate";
 import { ReceiptTemplate as ReceiptViewTemplate } from "@/components/templates/receiptTemplate";
+// Removed companies fetch; transactions include embedded company details
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -40,6 +41,8 @@ const TransactionTable = ({
   const reportRef = useRef<HTMLDivElement>(null);
   const [showInvoice, setShowInvoice] = useState<string | null>(null);
   const [showReceipt, setShowReceipt] = useState<string | null>(null);
+
+  // Company details are embedded on each transaction; no extra fetch/mapping needed
 
   const closeModals = () => {
     setShowInvoice(null);
@@ -286,22 +289,7 @@ const TransactionTable = ({
                       // Reuse the same shape already used by the invoice template component
                       {
                         ...txn,
-                        company: {
-                          // Best-effort mapping; admin transactions may not embed company
-                          logo: undefined,
-                          invoiceFormat: {
-                            type: "auto",
-                            prefix: "INV",
-                            nextNumber: 1,
-                            padding: 4,
-                          },
-                          _id: txn.company || "company-id",
-                          name: "Company",
-                          location: txn.facility?.location?.address || "",
-                          contactEmail: txn.user?.email || "",
-                          contactPhone: txn.user?.phone || "",
-                          currency: "GHS",
-                        },
+                        company: (txn as any).company,
                       } as any
                     }
                   />
@@ -335,15 +323,7 @@ const TransactionTable = ({
                       reconciled: txn.reconciled,
                       facility: txn.facility as any,
                       description: txn.description,
-                      company: {
-                        logo: undefined,
-                        _id: txn.company || "company-id",
-                        name: "Company",
-                        location: txn.facility?.location?.address || "",
-                        contactEmail: txn.user?.email || "",
-                        contactPhone: txn.user?.phone || "",
-                        currency: "GHS",
-                      },
+                      company: (txn as any).company,
                       createdAt: txn.createdAt as any as string,
                     }}
                   />
