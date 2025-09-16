@@ -19,7 +19,6 @@ import {
   LogOut,
   Package2,
   PieChart,
-  Receipt,
   ShoppingBag,
   Users,
   MessageSquare,
@@ -147,12 +146,6 @@ const dashboardRoutes: Route[] = [
     title: "Support",
     icon: <MessageSquare className="size-4" />,
     link: "/admin/support",
-  },
-  {
-    id: "invoices",
-    title: "Invoices",
-    icon: <Receipt className="size-4" />,
-    link: "/admin/invoices",
   },
   {
     id: "reports",

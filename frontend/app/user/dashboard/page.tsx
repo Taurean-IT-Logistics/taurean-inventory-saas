@@ -41,7 +41,7 @@ import {
   Home,
   MessageSquare,
 } from "lucide-react";
-import { TransactionsAPI, BookingsAPI } from "@/lib/api";
+import { TransactionsAPI, BookingsAPI, InventoryAPI } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { currencyFormat } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
@@ -52,6 +52,8 @@ import { EnhancedChatWidget } from "@/components/chat/enhanced-chat-widget";
 import { PaymentStatusBadge } from "@/components/booking/booking-calendar/paymentStatusBadge";
 import { BookingStatusBadge } from "@/components/booking/booking-calendar/bookingStatusBadge";
 import { InvoiceTemplate } from "@/components/templates/invoiceTemplate";
+import { ReceiptTemplate } from "@/components/templates/receiptTemplate";
+import { RentalGrid } from "@/components/rentals/rental-grid";
 
 interface DashboardStats {
   totalBookings: number;
@@ -64,6 +66,7 @@ const UserDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [viewingInvoice, setViewingInvoice] = useState<string | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
   // Fetch user transactions
   const {
@@ -84,6 +87,17 @@ const UserDashboard = () => {
   } = useQuery({
     queryKey: ["user-bookings"],
     queryFn: () => BookingsAPI.getUserBookings(),
+    enabled: !!user,
+  });
+
+  // Fetch available rentals
+  const {
+    data: rentals,
+    isLoading: rentalsLoading,
+    error: rentalsError,
+  } = useQuery({
+    queryKey: ["rentals"],
+    queryFn: () => InventoryAPI.list({ status: "in_stock" }),
     enabled: !!user,
   });
 
@@ -116,7 +130,7 @@ const UserDashboard = () => {
     return stats;
   }, [transactions, bookings]);
 
-  if (transactionsLoading || bookingsLoading) {
+  if (transactionsLoading || bookingsLoading || rentalsLoading) {
     return <Loader text="Loading dashboard..." className="pt-20" />;
   }
 
@@ -126,6 +140,14 @@ const UserDashboard = () => {
 
   const handleCloseInvoice = () => {
     setViewingInvoice(null);
+  };
+
+  const handleViewReceipt = (transactionId: string) => {
+    setViewingReceipt(transactionId);
+  };
+
+  const handleCloseReceipt = () => {
+    setViewingReceipt(null);
   };
 
   return (
@@ -390,14 +412,24 @@ const UserDashboard = () => {
                         <p className="font-medium">
                           {currencyFormat(transaction.amount)}
                         </p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewInvoice(transaction._id)}
-                          className="mt-1 h-6 px-2 text-xs"
-                        >
-                          View Invoice
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewInvoice(transaction._id)}
+                            className="mt-1 h-6 px-2 text-xs"
+                          >
+                            Invoice
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewReceipt(transaction._id)}
+                            className="mt-1 h-6 px-2 text-xs"
+                          >
+                            Receipt
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -512,6 +544,35 @@ const UserDashboard = () => {
                 })()}
               </CardContent>
             </Card>
+          ) : viewingReceipt ? (
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Receipt Details
+                  </CardTitle>
+                  <Button variant="outline" onClick={handleCloseReceipt}>
+                    ← Back to Transactions
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const transaction = (transactions as any)?.find(
+                    (t: any) => t._id === viewingReceipt
+                  );
+                  if (!transaction) {
+                    return (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Transaction not found
+                      </div>
+                    );
+                  }
+                  return <ReceiptTemplate transaction={transaction} />;
+                })()}
+              </CardContent>
+            </Card>
           ) : (
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
@@ -583,6 +644,13 @@ const UserDashboard = () => {
                                 >
                                   View Invoice
                                 </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleViewReceipt(transaction._id)
+                                  }
+                                >
+                                  View Receipt
+                                </DropdownMenuItem>
                                 {transaction.status === "pending" && (
                                   <DropdownMenuItem>
                                     Cancel Transaction
@@ -623,6 +691,35 @@ const UserDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Home className="h-5 w-5" />
+                Available Rentals
+              </CardTitle>
+              <CardDescription>
+                Browse and rent equipment for your events
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {rentalsError ? (
+                <ErrorComponent
+                  title="Error loading rentals"
+                  message={rentalsError.message}
+                />
+              ) : (
+                <RentalGrid
+                  title="Available Equipment"
+                  rentals={(rentals as any) || []}
+                  isLoading={rentalsLoading}
+                  error={
+                    (rentalsError as any).message || "Error loading rentals"
+                  }
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
                 Support
               </CardTitle>
               <CardDescription>
@@ -638,12 +735,11 @@ const UserDashboard = () => {
                   support
                 </p>
                 <div className="mt-4">
-                  <Button
-                    onClick={() => setActiveTab("chat")}
-                    className="flex items-center gap-2"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Open Support Chat
+                  <Button asChild className="flex items-center gap-2">
+                    <Link href="/support">
+                      <MessageSquare className="h-4 w-4" />
+                      Visit Support Page
+                    </Link>
                   </Button>
                 </div>
               </div>
