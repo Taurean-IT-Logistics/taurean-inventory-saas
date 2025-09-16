@@ -708,7 +708,9 @@ const UserDashboard = () => {
                   title="Available Equipment"
                   rentals={(rentals as any) || []}
                   isLoading={rentalsLoading}
-                  error={rentalsError?.message}
+                  error={
+                    (rentalsError as any).message || "Error loading rentals"
+                  }
                 />
               )}
             </CardContent>
