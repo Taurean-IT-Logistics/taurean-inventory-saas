@@ -204,6 +204,11 @@ export interface Transaction {
     };
   };
   ref?: string;
+  isPaystack?: boolean;
+  isCheque?: boolean;
+  cheque?: Cheque;
+  isSplitPayment?: boolean;
+  splitPayment?: SplitPayment;
   accessCode?: string;
   receiptUrl?: string;
   approvedBy?: User;
@@ -500,4 +505,47 @@ export interface Notification {
   isRead: boolean;
   isDeleted: boolean;
   createdAt: Date;
+}
+
+type TransactionSplit = {
+  transaction: Transaction;
+  splitType: "fixed" | "percentage";
+  splitAmount?: number;
+  splitPercentage?: number;
+  dueDate: Date;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+export interface SplitPayment {
+  amount: number;
+  currency: string;
+  transactions: TransactionSplit[];
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Cheque {
+  number: string;
+  bank: string;
+  accountNumber: string;
+  amount: number;
+  issuedDate: Date;
+  expiryDate: Date;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+type CashDenomination = {
+  denomination: number;
+  quantity: number;
+};
+export interface Cash {
+  amount: number;
+  denominations: CashDenomination[];
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
