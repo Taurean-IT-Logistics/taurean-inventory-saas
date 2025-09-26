@@ -209,6 +209,8 @@ export interface Transaction {
   cheque?: Cheque;
   isSplitPayment?: boolean;
   splitPayment?: SplitPayment;
+  isCash?: boolean;
+  cash: Cash;
   accessCode?: string;
   receiptUrl?: string;
   approvedBy?: User;
@@ -507,7 +509,7 @@ export interface Notification {
   createdAt: Date;
 }
 
-type TransactionSplit = {
+export type TransactionSplit = {
   transaction: Transaction;
   splitType: "fixed" | "percentage";
   splitAmount?: number;
@@ -546,6 +548,19 @@ export interface Cash {
   amount: number;
   denominations: CashDenomination[];
   isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Rental {
+  item: InventoryItem;
+  quantity: number;
+  startDate: Date;
+  endDate: Date;
+  amount: number;
+  transaction: Transaction;
+  notes?: string;
+  user: User;
   createdAt: Date;
   updatedAt: Date;
 }

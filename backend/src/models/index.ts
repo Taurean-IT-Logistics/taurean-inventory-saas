@@ -24,4 +24,15 @@ export {
 export { SupportTicketModel, ISupportTicket } from "./supportTicket.model";
 export { SupportMessageModel, ISupportMessage } from "./supportMessage.model";
 export { InvoiceModel, InvoiceDocument } from "./invoice.model";
-export { NotificationPreferencesModel, INotificationPreferences } from "./notificationPreferences.model";
+export {
+  NotificationPreferencesModel,
+  INotificationPreferences,
+} from "./notificationPreferences.model";
+export {
+  TransactionSplitModel,
+  TransactionSplitDocument,
+} from "./transactionSplit.model";
+export { SplitPaymentModel, SplitPaymentDocument } from "./splitPayment.model";
+export { ChequeModel, ChequeDocument } from "./cheque.model";
+export { CashModel, CashDocument } from "./cash.model";
+export { RentalModel, RentalDocument } from "./rental.model";
