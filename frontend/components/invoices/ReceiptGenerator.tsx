@@ -3,6 +3,7 @@
 import { useRef, forwardRef, useImperativeHandle } from "react";
 import { format } from "date-fns";
 import { currencyFormat } from "@/lib/utils";
+import { Tax } from "@/types";
 
 export interface ReceiptData {
   receiptNumber: string;
@@ -29,7 +30,14 @@ export interface ReceiptData {
     amount: number;
   }>;
   subtotal: number;
+  serviceFee?: number;
+  serviceFeeRate?: number;
   taxAmount: number;
+  taxBreakdown?: Array<{
+    tax: Tax;
+    amount: number;
+    rate: number;
+  }>;
   discountAmount: number;
   totalAmount: number;
   currency: string;
@@ -54,40 +62,40 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
     useImperativeHandle(ref, () => ({
       generatePDF: async () => {
         if (!receiptRef.current) return;
-        
+
         try {
-          const { jsPDF } = await import('jspdf');
-          const html2canvas = await import('html2canvas');
-          
+          const { jsPDF } = await import("jspdf");
+          const html2canvas = await import("html2canvas");
+
           const canvas = await html2canvas.default(receiptRef.current, {
             scale: 2,
             useCORS: true,
             allowTaint: true,
           });
-          
-          const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          
+
+          const imgData = canvas.toDataURL("image/png");
+          const pdf = new jsPDF("p", "mm", "a4");
+
           const imgWidth = 210;
           const pageHeight = 295;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
           let heightLeft = imgHeight;
           let position = 0;
-          
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+
+          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
-          
+
           while (heightLeft >= 0) {
             position = heightLeft - imgHeight;
             pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
             heightLeft -= pageHeight;
           }
-          
-          const pdfBlob = pdf.output('blob');
+
+          const pdfBlob = pdf.output("blob");
           onGenerate?.(pdfBlob);
         } catch (error) {
-          console.error('Error generating PDF:', error);
+          console.error("Error generating PDF:", error);
         }
       },
       print: () => {
@@ -96,39 +104,39 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
       },
       download: async () => {
         if (!receiptRef.current) return;
-        
+
         try {
-          const { jsPDF } = await import('jspdf');
-          const html2canvas = await import('html2canvas');
-          
+          const { jsPDF } = await import("jspdf");
+          const html2canvas = await import("html2canvas");
+
           const canvas = await html2canvas.default(receiptRef.current, {
             scale: 2,
             useCORS: true,
             allowTaint: true,
           });
-          
-          const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          
+
+          const imgData = canvas.toDataURL("image/png");
+          const pdf = new jsPDF("p", "mm", "a4");
+
           const imgWidth = 210;
           const pageHeight = 295;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
           let heightLeft = imgHeight;
           let position = 0;
-          
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+
+          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
-          
+
           while (heightLeft >= 0) {
             position = heightLeft - imgHeight;
             pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
             heightLeft -= pageHeight;
           }
-          
+
           pdf.save(`receipt-${data.receiptNumber}.pdf`);
         } catch (error) {
-          console.error('Error downloading PDF:', error);
+          console.error("Error downloading PDF:", error);
         }
       },
     }));
@@ -138,7 +146,7 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
         <div
           ref={receiptRef}
           className="bg-white p-8 max-w-[800px] mx-auto font-sans"
-          style={{ fontFamily: 'Arial, sans-serif' }}
+          style={{ fontFamily: "Arial, sans-serif" }}
         >
           {/* Header */}
           <div className="flex justify-between items-start mb-8">
@@ -159,16 +167,29 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
                 <p>Email: {data.company.email}</p>
               </div>
             </div>
-            
+
             <div className="text-right">
-              <h2 className="text-4xl font-bold text-green-600 mb-2">RECEIPT</h2>
+              <h2 className="text-4xl font-bold text-green-600 mb-2">
+                RECEIPT
+              </h2>
               <div className="text-gray-600 space-y-1">
-                <p><strong>Receipt #:</strong> {data.receiptNumber}</p>
-                <p><strong>Invoice #:</strong> {data.invoiceNumber}</p>
-                <p><strong>Payment Date:</strong> {format(data.paymentDate, 'MMM dd, yyyy')}</p>
-                <p><strong>Payment Method:</strong> {data.paymentMethod}</p>
+                <p>
+                  <strong>Receipt #:</strong> {data.receiptNumber}
+                </p>
+                <p>
+                  <strong>Invoice #:</strong> {data.invoiceNumber}
+                </p>
+                <p>
+                  <strong>Payment Date:</strong>{" "}
+                  {format(data.paymentDate, "MMM dd, yyyy")}
+                </p>
+                <p>
+                  <strong>Payment Method:</strong> {data.paymentMethod}
+                </p>
                 {data.transactionId && (
-                  <p><strong>Transaction ID:</strong> {data.transactionId}</p>
+                  <p>
+                    <strong>Transaction ID:</strong> {data.transactionId}
+                  </p>
                 )}
               </div>
             </div>
@@ -176,12 +197,20 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
 
           {/* Customer Info */}
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Paid By:</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Paid By:
+            </h3>
             <div className="bg-gray-50 p-4 rounded">
-              <p className="font-semibold text-gray-900">{data.customer.name}</p>
+              <p className="font-semibold text-gray-900">
+                {data.customer.name}
+              </p>
               <p className="text-gray-600">{data.customer.email}</p>
-              {data.customer.phone && <p className="text-gray-600">Phone: {data.customer.phone}</p>}
-              {data.customer.address && <p className="text-gray-600">{data.customer.address}</p>}
+              {data.customer.phone && (
+                <p className="text-gray-600">Phone: {data.customer.phone}</p>
+              )}
+              {data.customer.address && (
+                <p className="text-gray-600">{data.customer.address}</p>
+              )}
             </div>
           </div>
 
@@ -190,19 +219,33 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 p-3 text-left font-semibold">Item</th>
-                  <th className="border border-gray-300 p-3 text-left font-semibold">Description</th>
-                  <th className="border border-gray-300 p-3 text-right font-semibold">Qty</th>
-                  <th className="border border-gray-300 p-3 text-right font-semibold">Unit Price</th>
-                  <th className="border border-gray-300 p-3 text-right font-semibold">Amount</th>
+                  <th className="border border-gray-300 p-3 text-left font-semibold">
+                    Item
+                  </th>
+                  <th className="border border-gray-300 p-3 text-left font-semibold">
+                    Description
+                  </th>
+                  <th className="border border-gray-300 p-3 text-right font-semibold">
+                    Qty
+                  </th>
+                  <th className="border border-gray-300 p-3 text-right font-semibold">
+                    Unit Price
+                  </th>
+                  <th className="border border-gray-300 p-3 text-right font-semibold">
+                    Amount
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {data.items.map((item, index) => (
                   <tr key={index} className="border-b border-gray-300">
                     <td className="border border-gray-300 p-3">{index + 1}</td>
-                    <td className="border border-gray-300 p-3">{item.description}</td>
-                    <td className="border border-gray-300 p-3 text-right">{item.quantity}</td>
+                    <td className="border border-gray-300 p-3">
+                      {item.description}
+                    </td>
+                    <td className="border border-gray-300 p-3 text-right">
+                      {item.quantity}
+                    </td>
                     <td className="border border-gray-300 p-3 text-right">
                       {currencyFormat(item.unitPrice, data.currency)}
                     </td>
@@ -231,7 +274,9 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
               {data.discountAmount > 0 && (
                 <div className="flex justify-between py-2">
                   <span>Discount:</span>
-                  <span>-{currencyFormat(data.discountAmount, data.currency)}</span>
+                  <span>
+                    -{currencyFormat(data.discountAmount, data.currency)}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between py-2 border-t-2 border-gray-300 font-bold text-lg text-green-600">
@@ -245,14 +290,25 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <svg className="h-8 w-8 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <svg
+                  className="h-8 w-8 text-green-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-lg font-medium text-green-800">Payment Confirmed</h3>
+                <h3 className="text-lg font-medium text-green-800">
+                  Payment Confirmed
+                </h3>
                 <p className="text-green-700">
-                  Thank you for your payment. This receipt serves as proof of payment for the above transaction.
+                  Thank you for your payment. This receipt serves as proof of
+                  payment for the above transaction.
                 </p>
               </div>
             </div>
@@ -261,7 +317,9 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
           {/* Footer */}
           <div className="text-center text-gray-500 text-sm border-t pt-6">
             <p>Thank you for your business!</p>
-            <p>{data.company.name} - {data.company.address}</p>
+            <p>
+              {data.company.name} - {data.company.address}
+            </p>
             <p className="mt-2 text-xs">
               This is a computer-generated receipt. No signature required.
             </p>
@@ -272,6 +330,6 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
   }
 );
 
-ReceiptGenerator.displayName = 'ReceiptGenerator';
+ReceiptGenerator.displayName = "ReceiptGenerator";
 
 export default ReceiptGenerator;

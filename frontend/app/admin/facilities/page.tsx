@@ -79,7 +79,7 @@ const FacilityManagement = () => {
   const deleteFacilityMutation = useMutation({
     mutationFn: (facilityId: string) => FacilitiesAPI.remove(facilityId),
     onSuccess: (_, facilityId) => {
-      const facility = facilities.find((f) => f._id === facilityId);
+      const facility = facilities.find((f: any) => f._id === facilityId);
       toast({
         title: "Success",
         description: `Facility ${
@@ -114,12 +114,13 @@ const FacilityManagement = () => {
     },
   });
 
-  const facilities = data?.facilities || [];
+  const facilities = (data as any)?.data || (data as any)?.facilities || [];
 
   // Filter facilities
   const filteredFacilities = useMemo(() => {
-    const currentFacilities = data?.facilities || [];
-    return currentFacilities.filter((facility) => {
+    const currentFacilities =
+      (data as any)?.data || (data as any)?.facilities || [];
+    return currentFacilities.filter((facility: any) => {
       const matchesSearch =
         facility.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         facility.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -135,7 +136,7 @@ const FacilityManagement = () => {
 
       return matchesSearch && matchesStatus;
     });
-  }, [data?.facilities, searchTerm, statusFilter]);
+  }, [data, searchTerm, statusFilter]);
 
   // Loading and error states
   if (isLoading) {
@@ -183,7 +184,7 @@ const FacilityManagement = () => {
   };
 
   const handleDeleteFacility = async (facilityId: string) => {
-    const facility = facilities.find((f) => f._id === facilityId);
+    const facility = facilities.find((f: any) => f._id === facilityId);
     if (
       !facility?.isDeleted &&
       !window.confirm("Are you sure you want to delete this facility?")
@@ -195,7 +196,7 @@ const FacilityManagement = () => {
   };
 
   const handleToggleStatus = async (facilityId: string) => {
-    const facility = facilities.find((f) => f._id === facilityId);
+    const facility = facilities.find((f: any) => f._id === facilityId);
     if (!facility) return;
 
     toggleStatusMutation.mutate({ id: facilityId, facility });

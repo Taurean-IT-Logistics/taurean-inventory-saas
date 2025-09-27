@@ -29,6 +29,7 @@ import newsletterRoutes from "./newsletter.route";
 import rentalRoutes from "./rental.route";
 import financialTrackingRoutes from "./financialTracking.route";
 import documentManagementRoutes from "./documentManagement.route";
+import pendingTransactionRoutes from "./pendingTransaction.route";
 
 const router = Router();
 
@@ -86,5 +87,6 @@ router.use("/newsletter", newsletterRoutes);
 router.use("/rentals", rentalRoutes);
 router.use("/financial", financialTrackingRoutes);
 router.use("/documents", documentManagementRoutes);
+router.use("/pending-transactions", pendingTransactionRoutes);
 
 export default router;

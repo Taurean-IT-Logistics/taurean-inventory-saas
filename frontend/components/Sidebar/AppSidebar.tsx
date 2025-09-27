@@ -26,6 +26,7 @@ import {
   Mail,
   CreditCard,
   DollarSign,
+  Clock,
 } from "lucide-react";
 import Logo from "../logo/Logo";
 import type { Route } from "./NavMain";
@@ -123,6 +124,12 @@ const dashboardRoutes: Route[] = [
     title: "Transactions",
     icon: <ShoppingBag className="size-4" />,
     link: "/admin/transactions",
+  },
+  {
+    id: "pending-transactions",
+    title: "Pending Payments",
+    icon: <Clock className="size-4" />,
+    link: "/admin/pending-transactions",
   },
   {
     id: "rentals",

@@ -25,12 +25,14 @@ import {
   getResourceUrl,
   TaxesAPI,
   TransactionsAPI,
+  PendingTransactionsAPI,
 } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { ErrorComponent } from "@/components/ui/error";
 import { Loader } from "@/components/ui/loader";
 import { Booking, Facility, Tax } from "@/types";
 import { currencyFormat } from "@/lib/utils";
+import { calculateBookingTaxes, formatTaxBreakdown } from "@/lib/taxCalculator";
 import { useAuth } from "@/components/AuthProvider";
 import { useRedirect } from "@/hooks/useRedirect";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -46,6 +48,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       guests?: number;
       startDate?: string | Date;
       endDate?: string | Date;
+      paymentMethod?: string;
     }
   >({});
   const [availabilityError, setAvailabilityError] = useState<string | null>(
@@ -112,6 +115,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
         serviceFeeRate: 0,
         totalTaxRate: 0,
         applicableTaxes: [],
+        taxBreakdown: [],
       };
     }
 
@@ -123,45 +127,24 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     const basePrice = facility.pricing.find((p) => p.isDefault)?.amount || 0;
     const subtotal = basePrice * days;
 
-    // Calculate service fee from taxes
-    const serviceFeeRate =
-      taxes.find(
-        (t: Tax) =>
-          t.name.toLowerCase().includes("service") &&
-          t.active &&
-          (t.appliesTo === "facility" || t.appliesTo === "both") &&
-          (t.isSuperAdminTax || t.company === (facility.company as any)?._id)
-      )?.rate || 0;
-
-    const serviceFee = Math.round(subtotal * (serviceFeeRate / 100));
-
-    // Calculate applicable taxes
-    const applicableTaxes = taxes.filter(
-      (t: Tax) =>
-        !t.name.toLowerCase().includes("service") &&
-        t.active &&
-        (t.appliesTo === "facility" || t.appliesTo === "both") &&
-        (t.isSuperAdminTax || t.company === (facility.company as any)?._id)
+    // Use the new tax calculator
+    const taxResult = calculateBookingTaxes(
+      subtotal,
+      taxes as Tax[],
+      (facility.company as any)?._id
     );
-
-    const totalTaxRate = applicableTaxes.reduce(
-      (sum, tax) => sum + (tax.rate || 0),
-      0
-    );
-    const tax = Math.round((subtotal + serviceFee) * (totalTaxRate / 100));
-
-    const total = subtotal + serviceFee + tax;
 
     return {
-      subtotal,
-      serviceFee,
-      tax,
-      total,
+      subtotal: taxResult.subtotal,
+      serviceFee: taxResult.serviceFee,
+      tax: taxResult.tax,
+      total: taxResult.total,
       days,
       basePrice,
-      serviceFeeRate,
-      totalTaxRate,
-      applicableTaxes,
+      serviceFeeRate: taxResult.serviceFeeRate,
+      totalTaxRate: taxResult.totalTaxRate,
+      applicableTaxes: taxResult.applicableTaxes,
+      taxBreakdown: taxResult.taxBreakdown,
     };
   };
 
@@ -222,6 +205,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     serviceFeeRate,
     totalTaxRate,
     applicableTaxes,
+    taxBreakdown,
   } = calculateTotal();
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -352,7 +336,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
   let facility = facilityData as Facility;
 
-  const handleProceedToCheckout = () => {
+  const handleProceedToCheckout = async () => {
     // Check if user is authenticated
     if (!user) {
       // Store the current URL so user can be redirected back after login
@@ -373,26 +357,73 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       startDate: parseDate(bookingData.startDate),
       endDate: parseDate(bookingData.endDate),
       items: [], // Add empty items array as required by the model
-      status: "pending", // Set default status
+      status: bookingData.paymentMethod === "online" ? "pending" : "pending", // Set default status
       paymentStatus: "pending", // Set default payment status
     };
 
-    // Format data for transaction API
-    const transactionData = {
-      email: user?.email || "",
-      amount: total,
-      category: "facility",
-      description: `Booking for ${
-        (facilityData as Facility)?.name || "Facility"
-      } - ${calculateDurationString(
-        bookingData.startDate,
-        bookingData.endDate
-      )}`,
-      facility: (facilityData as Facility)?._id || "",
-      currency: "GHS",
-    };
+    // Handle different payment methods
+    if (bookingData.paymentMethod === "online") {
+      // Online payment - proceed with normal flow
+      const transactionData = {
+        email: user?.email || "",
+        amount: total,
+        category: "facility",
+        description: `Booking for ${
+          (facilityData as Facility)?.name || "Facility"
+        } - ${calculateDurationString(
+          bookingData.startDate,
+          bookingData.endDate
+        )}`,
+        facility: (facilityData as Facility)?._id || "",
+        currency: "GHS",
+      };
 
-    bookingsMutation.mutate(finalBookingData);
+      bookingsMutation.mutate(finalBookingData);
+    } else if (
+      bookingData.paymentMethod === "cash" ||
+      bookingData.paymentMethod === "cheque"
+    ) {
+      // Cash/Cheque payment - create pending transaction
+      try {
+        // First create the booking
+        const bookingResponse = await BookingsAPI.create(finalBookingData);
+
+        if (bookingResponse) {
+          // Create pending transaction
+          const pendingTransactionData = {
+            type: "booking",
+            referenceId:
+              (bookingResponse as any)._id || (bookingResponse as any).id,
+            amount: total,
+            paymentMethod: bookingData.paymentMethod,
+            notes: `Payment at facility for booking ${
+              (bookingResponse as any)._id || (bookingResponse as any).id
+            }`,
+          };
+
+          await PendingTransactionsAPI.create(pendingTransactionData);
+
+          toast({
+            title: "Booking Created Successfully",
+            description: `Your booking has been created. Please bring ${currencyFormat(
+              total
+            )} in ${
+              bookingData.paymentMethod
+            } when you arrive at the facility.`,
+            variant: "default",
+          });
+
+          // Redirect to user dashboard
+          router.push("/user/dashboard");
+        }
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create booking",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   return (
@@ -416,7 +447,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
             {/* Progress Steps */}
             <div className="flex items-center mb-8">
-              {[1, 2, 3].map((stepNumber) => (
+              {[1, 2, 3, 4].map((stepNumber) => (
                 <div key={stepNumber} className="flex items-center">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -427,7 +458,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                   >
                     {stepNumber}
                   </div>
-                  {stepNumber < 3 && (
+                  {stepNumber < 4 && (
                     <div
                       className={`w-16 h-1 mx-2 ${
                         step > stepNumber ? "bg-[#1e3a5f]" : "bg-gray-200"
@@ -723,8 +754,185 @@ export default function BookingPage({ params }: { params: { id: string } }) {
               </motion.div>
             )}
 
-            {/* Step 3: Booking Summary */}
+            {/* Step 3: Payment Method Selection */}
             {step === 3 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Select Payment Method
+                </h2>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    {/* Online Payment */}
+                    <div
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                        bookingData.paymentMethod === "online"
+                          ? "border-[#1e3a5f] bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() =>
+                        setBookingData({
+                          ...bookingData,
+                          paymentMethod: "online",
+                        })
+                      }
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 ${
+                            bookingData.paymentMethod === "online"
+                              ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {bookingData.paymentMethod === "online" && (
+                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">
+                            Online Payment
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            Pay securely with card or mobile money
+                          </p>
+                        </div>
+                        <div className="text-sm font-medium text-[#1e3a5f]">
+                          {currencyFormat(total)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cash Payment */}
+                    <div
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                        bookingData.paymentMethod === "cash"
+                          ? "border-[#1e3a5f] bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() =>
+                        setBookingData({
+                          ...bookingData,
+                          paymentMethod: "cash",
+                        })
+                      }
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 ${
+                            bookingData.paymentMethod === "cash"
+                              ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {bookingData.paymentMethod === "cash" && (
+                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">
+                            Pay at Facility
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            Pay with cash when you arrive at the facility
+                          </p>
+                        </div>
+                        <div className="text-sm font-medium text-[#1e3a5f]">
+                          {currencyFormat(total)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cheque Payment */}
+                    <div
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                        bookingData.paymentMethod === "cheque"
+                          ? "border-[#1e3a5f] bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() =>
+                        setBookingData({
+                          ...bookingData,
+                          paymentMethod: "cheque",
+                        })
+                      }
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 ${
+                            bookingData.paymentMethod === "cheque"
+                              ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {bookingData.paymentMethod === "cheque" && (
+                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">
+                            Pay with Cheque
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            Pay with cheque when you arrive at the facility
+                          </p>
+                        </div>
+                        <div className="text-sm font-medium text-[#1e3a5f]">
+                          {currencyFormat(total)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Method Info */}
+                  {bookingData.paymentMethod === "cash" ||
+                  bookingData.paymentMethod === "cheque" ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-5 h-5 text-amber-600 mt-0.5">ℹ️</div>
+                        <div>
+                          <h4 className="font-medium text-amber-800">
+                            Payment at Facility
+                          </h4>
+                          <p className="text-sm text-amber-700 mt-1">
+                            Your booking will be confirmed pending payment.
+                            Please bring the exact amount in{" "}
+                            {bookingData.paymentMethod === "cash"
+                              ? "cash"
+                              : "cheque"}{" "}
+                            when you arrive at the facility.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="flex space-x-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep(2)}
+                    className="flex-1"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => setStep(4)}
+                    className="flex-1 bg-[#ff8c00] hover:bg-[#e67c00] text-white"
+                    disabled={!bookingData.paymentMethod}
+                  >
+                    Continue
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 4: Booking Summary */}
+            {step === 4 && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -809,7 +1017,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                 <div className="flex space-x-4">
                   <Button
                     variant="outline"
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(3)}
                     className="flex-1"
                   >
                     Back
@@ -894,7 +1102,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
               {serviceFee > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">
-                    Service fee ({serviceFeeRate}%)
+                    Service fee ({serviceFeeRate.toFixed(2)}%)
                   </span>
                   <span className="text-gray-900">
                     {currencyFormat(serviceFee)}
@@ -902,17 +1110,15 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                 </div>
               )}
 
-              {applicableTaxes.length > 0 && (
+              {taxBreakdown.length > 0 && (
                 <>
-                  {applicableTaxes.map((tax: Tax, index: number) => (
+                  {taxBreakdown.map((item, index) => (
                     <div key={index} className="flex justify-between">
                       <span className="text-gray-600">
-                        {tax.name} ({tax.rate}%)
+                        {item.tax.name} ({item.rate.toFixed(2)}%)
                       </span>
                       <span className="text-gray-900">
-                        {currencyFormat(
-                          Math.round((subtotal + serviceFee) * (tax.rate / 100))
-                        )}
+                        {currencyFormat(item.amount)}
                       </span>
                     </div>
                   ))}

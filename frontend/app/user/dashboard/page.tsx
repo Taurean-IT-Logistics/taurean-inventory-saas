@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
@@ -41,7 +42,12 @@ import {
   Home,
   MessageSquare,
 } from "lucide-react";
-import { TransactionsAPI, BookingsAPI, InventoryAPI } from "@/lib/api";
+import {
+  TransactionsAPI,
+  BookingsAPI,
+  InventoryAPI,
+  PendingTransactionsAPI,
+} from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { currencyFormat } from "@/lib/utils";
 import { Loader } from "@/components/ui/loader";
@@ -54,6 +60,178 @@ import { BookingStatusBadge } from "@/components/booking/booking-calendar/bookin
 import { InvoiceTemplate } from "@/components/templates/invoiceTemplate";
 import { ReceiptTemplate } from "@/components/templates/receiptTemplate";
 import { RentalGrid } from "@/components/rentals/rental-grid";
+
+// Pending Payments Tab Component
+function PendingPaymentsTab() {
+  const {
+    data: pendingTransactions,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["user-pending-transactions"],
+    queryFn: () => PendingTransactionsAPI.getUserPendingTransactions(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "pending":
+        return (
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+            <Clock className="w-3 h-3 mr-1" />
+            Pending
+          </Badge>
+        );
+      case "confirmed":
+        return (
+          <Badge variant="default" className="bg-green-100 text-green-800">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Confirmed
+          </Badge>
+        );
+      case "rejected":
+        return (
+          <Badge variant="destructive" className="bg-red-100 text-red-800">
+            <XCircle className="w-3 h-3 mr-1" />
+            Rejected
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getPaymentMethodBadge = (method: string) => {
+    switch (method) {
+      case "cash":
+        return (
+          <Badge variant="outline" className="bg-green-50 text-green-700">
+            Cash
+          </Badge>
+        );
+      case "cheque":
+        return (
+          <Badge variant="outline" className="bg-blue-50 text-blue-700">
+            Cheque
+          </Badge>
+        );
+      case "bank_transfer":
+        return (
+          <Badge variant="outline" className="bg-purple-50 text-purple-700">
+            Bank Transfer
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{method}</Badge>;
+    }
+  };
+
+  if (isLoading) {
+    return <Loader text="Loading pending payments..." />;
+  }
+
+  if (error) {
+    return (
+      <ErrorComponent
+        message={(error as any)?.message}
+        title="Failed to load pending payments"
+      />
+    );
+  }
+
+  const transactions = (pendingTransactions as any)?.data || [];
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="h-5 w-5" />
+          Pending Payments
+        </CardTitle>
+        <CardDescription>
+          Payments that need to be completed at the facility
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {transactions.length === 0 ? (
+          <div className="text-center py-8">
+            <Clock className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No pending payments
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              You don&apos;t have any pending payments at the moment.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {transactions.map((transaction: any) => (
+              <div
+                key={transaction._id || transaction.id}
+                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="font-medium text-gray-900 capitalize">
+                        {transaction.type} Payment
+                      </h4>
+                      {getStatusBadge(transaction.status)}
+                      {getPaymentMethodBadge(transaction.paymentMethod)}
+                    </div>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p>
+                        <strong>Amount:</strong>{" "}
+                        {currencyFormat(transaction.amount)}
+                      </p>
+                      <p>
+                        <strong>Created:</strong>{" "}
+                        {new Date(transaction.createdAt).toLocaleDateString()}
+                      </p>
+                      {transaction.notes && (
+                        <p>
+                          <strong>Notes:</strong> {transaction.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-gray-900">
+                      {currencyFormat(transaction.amount)}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {transaction.paymentMethod === "cash"
+                        ? "Pay with cash"
+                        : "Pay with cheque"}
+                    </div>
+                  </div>
+                </div>
+                {transaction.status === "pending" && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                    <div className="flex items-start">
+                      <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 mr-2" />
+                      <div className="text-sm text-amber-800">
+                        <p className="font-medium">
+                          Payment Required at Facility
+                        </p>
+                        <p className="mt-1">
+                          Please bring the exact amount in{" "}
+                          {transaction.paymentMethod} when you arrive at the
+                          facility. Your booking will be confirmed once payment
+                          is received.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 interface DashboardStats {
   totalBookings: number;
@@ -322,10 +500,11 @@ const UserDashboard = () => {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="pending-payments">Pending Payments</TabsTrigger>
           <TabsTrigger value="invitations">Invitations</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
         </TabsList>
@@ -667,6 +846,10 @@ const UserDashboard = () => {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="pending-payments" className="space-y-6">
+          <PendingPaymentsTab />
         </TabsContent>
 
         <TabsContent value="invitations" className="space-y-6">

@@ -17,6 +17,7 @@ import {
 } from "@/lib/api";
 import { InventoryItem, Tax } from "@/types";
 import { currencyFormat } from "@/lib/utils";
+import { calculateRentalTaxes, formatTaxBreakdown } from "@/lib/taxCalculator";
 import {
   differenceInCalendarDays,
   format,
@@ -152,41 +153,22 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   const normalized = (str: string) =>
     str.trim().replace(/\s/g, "").toLowerCase();
 
-  // Calculate tax rates dynamically from the taxes array
-  const serviceFeeRate = (item as InventoryItem).isTaxable
-    ? (taxes as Tax[]).find(
-        (t: Tax) =>
-          normalized(t.name).includes("servicefee") &&
-          t.active &&
-          (t.appliesTo === "inventory_item" || t.appliesTo === "both") &&
-          (t.isSuperAdminTax || (t.company as any) === (item as any).company)
-      )?.rate || 0
-    : 0;
-
-  const applicableTaxes = (item as InventoryItem).isTaxable
-    ? (taxes as Tax[]).filter(
-        (t: Tax) =>
-          !normalized(t.name).includes("servicefee") &&
-          t.active &&
-          (t.appliesTo === "inventory_item" || t.appliesTo === "both") &&
-          (t.isSuperAdminTax || (t.company as any) === (item as any).company)
-      )
-    : [];
-
-  const totalTaxRate = applicableTaxes.reduce(
-    (sum, tax) => sum + (tax.rate || 0),
-    0
-  );
-
   const price =
     (item as InventoryItem).pricing.find(
       (p: any) => p.isDefault || p.unit === "day"
     )?.amount || 0;
 
   const subtotal = price * quantity * rentalDays;
-  const serviceFee = Math.round(subtotal * (serviceFeeRate / 100));
-  const tax = Math.round((subtotal + serviceFee) * (totalTaxRate / 100));
-  const totalPrice = subtotal + serviceFee + tax;
+
+  // Use the new tax calculator
+  const taxResult = calculateRentalTaxes(
+    subtotal,
+    taxes as Tax[],
+    (item as any).company,
+    (item as InventoryItem).isTaxable
+  );
+
+  const totalPrice = taxResult.total;
 
   const handleTransaction = async () => {
     if (!user) return;
@@ -369,44 +351,54 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                   {/* Price Breakdown */}
                   <div className="space-y-3 border-t pt-4">
                     <div className="flex justify-between items-center">
-                      <span>Subtotal ({rentalDays} day{rentalDays > 1 ? 's' : ''} × {quantity} × {currencyFormat(price)}):</span>
+                      <span>
+                        Subtotal ({rentalDays} day{rentalDays > 1 ? "s" : ""} ×{" "}
+                        {quantity} × {currencyFormat(price)}):
+                      </span>
                       <span className="text-xl font-semibold text-blue-600">
-                        {currencyFormat(subtotal)}
+                        {currencyFormat(taxResult.subtotal)}
                       </span>
                     </div>
-                    
-                    {serviceFee > 0 && (
+
+                    {taxResult.serviceFee > 0 && (
                       <div className="flex justify-between items-center">
-                        <span>Service Fee ({serviceFeeRate}%):</span>
+                        <span>
+                          Service Fee ({taxResult.serviceFeeRate.toFixed(2)}%):
+                        </span>
                         <span className="text-xl font-semibold text-blue-600">
-                          {currencyFormat(serviceFee)}
+                          {currencyFormat(taxResult.serviceFee)}
                         </span>
                       </div>
                     )}
-                    
-                    {applicableTaxes.length > 0 && (
+
+                    {taxResult.taxBreakdown.length > 0 && (
                       <>
-                        {applicableTaxes.map((tax: Tax, index: number) => (
-                          <div key={index} className="flex justify-between items-center">
-                            <span>{tax.name} ({tax.rate}%):</span>
+                        {taxResult.taxBreakdown.map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex justify-between items-center"
+                          >
+                            <span>
+                              {item.tax.name} ({item.rate.toFixed(2)}%):
+                            </span>
                             <span className="text-xl font-semibold text-blue-600">
-                              {currencyFormat(Math.round((subtotal + serviceFee) * (tax.rate / 100)))}
+                              {currencyFormat(item.amount)}
                             </span>
                           </div>
                         ))}
                         <div className="flex justify-between items-center">
                           <span>Total Tax:</span>
                           <span className="text-xl font-semibold text-blue-600">
-                            {currencyFormat(tax)}
+                            {currencyFormat(taxResult.tax)}
                           </span>
                         </div>
                       </>
                     )}
-                    
+
                     <div className="flex justify-between items-center border-t pt-3">
                       <span className="font-semibold">Total Cost:</span>
                       <span className="text-2xl font-bold text-blue-600">
-                        {currencyFormat(totalPrice)}
+                        {currencyFormat(taxResult.total)}
                       </span>
                     </div>
                   </div>
