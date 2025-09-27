@@ -848,6 +848,34 @@ export const InventoryAPI = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  // Enhanced Inventory Methods
+  getInventoryWithRentalStatus: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/inventory-items/with-rental-status${qs}`, { method: "GET" });
+  },
+  getInventoryItemWithRentalHistory: (id: string) =>
+    apiFetch(`/inventory-items/${id}/rental-history`, { method: "GET" }),
+  rentInventoryItem: (id: string, payload: any) =>
+    apiFetch(`/inventory-items/${id}/rent`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  returnInventoryItem: (id: string, payload: any) =>
+    apiFetch(`/inventory-items/${id}/return`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getInventoryStatistics: () =>
+    apiFetch(`/inventory-items/statistics`, { method: "GET" }),
+  getLowStockItems: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/inventory-items/low-stock${qs}`, { method: "GET" });
+  },
+  getMaintenanceDueItems: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/inventory-items/maintenance-due${qs}`, { method: "GET" });
+  },
 };
 
 // Bookings
@@ -960,8 +988,14 @@ export const TaxesAPI = {
 
 // Transactions
 export const TransactionsAPI = {
-  listCompany: () => apiFetch(`/transaction`, { method: "GET" }),
-  getUserTransactions: () => apiFetch(`/transaction/user`, { method: "GET" }),
+  listCompany: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/transaction${qs}`, { method: "GET" });
+  },
+  getUserTransactions: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/transaction/user${qs}`, { method: "GET" });
+  },
   initializePayment: (payload: any) =>
     apiFetch(`/transaction/initialize`, {
       method: "POST",
@@ -997,6 +1031,36 @@ export const TransactionsAPI = {
       true
     );
   },
+
+  // Enhanced Payment Methods
+  processCashPayment: (payload: any) =>
+    apiFetch(`/transaction/cash`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  processSplitPayment: (payload: any) =>
+    apiFetch(`/transaction/split`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getSplitPaymentDetails: (splitPaymentId: string) =>
+    apiFetch(`/transaction/split/${splitPaymentId}`, { method: "GET" }),
+  completeSplitPayment: (splitPaymentId: string) =>
+    apiFetch(`/transaction/split/${splitPaymentId}/complete`, {
+      method: "PUT",
+    }),
+  processAdvancePayment: (payload: any) =>
+    apiFetch(`/transaction/advance`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  applyAdvancePayment: (payload: any) =>
+    apiFetch(`/transaction/advance/apply`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getAdvanceBalance: () =>
+    apiFetch(`/transaction/advance/balance`, { method: "GET" }),
 };
 
 // Payouts
@@ -1175,6 +1239,22 @@ export const NotificationsAPI = {
 
   getUnreadCount: () =>
     apiFetch(`/notifications/unread-count`, { method: "GET" }),
+
+  // Enhanced Notification Methods
+  getNotifications: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/notifications${qs}`, { method: "GET" });
+  },
+  createNotification: (payload: any) =>
+    apiFetch(`/notifications`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  createSubscriptionNotification: (payload: any) =>
+    apiFetch(`/notifications/subscription`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
 
 // Company API
@@ -1555,15 +1635,15 @@ export const SuperAdminAPI = {
     plan: string,
     duration: number
   ) =>
-    apiFetch(`/super-admin/companies/${companyId}/subscription`, {
+    apiFetch(`/super-admin/companies/${companyId}/subscription/activate`, {
       method: "POST",
       body: JSON.stringify({ plan, duration }),
     }),
 
   // Deactivate company subscription
   deactivateCompanySubscription: (companyId: string) =>
-    apiFetch(`/super-admin/companies/${companyId}/subscription`, {
-      method: "DELETE",
+    apiFetch(`/super-admin/companies/${companyId}/subscription/deactivate`, {
+      method: "POST",
     }),
 
   // Update user role
@@ -1585,6 +1665,172 @@ export const SuperAdminAPI = {
     apiFetch(`/super-admin/users/${userId}/remove`, {
       method: "DELETE",
     }),
+
+  // Enhanced SuperAdmin Methods
+  getCompanyAnalytics: (companyId: string) =>
+    apiFetch(`/super-admin/company-analytics/${companyId}`, { method: "GET" }),
+  updateCompanyFee: (companyId: string, fee: number) =>
+    apiFetch(`/super-admin/companies/${companyId}/fee`, {
+      method: "PUT",
+      body: JSON.stringify({ fee }),
+    }),
+  getSystemTaxManagement: () =>
+    apiFetch("/super-admin/tax-management", { method: "GET" }),
+  getSystemNotifications: () =>
+    apiFetch("/super-admin/notifications", { method: "GET" }),
+  sendSystemNotification: (payload: any) =>
+    apiFetch("/super-admin/notifications/send", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getSystemHealth: () =>
+    apiFetch("/super-admin/health", { method: "GET" }),
+};
+
+// Rental Management API
+export const RentalAPI = {
+  // Get all rentals
+  getRentals: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/rentals${qs}`, { method: "GET" });
+  },
+
+  // Get rental by ID
+  getRentalById: (rentalId: string) =>
+    apiFetch(`/rentals/${rentalId}`, { method: "GET" }),
+
+  // Create rental
+  createRental: (rentalData: any) =>
+    apiFetch("/rentals", {
+      method: "POST",
+      body: JSON.stringify(rentalData),
+    }),
+
+  // Update rental
+  updateRental: (rentalId: string, rentalData: any) =>
+    apiFetch(`/rentals/${rentalId}`, {
+      method: "PUT",
+      body: JSON.stringify(rentalData),
+    }),
+
+  // Return rental item
+  returnRental: (rentalId: string, returnData: any) =>
+    apiFetch(`/rentals/${rentalId}/return`, {
+      method: "POST",
+      body: JSON.stringify(returnData),
+    }),
+
+  // Get rental statistics
+  getRentalStats: () => apiFetch("/rentals/statistics", { method: "GET" }),
+
+  // Get overdue rentals
+  getOverdueRentals: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/rentals/overdue${qs}`, { method: "GET" });
+  },
+
+  // Delete rental
+  deleteRental: (rentalId: string) =>
+    apiFetch(`/rentals/${rentalId}`, { method: "DELETE" }),
+};
+
+// Document Management API
+export const DocumentAPI = {
+  // Upload document
+  uploadDocument: (formData: FormData) =>
+    apiFetch("/documents/upload", {
+      method: "POST",
+      body: formData,
+    }),
+
+  // Get documents
+  getDocuments: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/documents${qs}`, { method: "GET" });
+  },
+
+  // Get document by ID
+  getDocumentById: (documentId: string) =>
+    apiFetch(`/documents/${documentId}`, { method: "GET" }),
+
+  // Update document
+  updateDocument: (documentId: string, documentData: any) =>
+    apiFetch(`/documents/${documentId}`, {
+      method: "PUT",
+      body: JSON.stringify(documentData),
+    }),
+
+  // Delete document
+  deleteDocument: (documentId: string) =>
+    apiFetch(`/documents/${documentId}`, { method: "DELETE" }),
+
+  // Download document
+  downloadDocument: (documentId: string) =>
+    apiFetch(`/documents/${documentId}/download`, { method: "GET" }, true),
+
+  // Get document categories
+  getCategories: () => apiFetch("/documents/categories", { method: "GET" }),
+};
+
+// Financial Tracking API
+export const FinancialAPI = {
+  // Get expenses
+  getExpenses: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/financial/expenses${qs}`, { method: "GET" });
+  },
+
+  // Create expense
+  createExpense: (expenseData: any) =>
+    apiFetch("/financial/expenses", {
+      method: "POST",
+      body: JSON.stringify(expenseData),
+    }),
+
+  // Update expense
+  updateExpense: (expenseId: string, expenseData: any) =>
+    apiFetch(`/financial/expenses/${expenseId}`, {
+      method: "PUT",
+      body: JSON.stringify(expenseData),
+    }),
+
+  // Delete expense
+  deleteExpense: (expenseId: string) =>
+    apiFetch(`/financial/expenses/${expenseId}`, { method: "DELETE" }),
+
+  // Get discounts
+  getDiscounts: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/financial/discounts${qs}`, { method: "GET" });
+  },
+
+  // Create discount
+  createDiscount: (discountData: any) =>
+    apiFetch("/financial/discounts", {
+      method: "POST",
+      body: JSON.stringify(discountData),
+    }),
+
+  // Update discount
+  updateDiscount: (discountId: string, discountData: any) =>
+    apiFetch(`/financial/discounts/${discountId}`, {
+      method: "PUT",
+      body: JSON.stringify(discountData),
+    }),
+
+  // Delete discount
+  deleteDiscount: (discountId: string) =>
+    apiFetch(`/financial/discounts/${discountId}`, { method: "DELETE" }),
+
+  // Get profit and loss
+  getProfitAndLoss: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/financial/profit-loss${qs}`, { method: "GET" });
+  },
+
+  // Get financial summary
+  getFinancialSummary: () =>
+    apiFetch("/financial/summary", { method: "GET" }),
 };
 
 export const getResourceUrl = (path: string): string => {
