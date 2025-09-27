@@ -22,11 +22,11 @@ const allUsers = [AuthorizeRoles("admin", "super_admin", "staff", "user")];
 
 // Pending Transaction Routes
 
-// Create a pending transaction (users can create their own)
+// Create a pending transaction (admin/staff only)
 router.post(
   "/",
-  allUsers,
-  RequirePermissions(["createTransactions"]),
+  staffAndAbove,
+  RequirePermissions(["manageTransactions"]),
   PendingTransactionController.createPendingTransaction
 );
 
@@ -38,11 +38,25 @@ router.get(
   PendingTransactionController.getPendingTransactions
 );
 
+// Get pending transactions for a company (admin/staff only) - alternative endpoint
+router.get(
+  "/company",
+  staffAndAbove,
+  RequirePermissions(["viewTransactions"]),
+  PendingTransactionController.getPendingTransactions
+);
+
 // Get user's own pending transactions
 router.get(
   "/my-transactions",
   allUsers,
-  RequirePermissions(["viewTransactions"]),
+  PendingTransactionController.getUserPendingTransactions
+);
+
+// Get user's own pending transactions - alternative endpoint
+router.get(
+  "/user",
+  allUsers,
   PendingTransactionController.getUserPendingTransactions
 );
 
@@ -66,7 +80,6 @@ router.put(
 router.put(
   "/:id/cancel",
   allUsers,
-  RequirePermissions(["createTransactions"]),
   PendingTransactionController.cancelPendingTransaction
 );
 

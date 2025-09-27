@@ -62,6 +62,7 @@ const TransactionTable = ({
 
   const getMethodBadge = (method: string) => {
     const methodConfig = {
+      paystack: { className: "bg-blue-100 text-blue-800", text: "Paystack" },
       card: { className: "bg-blue-100 text-blue-800", text: "Card" },
       mobile_money: {
         className: "bg-cyan-100 text-cyan-800",
@@ -69,6 +70,15 @@ const TransactionTable = ({
       },
       bank: { className: "bg-gray-100 text-gray-800", text: "Bank Transfer" },
       cash: { className: "bg-green-100 text-green-800", text: "Cash" },
+      cheque: { className: "bg-orange-100 text-orange-800", text: "Cheque" },
+      split: {
+        className: "bg-indigo-100 text-indigo-800",
+        text: "Split Payment",
+      },
+      advance: {
+        className: "bg-pink-100 text-pink-800",
+        text: "Advance Payment",
+      },
     };
 
     const config = methodConfig[method as keyof typeof methodConfig] || {

@@ -1033,13 +1033,49 @@ export const TaxSchedulesAPI = {
 
 // Taxes
 export const TaxesAPI = {
-  list: () => apiFetch(`/taxes`, { method: "GET" }),
+  // Global taxes (Super Admin only)
+  list: () => apiFetch(`/taxes/global`, { method: "GET" }),
+  createGlobal: (payload: any) =>
+    apiFetch(`/taxes/global`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // Company taxes
   listCompany: () => apiFetch(`/taxes/company`, { method: "GET" }),
-  create: (payload: any) =>
-    apiFetch(`/taxes`, { method: "POST", body: JSON.stringify(payload) }),
+  createCompany: (payload: any) =>
+    apiFetch(`/taxes/company`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // Combined taxes (global + company)
+  listCombined: () => apiFetch(`/taxes`, { method: "GET" }),
+
+  // Individual tax operations
+  get: (id: string) => apiFetch(`/taxes/${id}`, { method: "GET" }),
   update: (id: string, payload: any) =>
-    apiFetch(`/taxes/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+    apiFetch(`/taxes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
   remove: (id: string) => apiFetch(`/taxes/${id}`, { method: "DELETE" }),
+
+  // Legacy methods for backward compatibility
+  create: (payload: any) => {
+    // Determine if this should be a global or company tax based on payload
+    if (payload.isSuperAdminTax) {
+      return apiFetch(`/taxes/global`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    } else {
+      return apiFetch(`/taxes/company`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    }
+  },
 };
 
 // Transactions

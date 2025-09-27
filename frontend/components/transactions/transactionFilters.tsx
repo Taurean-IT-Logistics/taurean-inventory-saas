@@ -18,6 +18,8 @@ interface TransactionFiltersProps {
   setStatusFilter: (status: string) => void;
   typeFilter: string;
   setTypeFilter: (type: string) => void;
+  paymentMethodFilter: string;
+  setPaymentMethodFilter: (method: string) => void;
   filteredCount: number;
 }
 
@@ -28,12 +30,14 @@ const TransactionFilters = ({
   setStatusFilter,
   typeFilter,
   setTypeFilter,
+  paymentMethodFilter,
+  setPaymentMethodFilter,
   filteredCount,
 }: TransactionFiltersProps) => {
   return (
     <Card className="mb-6">
       <CardContent className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
@@ -63,8 +67,26 @@ const TransactionFilters = ({
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="booking_payment">Booking Payment</SelectItem>
+              <SelectItem value="rental_payment">Rental Payment</SelectItem>
               <SelectItem value="refund">Refund</SelectItem>
               <SelectItem value="deposit">Deposit</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={paymentMethodFilter}
+            onValueChange={setPaymentMethodFilter}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All Payment Methods" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Payment Methods</SelectItem>
+              <SelectItem value="paystack">Paystack (Online)</SelectItem>
+              <SelectItem value="cash">Cash</SelectItem>
+              <SelectItem value="cheque">Cheque</SelectItem>
+              <SelectItem value="split">Split Payment</SelectItem>
+              <SelectItem value="advance">Advance Payment</SelectItem>
             </SelectContent>
           </Select>
 

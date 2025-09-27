@@ -61,6 +61,7 @@ export default function AdminTransactionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -75,7 +76,16 @@ export default function AdminTransactionsPage() {
       (statusFilter === "reconciled" && txn.reconciled) ||
       (statusFilter === "pending" && !txn.reconciled);
     const matchesType = typeFilter === "all" || txn.type === typeFilter;
-    return matchesSearch && matchesStatus && matchesType;
+    const matchesPaymentMethod =
+      paymentMethodFilter === "all" ||
+      (paymentMethodFilter === "paystack" && txn.method === "paystack") ||
+      (paymentMethodFilter === "cash" && txn.method === "cash") ||
+      (paymentMethodFilter === "cheque" && txn.method === "cheque") ||
+      (paymentMethodFilter === "split" && txn.method === "split") ||
+      (paymentMethodFilter === "advance" && txn.method === "advance");
+    return (
+      matchesSearch && matchesStatus && matchesType && matchesPaymentMethod
+    );
   });
 
   const handleView = (transaction: Transaction) => {
@@ -151,6 +161,8 @@ export default function AdminTransactionsPage() {
           setStatusFilter={setStatusFilter}
           typeFilter={typeFilter}
           setTypeFilter={setTypeFilter}
+          paymentMethodFilter={paymentMethodFilter}
+          setPaymentMethodFilter={setPaymentMethodFilter}
           filteredCount={filteredTransactions.length}
         />
 

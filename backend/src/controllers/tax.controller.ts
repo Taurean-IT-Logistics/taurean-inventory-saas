@@ -3,22 +3,84 @@ import { TaxService } from "../services";
 import { sendSuccess, sendError, sendNotFound } from "../utils";
 
 /**
- * Create a new tax
+ * Create a global tax (Super Admin only)
  */
-export const createTax = async (req: Request, res: Response): Promise<void> => {
+export const createGlobalTax = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    if (req.body.isSuperAdminTax) {
-      req.body.company = undefined;
-    }
+    const taxData = {
+      ...req.body,
+      isSuperAdminTax: true,
+      company: undefined, // Global taxes don't belong to a company
+    };
 
-    if (!req.body.isSuperAdminTax) {
-      req.body.company = req.user?.companyId;
-    }
-
-    const newTax = await TaxService.createTax(req.body);
-    sendSuccess(res, "Tax created successfully", newTax);
+    const newTax = await TaxService.createTax(taxData);
+    sendSuccess(res, "Global tax created successfully", newTax);
   } catch (error) {
-    sendError(res, "Failed to create tax", error);
+    sendError(res, "Failed to create global tax", error);
+  }
+};
+
+/**
+ * Create a company-specific tax
+ */
+export const createCompanyTax = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user?.companyId) {
+      sendError(
+        res,
+        "Company ID not found. User must be associated with a company."
+      );
+      return;
+    }
+
+    const taxData = {
+      ...req.body,
+      isSuperAdminTax: false,
+      company: req.user.companyId,
+    };
+
+    const newTax = await TaxService.createTax(taxData);
+    sendSuccess(res, "Company tax created successfully", newTax);
+  } catch (error) {
+    sendError(res, "Failed to create company tax", error);
+  }
+};
+
+/**
+ * Get global taxes (Super Admin only)
+ */
+export const getGlobalTaxes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const filters = {
+      active:
+        req.query.active === "true"
+          ? true
+          : req.query.active === "false"
+            ? false
+            : undefined,
+      type: req.query.type as string,
+      appliesTo: req.query.appliesTo as string,
+      isSuperAdminTax: true,
+    };
+
+    const pagination = {
+      page: parseInt(req.query.page as string) || 1,
+      limit: Math.min(parseInt(req.query.limit as string) || 10, 100),
+    };
+
+    const result = await TaxService.getGlobalTaxes(filters, pagination);
+    sendSuccess(res, "Global taxes fetched successfully", result);
+  } catch (error) {
+    sendError(res, "Failed to fetch global taxes", error);
   }
 };
 
@@ -32,8 +94,8 @@ export const getTaxes = async (req: Request, res: Response): Promise<void> => {
         req.query.active === "true"
           ? true
           : req.query.active === "false"
-          ? false
-          : undefined,
+            ? false
+            : undefined,
       type: req.query.type as string,
       appliesTo: req.query.appliesTo as string,
       isDefault: req.query.isDefault === "true" ? true : undefined,
@@ -73,8 +135,8 @@ export const getCompanyTaxes = async (
         req.query.active === "true"
           ? true
           : req.query.active === "false"
-          ? false
-          : undefined,
+            ? false
+            : undefined,
       type: req.query.type as string,
       appliesTo: req.query.appliesTo as string,
       companyId: req.user.companyId,
@@ -143,7 +205,10 @@ export const deleteTax = async (req: Request, res: Response): Promise<void> => {
 /**
  * Get default system taxes
  */
-export const getDefaultTaxes = async (req: Request, res: Response): Promise<void> => {
+export const getDefaultTaxes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const taxes = await TaxService.getDefaultTaxes();
     sendSuccess(res, "Default taxes fetched successfully", taxes);
@@ -155,7 +220,10 @@ export const getDefaultTaxes = async (req: Request, res: Response): Promise<void
 /**
  * Create default system taxes
  */
-export const createDefaultTaxes = async (req: Request, res: Response): Promise<void> => {
+export const createDefaultTaxes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const taxes = await TaxService.createDefaultTaxes();
     sendSuccess(res, "Default taxes created successfully", taxes);
@@ -165,17 +233,28 @@ export const createDefaultTaxes = async (req: Request, res: Response): Promise<v
 };
 
 /**
- * Get combined taxes (default + company specific)
+ * Get combined taxes (global + company specific)
  */
-export const getCombinedTaxes = async (req: Request, res: Response): Promise<void> => {
+export const getCombinedTaxes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
+    if (!req.user?.companyId) {
+      sendError(
+        res,
+        "Company ID not found. User must be associated with a company."
+      );
+      return;
+    }
+
     const filters = {
       active:
         req.query.active === "true"
           ? true
           : req.query.active === "false"
-          ? false
-          : undefined,
+            ? false
+            : undefined,
       type: req.query.type as string,
       appliesTo: req.query.appliesTo as string,
     };
@@ -185,11 +264,29 @@ export const getCombinedTaxes = async (req: Request, res: Response): Promise<voi
       limit: Math.min(parseInt(req.query.limit as string) || 10, 100),
     };
 
-    const result = await TaxService.getCombinedTaxes(
-      req.user?.companyId,
-      filters,
-      pagination
-    );
+    // Get both global and company taxes
+    const [globalTaxes, companyTaxes] = await Promise.all([
+      TaxService.getGlobalTaxes(filters, pagination),
+      TaxService.getCompanyTaxes(
+        { ...filters, companyId: req.user.companyId },
+        pagination
+      ),
+    ]);
+
+    // Combine the results
+    const combinedTaxes = [
+      ...(globalTaxes.taxes || []),
+      ...(companyTaxes.taxes || []),
+    ];
+
+    const result = {
+      taxes: combinedTaxes,
+      total: combinedTaxes.length,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: Math.ceil(combinedTaxes.length / pagination.limit),
+    };
+
     sendSuccess(res, "Combined taxes fetched successfully", result);
   } catch (error) {
     sendError(res, "Failed to fetch combined taxes", error);

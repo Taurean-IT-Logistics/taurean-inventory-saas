@@ -350,10 +350,70 @@ const getCombinedTaxes = async (
   }
 };
 
+/**
+ * Get global taxes (Super Admin taxes)
+ */
+const getGlobalTaxes = async (
+  filters: {
+    active?: boolean;
+    type?: string;
+    appliesTo?: string;
+  } = {},
+  pagination: {
+    page?: number;
+    limit?: number;
+  } = {}
+): Promise<{ taxes: TaxDocument[]; total: number; totalPages: number; currentPage: number }> => {
+  try {
+    const query: any = {
+      isSuperAdminTax: true,
+      company: { $exists: false }
+    };
+
+    if (filters.active !== undefined) {
+      query.active = filters.active;
+    }
+
+    if (filters.type) {
+      query.type = filters.type;
+    }
+
+    if (filters.appliesTo) {
+      query.appliesTo = filters.appliesTo;
+    }
+
+    const page = pagination.page || 1;
+    const limit = pagination.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const [taxes, total] = await Promise.all([
+      TaxModel.find(query)
+        .sort({ priority: 1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      TaxModel.countDocuments(query)
+    ]);
+
+    return {
+      taxes,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page
+    };
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch global taxes: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
 export {
   createTax,
   updateTax,
   getAllTaxes,
+  getGlobalTaxes,
   getCompanyTaxes,
   getTaxById,
   deleteTax,

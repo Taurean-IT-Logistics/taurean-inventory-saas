@@ -49,6 +49,9 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       startDate?: string | Date;
       endDate?: string | Date;
       paymentMethod?: string;
+      paymentTiming?: string;
+      advanceAmount?: number;
+      splitAmount?: number;
     }
   >({});
   const [availabilityError, setAvailabilityError] = useState<string | null>(
@@ -886,25 +889,126 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                         </div>
                       </div>
                     </div>
+
+                    {/* Split Payment */}
+                    <div
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                        bookingData.paymentMethod === "split"
+                          ? "border-[#1e3a5f] bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() =>
+                        setBookingData({
+                          ...bookingData,
+                          paymentMethod: "split",
+                        })
+                      }
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 ${
+                            bookingData.paymentMethod === "split"
+                              ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {bookingData.paymentMethod === "split" && (
+                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">
+                            Split Payment
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            Pay partially online and partially at facility
+                          </p>
+                        </div>
+                        <div className="text-sm font-medium text-[#1e3a5f]">
+                          {currencyFormat(total)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Advance Payment */}
+                    <div
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                        bookingData.paymentMethod === "advance"
+                          ? "border-[#1e3a5f] bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() =>
+                        setBookingData({
+                          ...bookingData,
+                          paymentMethod: "advance",
+                        })
+                      }
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 ${
+                            bookingData.paymentMethod === "advance"
+                              ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {bookingData.paymentMethod === "advance" && (
+                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">
+                            Advance Payment
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            Pay advance amount online, balance at facility
+                          </p>
+                        </div>
+                        <div className="text-sm font-medium text-[#1e3a5f]">
+                          {currencyFormat(total)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Payment Method Info */}
                   {bookingData.paymentMethod === "cash" ||
-                  bookingData.paymentMethod === "cheque" ? (
+                  bookingData.paymentMethod === "cheque" ||
+                  bookingData.paymentMethod === "split" ||
+                  bookingData.paymentMethod === "advance" ? (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                       <div className="flex items-start space-x-3">
                         <div className="w-5 h-5 text-amber-600 mt-0.5">ℹ️</div>
                         <div>
                           <h4 className="font-medium text-amber-800">
-                            Payment at Facility
+                            {bookingData.paymentMethod === "split" ||
+                            bookingData.paymentMethod === "advance"
+                              ? "Partial Payment Required"
+                              : "Payment at Facility"}
                           </h4>
                           <p className="text-sm text-amber-700 mt-1">
-                            Your booking will be confirmed pending payment.
-                            Please bring the exact amount in{" "}
-                            {bookingData.paymentMethod === "cash"
-                              ? "cash"
-                              : "cheque"}{" "}
-                            when you arrive at the facility.
+                            {bookingData.paymentMethod === "split" ? (
+                              <>
+                                Your booking will be confirmed pending split
+                                payment. You can pay a portion online now and
+                                the remainder at the facility.
+                              </>
+                            ) : bookingData.paymentMethod === "advance" ? (
+                              <>
+                                Your booking will be confirmed pending advance
+                                payment. Pay an advance amount online now and
+                                the balance at the facility.
+                              </>
+                            ) : (
+                              <>
+                                Your booking will be confirmed pending payment.
+                                Please bring the exact amount in{" "}
+                                {bookingData.paymentMethod === "cash"
+                                  ? "cash"
+                                  : "cheque"}{" "}
+                                when you arrive at the facility.
+                              </>
+                            )}
                           </p>
                         </div>
                       </div>
