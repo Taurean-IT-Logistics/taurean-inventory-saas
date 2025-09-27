@@ -49,6 +49,8 @@ export function Header() {
   const notificationsContext = useNotifications();
   const unreadCount = user ? notificationsContext?.unreadCount || 0 : 0;
 
+  console.log("Header unread count:", unreadCount);
+
   const hideHeader =
     pathname.startsWith("/auth") ||
     pathname.startsWith("/onboarding") ||

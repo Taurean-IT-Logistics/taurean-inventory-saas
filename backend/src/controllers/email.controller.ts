@@ -110,6 +110,24 @@ export async function sendWelcomeEmail(req: Request, res: Response) {
   }
 }
 
+export async function sendBookingSubmitted(req: Request, res: Response) {
+  try {
+    const { bookingId } = req.params;
+
+    const success = await emailService.sendBookingSubmitted(bookingId);
+
+    if (success) {
+      sendSuccess(res, "Booking submitted email sent successfully", {
+        sent: true,
+      });
+    } else {
+      sendError(res, "Failed to send booking submitted email", null, 500);
+    }
+  } catch (error: any) {
+    sendError(res, "Failed to send booking submitted email", error.message);
+  }
+}
+
 export async function sendBookingConfirmation(req: Request, res: Response) {
   try {
     const { bookingId } = req.params;

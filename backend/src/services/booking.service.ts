@@ -38,9 +38,8 @@ async function assertNoFacilityConflicts(
   excludeId?: string
 ) {
   const filter = buildConflictFilter(facilityId, excludeId);
-  const candidates = await BookingModel.find(filter).select(
-    "startDate endDate"
-  );
+  const candidates =
+    await BookingModel.find(filter).select("startDate endDate");
   for (const c of candidates) {
     if (hasOverlap(start, end, c.startDate as any, c.endDate as any)) {
       throw new Error("Booking conflict: overlapping time for this facility");
@@ -124,13 +123,16 @@ const createBooking = async (
       const { Events } = await import("../realtime/events");
       emitEvent(Events.BookingCreated, { id: saved._id, booking: saved });
 
-      // Send booking confirmation email
-      await emailService.sendBookingConfirmation((saved as any)._id.toString());
-      
+      // Send booking submitted email
+      await emailService.sendBookingSubmitted((saved as any)._id.toString());
+
       // Send booking notification
-      await notificationService.createBookingNotification(saved._id.toString(), "created");
+      await notificationService.createBookingNotification(
+        saved._id.toString(),
+        "created"
+      );
     } catch (error) {
-      console.warn("Failed to send booking confirmation:", error);
+      console.warn("Failed to send booking submitted email:", error);
     }
     return saved;
   } catch (error) {
@@ -230,15 +232,26 @@ const updateBooking = async (
         const { emitEvent } = await import("../realtime/socket");
         const { Events } = await import("../realtime/events");
         emitEvent(Events.BookingUpdated, { id: updated._id, booking: updated });
-        
+
         // Send notifications based on status change
         if (updateData.status) {
           if (updateData.status === "confirmed") {
-            await notificationService.createBookingNotification(updated._id.toString(), "confirmed");
+            await notificationService.createBookingNotification(
+              updated._id.toString(),
+              "confirmed"
+            );
+            // Send booking confirmation email
+            await emailService.sendBookingConfirmation(updated._id.toString());
           } else if (updateData.status === "cancelled") {
-            await notificationService.createBookingNotification(updated._id.toString(), "cancelled");
+            await notificationService.createBookingNotification(
+              updated._id.toString(),
+              "cancelled"
+            );
           } else if (updateData.status === "completed") {
-            await notificationService.createBookingNotification(updated._id.toString(), "completed");
+            await notificationService.createBookingNotification(
+              updated._id.toString(),
+              "completed"
+            );
           }
         }
       } catch (error) {
@@ -323,9 +336,8 @@ const checkAvailability = async (
 
     // Use the same filter logic as assertNoFacilityConflicts for consistency
     const filter = buildConflictFilter(facilityId);
-    const existingBookings = await BookingModel.find(filter).select(
-      "startDate endDate"
-    );
+    const existingBookings =
+      await BookingModel.find(filter).select("startDate endDate");
 
     for (const booking of existingBookings) {
       if (

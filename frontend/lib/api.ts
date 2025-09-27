@@ -1060,6 +1060,7 @@ export const TaxesAPI = {
       body: JSON.stringify(payload),
     }),
   remove: (id: string) => apiFetch(`/taxes/${id}`, { method: "DELETE" }),
+  copy: (taxId: string) => apiFetch(`/taxes/${taxId}/copy`, { method: "POST" }),
 
   // Legacy methods for backward compatibility
   create: (payload: any) => {

@@ -1,4 +1,4 @@
-import { Tax } from "@/types";
+import { Tax, TaxSchedule } from "@/types";
 
 export interface TaxCalculationResult {
   subtotal: number;
@@ -18,6 +18,16 @@ export interface TaxCalculationResult {
 export interface TaxCalculationOptions {
   subtotal: number;
   taxes: Tax[];
+  appliesTo: "facility" | "inventory_item" | "both";
+  companyId?: string;
+  isTaxable?: boolean;
+  isTaxInclusive?: boolean;
+  isTaxOnTax?: boolean;
+}
+
+export interface TaxScheduleCalculationOptions {
+  subtotal: number;
+  taxSchedules: TaxSchedule[];
   appliesTo: "facility" | "inventory_item" | "both";
   companyId?: string;
   isTaxable?: boolean;
@@ -296,5 +306,156 @@ export function getApplicableTaxes(
     if (!aIsVAT && bIsVAT) return 1;
 
     return a.name.localeCompare(b.name);
+  });
+}
+
+/**
+ * Calculate taxes from tax schedules
+ */
+export function calculateTaxesFromSchedules(
+  options: TaxScheduleCalculationOptions
+): TaxCalculationResult {
+  const {
+    subtotal,
+    taxSchedules,
+    appliesTo,
+    companyId,
+    isTaxable = true,
+    isTaxInclusive = false,
+    isTaxOnTax = false,
+  } = options;
+
+  if (!isTaxable || subtotal <= 0) {
+    return {
+      subtotal,
+      serviceFee: 0,
+      tax: 0,
+      total: subtotal,
+      serviceFeeRate: 0,
+      totalTaxRate: 0,
+      applicableTaxes: [],
+      taxBreakdown: [],
+    };
+  }
+
+  // Filter applicable tax schedules based on appliesTo and company
+  const applicableSchedules = taxSchedules.filter((schedule) => {
+    if (!schedule.isActive) return false;
+
+    // Map the appliesTo values
+    let scheduleAppliesTo: string;
+    if (schedule.appliesTo === "facilities") {
+      scheduleAppliesTo = "facility";
+    } else if (schedule.appliesTo === "inventory") {
+      scheduleAppliesTo = "inventory_item";
+    } else {
+      scheduleAppliesTo = schedule.appliesTo;
+    }
+
+    if (scheduleAppliesTo !== appliesTo && schedule.appliesTo !== "all")
+      return false;
+    if (companyId && schedule.company !== companyId) return false;
+    return true;
+  });
+
+  // Calculate total tax rate from schedules
+  const totalTaxRate = applicableSchedules.reduce(
+    (sum, schedule) => sum + (schedule.value || 0),
+    0
+  );
+
+  // Calculate tax amount
+  const tax = Math.round(subtotal * (totalTaxRate / 100));
+
+  // Calculate total based on tax inclusive setting
+  let total: number;
+  if (isTaxInclusive) {
+    total = subtotal; // Tax is already included in subtotal
+  } else {
+    total = subtotal + tax;
+  }
+
+  // Create tax breakdown
+  const taxBreakdown = applicableSchedules.map((schedule) => {
+    // Map the appliesTo values for Tax interface
+    let mappedAppliesTo: "facility" | "inventory_item" | "both";
+    if (schedule.appliesTo === "facilities") {
+      mappedAppliesTo = "facility";
+    } else if (schedule.appliesTo === "inventory") {
+      mappedAppliesTo = "inventory_item";
+    } else {
+      mappedAppliesTo = "both";
+    }
+
+    return {
+      tax: {
+        _id: schedule._id,
+        name: schedule.name,
+        rate: schedule.value,
+        type: schedule.type,
+        active: schedule.isActive,
+        appliesTo: mappedAppliesTo,
+        company: schedule.company as any,
+        createdAt: schedule.createdAt,
+        updatedAt: schedule.updatedAt,
+      } as Tax,
+      amount: Math.round(subtotal * (schedule.value / 100)),
+      rate: schedule.value,
+    };
+  });
+
+  return {
+    subtotal,
+    serviceFee: 0,
+    tax,
+    total,
+    serviceFeeRate: 0,
+    totalTaxRate,
+    applicableTaxes: taxBreakdown.map((item) => item.tax),
+    taxBreakdown,
+  };
+}
+
+/**
+ * Calculate taxes from tax schedules for facility bookings
+ */
+export function calculateBookingTaxesFromSchedules(
+  subtotal: number,
+  taxSchedules: TaxSchedule[],
+  companyId?: string,
+  isTaxable: boolean = true,
+  isTaxInclusive: boolean = false,
+  isTaxOnTax: boolean = false
+): TaxCalculationResult {
+  return calculateTaxesFromSchedules({
+    subtotal,
+    taxSchedules,
+    appliesTo: "facility",
+    companyId,
+    isTaxable,
+    isTaxInclusive,
+    isTaxOnTax,
+  });
+}
+
+/**
+ * Calculate taxes from tax schedules for rental items
+ */
+export function calculateRentalTaxesFromSchedules(
+  subtotal: number,
+  taxSchedules: TaxSchedule[],
+  companyId?: string,
+  isTaxable: boolean = true,
+  isTaxInclusive: boolean = false,
+  isTaxOnTax: boolean = false
+): TaxCalculationResult {
+  return calculateTaxesFromSchedules({
+    subtotal,
+    taxSchedules,
+    appliesTo: "inventory_item",
+    companyId,
+    isTaxable,
+    isTaxInclusive,
+    isTaxOnTax,
   });
 }

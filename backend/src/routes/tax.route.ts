@@ -11,23 +11,51 @@ const router: Router = Router();
 const superAdminOnly = [AuthMiddleware, AuthorizeRoles("super_admin")];
 const adminOnly = [AuthMiddleware, AuthorizeRoles("admin")];
 const staffAndAbove = [AuthMiddleware, AuthorizeRoles("staff", "admin")];
-const allUsers = [AuthMiddleware, AuthorizeRoles("user", "staff", "admin", "super_admin")];
+const allUsers = [
+  AuthMiddleware,
+  AuthorizeRoles("user", "staff", "admin", "super_admin"),
+];
 
 // Global taxes (Super Admin only)
 router.get("/global", superAdminOnly, TaxController.getGlobalTaxes); // Get all global taxes
 router.post("/global", superAdminOnly, TaxController.createGlobalTax); // Create global tax
 
 // Company-specific taxes
-router.get("/company", allUsers, RequireActiveCompany(), TaxController.getCompanyTaxes); // Get company taxes
-router.post("/company", staffAndAbove, RequireActiveCompany(), TaxController.createCompanyTax); // Create company tax
+router.get(
+  "/company",
+  allUsers,
+  RequireActiveCompany(),
+  TaxController.getCompanyTaxes
+); // Get company taxes
 
 // Combined taxes (global + company for regular users)
-router.get("/", allUsers, RequireActiveCompany(), TaxController.getCombinedTaxes); // Get combined taxes
+router.get(
+  "/",
+  allUsers,
+  RequireActiveCompany(),
+  TaxController.getCombinedTaxes
+); // Get combined taxes
 
 // Individual tax operations
 router.get("/:id", allUsers, TaxController.getTax); // Get a single tax by ID
-router.put("/:id", staffAndAbove, RequireActiveCompany(), TaxController.updateTax); // Update tax by ID
-router.delete("/:id", staffAndAbove, RequireActiveCompany(), TaxController.deleteTax); // Delete tax by ID
+router.put(
+  "/:id",
+  staffAndAbove,
+  RequireActiveCompany(),
+  TaxController.updateTax
+); // Update tax by ID
+router.delete(
+  "/:id",
+  staffAndAbove,
+  RequireActiveCompany(),
+  TaxController.deleteTax
+); // Delete tax by ID
+router.post(
+  "/:taxId/copy",
+  allUsers,
+  RequireActiveCompany(),
+  TaxController.copySuperAdminTax
+); // Copy super admin tax to company
 
 // Legacy routes for backward compatibility
 router.get("/defaults", TaxController.getDefaultTaxes); // Get default system taxes
