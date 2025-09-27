@@ -53,6 +53,7 @@ const TransactionSchema = new Schema<TransactionDocument>(
     splitPayment: { type: Schema.Types.ObjectId, ref: "SplitPayment" },
     isCash: { type: Boolean },
     cash: { type: Schema.Types.ObjectId, ref: "Cash" },
+    taxes: { type: Schema.Types.ObjectId, ref: "TaxSchedule" },
     accessCode: { type: String },
     receiptUrl: { type: String },
     approvedBy: { type: Schema.Types.ObjectId, ref: "User" },

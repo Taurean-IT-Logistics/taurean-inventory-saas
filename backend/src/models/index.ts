@@ -36,3 +36,4 @@ export { SplitPaymentModel, SplitPaymentDocument } from "./splitPayment.model";
 export { ChequeModel, ChequeDocument } from "./cheque.model";
 export { CashModel, CashDocument } from "./cash.model";
 export { RentalModel, RentalDocument } from "./rental.model";
+export { TaxScheduleModel, TaxScheduleDocument } from "./taxSchedule.model";
