@@ -26,6 +26,13 @@ import healthRoutes from "./health.route";
 import invoiceRoutes from "./invoice.route";
 import reportsRoutes from "./reports.route";
 import newsletterRoutes from "./newsletter.route";
+import enhancedPaymentRoutes from "./enhancedPayment.route";
+import rentalRoutes from "./rental.route";
+import enhancedInventoryRoutes from "./enhancedInventory.route";
+import enhancedNotificationRoutes from "./enhancedNotification.route";
+import financialTrackingRoutes from "./financialTracking.route";
+import documentManagementRoutes from "./documentManagement.route";
+import superAdminEnhancedRoutes from "./superAdminEnhanced.route";
 
 const router = Router();
 
@@ -80,5 +87,12 @@ router.use("/reviews", reviewRoutes);
 router.use("/invoices", invoiceRoutes);
 router.use("/reports", reportsRoutes);
 router.use("/newsletter", newsletterRoutes);
+router.use("/payments", enhancedPaymentRoutes);
+router.use("/rentals", rentalRoutes);
+router.use("/inventory-enhanced", enhancedInventoryRoutes);
+router.use("/notifications-enhanced", enhancedNotificationRoutes);
+router.use("/financial", financialTrackingRoutes);
+router.use("/documents", documentManagementRoutes);
+router.use("/super-admin-enhanced", superAdminEnhancedRoutes);
 
 export default router;

@@ -22,6 +22,18 @@ router.get(
   TaxController.getCompanyTaxes
 );
 
+// Get combined taxes (default + company specific)
+router.get(
+  "/combined",
+  staffAndAbove,
+  RequireActiveCompany(),
+  TaxController.getCombinedTaxes
+);
+
+// Default system taxes
+router.get("/defaults", TaxController.getDefaultTaxes); // Get default system taxes
+router.post("/defaults", adminOnly, TaxController.createDefaultTaxes); // Create default system taxes
+
 router.get("/:id", staffAndAbove, TaxController.getTax); // Get a single tax by ID
 router.put("/:id", adminOnly, RequireActiveCompany(), TaxController.updateTax); // Update tax by ID
 router.delete("/:id", adminOnly, TaxController.deleteTax); // Delete tax by ID

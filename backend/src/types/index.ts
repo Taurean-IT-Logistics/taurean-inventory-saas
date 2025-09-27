@@ -412,6 +412,13 @@ export interface Tax {
   isSuperAdminTax?: boolean;
   company?: Company;
   active: boolean;
+  isDefault?: boolean; // For system default taxes
+  priority?: number; // For ordering (VAT should be 1)
+  calculationMethod?: "inclusive" | "exclusive" | "compound";
+  appliesTo?: string[]; // What this tax applies to
+  description?: string;
+  effectiveDate?: Date;
+  expiryDate?: Date;
 }
 
 export interface Company {
@@ -561,6 +568,14 @@ export interface Rental {
   transaction: Transaction;
   notes?: string;
   user: User;
+  status: "active" | "returned" | "overdue" | "cancelled";
+  returnDate?: Date;
+  returnCondition?: "good" | "fair" | "damaged";
+  returnNotes?: string;
+  lateFee?: number;
+  damageFee?: number;
+  company: Company;
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
