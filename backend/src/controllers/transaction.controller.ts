@@ -6,7 +6,6 @@ import {
   BookingService,
   FacilityService,
 } from "../services";
-
 import {
   sendSuccess,
   sendError,
@@ -188,9 +187,8 @@ const initializePaymentController = async (
       transactionData.inventoryItem = paymentData.inventoryItem;
     }
 
-    const transaction = await TransactionService.createTransaction(
-      transactionData
-    );
+    const transaction =
+      await TransactionService.createTransaction(transactionData);
 
     const response = {
       payment: paymentResponse.data,
@@ -230,9 +228,8 @@ const verifyPaymentController = async (
     }
 
     // Find transaction by reference
-    const transaction = await TransactionService.getTransactionByReference(
-      reference
-    );
+    const transaction =
+      await TransactionService.getTransactionByReference(reference);
 
     if (!transaction) {
       sendNotFound(res, "Transaction not found");
@@ -318,12 +315,18 @@ const verifyPaymentController = async (
         } catch (loyaltyError) {
           console.warn("Failed to update user loyalty profile:", loyaltyError);
         }
-        
+
         // Send payment success notification
         try {
-          await notificationService.createPaymentNotification(doc._id!.toString(), "successful");
+          await notificationService.createPaymentNotification(
+            doc._id!.toString(),
+            "successful"
+          );
         } catch (notificationError) {
-          console.warn("Failed to send payment success notification:", notificationError);
+          console.warn(
+            "Failed to send payment success notification:",
+            notificationError
+          );
         }
       } else if (
         verificationResponse.data.status === "failed" &&
@@ -340,12 +343,18 @@ const verifyPaymentController = async (
             "Payment verification failed"
           );
         }
-        
+
         // Send payment failed notification
         try {
-          await notificationService.createPaymentNotification(doc._id!.toString(), "failed");
+          await notificationService.createPaymentNotification(
+            doc._id!.toString(),
+            "failed"
+          );
         } catch (notificationError) {
-          console.warn("Failed to send payment failed notification:", notificationError);
+          console.warn(
+            "Failed to send payment failed notification:",
+            notificationError
+          );
         }
       }
     } catch (emailError) {
@@ -402,9 +411,8 @@ const handlePaystackWebhookController = async (
     const reference = data.reference;
 
     // Find transaction by Paystack reference
-    const transaction = await TransactionService.getTransactionByReference(
-      reference
-    );
+    const transaction =
+      await TransactionService.getTransactionByReference(reference);
 
     let newData;
 
@@ -795,9 +803,8 @@ const getUserTransactions = async (req: Request, res: Response) => {
     const userId = req.user.id;
     console.log("Fetching transactions for user ID:", userId);
 
-    const transactions = await TransactionService.getAllUserTransactions(
-      userId
-    );
+    const transactions =
+      await TransactionService.getAllUserTransactions(userId);
 
     console.log("Found user transactions:", transactions?.length || 0);
 
@@ -899,9 +906,8 @@ const getSubAccountDetails = async (
   try {
     const { subaccountCode } = req.params;
 
-    const subaccountDetails = await PaymentService.getSubaccountDetails(
-      subaccountCode
-    );
+    const subaccountDetails =
+      await PaymentService.getSubaccountDetails(subaccountCode);
 
     sendSuccess(
       res,
@@ -913,7 +919,189 @@ const getSubAccountDetails = async (
   }
 };
 
+// Enhanced Payment Controllers
+
+const processCashPaymentController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { amount, denominations, transactionId } = req.body;
+    const userId = req.user?.id!;
+    const companyId = req.user?.companyId!;
+
+    if (!amount || !denominations || !transactionId) {
+      sendValidationError(
+        res,
+        "Missing required fields: amount, denominations, and transactionId are required"
+      );
+      return;
+    }
+
+    const result = await PaymentService.processCashPayment({
+      amount,
+      denominations,
+      transactionId,
+      userId,
+      companyId,
+    });
+
+    sendSuccess(res, "Cash payment processed successfully", result);
+  } catch (error) {
+    sendError(res, "Failed to process cash payment", error);
+  }
+};
+
+const processSplitPaymentController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { totalAmount, currency, splits } = req.body;
+    const userId = req.user?.id!;
+    const companyId = req.user?.companyId!;
+
+    if (!totalAmount || !currency || !splits || !Array.isArray(splits)) {
+      sendValidationError(
+        res,
+        "Missing required fields: totalAmount, currency, and splits array are required"
+      );
+      return;
+    }
+
+    const result = await PaymentService.processSplitPayment({
+      totalAmount,
+      currency,
+      splits,
+      userId,
+      companyId,
+    });
+
+    sendSuccess(res, "Split payment processed successfully", result);
+  } catch (error) {
+    sendError(res, "Failed to process split payment", error);
+  }
+};
+
+const getSplitPaymentDetailsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { splitPaymentId } = req.params;
+
+    if (!splitPaymentId) {
+      sendValidationError(res, "Split payment ID is required");
+      return;
+    }
+
+    const result = await PaymentService.getSplitPaymentDetails(splitPaymentId);
+
+    sendSuccess(res, "Split payment details retrieved successfully", result);
+  } catch (error) {
+    sendError(res, "Failed to get split payment details", error);
+  }
+};
+
+const completeSplitPaymentController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { splitPaymentId } = req.params;
+
+    if (!splitPaymentId) {
+      sendValidationError(res, "Split payment ID is required");
+      return;
+    }
+
+    const result = await PaymentService.completeSplitPayment(splitPaymentId);
+
+    sendSuccess(res, "Split payment completed successfully", result);
+  } catch (error) {
+    sendError(res, "Failed to complete split payment", error);
+  }
+};
+
+const processAdvancePaymentController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { amount, currency, description, paymentMethod, paymentDetails } =
+      req.body;
+    const userId = req.user?.id!;
+    const companyId = req.user?.companyId!;
+
+    if (!amount || !currency || !paymentMethod) {
+      sendValidationError(
+        res,
+        "Missing required fields: amount, currency, and paymentMethod are required"
+      );
+      return;
+    }
+
+    const result = await PaymentService.processAdvancePayment({
+      amount,
+      currency,
+      userId,
+      companyId,
+      description,
+      paymentMethod,
+      paymentDetails,
+    });
+
+    sendSuccess(res, "Advance payment processed successfully", result);
+  } catch (error) {
+    sendError(res, "Failed to process advance payment", error);
+  }
+};
+
+const applyAdvancePaymentController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { transactionId, advanceAmount } = req.body;
+    const userId = req.user?.id!;
+
+    if (!transactionId || !advanceAmount) {
+      sendValidationError(
+        res,
+        "Missing required fields: transactionId and advanceAmount are required"
+      );
+      return;
+    }
+
+    const result = await PaymentService.applyAdvancePayment({
+      transactionId,
+      advanceAmount,
+      userId,
+    });
+
+    sendSuccess(res, "Advance payment applied successfully", result);
+  } catch (error) {
+    sendError(res, "Failed to apply advance payment", error);
+  }
+};
+
+const getAdvanceBalanceController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.id!;
+
+    const balance = await PaymentService.getAdvanceBalance(userId);
+
+    sendSuccess(res, "Advance balance retrieved successfully", { balance });
+  } catch (error) {
+    sendError(res, "Failed to get advance balance", error);
+  }
+};
+
 export {
+  // Payment operations
   initializePaymentController,
   verifyPaymentController,
   handlePaystackWebhookController,
@@ -926,4 +1114,12 @@ export {
   updateSubAccount,
   listBanks,
   getSubAccountDetails,
+  // Enhanced payment operations
+  processCashPaymentController,
+  processSplitPaymentController,
+  getSplitPaymentDetailsController,
+  completeSplitPaymentController,
+  processAdvancePaymentController,
+  applyAdvancePaymentController,
+  getAdvanceBalanceController,
 };

@@ -123,6 +123,18 @@ export default function AdminTransactionsPage() {
             </p>
           </div>
           <div className="flex gap-3">
+            <Button variant="outline">
+              <Plus className="w-4 h-4 mr-2" />
+              Cash Payment
+            </Button>
+            <Button variant="outline">
+              <Plus className="w-4 h-4 mr-2" />
+              Split Payment
+            </Button>
+            <Button variant="outline">
+              <Plus className="w-4 h-4 mr-2" />
+              Advance Payment
+            </Button>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               Add Transaction

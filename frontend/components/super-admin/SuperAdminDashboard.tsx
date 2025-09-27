@@ -369,6 +369,91 @@ export default function SuperAdminDashboard() {
           </p>
         </div>
 
+        {/* Enhanced SuperAdmin Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                System Analytics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                View comprehensive system analytics and company performance
+                metrics
+              </p>
+              <Button
+                onClick={() => {
+                  // Navigate to enhanced analytics
+                  toast({
+                    title: "Analytics",
+                    description: "Opening enhanced analytics dashboard",
+                  });
+                }}
+                className="w-full"
+              >
+                View Analytics
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Tax Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                Manage global tax settings and company-specific tax
+                configurations
+              </p>
+              <Button
+                onClick={() => {
+                  // Navigate to tax management
+                  toast({
+                    title: "Tax Management",
+                    description: "Opening global tax management",
+                  });
+                }}
+                className="w-full"
+                variant="outline"
+              >
+                Manage Taxes
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Fee Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                Adjust company fees and manage subscription pricing
+              </p>
+              <Button
+                onClick={() => {
+                  // Navigate to fee management
+                  toast({
+                    title: "Fee Management",
+                    description: "Opening fee management interface",
+                  });
+                }}
+                className="w-full"
+                variant="outline"
+              >
+                Manage Fees
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>

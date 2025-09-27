@@ -23,7 +23,7 @@ export const createTax = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
- * Get all taxes with optional filters
+ * Get all taxes with optional filters and pagination
  */
 export const getTaxes = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -36,17 +36,24 @@ export const getTaxes = async (req: Request, res: Response): Promise<void> => {
           : undefined,
       type: req.query.type as string,
       appliesTo: req.query.appliesTo as string,
+      isDefault: req.query.isDefault === "true" ? true : undefined,
+      isSuperAdminTax: req.query.isSuperAdminTax === "true" ? true : undefined,
     };
 
-    const taxes = await TaxService.getAllTaxes(filters);
-    sendSuccess(res, "Taxes fetched successfully", taxes);
+    const pagination = {
+      page: parseInt(req.query.page as string) || 1,
+      limit: Math.min(parseInt(req.query.limit as string) || 10, 100),
+    };
+
+    const result = await TaxService.getAllTaxes(filters, pagination);
+    sendSuccess(res, "Taxes fetched successfully", result);
   } catch (error) {
     sendError(res, "Failed to fetch taxes", error);
   }
 };
 
 /**
- * Get company-specific taxes
+ * Get company-specific taxes with pagination
  */
 export const getCompanyTaxes = async (
   req: Request,
@@ -61,7 +68,7 @@ export const getCompanyTaxes = async (
       return;
     }
 
-    const staffFilters = {
+    const filters = {
       active:
         req.query.active === "true"
           ? true
@@ -73,18 +80,13 @@ export const getCompanyTaxes = async (
       companyId: req.user.companyId,
     };
 
-    const superAdminFilters = {
-      active:
-        req.query.active === "true"
-          ? true
-          : req.query.active === "false"
-          ? false
-          : undefined,
+    const pagination = {
+      page: parseInt(req.query.page as string) || 1,
+      limit: Math.min(parseInt(req.query.limit as string) || 10, 100),
     };
-    const taxes = await TaxService.getCompanyTaxes(
-      req.user.isSuperAdmin ? superAdminFilters : staffFilters
-    );
-    sendSuccess(res, "Company taxes fetched successfully", taxes);
+
+    const result = await TaxService.getCompanyTaxes(filters, pagination);
+    sendSuccess(res, "Company taxes fetched successfully", result);
   } catch (error) {
     sendError(res, "Failed to fetch company taxes", error);
   }
@@ -135,5 +137,61 @@ export const deleteTax = async (req: Request, res: Response): Promise<void> => {
     sendSuccess(res, "Tax deleted successfully", deleted);
   } catch (error) {
     sendError(res, "Failed to delete tax", error);
+  }
+};
+
+/**
+ * Get default system taxes
+ */
+export const getDefaultTaxes = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const taxes = await TaxService.getDefaultTaxes();
+    sendSuccess(res, "Default taxes fetched successfully", taxes);
+  } catch (error) {
+    sendError(res, "Failed to fetch default taxes", error);
+  }
+};
+
+/**
+ * Create default system taxes
+ */
+export const createDefaultTaxes = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const taxes = await TaxService.createDefaultTaxes();
+    sendSuccess(res, "Default taxes created successfully", taxes);
+  } catch (error) {
+    sendError(res, "Failed to create default taxes", error);
+  }
+};
+
+/**
+ * Get combined taxes (default + company specific)
+ */
+export const getCombinedTaxes = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const filters = {
+      active:
+        req.query.active === "true"
+          ? true
+          : req.query.active === "false"
+          ? false
+          : undefined,
+      type: req.query.type as string,
+      appliesTo: req.query.appliesTo as string,
+    };
+
+    const pagination = {
+      page: parseInt(req.query.page as string) || 1,
+      limit: Math.min(parseInt(req.query.limit as string) || 10, 100),
+    };
+
+    const result = await TaxService.getCombinedTaxes(
+      req.user?.companyId,
+      filters,
+      pagination
+    );
+    sendSuccess(res, "Combined taxes fetched successfully", result);
+  } catch (error) {
+    sendError(res, "Failed to fetch combined taxes", error);
   }
 };

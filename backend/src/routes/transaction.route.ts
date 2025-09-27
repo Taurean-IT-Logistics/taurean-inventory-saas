@@ -108,4 +108,54 @@ router.put(
   TransactionController.updateTransaction
 );
 
+// Payment routes
+router.post(
+  "/cash",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.processCashPaymentController
+);
+
+router.post(
+  "/split",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.processSplitPaymentController
+);
+
+router.get(
+  "/split/:splitPaymentId",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.getSplitPaymentDetailsController
+);
+
+router.put(
+  "/split/:splitPaymentId/complete",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.completeSplitPaymentController
+);
+
+router.post(
+  "/advance",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.processAdvancePaymentController
+);
+
+router.post(
+  "/advance/apply",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.applyAdvancePaymentController
+);
+
+router.get(
+  "/advance/balance",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.getAdvanceBalanceController
+);
+
 export default router;

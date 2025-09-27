@@ -733,3 +733,182 @@ export interface BookingStats {
   pending: number;
   revenue: number;
 }
+
+// Enhanced Payment Types
+export interface CashDenomination {
+  denomination: number;
+  quantity: number;
+}
+
+export interface Cash {
+  _id: string;
+  amount: number;
+  denominations: CashDenomination[];
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TransactionSplit {
+  _id: string;
+  transaction: string;
+  splitType: "fixed" | "percentage";
+  splitAmount?: number;
+  splitPercentage?: number;
+  dueDate: Date;
+  isPaid: boolean;
+  paidAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SplitPayment {
+  _id: string;
+  amount: number;
+  currency: string;
+  transactions: TransactionSplit[];
+  isCompleted: boolean;
+  completedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Rental {
+  _id: string;
+  item: InventoryItem | string;
+  quantity: number;
+  startDate: Date;
+  endDate: Date;
+  amount: number;
+  transaction: Transaction | string;
+  notes?: string;
+  user: User | string;
+  status: "active" | "returned" | "overdue" | "cancelled";
+  returnDate?: Date;
+  returnCondition?: "good" | "fair" | "damaged";
+  returnNotes?: string;
+  lateFee?: number;
+  damageFee?: number;
+  company: Company | string;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DocumentFile {
+  _id: string;
+  filename: string;
+  originalName: string;
+  mimetype: string;
+  size: number;
+  path: string;
+  uploadedBy: User | string;
+  company: Company | string;
+  category: string;
+  tags?: string[];
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Expense {
+  _id: string;
+  amount: number;
+  description: string;
+  category: string;
+  date: Date;
+  paymentMethod: string;
+  receipt?: string;
+  user: User | string;
+  company: Company | string;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Discount {
+  _id: string;
+  name: string;
+  description: string;
+  type: "percentage" | "fixed";
+  value: number;
+  minAmount?: number;
+  maxAmount?: number;
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+  company: Company | string;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Enhanced Payment Methods
+export interface CashPaymentData {
+  amount: number;
+  denominations: CashDenomination[];
+  transactionId: string;
+}
+
+export interface SplitPaymentData {
+  totalAmount: number;
+  currency: string;
+  splits: {
+    transactionId: string;
+    splitType: "fixed" | "percentage";
+    splitAmount?: number;
+    splitPercentage?: number;
+    dueDate: Date;
+  }[];
+}
+
+export interface AdvancePaymentData {
+  amount: number;
+  currency: string;
+  description?: string;
+  paymentMethod: "cash" | "paystack" | "mobile_money" | "bank_transfer";
+  paymentDetails?: any;
+}
+
+// Pagination Types
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+// Enhanced Tax Types
+export interface TaxConfiguration {
+  isTaxInclusive: boolean;
+  isTaxOnTax: boolean;
+  defaultTaxes: string[];
+  customTaxes: Tax[];
+}
+
+// Enhanced Notification Types
+export interface SystemNotification {
+  _id: string;
+  title: string;
+  message: string;
+  type: "info" | "warning" | "success" | "error";
+  category: "system" | "maintenance" | "update" | "announcement";
+  targetUsers?: string[];
+  isGlobal: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}

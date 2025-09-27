@@ -25,6 +25,7 @@ import {
   BarChart3,
   Mail,
   CreditCard,
+  DollarSign,
 } from "lucide-react";
 import Logo from "../logo/Logo";
 import type { Route } from "./NavMain";
@@ -124,10 +125,22 @@ const dashboardRoutes: Route[] = [
     link: "/admin/transactions",
   },
   {
+    id: "rentals",
+    title: "Rentals",
+    icon: <Package2 className="size-4" />,
+    link: "/admin/rentals",
+  },
+  {
     id: "tax",
     title: "Taxes",
     icon: <Coins className="size-4" />,
     link: "/admin/taxes",
+  },
+  {
+    id: "financial",
+    title: "Financial",
+    icon: <DollarSign className="size-4" />,
+    link: "/admin/financial",
   },
   {
     id: "company-profile",

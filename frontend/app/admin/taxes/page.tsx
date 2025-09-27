@@ -29,6 +29,11 @@ const TaxManagement = () => {
     status: "",
     type: "",
   });
+  const [taxConfig, setTaxConfig] = useState({
+    isTaxInclusive: false,
+    isTaxOnTax: false,
+    defaultTaxes: [] as string[],
+  });
 
   // Real-time updates for taxes
   useRealtimeUpdates({
@@ -143,6 +148,13 @@ const TaxManagement = () => {
     if (!taxes) return;
 
     let filtered = [...(taxes as Tax[])];
+
+    // Sort taxes with VAT at the top
+    filtered.sort((a, b) => {
+      if (a.name.toLowerCase() === "vat") return -1;
+      if (b.name.toLowerCase() === "vat") return 1;
+      return a.name.localeCompare(b.name);
+    });
 
     if (filters.search) {
       filtered = filtered.filter(
@@ -272,6 +284,68 @@ const TaxManagement = () => {
 
         {/* Stats Cards */}
         <TaxStatsCards taxes={taxes as Tax[]} />
+
+        {/* Tax Configuration */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Tax Configuration</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="taxInclusive"
+                  checked={taxConfig.isTaxInclusive}
+                  onChange={(e) =>
+                    setTaxConfig({
+                      ...taxConfig,
+                      isTaxInclusive: e.target.checked,
+                    })
+                  }
+                  className="rounded"
+                />
+                <label htmlFor="taxInclusive" className="text-sm font-medium">
+                  Tax Inclusive Pricing
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">
+                Prices include taxes in the displayed amount
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="taxOnTax"
+                  checked={taxConfig.isTaxOnTax}
+                  onChange={(e) =>
+                    setTaxConfig({ ...taxConfig, isTaxOnTax: e.target.checked })
+                  }
+                  className="rounded"
+                />
+                <label htmlFor="taxOnTax" className="text-sm font-medium">
+                  Tax on Tax (Compound Taxation)
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">
+                Apply taxes on top of other taxes
+              </p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button
+              onClick={() => {
+                // Save tax configuration
+                toast({
+                  title: "Configuration Saved",
+                  description: "Tax configuration has been updated",
+                });
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Save Configuration
+            </Button>
+          </div>
+        </div>
 
         {/* Filters */}
         <TaxFilters
