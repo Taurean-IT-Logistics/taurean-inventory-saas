@@ -1,5 +1,7 @@
 import { Schema, model, Model, Document, Types } from "mongoose";
 
+const MIN_TAX_COMPONENTS = 3; // Business rule: every schedule must include at least 4 tax components
+
 interface TaxScheduleDocument extends Document {
   name: string;
   components: Types.ObjectId[];
@@ -26,8 +28,8 @@ const TaxScheduleSchema = new Schema<TaxScheduleDocument>(
         },
       ],
       validate: [
-        (v: any[]) => v.length >= 4,
-        "At least 4 tax components required",
+        (v: any[]) => v.length >= MIN_TAX_COMPONENTS,
+        `At least ${MIN_TAX_COMPONENTS} tax components required`,
       ],
     },
     startDate: { type: Date, required: true },
@@ -42,6 +44,14 @@ const TaxScheduleSchema = new Schema<TaxScheduleDocument>(
   { timestamps: true }
 );
 
+/**
+ * Compound indexes:
+ * - For tenant schedules (isSuperAdminSchedule = false):
+ *   Ensures uniqueness of name + startDate within the same company.
+ *
+ * - For super admin schedules (isSuperAdminSchedule = true):
+ *   Ensures global uniqueness of name + startDate across all companies.
+ */
 TaxScheduleSchema.index(
   { company: 1, name: 1, startDate: -1 },
   { unique: true, partialFilterExpression: { isSuperAdminSchedule: false } }
@@ -52,6 +62,7 @@ TaxScheduleSchema.index(
   { unique: true, partialFilterExpression: { isSuperAdminSchedule: true } }
 );
 
+// Validation: taxInclusive and taxExclusive cannot both be true
 TaxScheduleSchema.pre("validate", function (next) {
   if (this.taxInclusive && this.taxExclusive) {
     return next(
