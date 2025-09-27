@@ -1,8 +1,7 @@
-import { Schema, model, Model, Document } from "mongoose";
+import { Schema, model, Model, Document, Types } from "mongoose";
 
 export interface DocumentFile {
-  _id?: string;
-  company: string;
+  company: string | Types.ObjectId;
   name: string;
   originalName: string;
   path: string;
@@ -11,7 +10,7 @@ export interface DocumentFile {
   category: "invoice" | "receipt" | "contract" | "license" | "other";
   description?: string;
   tags: string[];
-  uploadedBy: string;
+  uploadedBy: string | Types.ObjectId;
   isPublic: boolean;
   isDeleted: boolean;
   createdAt: Date;
@@ -48,9 +47,7 @@ DocumentFileSchema.index({ uploadedBy: 1, createdAt: -1 });
 DocumentFileSchema.index({ tags: 1 });
 DocumentFileSchema.index({ isPublic: 1, isDeleted: 1 });
 
-const DocumentFileModel: Model<DocumentFileDocument> = model<DocumentFileDocument>(
-  "DocumentFile",
-  DocumentFileSchema
-);
+const DocumentFileModel: Model<DocumentFileDocument> =
+  model<DocumentFileDocument>("DocumentFile", DocumentFileSchema);
 
 export { DocumentFileDocument, DocumentFileModel };

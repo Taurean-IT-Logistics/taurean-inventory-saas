@@ -1,15 +1,19 @@
-import { Schema, model, Model, Document } from "mongoose";
+import { Schema, model, Model, Document, Types } from "mongoose";
 
 export interface Expense {
-  _id?: string;
-  company: string;
+  company: string | Types.ObjectId;
   category: string;
   subcategory?: string;
   description: string;
   amount: number;
   currency: string;
   date: Date;
-  paymentMethod: "cash" | "paystack" | "mobile_money" | "bank_transfer" | "cheque";
+  paymentMethod:
+    | "cash"
+    | "paystack"
+    | "mobile_money"
+    | "bank_transfer"
+    | "cheque";
   paymentDetails?: {
     paystackReference?: string;
     chequeNumber?: string;
@@ -30,8 +34,8 @@ export interface Expense {
   isRecurring: boolean;
   recurringFrequency?: "daily" | "weekly" | "monthly" | "yearly";
   recurringEndDate?: Date;
-  createdBy: string;
-  approvedBy?: string;
+  createdBy: string | Types.ObjectId;
+  approvedBy?: string | Types.ObjectId;
   status: "pending" | "approved" | "rejected";
   notes?: string;
   attachments: string[];

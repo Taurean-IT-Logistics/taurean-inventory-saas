@@ -35,7 +35,10 @@ export class SuperAdminController {
         return;
       }
 
-      const company = await SuperAdminService.updateCompanyStatus(companyId, status);
+      const company = await SuperAdminService.updateCompanyStatus(
+        companyId,
+        status
+      );
       sendSuccess(res, "Company status updated successfully", { company });
     } catch (error: any) {
       sendError(res, error.message, null, 400);
@@ -71,9 +74,8 @@ export class SuperAdminController {
   static async deactivateCompanySubscription(req: Request, res: Response) {
     try {
       const { companyId } = req.params;
-      const company = await SuperAdminService.deactivateCompanySubscription(
-        companyId
-      );
+      const company =
+        await SuperAdminService.deactivateCompanySubscription(companyId);
       sendSuccess(res, "Company subscription deactivated successfully", {
         company,
       });
@@ -204,6 +206,82 @@ export class SuperAdminController {
 
       const users = await SuperAdminService.searchAllUsers(query as string);
       sendSuccess(res, "Users search completed", { users });
+    } catch (error: any) {
+      sendError(res, error.message, null, 400);
+    }
+  }
+
+  // Get company analytics
+  static async getCompanyAnalytics(req: Request, res: Response) {
+    try {
+      const analytics = await SuperAdminService.getCompanyAnalytics();
+      sendSuccess(res, "Company analytics retrieved successfully", analytics);
+    } catch (error: any) {
+      sendError(res, error.message, null, 400);
+    }
+  }
+
+  // Update company fee
+  static async updateCompanyFee(req: Request, res: Response) {
+    try {
+      const { companyId } = req.params;
+      const { fee } = req.body;
+      const result = await SuperAdminService.updateCompanyFee(companyId, fee);
+      sendSuccess(res, "Company fee updated successfully", result);
+    } catch (error: any) {
+      sendError(res, error.message, null, 400);
+    }
+  }
+
+  // Get system tax management
+  static async getSystemTaxManagement(req: Request, res: Response) {
+    try {
+      const taxManagement = await SuperAdminService.getSystemTaxManagement();
+      sendSuccess(
+        res,
+        "System tax management retrieved successfully",
+        taxManagement
+      );
+    } catch (error: any) {
+      sendError(res, error.message, null, 400);
+    }
+  }
+
+  // Get system notifications
+  static async getSystemNotifications(req: Request, res: Response) {
+    try {
+      const notifications = await SuperAdminService.getSystemNotifications();
+      sendSuccess(
+        res,
+        "System notifications retrieved successfully",
+        notifications
+      );
+    } catch (error: any) {
+      sendError(res, error.message, null, 400);
+    }
+  }
+
+  // Send system notification
+  static async sendSystemNotification(req: Request, res: Response) {
+    try {
+      const { title, message, type, category } = req.body;
+      const result = await SuperAdminService.sendSystemNotification({
+        title,
+        message,
+        type,
+        category,
+      });
+      sendSuccess(res, "System notification sent successfully", result);
+    } catch (error: any) {
+      sendError(res, error.message, null, 400);
+    }
+  }
+
+  // Get system health
+  static async getSystemHealth(req: Request, res: Response) {
+    try {
+      const health = await SuperAdminService.getSystemHealth();
+      sendSuccess(res, "System health retrieved successfully", health);
     } catch (error: any) {
       sendError(res, error.message, null, 400);
     }

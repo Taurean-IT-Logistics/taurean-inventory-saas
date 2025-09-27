@@ -1,8 +1,7 @@
-import { Schema, model, Model, Document } from "mongoose";
+import { Schema, model, Model, Document, Types } from "mongoose";
 
 export interface Discount {
-  _id?: string;
-  company: string;
+  company: string | Types.ObjectId;
   name: string;
   description?: string;
   type: "percentage" | "fixed";
@@ -16,7 +15,7 @@ export interface Discount {
   usageLimit?: number;
   usedCount: number;
   isActive: boolean;
-  createdBy: string;
+  createdBy: string | Types.ObjectId;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;

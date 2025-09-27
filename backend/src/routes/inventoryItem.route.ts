@@ -5,6 +5,7 @@ import multer from "multer";
 import {
   RequireActiveCompany,
   RequirePermissions,
+  AuthorizeRoles,
 } from "../middlewares/auth.middleware";
 
 const uploadConfig = {
@@ -17,6 +18,11 @@ const uploadConfig = {
 };
 
 const router = Router();
+
+// Define middleware combinations
+const adminOnly = [AuthMiddleware, AuthorizeRoles("admin")];
+const staffAndAbove = [AuthMiddleware, AuthorizeRoles("staff", "admin")];
+const allUsers = [AuthMiddleware];
 
 // Get all inventory items (public listing)
 router.get("/", InventoryItemController.getAllInventoryItems);
@@ -96,6 +102,56 @@ router.post(
   RequireActiveCompany(),
   RequirePermissions(["manageInventory"]),
   InventoryItemController.addMaintenanceSchedule
+);
+
+// Enhanced inventory routes
+router.get(
+  "/with-rental-status",
+  staffAndAbove,
+  RequireActiveCompany(),
+  InventoryItemController.getInventoryWithRentalStatusController
+);
+
+router.get(
+  "/:id/rental-history",
+  staffAndAbove,
+  RequireActiveCompany(),
+  InventoryItemController.getInventoryItemWithRentalHistoryController
+);
+
+router.post(
+  "/:id/rent",
+  staffAndAbove,
+  RequireActiveCompany(),
+  InventoryItemController.rentInventoryItemController
+);
+
+router.post(
+  "/:id/return",
+  staffAndAbove,
+  RequireActiveCompany(),
+  InventoryItemController.returnInventoryItemController
+);
+
+router.get(
+  "/statistics",
+  staffAndAbove,
+  RequireActiveCompany(),
+  InventoryItemController.getInventoryStatisticsController
+);
+
+router.get(
+  "/low-stock",
+  staffAndAbove,
+  RequireActiveCompany(),
+  InventoryItemController.getLowStockItemsController
+);
+
+router.get(
+  "/maintenance-due",
+  staffAndAbove,
+  RequireActiveCompany(),
+  InventoryItemController.getMaintenanceDueItemsController
 );
 
 export default router;

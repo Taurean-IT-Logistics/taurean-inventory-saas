@@ -371,8 +371,192 @@ export const returnInventoryItem = async (
   }
 };
 
+/**
+ * Get inventory with rental status
+ */
+export const getInventoryWithRentalStatusController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const filters = {
+      status: req.query.status as string,
+      category: req.query.category as string,
+      facilityId: req.query.facilityId as string,
+      companyId: req.user?.companyId,
+      search: req.query.search as string,
+    };
+
+    const pagination = {
+      page: parseInt(req.query.page as string) || 1,
+      limit: Math.min(parseInt(req.query.limit as string) || 10, 100),
+    };
+
+    const result = await InventoryItemService.getInventoryWithRentalStatus(
+      filters,
+      pagination
+    );
+    sendSuccess(
+      res,
+      "Inventory with rental status fetched successfully",
+      result
+    );
+  } catch (error) {
+    sendError(res, "Failed to fetch inventory with rental status", error);
+  }
+};
+
+/**
+ * Get inventory item with rental history
+ */
+export const getInventoryItemWithRentalHistoryController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const result =
+      await InventoryItemService.getInventoryItemWithRentalHistory(id);
+    sendSuccess(
+      res,
+      "Inventory item with rental history fetched successfully",
+      result
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Inventory item not found"
+    ) {
+      sendNotFound(res, "Inventory item not found");
+      return;
+    }
+    sendError(res, "Failed to fetch inventory item with rental history", error);
+  }
+};
+
+/**
+ * Rent inventory item
+ */
+export const rentInventoryItemController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { quantity, reason } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      sendError(res, "User authentication required");
+      return;
+    }
+
+    if (!quantity || quantity <= 0) {
+      sendError(res, "Valid quantity is required");
+      return;
+    }
+
+    const result = await InventoryItemService.rentInventoryItem(
+      id,
+      quantity,
+      userId,
+      reason
+    );
+    sendSuccess(res, "Inventory item rented successfully", result);
+  } catch (error) {
+    sendError(res, "Failed to rent inventory item", error);
+  }
+};
+
+/**
+ * Return inventory item (Enhanced version)
+ */
+export const returnInventoryItemController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { quantity, condition, notes } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      sendError(res, "User authentication required");
+      return;
+    }
+
+    if (!quantity || quantity <= 0) {
+      sendError(res, "Valid quantity is required");
+      return;
+    }
+
+    const result = await InventoryItemService.returnInventoryItem(
+      id,
+      quantity,
+      userId,
+      condition,
+      notes
+    );
+    sendSuccess(res, "Inventory item returned successfully", result);
+  } catch (error) {
+    sendError(res, "Failed to return inventory item", error);
+  }
+};
+
+/**
+ * Get inventory statistics
+ */
+export const getInventoryStatisticsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId;
+    const statistics =
+      await InventoryItemService.getInventoryStatistics(companyId);
+    sendSuccess(res, "Inventory statistics fetched successfully", statistics);
+  } catch (error) {
+    sendError(res, "Failed to fetch inventory statistics", error);
+  }
+};
+
+/**
+ * Get low stock items (Enhanced version)
+ */
+export const getLowStockItemsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const showDeleted =
+      req.user?.role === "admin" || req.user?.role === "staff";
+    const items = await InventoryItemService.getLowStockItems(showDeleted);
+    sendSuccess(res, "Low stock items fetched successfully", items);
+  } catch (error) {
+    sendError(res, "Failed to fetch low stock items", error);
+  }
+};
+
+/**
+ * Get maintenance due items
+ */
+export const getMaintenanceDueItemsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId;
+    const items = await InventoryItemService.getMaintenanceDueItems(companyId);
+    sendSuccess(res, "Maintenance due items fetched successfully", items);
+  } catch (error) {
+    sendError(res, "Failed to fetch maintenance due items", error);
+  }
+};
+
 export default {
+  // Basic inventory operations
   getAllInventoryItems,
+  getCompanyInventoryItems,
   getInventoryItemById,
   createInventoryItem,
   updateInventoryItem,
@@ -380,4 +564,14 @@ export default {
   restoreInventoryItem,
   addMaintenanceSchedule,
   getLowStockItems,
+  returnInventoryItem,
+
+  // Enhanced inventory operations
+  getInventoryWithRentalStatusController,
+  getInventoryItemWithRentalHistoryController,
+  rentInventoryItemController,
+  returnInventoryItemController,
+  getInventoryStatisticsController,
+  getLowStockItemsController,
+  getMaintenanceDueItemsController,
 };

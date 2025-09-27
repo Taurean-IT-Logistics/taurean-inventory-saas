@@ -11,7 +11,9 @@ import { Rental } from "../types";
 /**
  * Create a new rental
  */
-const createRental = async (rentalData: Partial<Rental>): Promise<RentalDocument> => {
+const createRental = async (
+  rentalData: Partial<Rental>
+): Promise<RentalDocument> => {
   try {
     // Validate inventory item availability
     const item = await InventoryItemModel.findById(rentalData.item);
@@ -28,10 +30,9 @@ const createRental = async (rentalData: Partial<Rental>): Promise<RentalDocument
     await rental.save();
 
     // Update inventory quantity
-    await InventoryItemModel.findByIdAndUpdate(
-      rentalData.item,
-      { $inc: { quantity: -(rentalData.quantity || 0) } }
-    );
+    await InventoryItemModel.findByIdAndUpdate(rentalData.item, {
+      $inc: { quantity: -(rentalData.quantity || 0) },
+    });
 
     return rental;
   } catch (error) {
@@ -59,7 +60,12 @@ const getRentals = async (
     page?: number;
     limit?: number;
   } = {}
-): Promise<{ rentals: RentalDocument[]; total: number; totalPages: number; currentPage: number }> => {
+): Promise<{
+  rentals: RentalDocument[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
   try {
     const query: any = { isDeleted: false };
 
@@ -95,21 +101,21 @@ const getRentals = async (
 
     const [rentals, total] = await Promise.all([
       RentalModel.find(query)
-        .populate('item', 'name description images')
-        .populate('user', 'name email phone')
-        .populate('transaction', 'amount method paymentStatus')
-        .populate('company', 'name')
+        .populate("item", "name description images")
+        .populate("user", "name email phone")
+        .populate("transaction", "amount method paymentStatus")
+        .populate("company", "name")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      RentalModel.countDocuments(query)
+      RentalModel.countDocuments(query),
     ]);
 
     return {
       rentals,
       total,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     };
   } catch (error) {
     throw new Error(
@@ -126,10 +132,10 @@ const getRentals = async (
 const getRentalById = async (id: string): Promise<RentalDocument | null> => {
   try {
     return await RentalModel.findById(id)
-      .populate('item', 'name description images')
-      .populate('user', 'name email phone')
-      .populate('transaction', 'amount method paymentStatus')
-      .populate('company', 'name');
+      .populate("item", "name description images")
+      .populate("user", "name email phone")
+      .populate("transaction", "amount method paymentStatus")
+      .populate("company", "name");
   } catch (error) {
     throw new Error(
       `Failed to fetch rental: ${
@@ -162,34 +168,35 @@ const updateRentalStatus = async (
     const updateFields: any = { status };
 
     if (updateData) {
-      if (updateData.returnDate) updateFields.returnDate = updateData.returnDate;
-      if (updateData.returnCondition) updateFields.returnCondition = updateData.returnCondition;
-      if (updateData.returnNotes) updateFields.returnNotes = updateData.returnNotes;
+      if (updateData.returnDate)
+        updateFields.returnDate = updateData.returnDate;
+      if (updateData.returnCondition)
+        updateFields.returnCondition = updateData.returnCondition;
+      if (updateData.returnNotes)
+        updateFields.returnNotes = updateData.returnNotes;
       if (updateData.lateFee) updateFields.lateFee = updateData.lateFee;
       if (updateData.damageFee) updateFields.damageFee = updateData.damageFee;
     }
 
     // If returning item, restore inventory quantity
     if (status === "returned" && rental.status === "active") {
-      await InventoryItemModel.findByIdAndUpdate(
-        rental.item,
-        { $inc: { quantity: rental.quantity } }
-      );
+      await InventoryItemModel.findByIdAndUpdate(rental.item, {
+        $inc: { quantity: rental.quantity },
+      });
     }
 
     // If cancelling rental, restore inventory quantity
     if (status === "cancelled" && rental.status === "active") {
-      await InventoryItemModel.findByIdAndUpdate(
-        rental.item,
-        { $inc: { quantity: rental.quantity } }
-      );
+      await InventoryItemModel.findByIdAndUpdate(rental.item, {
+        $inc: { quantity: rental.quantity },
+      });
     }
 
     return await RentalModel.findByIdAndUpdate(id, updateFields, { new: true })
-      .populate('item', 'name description images')
-      .populate('user', 'name email phone')
-      .populate('transaction', 'amount method paymentStatus')
-      .populate('company', 'name');
+      .populate("item", "name description images")
+      .populate("user", "name email phone")
+      .populate("transaction", "amount method paymentStatus")
+      .populate("company", "name");
   } catch (error) {
     throw new Error(
       `Failed to update rental status: ${
@@ -224,7 +231,7 @@ const returnRental = async (
 
     // Calculate late fee if applicable
     const isLate = returnData.returnDate > rental.endDate;
-    const lateFee = isLate ? (returnData.lateFee || 0) : 0;
+    const lateFee = isLate ? returnData.lateFee || 0 : 0;
 
     // Update rental status
     const updatedRental = await updateRentalStatus(id, "returned", {
@@ -238,7 +245,7 @@ const returnRental = async (
     // Create additional transaction for fees if any
     if (lateFee > 0 || (returnData.damageFee && returnData.damageFee > 0)) {
       const totalFees = lateFee + (returnData.damageFee || 0);
-      
+
       const feeTransaction = new TransactionModel({
         user: rental.user,
         type: "income",
@@ -270,12 +277,17 @@ const getOverdueRentals = async (
     page?: number;
     limit?: number;
   } = {}
-): Promise<{ rentals: RentalDocument[]; total: number; totalPages: number; currentPage: number }> => {
+): Promise<{
+  rentals: RentalDocument[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
   try {
     const query: any = {
       isDeleted: false,
       status: "active",
-      endDate: { $lt: new Date() }
+      endDate: { $lt: new Date() },
     };
 
     if (companyId) {
@@ -288,27 +300,37 @@ const getOverdueRentals = async (
 
     const [rentals, total] = await Promise.all([
       RentalModel.find(query)
-        .populate('item', 'name description images')
-        .populate('user', 'name email phone')
-        .populate('transaction', 'amount method paymentStatus')
-        .populate('company', 'name')
+        .populate("item", "name description images")
+        .populate("user", "name email phone")
+        .populate("transaction", "amount method paymentStatus")
+        .populate("company", "name")
         .sort({ endDate: 1 })
         .skip(skip)
         .limit(limit),
-      RentalModel.countDocuments(query)
+      RentalModel.countDocuments(query),
     ]);
 
     // Update status to overdue for all found rentals
     await RentalModel.updateMany(
-      { _id: { $in: rentals.map(r => r._id) } },
+      { _id: { $in: rentals.map((r) => r._id) } },
       { status: "overdue" }
     );
 
+    // Refetch updated rentals to ensure status is "overdue" and return as RentalDocument[]
+    const updatedRentals = await RentalModel.find({
+      _id: { $in: rentals.map((r) => r._id) },
+    })
+      .populate("item", "name description images")
+      .populate("user", "name email phone")
+      .populate("transaction", "amount method paymentStatus")
+      .populate("company", "name")
+      .sort({ endDate: 1 });
+
     return {
-      rentals: rentals.map(r => ({ ...r.toObject(), status: "overdue" })),
+      rentals: updatedRentals,
       total,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     };
   } catch (error) {
     throw new Error(
@@ -322,7 +344,9 @@ const getOverdueRentals = async (
 /**
  * Get rental statistics
  */
-const getRentalStatistics = async (companyId?: string): Promise<{
+const getRentalStatistics = async (
+  companyId?: string
+): Promise<{
   totalRentals: number;
   activeRentals: number;
   overdueRentals: number;
@@ -342,7 +366,7 @@ const getRentalStatistics = async (companyId?: string): Promise<{
       overdueRentals,
       returnedRentals,
       revenueData,
-      feesData
+      feesData,
     ] = await Promise.all([
       RentalModel.countDocuments(query),
       RentalModel.countDocuments({ ...query, status: "active" }),
@@ -350,12 +374,17 @@ const getRentalStatistics = async (companyId?: string): Promise<{
       RentalModel.countDocuments({ ...query, status: "returned" }),
       RentalModel.aggregate([
         { $match: query },
-        { $group: { _id: null, total: { $sum: "$amount" } } }
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       RentalModel.aggregate([
         { $match: { ...query, status: { $in: ["overdue", "returned"] } } },
-        { $group: { _id: null, total: { $sum: { $add: ["$lateFee", "$damageFee"] } } } }
-      ])
+        {
+          $group: {
+            _id: null,
+            total: { $sum: { $add: ["$lateFee", "$damageFee"] } },
+          },
+        },
+      ]),
     ]);
 
     return {
@@ -387,10 +416,9 @@ const deleteRental = async (id: string): Promise<boolean> => {
 
     // If rental is active, restore inventory quantity
     if (rental.status === "active") {
-      await InventoryItemModel.findByIdAndUpdate(
-        rental.item,
-        { $inc: { quantity: rental.quantity } }
-      );
+      await InventoryItemModel.findByIdAndUpdate(rental.item, {
+        $inc: { quantity: rental.quantity },
+      });
     }
 
     // Soft delete

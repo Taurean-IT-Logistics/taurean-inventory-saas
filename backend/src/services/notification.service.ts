@@ -597,7 +597,107 @@ class NotificationService {
       throw new Error(`Error getting unread count: ${error.message}`);
     }
   }
+
+  // Create subscription notification for company
+  async createSubscriptionNotification(
+    companyId: string,
+    action: "activated" | "expired" | "cancelled" | "renewed"
+  ): Promise<void> {
+    try {
+      // Get all users in the company
+      const companyUsers = await UserModel.find({
+        company: companyId,
+        isDeleted: false,
+      }).select("_id");
+
+      if (companyUsers.length === 0) {
+        return; // No users to notify
+      }
+
+      // Create notification data based on action
+      const notificationData = this.getSubscriptionNotificationData(action);
+
+      // Create notifications for all company users
+      const notifications = companyUsers.map((user) => ({
+        user: user._id,
+        company: companyId,
+        title: notificationData.title,
+        message: notificationData.message,
+        type: notificationData.type,
+        category: "system" as const,
+        isPublic: true,
+        data: {
+          action,
+          companyId,
+          timestamp: new Date(),
+        },
+      }));
+
+      // Insert all notifications
+      await NotificationModel.insertMany(notifications);
+
+      // Emit real-time events for all users
+      for (const user of companyUsers) {
+        emitEvent(
+          Events.NotificationCreated,
+          {
+            title: notificationData.title,
+            message: notificationData.message,
+            type: notificationData.type,
+            category: "system",
+            action,
+          },
+          `user:${user._id}`
+        );
+      }
+    } catch (error) {
+      throw new Error(
+        `Error creating subscription notification: ${error.message}`
+      );
+    }
+  }
+
+  // Get subscription notification data based on action
+  private getSubscriptionNotificationData(action: string) {
+    const notificationTemplates = {
+      activated: {
+        title: "Subscription Activated",
+        message:
+          "Your company subscription has been successfully activated. You now have full access to all features.",
+        type: "success" as const,
+      },
+      expired: {
+        title: "Subscription Expired",
+        message:
+          "Your company subscription has expired. Please contact support to renew your subscription.",
+        type: "warning" as const,
+      },
+      cancelled: {
+        title: "Subscription Cancelled",
+        message:
+          "Your company subscription has been cancelled. Contact support if this was done in error.",
+        type: "error" as const,
+      },
+      renewed: {
+        title: "Subscription Renewed",
+        message:
+          "Your company subscription has been successfully renewed. Thank you for continuing with us!",
+        type: "success" as const,
+      },
+    };
+
+    return notificationTemplates[action] || notificationTemplates.expired;
+  }
 }
 
 const notificationService = new NotificationService();
+
+// Export the createSubscriptionNotification function for direct use
+export const createSubscriptionNotification = async (
+  companyId: string,
+  action: "activated" | "expired" | "cancelled" | "renewed"
+): Promise<void> => {
+  return notificationService.createSubscriptionNotification(companyId, action);
+};
+
 export { notificationService };

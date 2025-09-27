@@ -560,21 +560,66 @@ export interface Cash {
 }
 
 export interface Rental {
-  item: InventoryItem;
+  item: InventoryItem | mongoose.Types.ObjectId | string;
   quantity: number;
   startDate: Date;
   endDate: Date;
   amount: number;
-  transaction: Transaction;
+  transaction: Transaction | mongoose.Types.ObjectId | string;
   notes?: string;
-  user: User;
+  user: User | mongoose.Types.ObjectId | string;
   status: "active" | "returned" | "overdue" | "cancelled";
   returnDate?: Date;
   returnCondition?: "good" | "fair" | "damaged";
   returnNotes?: string;
   lateFee?: number;
   damageFee?: number;
-  company: Company;
+  company: Company | mongoose.Types.ObjectId | string;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DocumentFile {
+  filename: string;
+  originalName: string;
+  mimetype: string;
+  size: number;
+  path: string;
+  uploadedBy: User | mongoose.Types.ObjectId | string;
+  company: Company | mongoose.Types.ObjectId | string;
+  category: string;
+  tags?: string[];
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Expense {
+  amount: number;
+  description: string;
+  category: string;
+  date: Date;
+  paymentMethod: string;
+  receipt?: string;
+  user: User | mongoose.Types.ObjectId | string;
+  company: Company | mongoose.Types.ObjectId | string;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Discount {
+  name: string;
+  description: string;
+  type: "percentage" | "fixed";
+  value: number;
+  minAmount?: number;
+  maxAmount?: number;
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+  company: Company | mongoose.Types.ObjectId | string;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
