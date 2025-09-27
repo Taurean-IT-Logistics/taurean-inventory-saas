@@ -6,29 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader } from "@/components/ui/loader";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -39,25 +39,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { 
-  Package2, 
-  Search, 
-  Filter, 
-  Plus, 
-  Eye, 
-  Edit, 
-  Trash2, 
-  CheckCircle, 
-  Clock, 
+import {
+  Package2,
+  Search,
+  Filter,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  CheckCircle,
+  Clock,
   AlertTriangle,
   TrendingUp,
   DollarSign,
   Calendar,
-  X
+  X,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { RentalAPI } from "@/lib/api";
 
 interface Rental {
   _id: string;
@@ -116,15 +116,14 @@ export default function RentalsPage() {
   const { data: rentalsData, isLoading: isLoadingRentals } = useQuery({
     queryKey: ["rentals", page, searchTerm, statusFilter],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      const params = {
         page: page.toString(),
         limit: "10",
         ...(statusFilter !== "all" && { status: statusFilter }),
         ...(searchTerm && { search: searchTerm }),
-      });
-      
-      const response = await api.get(`/rentals?${params}`);
-      return response.data;
+      };
+
+      return await RentalAPI.getRentals(params);
     },
   });
 
@@ -132,16 +131,20 @@ export default function RentalsPage() {
   const { data: statistics } = useQuery({
     queryKey: ["rental-statistics"],
     queryFn: async () => {
-      const response = await api.get("/rentals/statistics");
-      return response.data.data as RentalStatistics;
+      return (await RentalAPI.getRentalStats()) as RentalStatistics;
     },
   });
 
   // Return rental mutation
   const returnRentalMutation = useMutation({
-    mutationFn: async ({ rentalId, returnData }: { rentalId: string; returnData: any }) => {
-      const response = await api.put(`/rentals/${rentalId}/return`, returnData);
-      return response.data;
+    mutationFn: async ({
+      rentalId,
+      returnData,
+    }: {
+      rentalId: string;
+      returnData: any;
+    }) => {
+      return await RentalAPI.returnRental(rentalId, returnData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rentals"] });
@@ -164,9 +167,14 @@ export default function RentalsPage() {
 
   // Update rental status mutation
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ rentalId, status }: { rentalId: string; status: string }) => {
-      const response = await api.put(`/rentals/${rentalId}/status`, { status });
-      return response.data;
+    mutationFn: async ({
+      rentalId,
+      status,
+    }: {
+      rentalId: string;
+      status: string;
+    }) => {
+      return await RentalAPI.updateRental(rentalId, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rentals"] });
@@ -179,7 +187,8 @@ export default function RentalsPage() {
     onError: (error: any) => {
       toast({
         title: "Error updating status",
-        description: error.response?.data?.message || "Failed to update rental status",
+        description:
+          error.response?.data?.message || "Failed to update rental status",
         variant: "destructive",
       });
     },
@@ -188,8 +197,7 @@ export default function RentalsPage() {
   // Delete rental mutation
   const deleteRentalMutation = useMutation({
     mutationFn: async (rentalId: string) => {
-      const response = await api.delete(`/rentals/${rentalId}`);
-      return response.data;
+      return await RentalAPI.deleteRental(rentalId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rentals"] });
@@ -208,18 +216,35 @@ export default function RentalsPage() {
     },
   });
 
-  const rentals = rentalsData?.data?.rentals || [];
-  const pagination = rentalsData?.data || {};
+  const rentals = (rentalsData as any)?.data?.rentals || [];
+  const pagination = (rentalsData as any)?.data || {};
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { variant: "default" as const, icon: Clock, color: "bg-blue-100 text-blue-800" },
-      returned: { variant: "default" as const, icon: CheckCircle, color: "bg-green-100 text-green-800" },
-      overdue: { variant: "destructive" as const, icon: AlertTriangle, color: "bg-red-100 text-red-800" },
-      cancelled: { variant: "secondary" as const, icon: X, color: "bg-gray-100 text-gray-800" },
+      active: {
+        variant: "default" as const,
+        icon: Clock,
+        color: "bg-blue-100 text-blue-800",
+      },
+      returned: {
+        variant: "default" as const,
+        icon: CheckCircle,
+        color: "bg-green-100 text-green-800",
+      },
+      overdue: {
+        variant: "destructive" as const,
+        icon: AlertTriangle,
+        color: "bg-red-100 text-red-800",
+      },
+      cancelled: {
+        variant: "secondary" as const,
+        icon: X,
+        color: "bg-gray-100 text-gray-800",
+      },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
     const Icon = config.icon;
 
     return (
@@ -278,23 +303,33 @@ export default function RentalsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Rentals</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Rentals
+                </CardTitle>
                 <Package2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{statistics.totalRentals}</div>
+                <div className="text-2xl font-bold">
+                  {statistics.totalRentals}
+                </div>
                 <p className="text-xs text-muted-foreground">All time</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Rentals</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Active Rentals
+                </CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{statistics.activeRentals}</div>
-                <p className="text-xs text-muted-foreground">Currently rented</p>
+                <div className="text-2xl font-bold">
+                  {statistics.activeRentals}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Currently rented
+                </p>
               </CardContent>
             </Card>
 
@@ -304,18 +339,24 @@ export default function RentalsPage() {
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{statistics.overdueRentals}</div>
+                <div className="text-2xl font-bold text-red-600">
+                  {statistics.overdueRentals}
+                </div>
                 <p className="text-xs text-muted-foreground">Past due date</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Revenue
+                </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₵{statistics.totalRevenue.toLocaleString()}</div>
+                <div className="text-2xl font-bold">
+                  ₵{statistics.totalRevenue.toLocaleString()}
+                </div>
                 <p className="text-xs text-muted-foreground">From rentals</p>
               </CardContent>
             </Card>
@@ -391,13 +432,19 @@ export default function RentalsPage() {
                     <TableCell>
                       <div>
                         <div className="font-medium">{rental.user.name}</div>
-                        <div className="text-sm text-muted-foreground">{rental.user.email}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {rental.user.email}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>{rental.quantity}</TableCell>
                     <TableCell>₵{rental.amount.toLocaleString()}</TableCell>
-                    <TableCell>{new Date(rental.startDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(rental.endDate).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {new Date(rental.startDate).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(rental.endDate).toLocaleDateString()}
+                    </TableCell>
                     <TableCell>{getStatusBadge(rental.status)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -408,9 +455,12 @@ export default function RentalsPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        
+
                         {rental.status === "active" && (
-                          <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+                          <Dialog
+                            open={isReturnDialogOpen}
+                            onOpenChange={setIsReturnDialogOpen}
+                          >
                             <DialogTrigger asChild>
                               <Button
                                 variant="outline"
@@ -426,19 +476,33 @@ export default function RentalsPage() {
                               </DialogHeader>
                               <div className="space-y-4">
                                 <div>
-                                  <label className="text-sm font-medium">Return Date</label>
+                                  <label className="text-sm font-medium">
+                                    Return Date
+                                  </label>
                                   <Input
                                     type="date"
                                     value={returnData.returnDate}
-                                    onChange={(e) => setReturnData({ ...returnData, returnDate: e.target.value })}
+                                    onChange={(e) =>
+                                      setReturnData({
+                                        ...returnData,
+                                        returnDate: e.target.value,
+                                      })
+                                    }
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-sm font-medium">Condition</label>
+                                  <label className="text-sm font-medium">
+                                    Condition
+                                  </label>
                                   <Select
                                     value={returnData.returnCondition}
-                                    onValueChange={(value: "good" | "fair" | "damaged") => 
-                                      setReturnData({ ...returnData, returnCondition: value })
+                                    onValueChange={(
+                                      value: "good" | "fair" | "damaged"
+                                    ) =>
+                                      setReturnData({
+                                        ...returnData,
+                                        returnCondition: value,
+                                      })
                                     }
                                   >
                                     <SelectTrigger>
@@ -447,39 +511,65 @@ export default function RentalsPage() {
                                     <SelectContent>
                                       <SelectItem value="good">Good</SelectItem>
                                       <SelectItem value="fair">Fair</SelectItem>
-                                      <SelectItem value="damaged">Damaged</SelectItem>
+                                      <SelectItem value="damaged">
+                                        Damaged
+                                      </SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
                                 <div>
-                                  <label className="text-sm font-medium">Notes</label>
+                                  <label className="text-sm font-medium">
+                                    Notes
+                                  </label>
                                   <Input
                                     placeholder="Return notes..."
                                     value={returnData.returnNotes}
-                                    onChange={(e) => setReturnData({ ...returnData, returnNotes: e.target.value })}
+                                    onChange={(e) =>
+                                      setReturnData({
+                                        ...returnData,
+                                        returnNotes: e.target.value,
+                                      })
+                                    }
                                   />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <label className="text-sm font-medium">Late Fee (₵)</label>
+                                    <label className="text-sm font-medium">
+                                      Late Fee (₵)
+                                    </label>
                                     <Input
                                       type="number"
                                       placeholder="0"
                                       value={returnData.lateFee}
-                                      onChange={(e) => setReturnData({ ...returnData, lateFee: Number(e.target.value) })}
+                                      onChange={(e) =>
+                                        setReturnData({
+                                          ...returnData,
+                                          lateFee: Number(e.target.value),
+                                        })
+                                      }
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-sm font-medium">Damage Fee (₵)</label>
+                                    <label className="text-sm font-medium">
+                                      Damage Fee (₵)
+                                    </label>
                                     <Input
                                       type="number"
                                       placeholder="0"
                                       value={returnData.damageFee}
-                                      onChange={(e) => setReturnData({ ...returnData, damageFee: Number(e.target.value) })}
+                                      onChange={(e) =>
+                                        setReturnData({
+                                          ...returnData,
+                                          damageFee: Number(e.target.value),
+                                        })
+                                      }
                                     />
                                   </div>
                                 </div>
-                                <Button onClick={handleReturnRental} className="w-full">
+                                <Button
+                                  onClick={handleReturnRental}
+                                  className="w-full"
+                                >
                                   Return Item
                                 </Button>
                               </div>
@@ -497,7 +587,8 @@ export default function RentalsPage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Rental</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete this rental? This action cannot be undone.
+                                Are you sure you want to delete this rental?
+                                This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -522,7 +613,9 @@ export default function RentalsPage() {
             {pagination.totalPages > 1 && (
               <div className="flex items-center justify-between mt-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((pagination.currentPage - 1) * 10) + 1} to {Math.min(pagination.currentPage * 10, pagination.total)} of {pagination.total} rentals
+                  Showing {(pagination.currentPage - 1) * 10 + 1} to{" "}
+                  {Math.min(pagination.currentPage * 10, pagination.total)} of{" "}
+                  {pagination.total} rentals
                 </div>
                 <div className="flex items-center gap-2">
                   <Button

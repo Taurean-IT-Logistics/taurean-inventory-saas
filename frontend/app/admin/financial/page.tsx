@@ -44,7 +44,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { FinancialAPI, TransactionsAPI } from "@/lib/api";
 
 interface FinancialDashboard {
   totalRevenue: number;
@@ -122,8 +122,7 @@ export default function FinancialPage() {
   const { data: dashboardData, isLoading: isLoadingDashboard } = useQuery({
     queryKey: ["financial-dashboard"],
     queryFn: async () => {
-      const response = await api.get("/financial/dashboard");
-      return response.data.data as FinancialDashboard;
+      return await FinancialAPI.getFinancialSummary() as FinancialDashboard;
     },
   });
 
@@ -131,15 +130,14 @@ export default function FinancialPage() {
   const { data: expensesData, isLoading: isLoadingExpenses } = useQuery({
     queryKey: ["expenses", expensePage, searchTerm, categoryFilter],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      const params = {
         page: expensePage.toString(),
         limit: "10",
         ...(categoryFilter !== "all" && { category: categoryFilter }),
         ...(searchTerm && { search: searchTerm }),
-      });
+      };
       
-      const response = await api.get(`/financial/expenses?${params}`);
-      return response.data;
+      return await FinancialAPI.getExpenses(params);
     },
   });
 
@@ -147,21 +145,19 @@ export default function FinancialPage() {
   const { data: discountsData, isLoading: isLoadingDiscounts } = useQuery({
     queryKey: ["discounts", discountPage],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      const params = {
         page: discountPage.toString(),
         limit: "10",
-      });
+      };
       
-      const response = await api.get(`/financial/discounts?${params}`);
-      return response.data;
+      return await FinancialAPI.getDiscounts(params);
     },
   });
 
   // Create expense mutation
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: any) => {
-      const response = await api.post("/financial/expenses", expenseData);
-      return response.data;
+      return await FinancialAPI.createExpense(expenseData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
@@ -194,8 +190,7 @@ export default function FinancialPage() {
   // Create discount mutation
   const createDiscountMutation = useMutation({
     mutationFn: async (discountData: any) => {
-      const response = await api.post("/financial/discounts", discountData);
-      return response.data;
+      return await FinancialAPI.createDiscount(discountData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["discounts"] });
@@ -265,8 +260,8 @@ export default function FinancialPage() {
     );
   }
 
-  const expenses = expensesData?.data?.expenses || [];
-  const discounts = discountsData?.data?.discounts || [];
+  const expenses = (expensesData as any)?.data || [];
+  const discounts = (discountsData as any)?.data || [];
 
   return (
     <div className="min-h-screen">
