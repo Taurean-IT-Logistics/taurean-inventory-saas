@@ -211,6 +211,7 @@ export interface Transaction {
   splitPayment?: SplitPayment;
   isCash?: boolean;
   cash: Cash;
+  taxes: mongoose.Types.ObjectId | string;
   accessCode?: string;
   receiptUrl?: string;
   approvedBy?: User;
