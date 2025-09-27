@@ -24,13 +24,15 @@ export const createGlobalTax = async (
 };
 
 /**
- * Create a company-specific tax
+ * Copy a super admin tax to company taxes
  */
-export const createCompanyTax = async (
+export const copySuperAdminTax = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
+    const { taxId } = req.params;
+
     if (!req.user?.companyId) {
       sendError(
         res,
@@ -39,16 +41,36 @@ export const createCompanyTax = async (
       return;
     }
 
+    // Get the super admin tax
+    const superAdminTax = await TaxService.getTaxById(taxId);
+
+    if (!superAdminTax) {
+      sendNotFound(res, "Tax not found");
+      return;
+    }
+
+    if (!superAdminTax.isSuperAdminTax) {
+      sendError(res, "Only super admin taxes can be copied");
+      return;
+    }
+
+    // Create a copy for the company
     const taxData = {
-      ...req.body,
+      name: superAdminTax.name,
+      description: superAdminTax.description,
+      rate: superAdminTax.rate,
+      type: superAdminTax.type,
+      appliesTo: superAdminTax.appliesTo,
+      active: superAdminTax.active,
       isSuperAdminTax: false,
-      company: req.user.companyId,
+      company: req.user.companyId as any, // Cast to any to satisfy TypeScript
+      copiedFrom: superAdminTax._id?.toString(), // Track the original tax
     };
 
     const newTax = await TaxService.createTax(taxData);
-    sendSuccess(res, "Company tax created successfully", newTax);
+    sendSuccess(res, "Tax copied successfully", newTax);
   } catch (error) {
-    sendError(res, "Failed to create company tax", error);
+    sendError(res, "Failed to copy tax", error);
   }
 };
 
@@ -291,4 +313,18 @@ export const getCombinedTaxes = async (
   } catch (error) {
     sendError(res, "Failed to fetch combined taxes", error);
   }
+};
+
+export const TaxController = {
+  createGlobalTax,
+  copySuperAdminTax,
+  getGlobalTaxes,
+  getCompanyTaxes,
+  getCombinedTaxes,
+  getTaxes,
+  getTax,
+  updateTax,
+  deleteTax,
+  getDefaultTaxes,
+  createDefaultTaxes,
 };

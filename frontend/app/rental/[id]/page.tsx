@@ -11,13 +11,16 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   InventoryAPI,
-  TaxesAPI,
+  TaxScheduleAPI,
   TransactionsAPI,
   getResourceUrl,
 } from "@/lib/api";
-import { InventoryItem, Tax } from "@/types";
+import { InventoryItem, TaxSchedule } from "@/types";
 import { currencyFormat } from "@/lib/utils";
-import { calculateRentalTaxes, formatTaxBreakdown } from "@/lib/taxCalculator";
+import {
+  calculateRentalTaxesFromSchedules,
+  formatTaxBreakdown,
+} from "@/lib/taxCalculator";
 import {
   differenceInCalendarDays,
   format,
@@ -46,6 +49,25 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   const [endDate, setEndDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [paymentTiming, setPaymentTiming] = useState<string>("");
+  const [paymentStep, setPaymentStep] = useState(1); // 1: Payment Method, 2: Payment Timing
+  const [splitConfig, setSplitConfig] = useState<{
+    parts: number;
+    percentages: number[];
+    amounts: number[];
+  }>({
+    parts: 2,
+    percentages: [50, 50],
+    amounts: [0, 0],
+  });
+  const [advanceConfig, setAdvanceConfig] = useState<{
+    percentage: number | string;
+    amount: number;
+    inputMode: "percentage" | "amount";
+  }>({
+    percentage: 30,
+    amount: 0,
+    inputMode: "percentage",
+  });
 
   // Fetch item data
   const {
@@ -58,10 +80,10 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
     enabled: !!params.id,
   });
 
-  // Fetch taxes
-  const { data: taxes = [] } = useQuery({
-    queryKey: ["taxes"],
-    queryFn: () => TaxesAPI.list(),
+  // Fetch tax schedules
+  const { data: taxSchedules = [] } = useQuery({
+    queryKey: ["tax-schedules"],
+    queryFn: () => TaxScheduleAPI.getTaxSchedules(),
     enabled: !!user,
   });
 
@@ -162,10 +184,10 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
 
   const subtotal = price * quantity * rentalDays;
 
-  // Use the new tax calculator
-  const taxResult = calculateRentalTaxes(
+  // Use the new tax schedule calculator
+  const taxResult = calculateRentalTaxesFromSchedules(
     subtotal,
-    taxes as Tax[],
+    taxSchedules as TaxSchedule[],
     (item as any).company,
     (item as InventoryItem).isTaxable
   );
@@ -175,15 +197,42 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   const handleTransaction = async () => {
     if (!user) return;
 
+    let amount = totalPrice;
+    let paymentData: any = {};
+
+    // Handle different payment timings
+    if (paymentTiming === "split" && splitConfig) {
+      amount = splitConfig.amounts[0]; // First payment
+      paymentData = {
+        splitConfig: {
+          parts: splitConfig.parts,
+          percentages: splitConfig.percentages,
+          amounts: splitConfig.amounts,
+        },
+      };
+    } else if (paymentTiming === "advance" && advanceConfig) {
+      amount = advanceConfig.amount;
+      paymentData = {
+        advanceConfig: {
+          percentage: advanceConfig.percentage,
+          amount: advanceConfig.amount,
+          inputMode: advanceConfig.inputMode,
+        },
+      };
+    }
+
     const transactionData = {
       email: user.email,
-      amount: totalPrice,
+      amount: amount,
       quantity: quantity,
       inventoryItem: (item as InventoryItem)._id || "",
       category: "inventory_item",
       description: `Rental for ${(item as InventoryItem).name} (${
         (item as InventoryItem)._id
       }) from ${startDate} to ${endDate}`,
+      paymentMethod: paymentMethod,
+      paymentTiming: paymentTiming,
+      ...paymentData,
     };
 
     createPaymentMutation.mutate(transactionData);
@@ -364,9 +413,7 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
 
                     {taxResult.serviceFee > 0 && (
                       <div className="flex justify-between items-center">
-                        <span>
-                          Service Fee ({taxResult.serviceFeeRate.toFixed(2)}%):
-                        </span>
+                        <span>Service Fee ({taxResult.serviceFeeRate}%):</span>
                         <span className="text-xl font-semibold text-blue-600">
                           {currencyFormat(taxResult.serviceFee)}
                         </span>
@@ -381,7 +428,7 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                             className="flex justify-between items-center"
                           >
                             <span>
-                              {item.tax.name} ({item.rate.toFixed(2)}%):
+                              {item.tax.name} ({item.rate}%):
                             </span>
                             <span className="text-xl font-semibold text-blue-600">
                               {currencyFormat(item.amount)}
@@ -407,291 +454,474 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
 
                   {user ? (
                     <div className="space-y-4">
-                      {/* Payment Method Selection */}
-                      <div className="space-y-3">
-                        <h3 className="text-lg font-medium text-gray-900">
-                          Select Payment Method
-                        </h3>
-                        <div className="grid grid-cols-1 gap-3">
-                          {/* Paystack Payment */}
-                          <div
-                            className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
-                              paymentMethod === "paystack"
-                                ? "border-blue-600 bg-blue-50"
-                                : "border-gray-200 hover:border-gray-300"
-                            }`}
-                            onClick={() => setPaymentMethod("paystack")}
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div
-                                className={`w-4 h-4 rounded-full border-2 ${
-                                  paymentMethod === "paystack"
-                                    ? "border-blue-600 bg-blue-600"
-                                    : "border-gray-300"
-                                }`}
-                              >
-                                {paymentMethod === "paystack" && (
-                                  <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-medium text-gray-900">
-                                  Paystack Payment
-                                </h4>
-                                <p className="text-sm text-gray-600">
-                                  Pay securely with card or mobile money online
-                                </p>
-                              </div>
-                              <div className="text-sm font-medium text-blue-600">
-                                {currencyFormat(taxResult.total)}
-                              </div>
+                      {/* Step 1: Payment Method Selection */}
+                      {paymentStep === 1 && (
+                        <>
+                          <div className="flex items-center space-x-2 mb-4">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-blue-600 font-semibold text-sm">
+                                1
+                              </span>
                             </div>
+                            <h3 className="text-lg font-medium text-gray-900">
+                              Select Payment Method
+                            </h3>
                           </div>
 
-                          {/* Cash Payment */}
-                          <div
-                            className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
-                              paymentMethod === "cash"
-                                ? "border-blue-600 bg-blue-50"
-                                : "border-gray-200 hover:border-gray-300"
-                            }`}
-                            onClick={() => setPaymentMethod("cash")}
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div
-                                className={`w-4 h-4 rounded-full border-2 ${
-                                  paymentMethod === "cash"
-                                    ? "border-blue-600 bg-blue-600"
-                                    : "border-gray-300"
-                                }`}
-                              >
-                                {paymentMethod === "cash" && (
-                                  <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-medium text-gray-900">
-                                  Cash Payment
-                                </h4>
-                                <p className="text-sm text-gray-600">
-                                  Pay with cash when you pick up the item
-                                </p>
-                              </div>
-                              <div className="text-sm font-medium text-blue-600">
-                                {currencyFormat(taxResult.total)}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Cheque Payment */}
-                          <div
-                            className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
-                              paymentMethod === "cheque"
-                                ? "border-blue-600 bg-blue-50"
-                                : "border-gray-200 hover:border-gray-300"
-                            }`}
-                            onClick={() => setPaymentMethod("cheque")}
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div
-                                className={`w-4 h-4 rounded-full border-2 ${
-                                  paymentMethod === "cheque"
-                                    ? "border-blue-600 bg-blue-600"
-                                    : "border-gray-300"
-                                }`}
-                              >
-                                {paymentMethod === "cheque" && (
-                                  <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-medium text-gray-900">
-                                  Cheque Payment
-                                </h4>
-                                <p className="text-sm text-gray-600">
-                                  Pay with cheque when you pick up the item
-                                </p>
-                              </div>
-                              <div className="text-sm font-medium text-blue-600">
-                                {currencyFormat(taxResult.total)}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Payment Timing Selection - Only show if a payment method is selected */}
-                      {paymentMethod && (
-                        <div className="space-y-3">
-                          <h3 className="text-lg font-medium text-gray-900">
-                            How would you like to pay?
-                          </h3>
                           <div className="grid grid-cols-1 gap-3">
-                            {/* Full Payment */}
+                            {/* Online Payment */}
                             <div
                               className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
-                                paymentTiming === "full"
+                                paymentMethod === "online"
                                   ? "border-blue-600 bg-blue-50"
                                   : "border-gray-200 hover:border-gray-300"
                               }`}
-                              onClick={() => setPaymentTiming("full")}
+                              onClick={() => setPaymentMethod("online")}
                             >
                               <div className="flex items-center space-x-3">
                                 <div
                                   className={`w-4 h-4 rounded-full border-2 ${
-                                    paymentTiming === "full"
+                                    paymentMethod === "online"
                                       ? "border-blue-600 bg-blue-600"
                                       : "border-gray-300"
                                   }`}
                                 >
-                                  {paymentTiming === "full" && (
+                                  {paymentMethod === "online" && (
                                     <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
                                   )}
                                 </div>
                                 <div className="flex-1">
                                   <h4 className="font-medium text-gray-900">
-                                    Pay Full Amount Now
+                                    Online Payment
                                   </h4>
                                   <p className="text-sm text-gray-600">
-                                    {paymentMethod === "paystack"
-                                      ? "Pay the full amount online now"
-                                      : `Pay the full amount in ${paymentMethod} when you pick up`}
+                                    Pay securely with card or mobile money
                                   </p>
-                                </div>
-                                <div className="text-sm font-medium text-blue-600">
-                                  {currencyFormat(taxResult.total)}
                                 </div>
                               </div>
                             </div>
 
-                            {/* Advance Payment */}
+                            {/* Cash Payment */}
                             <div
                               className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
-                                paymentTiming === "advance"
+                                paymentMethod === "cash"
                                   ? "border-blue-600 bg-blue-50"
                                   : "border-gray-200 hover:border-gray-300"
                               }`}
-                              onClick={() => setPaymentTiming("advance")}
+                              onClick={() => setPaymentMethod("cash")}
                             >
                               <div className="flex items-center space-x-3">
                                 <div
                                   className={`w-4 h-4 rounded-full border-2 ${
-                                    paymentTiming === "advance"
+                                    paymentMethod === "cash"
                                       ? "border-blue-600 bg-blue-600"
                                       : "border-gray-300"
                                   }`}
                                 >
-                                  {paymentTiming === "advance" && (
+                                  {paymentMethod === "cash" && (
                                     <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
                                   )}
                                 </div>
                                 <div className="flex-1">
                                   <h4 className="font-medium text-gray-900">
-                                    Pay Advance Now
+                                    Cash Payment
                                   </h4>
                                   <p className="text-sm text-gray-600">
-                                    Pay a portion now, balance when you pick up
+                                    Pay with cash directly at the facility
                                   </p>
-                                </div>
-                                <div className="text-sm font-medium text-blue-600">
-                                  {currencyFormat(taxResult.total * 0.3)} - {currencyFormat(taxResult.total * 0.7)}
                                 </div>
                               </div>
                             </div>
 
-                            {/* Split Payment */}
+                            {/* Cheque Payment */}
                             <div
                               className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
-                                paymentTiming === "split"
+                                paymentMethod === "cheque"
                                   ? "border-blue-600 bg-blue-50"
                                   : "border-gray-200 hover:border-gray-300"
                               }`}
-                              onClick={() => setPaymentTiming("split")}
+                              onClick={() => setPaymentMethod("cheque")}
                             >
                               <div className="flex items-center space-x-3">
                                 <div
                                   className={`w-4 h-4 rounded-full border-2 ${
-                                    paymentTiming === "split"
+                                    paymentMethod === "cheque"
                                       ? "border-blue-600 bg-blue-600"
                                       : "border-gray-300"
                                   }`}
                                 >
-                                  {paymentTiming === "split" && (
+                                  {paymentMethod === "cheque" && (
                                     <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
                                   )}
                                 </div>
                                 <div className="flex-1">
                                   <h4 className="font-medium text-gray-900">
-                                    Split Payment
+                                    Cheque Payment
                                   </h4>
                                   <p className="text-sm text-gray-600">
-                                    Pay part now, part later (schedule when)
+                                    Pay with cheque directly at the facility
                                   </p>
-                                </div>
-                                <div className="text-sm font-medium text-blue-600">
-                                  {currencyFormat(taxResult.total * 0.5)} + {currencyFormat(taxResult.total * 0.5)}
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+
+                          <Button
+                            className="w-full"
+                            onClick={() => setPaymentStep(2)}
+                            disabled={!paymentMethod}
+                          >
+                            Continue
+                          </Button>
+                        </>
                       )}
 
-                      {/* Payment Method Info */}
-                      {paymentMethod && (paymentMethod === "cash" || paymentMethod === "cheque" || paymentTiming === "split" || paymentTiming === "advance") && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                          <div className="flex items-start space-x-3">
-                            <div className="w-5 h-5 text-amber-600 mt-0.5">ℹ️</div>
-                            <div>
-                              <h4 className="font-medium text-amber-800">
-                                {paymentTiming === "split" || paymentTiming === "advance"
-                                  ? "Partial Payment Required"
-                                  : "Payment at Pickup"}
-                              </h4>
-                              <p className="text-sm text-amber-700 mt-1">
-                                {paymentTiming === "split" ? (
-                                  <>
-                                    Your rental will be confirmed pending split payment.
-                                    You can pay a portion online now and the remainder when you pick up.
-                                  </>
-                                ) : paymentTiming === "advance" ? (
-                                  <>
-                                    Your rental will be confirmed pending advance payment.
-                                    Pay an advance amount online now and the balance when you pick up.
-                                  </>
-                                ) : (
-                                  <>
-                                    Your rental will be confirmed pending payment.
-                                    Please bring the exact amount in{" "}
-                                    {paymentMethod === "cash" ? "cash" : "cheque"}{" "}
-                                    when you pick up the item.
-                                  </>
-                                )}
-                              </p>
+                      {/* Step 2: Payment Timing Selection */}
+                      {paymentStep === 2 && (
+                        <>
+                          <div className="flex items-center space-x-2 mb-4">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-blue-600 font-semibold text-sm">
+                                2
+                              </span>
                             </div>
+                            <h3 className="text-lg font-medium text-gray-900">
+                              How would you like to pay?
+                            </h3>
                           </div>
-                        </div>
-                      )}
 
-                      {/* Proceed Button */}
-                      <Button
-                        className="w-full flex items-center gap-2"
-                        size="lg"
-                        disabled={
-                          !isAvailable ||
-                          !startDate ||
-                          !endDate ||
-                          !paymentMethod ||
-                          !paymentTiming ||
-                          createPaymentMutation.isPending
-                        }
-                        onClick={handleTransaction}
-                      >
-                        <CreditCard className="w-4 h-4" />
-                        {createPaymentMutation.isPending
-                          ? "Processing..."
-                          : "Proceed to Checkout"}
-                      </Button>
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-1 gap-3">
+                              {/* Full Payment */}
+                              <div
+                                className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
+                                  paymentTiming === "full"
+                                    ? "border-blue-600 bg-blue-50"
+                                    : "border-gray-200 hover:border-gray-300"
+                                }`}
+                                onClick={() => setPaymentTiming("full")}
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <div
+                                    className={`w-4 h-4 rounded-full border-2 ${
+                                      paymentTiming === "full"
+                                        ? "border-blue-600 bg-blue-600"
+                                        : "border-gray-300"
+                                    }`}
+                                  >
+                                    {paymentTiming === "full" && (
+                                      <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className="font-medium text-gray-900">
+                                      Pay Full Amount Now
+                                    </h4>
+                                    <p className="text-sm text-gray-600">
+                                      {paymentMethod === "online"
+                                        ? "Pay the full amount online now"
+                                        : `Pay the full amount in ${paymentMethod} at the facility`}
+                                    </p>
+                                  </div>
+                                  <div className="text-sm font-medium text-blue-600">
+                                    {currencyFormat(taxResult.total)}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Split Payment */}
+                              <div
+                                className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
+                                  paymentTiming === "split"
+                                    ? "border-blue-600 bg-blue-50"
+                                    : "border-gray-200 hover:border-gray-300"
+                                }`}
+                                onClick={() => {
+                                  setPaymentTiming("split");
+                                  setSplitConfig({
+                                    parts: 2,
+                                    percentages: [50, 50],
+                                    amounts: [
+                                      taxResult.total * 0.5,
+                                      taxResult.total * 0.5,
+                                    ],
+                                  });
+                                }}
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <div
+                                    className={`w-4 h-4 rounded-full border-2 ${
+                                      paymentTiming === "split"
+                                        ? "border-blue-600 bg-blue-600"
+                                        : "border-gray-300"
+                                    }`}
+                                  >
+                                    {paymentTiming === "split" && (
+                                      <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className="font-medium text-gray-900">
+                                      Split Payment
+                                    </h4>
+                                    <p className="text-sm text-gray-600">
+                                      Pay in multiple installments (max 3 parts)
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Advance Payment */}
+                              <div
+                                className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
+                                  paymentTiming === "advance"
+                                    ? "border-blue-600 bg-blue-50"
+                                    : "border-gray-200 hover:border-gray-300"
+                                }`}
+                                onClick={() => {
+                                  setPaymentTiming("advance");
+                                  setAdvanceConfig({
+                                    percentage: 30,
+                                    amount: taxResult.total * 0.3,
+                                    inputMode: "percentage",
+                                  });
+                                }}
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <div
+                                    className={`w-4 h-4 rounded-full border-2 ${
+                                      paymentTiming === "advance"
+                                        ? "border-blue-600 bg-blue-600"
+                                        : "border-gray-300"
+                                    }`}
+                                  >
+                                    {paymentTiming === "advance" && (
+                                      <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className="font-medium text-gray-900">
+                                      Advance Payment
+                                    </h4>
+                                    <p className="text-sm text-gray-600">
+                                      Pay advance amount now, balance later
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Split Payment Configuration */}
+                            {paymentTiming === "split" && (
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <h4 className="font-medium text-gray-900 mb-3">
+                                  Configure Split Payment
+                                </h4>
+                                <div className="space-y-3">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Number of Parts (Max 3)
+                                    </label>
+                                    <select
+                                      value={splitConfig.parts}
+                                      onChange={(e) => {
+                                        const parts = parseInt(e.target.value);
+                                        const percentage = 100 / parts;
+                                        const percentages =
+                                          Array(parts).fill(percentage);
+                                        const amounts = percentages.map(
+                                          (p) => taxResult.total * (p / 100)
+                                        );
+
+                                        setSplitConfig({
+                                          parts,
+                                          percentages,
+                                          amounts,
+                                        });
+                                      }}
+                                      className="w-full p-2 border border-gray-300 rounded-md"
+                                    >
+                                      <option value={2}>2 Parts</option>
+                                      <option value={3}>3 Parts</option>
+                                    </select>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                      Payment Breakdown
+                                    </label>
+                                    {splitConfig.amounts.map(
+                                      (amount, index) => (
+                                        <div
+                                          key={index}
+                                          className="flex items-center justify-between p-2 bg-white rounded border"
+                                        >
+                                          <span className="text-sm">
+                                            Part {index + 1}
+                                          </span>
+                                          <span className="font-medium">
+                                            {currencyFormat(amount)}
+                                          </span>
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Advance Payment Configuration */}
+                            {paymentTiming === "advance" && (
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <h4 className="font-medium text-gray-900 mb-3">
+                                  Configure Advance Payment
+                                </h4>
+                                <div className="space-y-3">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Advance Percentage
+                                    </label>
+                                    <div className="flex items-center space-x-2">
+                                      <select
+                                        value={advanceConfig.percentage}
+                                        onChange={(e) => {
+                                          const percentage = parseInt(
+                                            e.target.value
+                                          );
+                                          const amount =
+                                            taxResult.total *
+                                            (percentage / 100);
+
+                                          setAdvanceConfig({
+                                            percentage,
+                                            amount,
+                                            inputMode: "percentage",
+                                          });
+                                        }}
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      >
+                                        <option value={20}>20%</option>
+                                        <option value={25}>25%</option>
+                                        <option value={30}>30%</option>
+                                        <option value={35}>35%</option>
+                                        <option value={40}>40%</option>
+                                        <option value={45}>45%</option>
+                                        <option value={50}>50%</option>
+                                        <option value="custom">Custom</option>
+                                      </select>
+                                      {advanceConfig.percentage ===
+                                        "custom" && (
+                                        <div className="flex items-center space-x-2">
+                                          <input
+                                            type="number"
+                                            min="10"
+                                            max="80"
+                                            placeholder="%"
+                                            className="w-20 px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            onChange={(e) => {
+                                              const percentage =
+                                                parseInt(e.target.value) || 30;
+                                              const amount =
+                                                taxResult.total *
+                                                (percentage / 100);
+
+                                              setAdvanceConfig({
+                                                percentage,
+                                                amount,
+                                                inputMode: "percentage",
+                                              });
+                                            }}
+                                          />
+                                          <span className="text-sm text-gray-500">
+                                            %
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Minimum 10%, Maximum 80%
+                                    </p>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-3 bg-white rounded border">
+                                      <div className="text-sm text-gray-600">
+                                        Advance Amount
+                                      </div>
+                                      <div className="font-medium">
+                                        {currencyFormat(advanceConfig.amount)}
+                                      </div>
+                                    </div>
+                                    <div className="p-3 bg-white rounded border">
+                                      <div className="text-sm text-gray-600">
+                                        Balance
+                                      </div>
+                                      <div className="font-medium">
+                                        {currencyFormat(
+                                          taxResult.total - advanceConfig.amount
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Payment Method Info */}
+                            {(paymentMethod === "cash" ||
+                              paymentMethod === "cheque") &&
+                              (paymentTiming === "split" ||
+                                paymentTiming === "advance") && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                  <div className="flex items-start space-x-3">
+                                    <div className="w-5 h-5 text-amber-600 mt-0.5">
+                                      <Info className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                      <h4 className="font-medium text-amber-800">
+                                        Partial Payment Required
+                                      </h4>
+                                      <p className="text-sm text-amber-700 mt-1">
+                                        Your rental will be confirmed pending
+                                        partial payment. You can pay a portion
+                                        online now and the remainder in{" "}
+                                        {paymentMethod} at the facility.
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                          </div>
+
+                          <div className="flex space-x-3">
+                            <Button
+                              variant="outline"
+                              onClick={() => setPaymentStep(1)}
+                              className="flex-1"
+                            >
+                              Back
+                            </Button>
+                            <Button
+                              className="flex-1 flex items-center gap-2"
+                              size="lg"
+                              disabled={
+                                !isAvailable ||
+                                !startDate ||
+                                !endDate ||
+                                !paymentMethod ||
+                                !paymentTiming ||
+                                createPaymentMutation.isPending
+                              }
+                              onClick={handleTransaction}
+                            >
+                              <CreditCard className="w-4 h-4" />
+                              {createPaymentMutation.isPending
+                                ? "Processing..."
+                                : "Proceed to Checkout"}
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <Link

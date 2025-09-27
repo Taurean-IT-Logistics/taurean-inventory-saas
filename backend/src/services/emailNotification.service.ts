@@ -14,7 +14,7 @@ export class EmailNotificationService {
   private static instance: EmailNotificationService;
 
   private constructor() {
-    this.transporter = nodemailer.createTransport({
+    const config = {
       host: process.env.SMTP_HOST || "smtp.gmail.com",
       port: parseInt(process.env.SMTP_PORT || "587"),
       secure: false,
@@ -22,6 +22,39 @@ export class EmailNotificationService {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      // Add connection timeout and retry settings
+      connectionTimeout: 60000, // 60 seconds
+      greetingTimeout: 30000, // 30 seconds
+      socketTimeout: 60000, // 60 seconds
+      pool: true, // Use connection pooling
+      maxConnections: 5, // Maximum number of connections
+      maxMessages: 100, // Maximum number of messages per connection
+      // Add retry settings
+      retryDelay: 5000, // 5 seconds between retries
+      maxRetries: 3, // Maximum number of retries
+    };
+
+    this.transporter = nodemailer.createTransport(config);
+
+    // Verify connection configuration with better error handling
+    this.transporter.verify((error, success) => {
+      if (error) {
+        console.error(
+          "Email notification service configuration error:",
+          error.message
+        );
+        console.error("SMTP Host:", process.env.SMTP_HOST || "smtp.gmail.com");
+        console.error("SMTP Port:", process.env.SMTP_PORT || "587");
+        console.error("SMTP User:", process.env.SMTP_USER);
+        console.error("SMTP Secure: false");
+
+        // Don't fail the entire service, just log the error
+        console.warn(
+          "Email notification service will attempt to send emails but may fail"
+        );
+      } else {
+        console.log("Email notification service is ready to send messages");
+      }
     });
   }
 

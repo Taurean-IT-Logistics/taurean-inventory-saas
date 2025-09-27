@@ -468,7 +468,7 @@ const forgotPassword = async (req: Request, res: Response): Promise<void> => {
             expiryTime: new Date(Date.now() + 60 * 60 * 1000).toLocaleString(),
           },
         },
-        companyId: user.company?.toString(),
+        companyId: company?._id?.toString(),
       });
 
       sendSuccess(
@@ -542,7 +542,7 @@ const resetPassword = async (req: Request, res: Response): Promise<void> => {
             ipAddress: req.ip || "Unknown",
           },
         },
-        companyId: userDoc?.company?.toString(),
+        companyId: company?._id?.toString(),
       });
     } catch (emailError) {
       console.error("Failed to send password changed email:", emailError);

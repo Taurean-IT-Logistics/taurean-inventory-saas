@@ -384,6 +384,19 @@ export class PaymentVerificationService {
           bookingId: transaction.booking,
           transactionId: transaction._id,
         });
+
+        // Send booking confirmation email
+        try {
+          const { emailService } = await import("./email.service");
+          await emailService.sendBookingConfirmation(
+            transaction.booking.toString()
+          );
+        } catch (emailError) {
+          console.warn(
+            "Failed to send booking confirmation email:",
+            emailError
+          );
+        }
       }
 
       // Update rental status if applicable

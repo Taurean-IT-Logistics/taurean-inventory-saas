@@ -72,6 +72,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Update unread count when data changes
   useEffect(() => {
+    console.log("Notification data changed:", {
+      unreadCountData,
+      notifications,
+    });
+
     if (unreadCountData !== undefined && unreadCountData !== null) {
       // Handle both object format {count: number} and direct number
       const count =
@@ -93,7 +98,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Socket event listeners for real-time notifications
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      return;
+    }
+
+    console.log("Socket available for notifications:", socket.connected);
 
     const handleNewNotification = (notification: Notification) => {
       // Add new notification to the list
@@ -105,8 +114,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       });
 
-      // Update unread count
-      setUnreadCount((prev) => prev + 1);
+      // Update unread count only if notification is not read
+      if (!notification.isRead) {
+        setUnreadCount((prev) => {
+          console.log("Previous count:", prev, "New count:", prev + 1);
+          return prev + 1;
+        });
+      }
 
       // Show toast notification
       toast({
@@ -130,6 +144,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
           notifications: updatedNotifications,
         };
       });
+
+      // Update unread count if notification was marked as read
+      if (data.updates.isRead) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
     };
 
     const handleNotificationDelete = (notificationId: string) => {
@@ -138,6 +157,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         const filteredNotifications = oldNotifications.filter(
           (n: Notification) => n._id !== notificationId
         );
+
+        // Update unread count if deleted notification was unread
+        const deletedNotification = oldNotifications.find(
+          (n: Notification) => n._id === notificationId
+        );
+        if (deletedNotification && !deletedNotification.isRead) {
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        }
+
         return {
           ...old,
           notifications: filteredNotifications,
@@ -174,7 +202,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       // Update unread count
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      setUnreadCount((prev) => {
+        console.log(
+          "Previous count:",
+          prev,
+          "New count:",
+          Math.max(0, prev - 1)
+        );
+        return Math.max(0, prev - 1);
+      });
 
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({

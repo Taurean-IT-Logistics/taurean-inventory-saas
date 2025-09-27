@@ -419,6 +419,7 @@ export interface Tax {
   description?: string;
   effectiveDate?: Date;
   expiryDate?: Date;
+  copiedFrom?: string | mongoose.Types.ObjectId; // Reference to original super admin tax
 }
 
 export interface Company {

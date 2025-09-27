@@ -13,15 +13,16 @@ const TaxSchema: Schema = new Schema<TaxDocument>(
     active: { type: Boolean, default: false },
     isDefault: { type: Boolean, default: false },
     priority: { type: Number, default: 999 },
-    calculationMethod: { 
-      type: String, 
-      enum: ["inclusive", "exclusive", "compound"], 
-      default: "exclusive" 
+    calculationMethod: {
+      type: String,
+      enum: ["inclusive", "exclusive", "compound"],
+      default: "exclusive",
     },
     appliesTo: [{ type: String }],
     description: { type: String },
     effectiveDate: { type: Date },
     expiryDate: { type: Date },
+    copiedFrom: { type: Schema.Types.ObjectId, ref: "Tax" }, // Reference to original super admin tax
   },
   {
     timestamps: true,

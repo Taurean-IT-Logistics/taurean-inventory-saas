@@ -255,6 +255,29 @@ const TaxManagement = () => {
     },
   });
 
+  // Copy super admin tax mutation
+  const copyTaxMutation = useMutation({
+    mutationFn: (taxId: string) => TaxesAPI.copy(taxId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["taxes-combined", "taxes-global", "taxes-company"],
+      });
+      toast({
+        title: "Tax copied successfully",
+        description:
+          "The super admin tax has been copied to your company taxes",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to copy tax",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Apply filters whenever taxes or filters change
   useEffect(() => {
     if (!allTaxes || allTaxes.length === 0) return;
@@ -409,6 +432,20 @@ const TaxManagement = () => {
       await toggleStatusMutation.mutateAsync(tax);
     } catch (error) {
       console.error("Error toggling tax status:", error);
+    }
+  };
+
+  const handleCopyTax = async (tax: Tax) => {
+    if (
+      window.confirm(
+        `Are you sure you want to copy "${tax.name}" to your company taxes? This will create a new tax that you can customize independently.`
+      )
+    ) {
+      try {
+        await copyTaxMutation.mutateAsync(tax._id);
+      } catch (error) {
+        console.error("Error copying tax:", error);
+      }
     }
   };
 
