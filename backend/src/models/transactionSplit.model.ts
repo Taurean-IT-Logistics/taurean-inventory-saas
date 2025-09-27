@@ -10,7 +10,11 @@ const TransactionSplitSchema = new Schema<TransactionSplitDocument>(
       ref: "Transaction",
       required: true,
     },
-    splitType: { enum: ["fixed", "percentage"], default: "percentage" },
+    splitType: {
+      type: String,
+      enum: ["fixed", "percentage"],
+      default: "percentage",
+    },
     splitAmount: { type: Number },
     splitPercentage: { type: Number },
     dueDate: { type: Date, default: new Date() },

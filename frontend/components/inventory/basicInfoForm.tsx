@@ -189,7 +189,11 @@ const BasicInfoForm = ({
                 <SelectValue placeholder="Select facility (optional)" />
               </SelectTrigger>
               <SelectContent>
-                {facilities?.facilities?.map((facility) => (
+                {(
+                  (facilities as any)?.data ||
+                  (facilities as any)?.facilities ||
+                  []
+                ).map((facility: any) => (
                   <SelectItem key={facility._id} value={facility._id}>
                     {facility.name}
                   </SelectItem>
