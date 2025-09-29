@@ -8,6 +8,22 @@ export async function create(req: Request, res: Response) {
       sendError(res, "Forbidden", null, 403);
       return;
     }
+
+    // Deactivate all existing active schedules for the same company/appliesTo scope
+    const { company, appliesTo } = req.body;
+    const deactivationQuery: any = { isActive: true };
+
+    if (company) {
+      deactivationQuery.company = company;
+    }
+
+    if (appliesTo) {
+      deactivationQuery.appliesTo = appliesTo;
+    }
+
+    await TaxScheduleModel.updateMany(deactivationQuery, { isActive: false });
+
+    // Create the new schedule
     const doc = await TaxScheduleModel.create(req.body);
     sendSuccess(res, "Tax schedule created", { schedule: doc }, 201);
   } catch (e: any) {

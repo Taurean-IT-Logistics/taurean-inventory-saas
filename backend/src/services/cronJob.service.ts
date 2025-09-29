@@ -5,9 +5,11 @@ import { InventoryItemModel } from "../models/inventoryItem.model";
 import { NotificationModel } from "../models/notification.model";
 import { NotificationLogModel } from "../models/notificationLog.model";
 import { UserModel } from "../models/user.model";
+import { PaymentScheduleModel } from "../models/paymentSchedule.model";
 import { emitEvent } from "../utils/eventEmitter";
 import { Events } from "../utils/events";
 import EmailNotificationService from "./emailNotification.service";
+import PaymentScheduleService from "./paymentSchedule.service";
 
 export class CronJobService {
   private static instance: CronJobService;
@@ -31,6 +33,7 @@ export class CronJobService {
     this.startMaintenanceDueNotifications();
     this.startOverdueNotifications();
     this.startRetryFailedNotifications();
+    this.startPaymentScheduleNotifications();
     console.log("All cron jobs started successfully");
   }
 
@@ -756,6 +759,215 @@ export class CronJobService {
     };
 
     return templates[type] || templates.maintenance_due;
+  }
+
+  /**
+   * Start payment schedule notifications cron job
+   */
+  private startPaymentScheduleNotifications(): void {
+    const job = cron.schedule("0 9 * * *", async () => {
+      console.log("Running payment schedule notifications...");
+      try {
+        await this.checkUpcomingPayments();
+        await this.checkOverduePayments();
+      } catch (error) {
+        console.error("Error in payment schedule notifications:", error);
+      }
+    });
+
+    this.jobs.set("paymentScheduleNotifications", job);
+    console.log("Payment schedule notifications cron job started");
+  }
+
+  /**
+   * Check for upcoming payments and send notifications
+   */
+  private async checkUpcomingPayments(): Promise<void> {
+    try {
+      const upcomingSchedules =
+        await PaymentScheduleService.getUpcomingPayments(3);
+
+      for (const schedule of upcomingSchedules) {
+        const upcomingPayments = schedule.scheduledPayments.filter(
+          (payment: any) =>
+            payment.status === "pending" &&
+            payment.dueDate <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+        );
+
+        for (const payment of upcomingPayments) {
+          await this.createPaymentNotification(
+            schedule.userId.toString(),
+            schedule.companyId.toString(),
+            "payment_upcoming",
+            {
+              scheduleId: schedule._id,
+              paymentIndex: schedule.scheduledPayments.indexOf(payment),
+              amount: payment.amount,
+              dueDate: payment.dueDate,
+              paymentMethod: payment.paymentMethod,
+              bookingId: schedule.bookingId,
+              rentalId: schedule.rentalId,
+            }
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error checking upcoming payments:", error);
+    }
+  }
+
+  /**
+   * Check for overdue payments and send notifications
+   */
+  private async checkOverduePayments(): Promise<void> {
+    try {
+      const overdueSchedules =
+        await PaymentScheduleService.getOverduePayments();
+
+      for (const schedule of overdueSchedules) {
+        const overduePayments = schedule.scheduledPayments.filter(
+          (payment: any) =>
+            payment.status === "pending" && payment.dueDate < new Date()
+        );
+
+        for (const payment of overduePayments) {
+          // Update payment status to overdue
+          payment.status = "overdue";
+          await schedule.save();
+
+          await this.createPaymentNotification(
+            schedule.userId.toString(),
+            schedule.companyId.toString(),
+            "payment_overdue",
+            {
+              scheduleId: schedule._id,
+              paymentIndex: schedule.scheduledPayments.indexOf(payment),
+              amount: payment.amount,
+              dueDate: payment.dueDate,
+              paymentMethod: payment.paymentMethod,
+              bookingId: schedule.bookingId,
+              rentalId: schedule.rentalId,
+            }
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error checking overdue payments:", error);
+    }
+  }
+
+  /**
+   * Create payment notification with tracking
+   */
+  private async createPaymentNotification(
+    userId: string,
+    companyId: string,
+    type: string,
+    data: any
+  ): Promise<void> {
+    // Check if notification was already sent today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const existingNotification = await NotificationLogModel.findOne({
+      userId,
+      notificationType: type,
+      sentAt: { $gte: today, $lt: tomorrow },
+      isDeleted: false,
+    });
+
+    if (existingNotification) {
+      console.log(
+        `Payment notification ${type} already sent to user ${userId} today`
+      );
+      return;
+    }
+
+    const notificationData = this.getPaymentNotificationData(type, data);
+
+    // Create in-app notification
+    const notification = new NotificationModel({
+      user: userId,
+      company: companyId,
+      title: notificationData.title,
+      message: notificationData.message,
+      type: notificationData.notificationType,
+      category: "payment",
+      isPublic: false,
+      data: {
+        ...data,
+        notificationType: type,
+        timestamp: new Date(),
+      },
+    });
+
+    await notification.save();
+
+    // Log notification
+    const notificationLog = new NotificationLogModel({
+      userId,
+      companyId,
+      notificationType: type,
+      category: "payment",
+      sentAt: new Date(),
+      deliveryStatus: "sent",
+      inAppSent: true,
+      emailSent: false,
+      data: {
+        notificationId: notification._id,
+        ...data,
+      },
+    });
+
+    await notificationLog.save();
+
+    // Emit real-time event
+    emitEvent(Events.NotificationCreated, {
+      userId,
+      notificationId: notification._id,
+      type: notificationData.notificationType,
+    });
+
+    // Send email notification
+    try {
+      const emailService = EmailNotificationService.getInstance();
+      await emailService.sendEmailNotification(
+        userId,
+        companyId,
+        notificationData.title,
+        notificationData.message,
+        "payment",
+        notificationLog._id.toString()
+      );
+    } catch (emailError) {
+      console.error("Failed to send email notification:", emailError);
+    }
+
+    console.log(`Payment notification ${type} sent to user ${userId}`);
+  }
+
+  /**
+   * Get payment notification data templates
+   */
+  private getPaymentNotificationData(type: string, data: any) {
+    const templates = {
+      payment_upcoming: {
+        title: "Upcoming Payment Due",
+        message: `You have a payment of ${data.amount} due on ${new Date(data.dueDate).toLocaleDateString()}. Please ensure payment is made on time.`,
+        notificationType: "info" as const,
+      },
+      payment_overdue: {
+        title: "Payment Overdue",
+        message: `Your payment of ${data.amount} was due on ${new Date(data.dueDate).toLocaleDateString()} and is now overdue. Please make payment immediately.`,
+        notificationType: "warning" as const,
+      },
+    };
+
+    return (
+      templates[type as keyof typeof templates] || templates.payment_upcoming
+    );
   }
 }
 

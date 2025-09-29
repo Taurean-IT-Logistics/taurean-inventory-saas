@@ -38,9 +38,8 @@ async function assertNoFacilityConflicts(
   excludeId?: string
 ) {
   const filter = buildConflictFilter(facilityId, excludeId);
-  const candidates = await BookingModel.find(filter).select(
-    "startDate endDate"
-  );
+  const candidates =
+    await BookingModel.find(filter).select("startDate endDate");
   for (const c of candidates) {
     if (hasOverlap(start, end, c.startDate as any, c.endDate as any)) {
       throw new Error("Booking conflict: overlapping time for this facility");
@@ -100,6 +99,88 @@ const createBooking = async (
     const booking = new BookingModel(bookingData);
     const saved = await booking.save();
 
+    // Create payment schedule for advance or split payments
+    if (bookingData.paymentTiming === "advance" && bookingData.advanceConfig) {
+      try {
+        const { PaymentScheduleService } = await import(
+          "./paymentSchedule.service"
+        );
+
+        const advanceAmount = bookingData.advanceConfig.amount;
+        const balanceAmount = bookingData.totalPrice - advanceAmount;
+
+        await PaymentScheduleService.createPaymentSchedule({
+          userId: saved.user.toString(),
+          companyId: saved.company.toString(),
+          bookingId: saved._id.toString(),
+          totalAmount: bookingData.totalPrice,
+          paymentType: "advance",
+          scheduledPayments: [
+            {
+              amount: advanceAmount,
+              dueDate: new Date(), // Due immediately
+              paymentMethod:
+                (bookingData.paymentMethod === "online"
+                  ? "paystack"
+                  : bookingData.paymentMethod) || "cash",
+              notes: "Advance payment",
+            },
+            {
+              amount: balanceAmount,
+              dueDate: new Date(saved.startDate), // Due on booking start date
+              paymentMethod:
+                (bookingData.paymentMethod === "online"
+                  ? "paystack"
+                  : bookingData.paymentMethod) || "cash",
+              notes: "Balance payment",
+            },
+          ],
+        });
+      } catch (scheduleError) {
+        console.warn(
+          "Failed to create advance payment schedule:",
+          scheduleError
+        );
+      }
+    } else if (
+      bookingData.paymentTiming === "split" &&
+      bookingData.splitConfig
+    ) {
+      try {
+        const { PaymentScheduleService } = await import(
+          "./paymentSchedule.service"
+        );
+
+        const numberOfParts = bookingData.splitConfig.numberOfParts;
+        const amountPerPart = bookingData.totalPrice / numberOfParts;
+
+        const scheduledPayments = Array.from(
+          { length: numberOfParts },
+          (_, index) => ({
+            amount: amountPerPart,
+            dueDate: new Date(Date.now() + index * 7 * 24 * 60 * 60 * 1000), // Weekly intervals
+            paymentMethod:
+              (bookingData.paymentMethod === "online"
+                ? "paystack"
+                : bookingData.paymentMethod) ||
+              ("cash" as "cash" | "cheque" | "paystack"),
+            notes: `Split payment part ${index + 1} of ${numberOfParts}`,
+          })
+        );
+
+        await PaymentScheduleService.createPaymentSchedule({
+          userId: saved.user.toString(),
+          companyId: saved.company.toString(),
+          bookingId: saved._id.toString(),
+          totalAmount: bookingData.totalPrice,
+          paymentType: "split",
+          scheduledPayments,
+        });
+      } catch (scheduleError) {
+        console.warn("Failed to create split payment schedule:", scheduleError);
+      }
+    }
+
     // Update user loyalty profile to increment total bookings
     try {
       const { updateUserLoyaltyProfile } = await import("./user.service");
@@ -124,13 +205,16 @@ const createBooking = async (
       const { Events } = await import("../realtime/events");
       emitEvent(Events.BookingCreated, { id: saved._id, booking: saved });
 
-      // Send booking confirmation email
-      await emailService.sendBookingConfirmation((saved as any)._id.toString());
-      
+      // Send booking submitted email
+      await emailService.sendBookingSubmitted((saved as any)._id.toString());
+
       // Send booking notification
-      await notificationService.createBookingNotification(saved._id.toString(), "created");
+      await notificationService.createBookingNotification(
+        saved._id.toString(),
+        "created"
+      );
     } catch (error) {
-      console.warn("Failed to send booking confirmation:", error);
+      console.warn("Failed to send booking submitted email:", error);
     }
     return saved;
   } catch (error) {
@@ -230,15 +314,26 @@ const updateBooking = async (
         const { emitEvent } = await import("../realtime/socket");
         const { Events } = await import("../realtime/events");
         emitEvent(Events.BookingUpdated, { id: updated._id, booking: updated });
-        
+
         // Send notifications based on status change
         if (updateData.status) {
           if (updateData.status === "confirmed") {
-            await notificationService.createBookingNotification(updated._id.toString(), "confirmed");
+            await notificationService.createBookingNotification(
+              updated._id.toString(),
+              "confirmed"
+            );
+            // Send booking confirmation email
+            await emailService.sendBookingConfirmation(updated._id.toString());
           } else if (updateData.status === "cancelled") {
-            await notificationService.createBookingNotification(updated._id.toString(), "cancelled");
+            await notificationService.createBookingNotification(
+              updated._id.toString(),
+              "cancelled"
+            );
           } else if (updateData.status === "completed") {
-            await notificationService.createBookingNotification(updated._id.toString(), "completed");
+            await notificationService.createBookingNotification(
+              updated._id.toString(),
+              "completed"
+            );
           }
         }
       } catch (error) {
@@ -323,9 +418,8 @@ const checkAvailability = async (
 
     // Use the same filter logic as assertNoFacilityConflicts for consistency
     const filter = buildConflictFilter(facilityId);
-    const existingBookings = await BookingModel.find(filter).select(
-      "startDate endDate"
-    );
+    const existingBookings =
+      await BookingModel.find(filter).select("startDate endDate");
 
     for (const booking of existingBookings) {
       if (

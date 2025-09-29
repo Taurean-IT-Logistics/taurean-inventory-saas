@@ -27,14 +27,93 @@ const createRental = async (
 
     // Create rental
     const rental = new RentalModel(rentalData);
-    await rental.save();
+    const saved = await rental.save();
+
+    // Create payment schedule for advance or split payments
+    if (rentalData.paymentTiming === "advance" && rentalData.advanceConfig) {
+      try {
+        const { PaymentScheduleService } = await import(
+          "./paymentSchedule.service"
+        );
+
+        const advanceAmount = rentalData.advanceConfig.amount;
+        const balanceAmount = rentalData.totalPrice - advanceAmount;
+
+        await PaymentScheduleService.createPaymentSchedule({
+          userId: saved.user.toString(),
+          companyId: saved.company.toString(),
+          rentalId: saved._id.toString(),
+          totalAmount: rentalData.totalPrice,
+          paymentType: "advance",
+          scheduledPayments: [
+            {
+              amount: advanceAmount,
+              dueDate: new Date(), // Due immediately
+              paymentMethod:
+                (rentalData.paymentMethod === "online"
+                  ? "paystack"
+                  : rentalData.paymentMethod) || "cash",
+              notes: "Advance payment",
+            },
+            {
+              amount: balanceAmount,
+              dueDate: new Date(saved.startDate), // Due on rental start date
+              paymentMethod:
+                (rentalData.paymentMethod === "online"
+                  ? "paystack"
+                  : rentalData.paymentMethod) || "cash",
+              notes: "Balance payment",
+            },
+          ],
+        });
+      } catch (scheduleError) {
+        console.warn(
+          "Failed to create advance payment schedule:",
+          scheduleError
+        );
+      }
+    } else if (rentalData.paymentTiming === "split" && rentalData.splitConfig) {
+      try {
+        const { PaymentScheduleService } = await import(
+          "./paymentSchedule.service"
+        );
+
+        const numberOfParts = rentalData.splitConfig.numberOfParts;
+        const amountPerPart = rentalData.totalPrice / numberOfParts;
+
+        const scheduledPayments = Array.from(
+          { length: numberOfParts },
+          (_, index) => ({
+            amount: amountPerPart,
+            dueDate: new Date(Date.now() + index * 7 * 24 * 60 * 60 * 1000), // Weekly intervals
+            paymentMethod:
+              (rentalData.paymentMethod === "online"
+                ? "paystack"
+                : rentalData.paymentMethod) ||
+              ("cash" as "cash" | "cheque" | "paystack"),
+            notes: `Split payment part ${index + 1} of ${numberOfParts}`,
+          })
+        );
+
+        await PaymentScheduleService.createPaymentSchedule({
+          userId: saved.user.toString(),
+          companyId: saved.company.toString(),
+          rentalId: saved._id.toString(),
+          totalAmount: rentalData.totalPrice,
+          paymentType: "split",
+          scheduledPayments,
+        });
+      } catch (scheduleError) {
+        console.warn("Failed to create split payment schedule:", scheduleError);
+      }
+    }
 
     // Update inventory quantity
     await InventoryItemModel.findByIdAndUpdate(rentalData.item, {
       $inc: { quantity: -(rentalData.quantity || 0) },
     });
 
-    return rental;
+    return saved;
   } catch (error) {
     throw new Error(
       `Failed to create rental: ${

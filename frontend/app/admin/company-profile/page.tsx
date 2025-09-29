@@ -44,7 +44,7 @@ import {
 
 export default function CompanyProfilePage() {
   const { user } = useAuth();
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   const [isEditMode, setIsEditMode] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
@@ -231,486 +231,477 @@ export default function CompanyProfilePage() {
           </p>
         </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Company Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {user?.company ? (
-                <div className="space-y-3">
-                  {!isEditMode ? (
-                    <>
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold">
-                          Company Details
-                        </h3>
-                        <Button
-                          onClick={() => setIsEditMode(true)}
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-2"
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Company Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {user?.company ? (
+              <div className="space-y-3">
+                {!isEditMode ? (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">Company Details</h3>
+                      <Button
+                        onClick={() => setIsEditMode(true)}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Edit
+                      </Button>
+                    </div>
+
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <h3 className="font-semibold text-blue-900">
+                        Company Name
+                      </h3>
+                      <p className="text-blue-700">
+                        {(user.company as any)?.name || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <h3 className="font-semibold text-green-900">
+                        Your Role
+                      </h3>
+                      <p className="text-green-700 capitalize">{user.role}</p>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <h3 className="font-semibold text-purple-900">
+                        Company Status
+                      </h3>
+                      <p className="text-purple-700 capitalize">
+                        {(user.company as any)?.isActive
+                          ? "Active"
+                          : "Inactive"}
+                      </p>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <h3 className="font-semibold text-orange-900">
+                        Currency
+                      </h3>
+                      <p className="text-orange-700">
+                        {(user.company as any)?.currency || "N/A"}
+                      </p>
+                    </div>
+                    {(user.company as any)?.website && (
+                      <div className="bg-teal-50 p-4 rounded-lg">
+                        <h3 className="font-semibold text-teal-900">Website</h3>
+                        <a
+                          href={(user.company as any)?.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-teal-700 hover:underline"
                         >
-                          <Edit className="h-4 w-4" />
-                          Edit
-                        </Button>
+                          {(user.company as any)?.website}
+                        </a>
                       </div>
-
+                    )}
+                    {(user.company as any)?.phone && (
+                      <div className="bg-cyan-50 p-4 rounded-lg">
+                        <h3 className="font-semibold text-cyan-900">Phone</h3>
+                        <p className="text-cyan-700">
+                          {(user.company as any)?.phone}
+                        </p>
+                      </div>
+                    )}
+                    {(user.company as any)?.email && (
                       <div className="bg-blue-50 p-4 rounded-lg">
-                        <h3 className="font-semibold text-blue-900">
-                          Company Name
+                        <h3 className="font-semibold text-blue-900">Email</h3>
+                        <a
+                          href={`mailto:${(user.company as any)?.email}`}
+                          className="text-blue-700 hover:underline"
+                        >
+                          {(user.company as any)?.email}
+                        </a>
+                      </div>
+                    )}
+                    {(user.company as any)?.feePercent && (
+                      <div className="bg-amber-50 p-4 rounded-lg">
+                        <h3 className="font-semibold text-amber-900">
+                          Fee Percentage
                         </h3>
-                        <p className="text-blue-700">
-                          {(user.company as any)?.name || "N/A"}
+                        <p className="text-amber-700">
+                          {(user.company as any)?.feePercent}%
                         </p>
                       </div>
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <h3 className="font-semibold text-green-900">
-                          Your Role
+                    )}
+                    {(user.company as any)?.description && (
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h3 className="font-semibold text-gray-900">
+                          Description
                         </h3>
-                        <p className="text-green-700 capitalize">{user.role}</p>
-                      </div>
-                      <div className="bg-purple-50 p-4 rounded-lg">
-                        <h3 className="font-semibold text-purple-900">
-                          Company Status
-                        </h3>
-                        <p className="text-purple-700 capitalize">
-                          {(user.company as any)?.isActive
-                            ? "Active"
-                            : "Inactive"}
+                        <p className="text-gray-700">
+                          {(user.company as any)?.description}
                         </p>
                       </div>
-                      <div className="bg-orange-50 p-4 rounded-lg">
-                        <h3 className="font-semibold text-orange-900">
-                          Currency
+                    )}
+                    {(user.company as any)?.location && (
+                      <div className="bg-indigo-50 p-4 rounded-lg">
+                        <h3 className="font-semibold text-indigo-900">
+                          Location
                         </h3>
-                        <p className="text-orange-700">
-                          {(user.company as any)?.currency || "N/A"}
+                        <p className="text-indigo-700">
+                          {(user.company as any)?.location}
                         </p>
                       </div>
-                      {(user.company as any)?.website && (
-                        <div className="bg-teal-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-teal-900">
-                            Website
-                          </h3>
-                          <a
-                            href={(user.company as any)?.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-teal-700 hover:underline"
-                          >
-                            {(user.company as any)?.website}
-                          </a>
-                        </div>
-                      )}
-                      {(user.company as any)?.phone && (
-                        <div className="bg-cyan-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-cyan-900">Phone</h3>
-                          <p className="text-cyan-700">
-                            {(user.company as any)?.phone}
-                          </p>
-                        </div>
-                      )}
-                      {(user.company as any)?.email && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-blue-900">Email</h3>
-                          <a
-                            href={`mailto:${(user.company as any)?.email}`}
-                            className="text-blue-700 hover:underline"
-                          >
-                            {(user.company as any)?.email}
-                          </a>
-                        </div>
-                      )}
-                      {(user.company as any)?.feePercent && (
-                        <div className="bg-amber-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-amber-900">
-                            Fee Percentage
-                          </h3>
-                          <p className="text-amber-700">
-                            {(user.company as any)?.feePercent}%
-                          </p>
-                        </div>
-                      )}
-                      {(user.company as any)?.description && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-gray-900">
-                            Description
-                          </h3>
-                          <p className="text-gray-700">
-                            {(user.company as any)?.description}
-                          </p>
-                        </div>
-                      )}
-                      {(user.company as any)?.location && (
-                        <div className="bg-indigo-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-indigo-900">
-                            Location
-                          </h3>
-                          <p className="text-indigo-700">
-                            {(user.company as any)?.location}
-                          </p>
-                        </div>
-                      )}
+                    )}
 
-                      {/* Display company logo */}
-                      {(user.company as any)?.logo && (
-                        <div className="bg-pink-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-pink-900 mb-3">
-                            Company Logo
-                          </h3>
-                          <div className="flex justify-center">
+                    {/* Display company logo */}
+                    {(user.company as any)?.logo && (
+                      <div className="bg-pink-50 p-4 rounded-lg">
+                        <h3 className="font-semibold text-pink-900 mb-3">
+                          Company Logo
+                        </h3>
+                        <div className="flex justify-center">
+                          <Image
+                            src={getResourceUrl(
+                              (user.company as any).logo.path || ""
+                            )}
+                            alt="Company logo"
+                            width={128}
+                            height={128}
+                            className="w-32 h-32 object-cover rounded-lg border"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">
+                        Edit Company Details
+                      </h3>
+                      <Button
+                        onClick={() => setIsEditMode(false)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="name">Company Name</Label>
+                        <Input
+                          id="name"
+                          value={editForm.name}
+                          onChange={(e) =>
+                            handleInputChange("name", e.target.value)
+                          }
+                          placeholder="Company name"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="description">Description</Label>
+                        <Input
+                          id="description"
+                          value={editForm.description}
+                          onChange={(e) =>
+                            handleInputChange("description", e.target.value)
+                          }
+                          placeholder="Company description"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="location">Location</Label>
+                        <Input
+                          id="location"
+                          value={editForm.location}
+                          onChange={(e) =>
+                            handleInputChange("location", e.target.value)
+                          }
+                          placeholder="Company location"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="website">Website</Label>
+                        <Input
+                          id="website"
+                          value={editForm.website}
+                          onChange={(e) =>
+                            handleInputChange("website", e.target.value)
+                          }
+                          placeholder="https://example.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          value={editForm.phone}
+                          onChange={(e) =>
+                            handleInputChange("phone", e.target.value)
+                          }
+                          placeholder="+1234567890"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          value={editForm.email}
+                          onChange={(e) =>
+                            handleInputChange("email", e.target.value)
+                          }
+                          placeholder="contact@company.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="currency">Currency</Label>
+                        <Input
+                          id="currency"
+                          value={editForm.currency}
+                          onChange={(e) =>
+                            handleInputChange("currency", e.target.value)
+                          }
+                          placeholder="USD"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="feePercent">
+                          Fee Percentage
+                          {user?.role !== "super_admin" && (
+                            <span className="text-sm text-gray-500 ml-2">
+                              (Read-only)
+                            </span>
+                          )}
+                        </Label>
+                        <Input
+                          id="feePercent"
+                          value={editForm.feePercent}
+                          onChange={(e) =>
+                            handleInputChange("feePercent", e.target.value)
+                          }
+                          placeholder="5"
+                          type="number"
+                          min="0"
+                          max="100"
+                          disabled={user?.role !== "super_admin"}
+                          className={
+                            user?.role !== "super_admin"
+                              ? "bg-gray-100 cursor-not-allowed"
+                              : ""
+                          }
+                        />
+                        {user?.role !== "super_admin" && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Only super admins can modify fee percentages
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="invoiceFormat">Invoice Format</Label>
+                      <div className="space-y-4">
+                        {/* Invoice Format Type */}
+                        <div>
+                          <Label htmlFor="invoiceFormatType">Format Type</Label>
+                          <Select
+                            value={editForm.invoiceFormatType || "auto"}
+                            onValueChange={(value) =>
+                              handleInputChange("invoiceFormatType", value)
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select format type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="auto">
+                                Auto (Sequential Numbers)
+                              </SelectItem>
+                              <SelectItem value="prefix">
+                                Custom Prefix
+                              </SelectItem>
+                              <SelectItem value="paystack">
+                                Paystack Format
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Prefix Input (only show for prefix type) */}
+                        {editForm.invoiceFormatType === "prefix" && (
+                          <div>
+                            <Label htmlFor="invoiceFormatPrefix">
+                              Invoice Prefix
+                            </Label>
+                            <Input
+                              id="invoiceFormatPrefix"
+                              value={editForm.invoiceFormatPrefix || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "invoiceFormatPrefix",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="e.g., INV, BILL, TIL"
+                            />
+                            <p className="text-sm text-gray-500 mt-1">
+                              This prefix will be added to all invoice numbers
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Padding Configuration */}
+                        <div>
+                          <Label htmlFor="invoiceFormatPadding">
+                            Number Padding
+                          </Label>
+                          <Select
+                            value={
+                              editForm.invoiceFormatPadding?.toString() || "4"
+                            }
+                            onValueChange={(value) =>
+                              handleInputChange(
+                                "invoiceFormatPadding",
+                                parseInt(value)
+                              )
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select padding" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="3">
+                                3 digits (001, 002...)
+                              </SelectItem>
+                              <SelectItem value="4">
+                                4 digits (0001, 0002...)
+                              </SelectItem>
+                              <SelectItem value="5">
+                                5 digits (00001, 00002...)
+                              </SelectItem>
+                              <SelectItem value="6">
+                                6 digits (000001, 000002...)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Number of digits for the sequential part
+                          </p>
+                        </div>
+
+                        {/* Preview */}
+                        <div className="p-3 bg-gray-50 rounded-md">
+                          <Label className="text-sm font-medium">Preview</Label>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {(() => {
+                              const type = editForm.invoiceFormatType || "auto";
+                              const prefix = editForm.invoiceFormatPrefix || "";
+                              const padding =
+                                editForm.invoiceFormatPadding || 4;
+                              const nextNumber =
+                                editForm.invoiceFormatNextNumber || 1;
+
+                              if (type === "prefix" && prefix) {
+                                return `${prefix}${String(nextNumber).padStart(
+                                  padding,
+                                  "0"
+                                )}`;
+                              } else if (type === "paystack") {
+                                return `PAY-${String(nextNumber).padStart(
+                                  padding,
+                                  "0"
+                                )}`;
+                              } else {
+                                return `INV-${String(nextNumber).padStart(
+                                  padding,
+                                  "0"
+                                )}`;
+                              }
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Image Upload Section */}
+                    <div>
+                      <Label>Company Logo</Label>
+                      <div className="mt-2">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2"
+                          >
+                            <Upload className="h-4 w-4" />
+                            Upload
+                          </Button>
+                        </div>
+
+                        {/* Image Preview */}
+                        {previewImage && (
+                          <div className="relative group">
                             <Image
-                              src={getResourceUrl(
-                                (user.company as any).logo.path || ""
-                              )}
-                              alt="Company logo"
+                              src={previewImage}
+                              alt="Company logo preview"
                               width={128}
                               height={128}
                               className="w-32 h-32 object-cover rounded-lg border"
                             />
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold">
-                          Edit Company Details
-                        </h3>
-                        <Button
-                          onClick={() => setIsEditMode(false)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="name">Company Name</Label>
-                          <Input
-                            id="name"
-                            value={editForm.name}
-                            onChange={(e) =>
-                              handleInputChange("name", e.target.value)
-                            }
-                            placeholder="Company name"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="description">Description</Label>
-                          <Input
-                            id="description"
-                            value={editForm.description}
-                            onChange={(e) =>
-                              handleInputChange("description", e.target.value)
-                            }
-                            placeholder="Company description"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="location">Location</Label>
-                          <Input
-                            id="location"
-                            value={editForm.location}
-                            onChange={(e) =>
-                              handleInputChange("location", e.target.value)
-                            }
-                            placeholder="Company location"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="website">Website</Label>
-                          <Input
-                            id="website"
-                            value={editForm.website}
-                            onChange={(e) =>
-                              handleInputChange("website", e.target.value)
-                            }
-                            placeholder="https://example.com"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="phone">Phone</Label>
-                          <Input
-                            id="phone"
-                            value={editForm.phone}
-                            onChange={(e) =>
-                              handleInputChange("phone", e.target.value)
-                            }
-                            placeholder="+1234567890"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="email">Email</Label>
-                          <Input
-                            id="email"
-                            value={editForm.email}
-                            onChange={(e) =>
-                              handleInputChange("email", e.target.value)
-                            }
-                            placeholder="contact@company.com"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="currency">Currency</Label>
-                          <Input
-                            id="currency"
-                            value={editForm.currency}
-                            onChange={(e) =>
-                              handleInputChange("currency", e.target.value)
-                            }
-                            placeholder="USD"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="feePercent">
-                            Fee Percentage
-                            {user?.role !== "superAdmin" && (
-                              <span className="text-sm text-gray-500 ml-2">
-                                (Read-only)
-                              </span>
-                            )}
-                          </Label>
-                          <Input
-                            id="feePercent"
-                            value={editForm.feePercent}
-                            onChange={(e) =>
-                              handleInputChange("feePercent", e.target.value)
-                            }
-                            placeholder="5"
-                            type="number"
-                            min="0"
-                            max="100"
-                            disabled={user?.role !== "superAdmin"}
-                            className={
-                              user?.role !== "superAdmin"
-                                ? "bg-gray-100 cursor-not-allowed"
-                                : ""
-                            }
-                          />
-                          {user?.role !== "superAdmin" && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Only super admins can modify fee percentages
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="invoiceFormat">Invoice Format</Label>
-                        <div className="space-y-4">
-                          {/* Invoice Format Type */}
-                          <div>
-                            <Label htmlFor="invoiceFormatType">
-                              Format Type
-                            </Label>
-                            <Select
-                              value={editForm.invoiceFormatType || "auto"}
-                              onValueChange={(value) =>
-                                handleInputChange("invoiceFormatType", value)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select format type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="auto">
-                                  Auto (Sequential Numbers)
-                                </SelectItem>
-                                <SelectItem value="prefix">
-                                  Custom Prefix
-                                </SelectItem>
-                                <SelectItem value="paystack">
-                                  Paystack Format
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Prefix Input (only show for prefix type) */}
-                          {editForm.invoiceFormatType === "prefix" && (
-                            <div>
-                              <Label htmlFor="invoiceFormatPrefix">
-                                Invoice Prefix
-                              </Label>
-                              <Input
-                                id="invoiceFormatPrefix"
-                                value={editForm.invoiceFormatPrefix || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    "invoiceFormatPrefix",
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="e.g., INV, BILL, TIL"
-                              />
-                              <p className="text-sm text-gray-500 mt-1">
-                                This prefix will be added to all invoice numbers
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Padding Configuration */}
-                          <div>
-                            <Label htmlFor="invoiceFormatPadding">
-                              Number Padding
-                            </Label>
-                            <Select
-                              value={
-                                editForm.invoiceFormatPadding?.toString() || "4"
-                              }
-                              onValueChange={(value) =>
-                                handleInputChange(
-                                  "invoiceFormatPadding",
-                                  parseInt(value)
-                                )
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select padding" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="3">
-                                  3 digits (001, 002...)
-                                </SelectItem>
-                                <SelectItem value="4">
-                                  4 digits (0001, 0002...)
-                                </SelectItem>
-                                <SelectItem value="5">
-                                  5 digits (00001, 00002...)
-                                </SelectItem>
-                                <SelectItem value="6">
-                                  6 digits (000001, 000002...)
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <p className="text-sm text-gray-500 mt-1">
-                              Number of digits for the sequential part
-                            </p>
-                          </div>
-
-                          {/* Preview */}
-                          <div className="p-3 bg-gray-50 rounded-md">
-                            <Label className="text-sm font-medium">
-                              Preview
-                            </Label>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {(() => {
-                                const type =
-                                  editForm.invoiceFormatType || "auto";
-                                const prefix =
-                                  editForm.invoiceFormatPrefix || "";
-                                const padding =
-                                  editForm.invoiceFormatPadding || 4;
-                                const nextNumber =
-                                  editForm.invoiceFormatNextNumber || 1;
-
-                                if (type === "prefix" && prefix) {
-                                  return `${prefix}${String(
-                                    nextNumber
-                                  ).padStart(padding, "0")}`;
-                                } else if (type === "paystack") {
-                                  return `PAY-${String(nextNumber).padStart(
-                                    padding,
-                                    "0"
-                                  )}`;
-                                } else {
-                                  return `INV-${String(nextNumber).padStart(
-                                    padding,
-                                    "0"
-                                  )}`;
-                                }
-                              })()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Image Upload Section */}
-                      <div>
-                        <Label>Company Logo</Label>
-                        <div className="mt-2">
-                          <div className="flex items-center gap-2 mb-4">
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleImageUpload}
-                              className="flex-1"
-                            />
                             <Button
                               type="button"
-                              variant="outline"
+                              variant="destructive"
                               size="sm"
-                              className="flex items-center gap-2"
+                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={removeImage}
                             >
-                              <Upload className="h-4 w-4" />
-                              Upload
+                              <X className="h-3 w-3" />
                             </Button>
                           </div>
-
-                          {/* Image Preview */}
-                          {previewImage && (
-                            <div className="relative group">
-                              <Image
-                                src={previewImage}
-                                alt="Company logo preview"
-                                width={128}
-                                height={128}
-                                className="w-32 h-32 object-cover rounded-lg border"
-                              />
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={removeImage}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
+                    </div>
 
-                      <div className="flex gap-2 pt-4">
-                        <Button
-                          type="submit"
-                          disabled={updateCompanyMutation.isPending}
-                          className="flex items-center gap-2"
-                        >
-                          {updateCompanyMutation.isPending
-                            ? "Updating..."
-                            : "Update Company"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setIsEditMode(false)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>You are not currently associated with any company</p>
-                  <p className="text-sm mt-2">
-                    Search and request to join a company below
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    <div className="flex gap-2 pt-4">
+                      <Button
+                        type="submit"
+                        disabled={updateCompanyMutation.isPending}
+                        className="flex items-center gap-2"
+                      >
+                        {updateCompanyMutation.isPending
+                          ? "Updating..."
+                          : "Update Company"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsEditMode(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>You are not currently associated with any company</p>
+                <p className="text-sm mt-2">
+                  Search and request to join a company below
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+    </div>
   );
 }

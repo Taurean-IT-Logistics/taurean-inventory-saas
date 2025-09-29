@@ -16,7 +16,7 @@ export interface User {
   email: string;
   phone?: string;
   password: string;
-  role: "user" | "staff" | "admin" | "superAdmin";
+  role: "user" | "staff" | "admin" | "super_admin";
   loyaltyProfile?: {
     totalBookings: number;
     totalSpent: number;
@@ -210,6 +210,17 @@ export interface Transaction {
       phoneNumber: string;
       transactionId: string;
     };
+    // For cash payments
+    denominations?: Array<{
+      denomination: number;
+      quantity: number;
+    }>;
+    // For cheque payments
+    bankName?: string;
+    chequeDate?: Date;
+    // For bank transfers
+    bankAccount?: string;
+    transactionReference?: string;
   };
   ref?: string;
   accessCode?: string;
@@ -227,6 +238,24 @@ export interface Transaction {
   updatedAt: Date;
   company?: string; // Company owning this transaction
   isPlatformRevenue?: boolean;
+  paymentTiming?: "advance" | "split" | "full";
+  advanceConfig?: {
+    percentage: number | string;
+    amount: number;
+    inputMode: "percentage" | "amount";
+  };
+  splitConfig?: {
+    numberOfParts: number;
+    parts: Array<{ amount: number; dueDate: Date }>;
+  };
+  // Pending transaction fields
+  status?: "pending" | "confirmed" | "rejected" | "cancelled";
+  notes?: string;
+  processedBy?: User | string;
+  processedAt?: Date;
+  rejectionReason?: string;
+  currency?: string;
+  referenceId?: string; // ID of the rental, booking, or purchase
 }
 
 export interface InventoryItem {
@@ -411,11 +440,23 @@ export interface Tax {
   rate: number;
   type: string;
   appliesTo: "inventory_item" | "facility" | "both";
+  taxType?: "percentage" | "fixed_amount";
+  fixedAmount?: number;
   isSuperAdminTax?: boolean;
   company?: Company;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
+  // Independent tax fields
+  isArchived?: boolean;
+  archivedAt?: Date;
+  archivedBy?: User | string;
+  archivedReason?: string;
+  // Audit trail fields
+  createdBy?: User | string;
+  createdReason?: string;
+  replacedTax?: string;
+  replacementReason?: string;
 }
 
 export interface Company {
@@ -665,8 +706,7 @@ export interface TaxSchedule {
   _id: string;
   name: string;
   description?: string;
-  type: "percentage" | "fixed";
-  value: number;
+  components: Tax[]; // Array of individual taxes
   effectiveDate: Date;
   expiryDate?: Date;
   isActive: boolean;
@@ -675,6 +715,10 @@ export interface TaxSchedule {
   createdBy: User;
   createdAt: Date;
   updatedAt: Date;
+  // Tax calculation settings
+  taxInclusive?: boolean;
+  taxExclusive?: boolean;
+  taxOnTax?: boolean;
 }
 
 export interface Resource {
@@ -912,3 +956,6 @@ export interface SystemNotification {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Maps and Location Types
+export * from "./PlaceResult";

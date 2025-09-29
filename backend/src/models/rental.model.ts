@@ -17,20 +17,38 @@ const RentalSchema = new Schema<RentalDocument>(
     },
     notes: { type: String },
     user: { type: Schema.Types.ObjectId, ref: "Users", required: true },
-    status: { 
-      type: String, 
-      enum: ["active", "returned", "overdue", "cancelled"], 
-      default: "active" 
+    status: {
+      type: String,
+      enum: ["active", "returned", "overdue", "cancelled"],
+      default: "active",
     },
     returnDate: { type: Date },
-    returnCondition: { 
-      type: String, 
-      enum: ["good", "fair", "damaged"] 
+    returnCondition: {
+      type: String,
+      enum: ["good", "fair", "damaged"],
     },
     returnNotes: { type: String },
     lateFee: { type: Number, default: 0 },
     damageFee: { type: Number, default: 0 },
     company: { type: Schema.Types.ObjectId, ref: "Company", required: true },
+    totalPrice: { type: Number },
+    paymentMethod: {
+      type: String,
+      enum: ["online", "cash", "cheque"],
+    },
+    paymentTiming: {
+      type: String,
+      enum: ["advance", "split", "full"],
+      default: "full",
+    },
+    advanceConfig: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
+    splitConfig: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

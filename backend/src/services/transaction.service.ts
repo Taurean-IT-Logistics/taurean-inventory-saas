@@ -316,6 +316,176 @@ const fixTransactionCompanyFields = async (): Promise<{
   }
 };
 
+// Create a pending transaction
+const createPendingTransaction = async (
+  transactionData: Partial<Transaction>
+): Promise<TransactionDocument> => {
+  try {
+    const pendingTransaction = new TransactionModel({
+      ...transactionData,
+      status: "pending",
+      currency: transactionData.currency || "GHS",
+      paymentTiming: transactionData.paymentTiming || "full",
+    });
+
+    const saved = await pendingTransaction.save();
+
+    try {
+      emitEvent(Events.TransactionCreated, {
+        id: saved._id,
+        transaction: saved,
+      });
+    } catch {}
+
+    return saved;
+  } catch (error) {
+    throw new Error(`Failed to create pending transaction: ${error.message}`);
+  }
+};
+
+// Get pending transactions for a company
+const getPendingTransactions = async (
+  companyId: string,
+  filters: {
+    status?: string;
+    type?: string;
+    facility?: string;
+    page?: number;
+    limit?: number;
+  } = {}
+): Promise<{
+  transactions: TransactionDocument[];
+  total: number;
+  page: number;
+  limit: number;
+}> => {
+  try {
+    const { status, type, facility, page = 1, limit = 10 } = filters;
+
+    const query: any = {
+      company: companyId,
+      isDeleted: false,
+    };
+
+    if (status) query.status = status;
+    if (type) query.category = type;
+    if (facility) query.facility = facility;
+
+    const skip = (page - 1) * limit;
+
+    const [transactions, total] = await Promise.all([
+      TransactionModel.find(query)
+        .populate("user", "firstName lastName email")
+        .populate("facility", "name")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      TransactionModel.countDocuments(query),
+    ]);
+
+    return {
+      transactions,
+      total,
+      page,
+      limit,
+    };
+  } catch (error) {
+    throw new Error(`Failed to get pending transactions: ${error.message}`);
+  }
+};
+
+// Process pending transaction (approve/reject)
+const processPendingTransaction = async (
+  transactionId: string,
+  action: "confirmed" | "rejected",
+  processedBy: string,
+  notes?: string,
+  rejectionReason?: string
+): Promise<TransactionDocument> => {
+  try {
+    const updateData: any = {
+      status: action,
+      processedBy,
+      processedAt: new Date(),
+    };
+
+    if (notes) updateData.notes = notes;
+    if (rejectionReason) updateData.rejectionReason = rejectionReason;
+
+    const updatedTransaction = await TransactionModel.findByIdAndUpdate(
+      transactionId,
+      updateData,
+      { new: true }
+    ).populate("user", "firstName lastName email");
+
+    if (!updatedTransaction) {
+      throw new Error("Transaction not found");
+    }
+
+    try {
+      emitEvent(Events.TransactionUpdated, {
+        id: updatedTransaction._id,
+        transaction: updatedTransaction,
+      });
+    } catch {}
+
+    return updatedTransaction;
+  } catch (error) {
+    throw new Error(`Failed to process pending transaction: ${error.message}`);
+  }
+};
+
+// Get user's pending transactions
+const getUserPendingTransactions = async (
+  userId: string,
+  filters: {
+    status?: string;
+    type?: string;
+    page?: number;
+    limit?: number;
+  } = {}
+): Promise<{
+  transactions: TransactionDocument[];
+  total: number;
+  page: number;
+  limit: number;
+}> => {
+  try {
+    const { status, type, page = 1, limit = 10 } = filters;
+
+    const query: any = {
+      user: userId,
+      isDeleted: false,
+    };
+
+    if (status) query.status = status;
+    if (type) query.category = type;
+
+    const skip = (page - 1) * limit;
+
+    const [transactions, total] = await Promise.all([
+      TransactionModel.find(query)
+        .populate("facility", "name")
+        .populate("processedBy", "firstName lastName")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      TransactionModel.countDocuments(query),
+    ]);
+
+    return {
+      transactions,
+      total,
+      page,
+      limit,
+    };
+  } catch (error) {
+    throw new Error(
+      `Failed to get user pending transactions: ${error.message}`
+    );
+  }
+};
+
 export {
   createTransaction,
   getAllTransactions,
@@ -329,4 +499,8 @@ export {
   getTransactionByReference,
   getCompanyTransactions,
   fixTransactionCompanyFields,
+  createPendingTransaction,
+  getPendingTransactions,
+  processPendingTransaction,
+  getUserPendingTransactions,
 };

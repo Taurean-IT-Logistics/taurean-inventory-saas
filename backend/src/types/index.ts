@@ -176,6 +176,17 @@ export interface Booking {
   notes?: string;
   company: Company;
   internalNotes?: string;
+  paymentMethod?: "online" | "cash" | "cheque";
+  paymentTiming?: "advance" | "split" | "full";
+  advanceConfig?: {
+    percentage: number | string;
+    amount: number;
+    inputMode: "percentage" | "amount";
+  };
+  splitConfig?: {
+    numberOfParts: number;
+    parts: Array<{ amount: number; dueDate: Date }>;
+  };
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -202,6 +213,17 @@ export interface Transaction {
       phoneNumber: string;
       transactionId: string;
     };
+    // For cash payments
+    denominations?: Array<{
+      denomination: number;
+      quantity: number;
+    }>;
+    // For cheque payments
+    bankName?: string;
+    chequeDate?: Date;
+    // For bank transfers
+    bankAccount?: string;
+    transactionReference?: string;
   };
   ref?: string;
   isPaystack?: boolean;
@@ -227,6 +249,24 @@ export interface Transaction {
   updatedAt: Date;
   company?: mongoose.Types.ObjectId | string;
   isPlatformRevenue?: boolean;
+  paymentTiming?: "advance" | "split" | "full";
+  advanceConfig?: {
+    percentage: number | string;
+    amount: number;
+    inputMode: "percentage" | "amount";
+  };
+  splitConfig?: {
+    numberOfParts: number;
+    parts: Array<{ amount: number; dueDate: Date }>;
+  };
+  // Pending transaction fields
+  status?: "pending" | "confirmed" | "rejected" | "cancelled";
+  notes?: string;
+  processedBy?: mongoose.Types.ObjectId | string;
+  processedAt?: Date;
+  rejectionReason?: string;
+  currency?: string;
+  referenceId?: string; // ID of the rental, booking, or purchase
 }
 
 export interface InventoryItem {
@@ -409,16 +449,28 @@ export interface Tax {
   name: string;
   rate: number;
   type: string;
+  taxType?: "percentage" | "fixed_amount";
+  fixedAmount?: number;
   isSuperAdminTax?: boolean;
   company?: Company;
   active: boolean;
   isDefault?: boolean; // For system default taxes
   priority?: number; // For ordering (VAT should be 1)
-  calculationMethod?: "inclusive" | "exclusive" | "compound";
   appliesTo?: string[]; // What this tax applies to
   description?: string;
   effectiveDate?: Date;
   expiryDate?: Date;
+  copiedFrom?: string | mongoose.Types.ObjectId; // Reference to original super admin tax
+  // Independent tax fields
+  isArchived?: boolean;
+  archivedAt?: Date;
+  archivedBy?: string | mongoose.Types.ObjectId;
+  archivedReason?: string;
+  // Audit trail fields
+  createdBy?: string | mongoose.Types.ObjectId;
+  createdReason?: string; // Reason for creating this tax
+  replacedTax?: string | mongoose.Types.ObjectId; // If this tax replaced another one
+  replacementReason?: string; // Why this tax replaced the previous one
 }
 
 export interface Company {
@@ -575,6 +627,18 @@ export interface Rental {
   lateFee?: number;
   damageFee?: number;
   company: Company | mongoose.Types.ObjectId | string;
+  totalPrice?: number;
+  paymentMethod?: "online" | "cash" | "cheque";
+  paymentTiming?: "advance" | "split" | "full";
+  advanceConfig?: {
+    percentage: number | string;
+    amount: number;
+    inputMode: "percentage" | "amount";
+  };
+  splitConfig?: {
+    numberOfParts: number;
+    parts: Array<{ amount: number; dueDate: Date }>;
+  };
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
