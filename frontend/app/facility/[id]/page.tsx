@@ -21,6 +21,7 @@ import {
   Monitor,
   Snowflake,
   Calendar,
+  Navigation,
 } from "lucide-react";
 import { currencyFormat } from "@/lib/utils";
 import type { Facility, User } from "@/types";
@@ -667,6 +668,67 @@ const FacilityLocationSection = ({ facility }: { facility: Facility }) => {
     }
   }, [location, facility.location.coordinates]);
 
+  const handleGetDirections = () => {
+    const facilityName = encodeURIComponent(facility.name || "");
+    const facilityAddress = encodeURIComponent(facility.location.address || "");
+    const coordinates = facility.location.coordinates;
+
+    if (location && coordinates) {
+      // With user location - provide turn-by-turn directions
+      const url = `https://www.google.com/maps/dir/?api=1&origin=${location.latitude},${location.longitude}&destination=${coordinates.latitude},${coordinates.longitude}&destination_place_id=${facilityName}`;
+      window.open(url, "_blank");
+    } else if (coordinates) {
+      // Without user location - show facility location
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates.latitude},${coordinates.longitude}&destination_place_id=${facilityName}`;
+      window.open(url, "_blank");
+    } else if (facilityAddress) {
+      // Fallback to address search
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${facilityAddress}`;
+      window.open(url, "_blank");
+    }
+  };
+
+  const handleViewInMaps = () => {
+    // Detect if user is on mobile (iOS/Android)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    const facilityName = encodeURIComponent(facility.name || "");
+    const facilityAddress = encodeURIComponent(facility.location.address || "");
+    const coordinates = facility.location.coordinates;
+
+    if (isMobile && isIOS) {
+      // Open in Apple Maps on iOS
+      if (coordinates) {
+        // Use coordinates with facility name for better accuracy
+        const url = `http://maps.apple.com/?daddr=${coordinates.latitude},${coordinates.longitude}&q=${facilityName}`;
+        window.open(url, "_blank");
+      } else if (facilityAddress) {
+        // Fallback to address
+        const url = `http://maps.apple.com/?daddr=${facilityAddress}`;
+        window.open(url, "_blank");
+      }
+    } else if (isMobile) {
+      // Open in Google Maps on Android
+      if (coordinates) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}&query_place_id=${facilityName}`;
+        window.open(url, "_blank");
+      } else if (facilityAddress) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${facilityAddress}`;
+        window.open(url, "_blank");
+      }
+    } else {
+      // Desktop - open in Google Maps
+      if (coordinates) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}&query_place_id=${facilityName}`;
+        window.open(url, "_blank");
+      } else if (facilityAddress) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${facilityAddress}`;
+        window.open(url, "_blank");
+      }
+    }
+  };
+
   return (
     <div className="mb-8">
       <h3 className="text-xl font-semibold text-gray-900 mb-4">
@@ -757,6 +819,28 @@ const FacilityLocationSection = ({ facility }: { facility: Facility }) => {
           </div>
         )}
       </div>
+
+      {/* Map action buttons */}
+      {facility.location.coordinates && (
+        <div className="mt-4 flex gap-3">
+          <Button
+            onClick={handleGetDirections}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Navigation className="h-4 w-4" />
+            Get Directions
+          </Button>
+          <Button
+            onClick={handleViewInMaps}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <MapPin className="h-4 w-4" />
+            View in Maps
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
