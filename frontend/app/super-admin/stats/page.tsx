@@ -446,7 +446,7 @@ export default function SuperAdminStatsPage() {
             <div className="text-2xl font-bold text-purple-600">
               {
                 users.filter(
-                  (u: any) => u.role === "admin" || u.role === "superAdmin"
+                  (u: any) => u.role === "admin" || u.role === "super_admin"
                 ).length
               }
             </div>

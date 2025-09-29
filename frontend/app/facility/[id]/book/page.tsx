@@ -56,9 +56,8 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       paymentMethod?: string;
       paymentTiming?: string;
       splitConfig?: {
-        parts: number;
-        percentages: number[];
-        amounts: number[];
+        numberOfParts: number;
+        parts: Array<{ amount: number; dueDate: Date }>;
       };
       advanceConfig?: {
         percentage: number | string;
@@ -397,21 +396,29 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       paymentStatus: "pending", // Set default payment status
     };
 
-    // Handle different payment methods
+    // Handle different payment methods and timing
     if (bookingData.paymentMethod === "online") {
       // Online payment - proceed with normal flow
       const transactionData = {
         email: user?.email || "",
-        amount: total,
+        amount:
+          bookingData.paymentTiming === "advance" && bookingData.advanceConfig
+            ? bookingData.advanceConfig.amount
+            : total,
         category: "facility",
         description: `Booking for ${
           (facilityData as Facility)?.name || "Facility"
         } - ${calculateDurationString(
           bookingData.startDate,
           bookingData.endDate
-        )}`,
+        )}${
+          bookingData.paymentTiming === "advance" ? " (Advance Payment)" : ""
+        }`,
         facility: (facilityData as Facility)?._id || "",
         currency: "GHS",
+        paymentTiming: bookingData.paymentTiming,
+        advanceConfig: bookingData.advanceConfig,
+        splitConfig: bookingData.splitConfig,
       };
 
       bookingsMutation.mutate(finalBookingData);
@@ -426,27 +433,70 @@ export default function BookingPage({ params }: { params: { id: string } }) {
         const bookingResponse = await BookingsAPI.create(finalBookingData);
 
         if (bookingResponse) {
+          // Determine the amount based on payment timing
+          let paymentAmount = total;
+          if (
+            bookingData.paymentTiming === "advance" &&
+            bookingData.advanceConfig
+          ) {
+            paymentAmount = bookingData.advanceConfig.amount;
+          } else if (
+            bookingData.paymentTiming === "split" &&
+            bookingData.splitConfig
+          ) {
+            // For split payments, the first payment is the split amount
+            paymentAmount =
+              bookingData.splitConfig.parts?.[0]?.amount ||
+              total / bookingData.splitConfig.numberOfParts;
+          }
+
           // Create pending transaction
           const pendingTransactionData = {
             type: "booking",
             referenceId:
               (bookingResponse as any)._id || (bookingResponse as any).id,
-            amount: total,
+            amount: paymentAmount,
             paymentMethod: bookingData.paymentMethod,
+            paymentTiming: bookingData.paymentTiming,
+            advanceConfig: bookingData.advanceConfig,
+            splitConfig: bookingData.splitConfig,
             notes: `Payment at facility for booking ${
               (bookingResponse as any)._id || (bookingResponse as any).id
+            }${
+              bookingData.paymentTiming === "advance"
+                ? " (Advance Payment)"
+                : ""
+            }${
+              bookingData.paymentTiming === "split"
+                ? " (Split Payment - Part 1)"
+                : ""
             }`,
           };
 
           await PendingTransactionsAPI.create(pendingTransactionData);
 
+          let description = `Your booking has been created. Please bring ${currencyFormat(
+            paymentAmount
+          )} in ${bookingData.paymentMethod} when you arrive at the facility.`;
+
+          if (
+            bookingData.paymentTiming === "advance" &&
+            bookingData.advanceConfig
+          ) {
+            const balance = total - bookingData.advanceConfig.amount;
+            description += ` Balance of ${currencyFormat(
+              balance
+            )} will be due later.`;
+          } else if (
+            bookingData.paymentTiming === "split" &&
+            bookingData.splitConfig
+          ) {
+            description += ` This is part 1 of ${bookingData.splitConfig.numberOfParts} payments.`;
+          }
+
           toast({
             title: "Booking Created Successfully",
-            description: `Your booking has been created. Please bring ${currencyFormat(
-              total
-            )} in ${
-              bookingData.paymentMethod
-            } when you arrive at the facility.`,
+            description,
             variant: "default",
           });
 
@@ -1019,9 +1069,16 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                               ...bookingData,
                               paymentTiming: "split",
                               splitConfig: {
-                                parts: 2,
-                                percentages: [50, 50],
-                                amounts: [total * 0.5, total * 0.5],
+                                numberOfParts: 2,
+                                parts: [
+                                  { amount: total * 0.5, dueDate: new Date() },
+                                  {
+                                    amount: total * 0.5,
+                                    dueDate: new Date(
+                                      Date.now() + 7 * 24 * 60 * 60 * 1000
+                                    ),
+                                  },
+                                ],
                               },
                             })
                           }
@@ -1094,7 +1151,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
                       {/* Split Payment Configuration */}
                       {bookingData.paymentTiming === "split" && (
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div className="border border-gray-200 rounded-lg p-4">
                           <h4 className="font-medium text-gray-900 mb-3">
                             Configure Split Payment
                           </h4>
@@ -1103,39 +1160,49 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                               <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Number of Parts (Max 3)
                               </label>
-                              <select
-                                value={bookingData.splitConfig?.parts || 2}
-                                onChange={(e) => {
-                                  const parts = parseInt(e.target.value);
-                                  const percentage = 100 / parts;
-                                  const percentages =
-                                    Array(parts).fill(percentage);
-                                  const amounts = percentages.map(
-                                    (p) => total * (p / 100)
+                              <Select
+                                value={String(
+                                  bookingData.splitConfig?.numberOfParts || 2
+                                )}
+                                onValueChange={(value) => {
+                                  const numberOfParts = parseInt(value);
+                                  const amountPerPart = total / numberOfParts;
+                                  const parts = Array.from(
+                                    { length: numberOfParts },
+                                    (_, index) => ({
+                                      amount: amountPerPart,
+                                      dueDate: new Date(
+                                        Date.now() +
+                                          index * 7 * 24 * 60 * 60 * 1000
+                                      ),
+                                    })
                                   );
 
                                   setBookingData({
                                     ...bookingData,
                                     splitConfig: {
+                                      numberOfParts,
                                       parts,
-                                      percentages,
-                                      amounts,
                                     },
                                   });
                                 }}
-                                className="w-full p-2 border border-gray-300 rounded-md"
                               >
-                                <option value={2}>2 Parts</option>
-                                <option value={3}>3 Parts</option>
-                              </select>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select number of parts" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="2">2 Parts</SelectItem>
+                                  <SelectItem value="3">3 Parts</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
 
                             <div className="space-y-2">
                               <label className="block text-sm font-medium text-gray-700">
                                 Payment Breakdown
                               </label>
-                              {bookingData.splitConfig?.amounts.map(
-                                (amount, index) => (
+                              {bookingData.splitConfig?.parts.map(
+                                (part, index) => (
                                   <div
                                     key={index}
                                     className="flex items-center justify-between p-2 bg-white rounded border"
@@ -1144,7 +1211,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                                       Part {index + 1}
                                     </span>
                                     <span className="font-medium">
-                                      {currencyFormat(amount)}
+                                      {currencyFormat(part.amount)}
                                     </span>
                                   </div>
                                 )
@@ -1156,76 +1223,208 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
                       {/* Advance Payment Configuration */}
                       {bookingData.paymentTiming === "advance" && (
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div className="border border-gray-200 rounded-lg p-4">
                           <h4 className="font-medium text-gray-900 mb-3">
                             Configure Advance Payment
                           </h4>
                           <div className="space-y-3">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Advance Percentage
+                                Advance Configuration
                               </label>
-                              <div className="flex items-center space-x-2">
-                                <select
-                                  value={
-                                    bookingData.advanceConfig?.percentage || 30
-                                  }
-                                  onChange={(e) => {
-                                    const percentage = parseInt(e.target.value);
-                                    const amount = total * (percentage / 100);
 
+                              {/* Input Mode Selection */}
+                              <div className="mb-3">
+                                <label className="block text-xs font-medium text-gray-600 mb-2">
+                                  Input Mode
+                                </label>
+                                <Select
+                                  value={
+                                    bookingData.advanceConfig?.inputMode ||
+                                    "percentage"
+                                  }
+                                  onValueChange={(value) => {
+                                    const currentAmount =
+                                      bookingData.advanceConfig?.amount ||
+                                      total * 0.3;
                                     setBookingData({
                                       ...bookingData,
                                       advanceConfig: {
-                                        percentage,
-                                        amount,
-                                        inputMode: "percentage",
+                                        percentage:
+                                          value === "percentage"
+                                            ? 30
+                                            : "custom",
+                                        amount: currentAmount,
+                                        inputMode: value as
+                                          | "percentage"
+                                          | "amount",
                                       },
                                     });
                                   }}
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
-                                  <option value={30}>30%</option>
-                                  <option value={35}>35%</option>
-                                  <option value={40}>40%</option>
-                                  <option value={45}>45%</option>
-                                  <option value={50}>50%</option>
-                                  <option value="custom">Custom</option>
-                                </select>
-                                {bookingData.advanceConfig?.percentage ===
-                                  "custom" && (
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select input mode" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="percentage">
+                                      Percentage
+                                    </SelectItem>
+                                    <SelectItem value="amount">
+                                      Amount
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Percentage Input */}
+                              {bookingData.advanceConfig?.inputMode ===
+                                "percentage" && (
+                                <div className="space-y-2">
+                                  <label className="block text-xs font-medium text-gray-600">
+                                    Advance Percentage
+                                  </label>
                                   <div className="flex items-center space-x-2">
-                                    <input
+                                    <Select
+                                      value={String(
+                                        bookingData.advanceConfig?.percentage ||
+                                          30
+                                      )}
+                                      onValueChange={(value) => {
+                                        if (value === "custom") {
+                                          setBookingData({
+                                            ...bookingData,
+                                            advanceConfig: {
+                                              percentage: "custom",
+                                              amount: total * 0.3,
+                                              inputMode: "percentage",
+                                            },
+                                          });
+                                        } else {
+                                          const percentage = parseInt(value);
+                                          const amount =
+                                            total * (percentage / 100);
+
+                                          setBookingData({
+                                            ...bookingData,
+                                            advanceConfig: {
+                                              percentage,
+                                              amount,
+                                              inputMode: "percentage",
+                                            },
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="flex-1">
+                                        <SelectValue placeholder="Select percentage" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="30">30%</SelectItem>
+                                        <SelectItem value="35">35%</SelectItem>
+                                        <SelectItem value="40">40%</SelectItem>
+                                        <SelectItem value="45">45%</SelectItem>
+                                        <SelectItem value="50">50%</SelectItem>
+                                        <SelectItem value="custom">
+                                          Custom
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    {bookingData.advanceConfig?.percentage ===
+                                      "custom" && (
+                                      <div className="flex items-center space-x-2">
+                                        <Input
+                                          type="number"
+                                          min="30"
+                                          max="80"
+                                          placeholder="30"
+                                          className="w-20"
+                                          value={
+                                            typeof bookingData.advanceConfig
+                                              ?.percentage === "number"
+                                              ? bookingData.advanceConfig
+                                                  .percentage
+                                              : ""
+                                          }
+                                          onChange={(e) => {
+                                            const percentage =
+                                              parseInt(e.target.value) || 30;
+                                            const amount =
+                                              total * (percentage / 100);
+
+                                            setBookingData({
+                                              ...bookingData,
+                                              advanceConfig: {
+                                                percentage,
+                                                amount,
+                                                inputMode: "percentage",
+                                              },
+                                            });
+                                          }}
+                                        />
+                                        <span className="text-sm text-gray-500">
+                                          %
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    Minimum 30%, Maximum 80%
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Amount Input */}
+                              {bookingData.advanceConfig?.inputMode ===
+                                "amount" && (
+                                <div className="space-y-2">
+                                  <label className="block text-xs font-medium text-gray-600">
+                                    Advance Amount
+                                  </label>
+                                  <div className="flex items-center space-x-2">
+                                    <Input
                                       type="number"
-                                      min="30"
-                                      max="80"
-                                      placeholder="%"
-                                      className="w-20 px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      min={total * 0.3}
+                                      max={total * 0.8}
+                                      step="0.01"
+                                      placeholder={currencyFormat(total * 0.3)}
+                                      className="flex-1"
+                                      value={
+                                        bookingData.advanceConfig?.amount || ""
+                                      }
                                       onChange={(e) => {
-                                        const percentage =
-                                          parseInt(e.target.value) || 30;
                                         const amount =
-                                          total * (percentage / 100);
+                                          parseFloat(e.target.value) ||
+                                          total * 0.3;
+                                        const percentage =
+                                          (amount / total) * 100;
 
                                         setBookingData({
                                           ...bookingData,
                                           advanceConfig: {
-                                            percentage,
+                                            percentage: Math.round(percentage),
                                             amount,
-                                            inputMode: "percentage",
+                                            inputMode: "amount",
                                           },
                                         });
                                       }}
                                     />
                                     <span className="text-sm text-gray-500">
-                                      %
+                                      (
+                                      {Math.round(
+                                        ((bookingData.advanceConfig?.amount ||
+                                          total * 0.3) /
+                                          total) *
+                                          100
+                                      )}
+                                      %)
                                     </span>
                                   </div>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Minimum 30%, Maximum 80%
-                              </p>
+                                  <p className="text-xs text-gray-500">
+                                    Minimum {currencyFormat(total * 0.3)},
+                                    Maximum {currencyFormat(total * 0.8)}
+                                  </p>
+                                </div>
+                              )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -1423,23 +1622,17 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                             </span>
                           </div>
                           <div className="space-y-2">
-                            {bookingData.splitConfig.amounts.map(
-                              (amount, index) => (
+                            {bookingData.splitConfig.parts.map(
+                              (part, index) => (
                                 <div
                                   key={index}
                                   className="flex justify-between items-center"
                                 >
                                   <span className="text-gray-600">
-                                    Part {index + 1} (
-                                    {
-                                      bookingData.splitConfig?.percentages[
-                                        index
-                                      ]
-                                    }
-                                    %):
+                                    Part {index + 1}:
                                   </span>
                                   <span className="font-medium">
-                                    {currencyFormat(amount)}
+                                    {currencyFormat(part.amount)}
                                   </span>
                                 </div>
                               )
@@ -1449,7 +1642,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                             <div className="text-sm text-blue-800">
                               <strong>Due Today:</strong>{" "}
                               {currencyFormat(
-                                bookingData.splitConfig.amounts[0]
+                                bookingData.splitConfig.parts[0].amount
                               )}
                             </div>
                             <div className="text-sm text-blue-600">

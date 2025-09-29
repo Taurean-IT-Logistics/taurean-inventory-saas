@@ -95,43 +95,48 @@ A comprehensive multi-tenant inventory management and facility booking platform 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd taurean-inventory-saas
    ```
 
 2. **Install dependencies**
+
    ```bash
    # Backend
    cd backend
    npm install
-   
+
    # Frontend
    cd ../frontend
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    # Backend
    cp backend/.env.example backend/.env
-   
+
    # Frontend
    cp frontend/.env.example frontend/.env.local
    ```
 
 4. **Configure your environment**
+
    - Update database connection strings
    - Configure email settings
    - Set up Paystack credentials
    - Configure JWT secrets
 
 5. **Start the services**
+
    ```bash
    # Backend (Terminal 1)
    cd backend
    npm run dev
-   
+
    # Frontend (Terminal 2)
    cd frontend
    npm run dev
@@ -144,6 +149,7 @@ A comprehensive multi-tenant inventory management and facility booking platform 
 ### Initial Setup
 
 1. **Create Super Admin**
+
    - Register a new account
    - Access the super admin panel
    - Configure system settings
@@ -241,6 +247,7 @@ A comprehensive multi-tenant inventory management and facility booking platform 
 ### Complete Environment Setup
 
 #### Backend Environment (.env)
+
 ```env
 # ===========================================
 # DATABASE CONFIGURATION
@@ -331,6 +338,7 @@ EMAIL_RETRY_DELAY=5000
 ```
 
 #### Frontend Environment (.env.local)
+
 ```env
 # ===========================================
 # API CONFIGURATION
@@ -368,13 +376,15 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn_here
 ### System Core Functionalities
 
 #### 🏢 Multi-Tenant Architecture
+
 - **Company Isolation**: Each company operates independently with isolated data
 - **Role-Based Access**: User, Staff, Admin, and Super Admin roles with granular permissions
 - **Subscription Management**: Flexible pricing plans with usage tracking
 - **Company Branding**: Custom logos, email templates, and configurations
 
 #### 💳 Advanced Payment System
-- **Multiple Payment Methods**: 
+
+- **Multiple Payment Methods**:
   - Paystack (Online payments)
   - Cash (Manual confirmation)
   - Cheque (Manual confirmation)
@@ -387,6 +397,7 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn_here
 - **Transaction Reconciliation**: Manual reconciliation for cash/cheque payments
 
 #### 📅 Booking & Rental Management
+
 - **Facility Bookings**: Real-time availability checking and booking
 - **Inventory Rentals**: Item rental with return tracking
 - **Check-in/Check-out**: Digital check-in and check-out process
@@ -394,6 +405,7 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn_here
 - **Automated Reminders**: Email and in-app notifications
 
 #### 🔔 Notification System
+
 - **Real-Time Notifications**: WebSocket-based instant notifications
 - **Email Notifications**: React Email templates with company branding
 - **Automated Reminders**: Booking confirmations, payment due, maintenance alerts
@@ -401,6 +413,7 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn_here
 - **Preference Management**: User notification preferences
 
 #### 📊 Financial Management
+
 - **Transaction Tracking**: Complete financial transaction history
 - **Invoice Generation**: Automated invoice creation
 - **Tax Management**: Flexible tax configuration
@@ -408,6 +421,7 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn_here
 - **Payout Processing**: Automated payout management
 
 #### 🤖 Automated Services
+
 - **Cron Jobs**: Background task automation
 - **Payment Reminders**: Automated payment due notifications
 - **Maintenance Alerts**: Scheduled maintenance reminders
@@ -417,6 +431,7 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn_here
 ### Database Collections Overview
 
 #### Core Collections
+
 - **users**: User accounts and profiles
 - **companies**: Multi-tenant company data
 - **companyroles**: Role-based permissions
@@ -432,6 +447,7 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn_here
 - **systemalerts**: System monitoring
 
 #### Key Relationships
+
 - Users belong to Companies (Multi-tenant)
 - Bookings link Users, Facilities, and Transactions
 - Rentals link Users, Inventory Items, and Transactions
@@ -440,48 +456,6 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn_here
 - Payment Schedules manage installment payments
 
 ### Database Indexes
-
-#### Performance Indexes
-```javascript
-// Users Collection
-db.users.createIndex({ email: 1 });
-db.users.createIndex({ username: 1 });
-db.users.createIndex({ company: 1 });
-db.users.createIndex({ role: 1 });
-db.users.createIndex({ isSuperAdmin: 1 });
-
-// Companies Collection
-db.companies.createIndex({ name: 1 });
-db.companies.createIndex({ isActive: 1 });
-db.companies.createIndex({ "subscription.status": 1 });
-
-// Facilities Collection
-db.facilities.createIndex({ company: 1 });
-db.facilities.createIndex({ isActive: 1 });
-db.facilities.createIndex({ "location.city": 1 });
-
-// Bookings Collection
-db.bookings.createIndex({ user: 1 });
-db.bookings.createIndex({ facility: 1 });
-db.bookings.createIndex({ company: 1 });
-db.bookings.createIndex({ startDate: 1, endDate: 1 });
-db.bookings.createIndex({ status: 1 });
-db.bookings.createIndex({ paymentStatus: 1 });
-
-// Transactions Collection
-db.transactions.createIndex({ user: 1 });
-db.transactions.createIndex({ company: 1 });
-db.transactions.createIndex({ type: 1 });
-db.transactions.createIndex({ category: 1 });
-db.transactions.createIndex({ createdAt: -1 });
-db.transactions.createIndex({ isReconciled: 1 });
-
-// Notifications Collection
-db.notifications.createIndex({ user: 1 });
-db.notifications.createIndex({ company: 1 });
-db.notifications.createIndex({ isRead: 1 });
-db.notifications.createIndex({ createdAt: -1 });
-```
 
 ## 📁 Project Structure
 
@@ -511,75 +485,6 @@ taurean-inventory-saas/
 │   └── package.json
 └── README.md
 ```
-
-## 🔌 API Endpoints
-
-### Authentication
-- `POST /auth/register` - User registration
-- `POST /auth/login` - User login
-- `POST /auth/logout` - User logout
-- `POST /auth/refresh` - Refresh access token
-- `POST /auth/forgot-password` - Password reset request
-- `POST /auth/reset-password` - Password reset confirmation
-
-### User Management
-- `GET /users` - Get all users (Admin)
-- `GET /users/:id` - Get user by ID
-- `PUT /users/:id` - Update user
-- `DELETE /users/:id` - Delete user
-- `POST /users/:id/roles` - Assign company role
-
-### Company Management
-- `GET /companies` - Get all companies (Super Admin)
-- `POST /companies` - Create company
-- `PUT /companies/:id` - Update company
-- `DELETE /companies/:id` - Delete company
-- `POST /companies/:id/join-request` - Request to join company
-
-### Facility Management
-- `GET /facilities` - Get company facilities
-- `POST /facilities` - Create facility
-- `PUT /facilities/:id` - Update facility
-- `DELETE /facilities/:id` - Delete facility
-- `GET /facilities/:id/availability` - Check availability
-
-### Booking Management
-- `GET /bookings` - Get user bookings
-- `POST /bookings` - Create booking
-- `PUT /bookings/:id` - Update booking
-- `DELETE /bookings/:id` - Cancel booking
-- `POST /bookings/:id/check-in` - Check-in
-- `POST /bookings/:id/check-out` - Check-out
-
-### Inventory Management
-- `GET /inventory` - Get company inventory
-- `POST /inventory` - Add inventory item
-- `PUT /inventory/:id` - Update inventory item
-- `DELETE /inventory/:id` - Delete inventory item
-- `GET /inventory/:id/rentals` - Get item rental history
-
-### Rental Management
-- `GET /rentals` - Get user rentals
-- `POST /rentals` - Create rental
-- `PUT /rentals/:id` - Update rental
-- `POST /rentals/:id/return` - Return rental item
-
-### Transaction Management
-- `GET /transactions` - Get company transactions
-- `POST /transactions` - Create transaction
-- `PUT /transactions/:id` - Update transaction
-- `POST /transactions/:id/reconcile` - Reconcile transaction
-
-### Payment Processing
-- `POST /payments/paystack/initialize` - Initialize Paystack payment
-- `POST /payments/paystack/verify` - Verify Paystack payment
-- `POST /payments/schedule` - Create payment schedule
-- `GET /payments/schedule` - Get payment schedules
-
-### Notification System
-- `GET /notifications` - Get user notifications
-- `PUT /notifications/:id/read` - Mark notification as read
-- `POST /notifications/mark-all-read` - Mark all notifications as read
 
 ## 🛠️ Development
 
@@ -678,6 +583,7 @@ This project is licensed under the MIT License.
 ## 🆘 Support
 
 For support and questions:
+
 - Create an issue in the repository
 - Contact the development team
 - Check the documentation

@@ -93,12 +93,21 @@ export const NotificationPopover: React.FC = () => {
     unreadCount,
     isLoading,
     markAsRead,
+    markAsUnread,
     markAllAsRead,
     deleteNotification,
   } = useNotifications();
 
   const handleMarkAsRead = async (notification: Notification) => {
     if (!notification.isRead) {
+      await markAsRead(notification._id);
+    }
+  };
+
+  const handleToggleReadStatus = async (notification: Notification) => {
+    if (notification.isRead) {
+      await markAsUnread(notification._id);
+    } else {
       await markAsRead(notification._id);
     }
   };
@@ -157,155 +166,157 @@ export const NotificationPopover: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">
                 Notifications
               </h3>
-              {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={markAllAsRead}
-                  className="text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                >
-                  Mark all as read
-                </Button>
-              )}
             </div>
           </CardHeader>
 
           <CardContent className="p-0">
-            <ScrollArea className="max-h-[400px]">
+            <ScrollArea className="h-96">
               {isLoading ? (
-                <div className="p-6 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="text-sm text-gray-600 mt-3">
-                    Loading notifications...
-                  </p>
+                <div className="px-4 py-8 text-center text-gray-500">
+                  Loading notifications...
                 </div>
               ) : (notifications as any)?.notifications?.length === 0 ? (
-                <div className="p-8 text-center">
-                  <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm text-gray-600">No notifications yet</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                <div className="px-4 py-8 text-center text-gray-500">
+                  <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                  <p>No notifications yet</p>
+                  <p className="text-sm">
                     We&apos;ll notify you when something important happens
                   </p>
                 </div>
               ) : (
-                <div>
-                  {(notifications as any)?.notifications
-                    ?.slice(0, 10)
-                    .map((notification: any) => (
-                      <Card
-                        key={notification._id}
-                        className={`border-0 border-b border-gray-100 rounded-none hover:bg-gray-50 transition-colors cursor-pointer ${
-                          !notification.isRead ? "bg-blue-50/50" : ""
-                        }`}
-                        onClick={() => handleMarkAsRead(notification)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 mt-1">
-                              <div
-                                className={`p-2 rounded-full border ${getNotificationColor(
-                                  notification.type
-                                )}`}
-                              >
-                                {getNotificationIcon(
-                                  notification.category,
-                                  notification.type
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <p
-                                      className={`text-sm font-medium ${
-                                        !notification.isRead
-                                          ? "text-gray-900"
-                                          : "text-gray-700"
-                                      }`}
-                                    >
-                                      {notification.title}
-                                    </p>
-                                    {!notification.isRead && (
-                                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                                    {notification.message}
-                                  </p>
-                                  <div className="flex items-center gap-2">
-                                    <Badge
-                                      variant="outline"
-                                      className={`text-xs ${getNotificationBadgeColor(
-                                        notification.type
-                                      )}`}
-                                    >
-                                      {notification.category}
-                                    </Badge>
-                                    <span className="text-xs text-gray-500">
-                                      {formatDistanceToNow(
-                                        new Date(notification.createdAt),
-                                        {
-                                          addSuffix: true,
-                                        }
-                                      )}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
-                                    >
-                                      <MoreHorizontal className="h-3 w-3" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="w-32"
-                                  >
-                                    <DropdownMenuItem
-                                      onClick={(e) =>
-                                        handleDelete(e, notification._id)
-                                      }
-                                      className="text-red-600 focus:text-red-600"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
+                (notifications as any)?.notifications
+                  ?.slice(0, 10)
+                  .map((notification: any) => (
+                    <Card
+                      key={notification._id}
+                      className={`border-0 border-b border-gray-100 rounded-none hover:bg-gray-50 transition-colors cursor-pointer ${
+                        !notification.isRead ? "bg-blue-50" : ""
+                      }`}
+                      onClick={() => handleMarkAsRead(notification)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-1">
+                            <div
+                              className={`p-2 rounded-full border ${getNotificationColor(
+                                notification.type
+                              )}`}
+                            >
+                              {getNotificationIcon(
+                                notification.category,
+                                notification.type
+                              )}
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </div>
-              )}
 
-              {(notifications as any)?.notifications?.length > 0 ? (
-                <>
-                  <div className="p-4 border-t border-gray-100">
-                    <Button
-                      variant="ghost"
-                      className="w-full text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      asChild
-                    >
-                      <Link href="/user/notifications">
-                        View all notifications
-                      </Link>
-                    </Button>
-                  </div>
-                </>
-              ) : null}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p
+                                    className={`text-sm font-medium ${
+                                      !notification.isRead
+                                        ? "text-gray-900"
+                                        : "text-gray-700"
+                                    }`}
+                                  >
+                                    {notification.title}
+                                  </p>
+                                  {!notification.isRead && (
+                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                                  {notification.message}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${getNotificationBadgeColor(
+                                      notification.type
+                                    )}`}
+                                  >
+                                    {notification.category}
+                                  </Badge>
+                                  <span className="text-xs text-gray-500">
+                                    {formatDistanceToNow(
+                                      new Date(notification.createdAt),
+                                      {
+                                        addSuffix: true,
+                                      }
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                                  >
+                                    <MoreHorizontal className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-40"
+                                >
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleToggleReadStatus(notification);
+                                    }}
+                                    className="text-blue-600 focus:text-blue-600"
+                                  >
+                                    {notification.isRead ? (
+                                      <>
+                                        <XCircle className="h-4 w-4 mr-2" />
+                                        Mark as unread
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Check className="h-4 w-4 mr-2" />
+                                        Mark as read
+                                      </>
+                                    )}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) =>
+                                      handleDelete(e, notification._id)
+                                    }
+                                    className="text-red-600 focus:text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+              )}
             </ScrollArea>
           </CardContent>
+
+          {/* Footer */}
+          <div className="border-t border-gray-100 px-4 py-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={markAllAsRead}
+              disabled={unreadCount === 0}
+              className="w-full text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 disabled:text-gray-400 disabled:hover:bg-transparent"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Mark all as read
+            </Button>
+          </div>
         </Card>
       </DropdownMenuContent>
     </DropdownMenu>

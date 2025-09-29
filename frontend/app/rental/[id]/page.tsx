@@ -4,6 +4,13 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, Info, Clock, CreditCard } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +20,7 @@ import {
   InventoryAPI,
   TaxScheduleAPI,
   TransactionsAPI,
+  PendingTransactionsAPI,
   getResourceUrl,
 } from "@/lib/api";
 import { InventoryItem, TaxSchedule } from "@/types";
@@ -32,6 +40,7 @@ import { Loader } from "@/components/ui/loader";
 import { ErrorComponent } from "@/components/ui/error";
 import Image from "next/image";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useRouter } from "next/navigation";
 
 interface PaymentResponse {
   payment: {
@@ -41,6 +50,7 @@ interface PaymentResponse {
 
 const RentDetailPage = ({ params }: { params: { id: string } }) => {
   const { user } = useAuth();
+  const router = useRouter();
   const [selectedImage, setSelectedImage] = useState(0);
   const [transactionRef, setTransactionRef] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
@@ -51,13 +61,11 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   const [paymentTiming, setPaymentTiming] = useState<string>("");
   const [paymentStep, setPaymentStep] = useState(1); // 1: Payment Method, 2: Payment Timing
   const [splitConfig, setSplitConfig] = useState<{
-    parts: number;
-    percentages: number[];
-    amounts: number[];
+    numberOfParts: number;
+    parts: Array<{ amount: number; dueDate: Date }>;
   }>({
-    parts: 2,
-    percentages: [50, 50],
-    amounts: [0, 0],
+    numberOfParts: 2,
+    parts: [],
   });
   const [advanceConfig, setAdvanceConfig] = useState<{
     percentage: number | string;
@@ -197,17 +205,18 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   const handleTransaction = async () => {
     if (!user) return;
 
-    let amount = totalPrice;
+    const total = taxResult.total;
+    let amount = total;
     let paymentData: any = {};
 
     // Handle different payment timings
     if (paymentTiming === "split" && splitConfig) {
-      amount = splitConfig.amounts[0]; // First payment
+      amount =
+        splitConfig.parts?.[0]?.amount || total / splitConfig.numberOfParts;
       paymentData = {
         splitConfig: {
+          numberOfParts: splitConfig.numberOfParts,
           parts: splitConfig.parts,
-          percentages: splitConfig.percentages,
-          amounts: splitConfig.amounts,
         },
       };
     } else if (paymentTiming === "advance" && advanceConfig) {
@@ -221,21 +230,75 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
       };
     }
 
-    const transactionData = {
-      email: user.email,
-      amount: amount,
-      quantity: quantity,
-      inventoryItem: (item as InventoryItem)._id || "",
-      category: "inventory_item",
-      description: `Rental for ${(item as InventoryItem).name} (${
-        (item as InventoryItem)._id
-      }) from ${startDate} to ${endDate}`,
-      paymentMethod: paymentMethod,
-      paymentTiming: paymentTiming,
-      ...paymentData,
-    };
+    if (paymentMethod === "online") {
+      // Online payment - proceed with normal flow
+      const transactionData = {
+        email: user.email,
+        amount: amount,
+        quantity: quantity,
+        inventoryItem: (item as InventoryItem)._id || "",
+        category: "inventory_item",
+        description: `Rental for ${(item as InventoryItem).name} (${
+          (item as InventoryItem)._id
+        }) from ${startDate} to ${endDate}${
+          paymentTiming === "advance" ? " (Advance Payment)" : ""
+        }${paymentTiming === "split" ? " (Split Payment - Part 1)" : ""}`,
+        paymentMethod: paymentMethod,
+        paymentTiming: paymentTiming,
+        ...paymentData,
+      };
 
-    createPaymentMutation.mutate(transactionData);
+      createPaymentMutation.mutate(transactionData);
+    } else if (paymentMethod === "cash" || paymentMethod === "cheque") {
+      // Cash/Cheque payment - create pending transaction
+      try {
+        // Create pending transaction
+        const pendingTransactionData = {
+          type: "rental",
+          referenceId: (item as InventoryItem)._id || "",
+          amount: amount,
+          paymentMethod: paymentMethod,
+          paymentTiming: paymentTiming,
+          advanceConfig: paymentData.advanceConfig,
+          splitConfig: paymentData.splitConfig,
+          notes: `Payment at facility for rental ${
+            (item as InventoryItem)._id || ""
+          }${paymentTiming === "advance" ? " (Advance Payment)" : ""}${
+            paymentTiming === "split" ? " (Split Payment - Part 1)" : ""
+          }`,
+        };
+
+        await PendingTransactionsAPI.create(pendingTransactionData);
+
+        let description = `Your rental has been created. Please bring ${currencyFormat(
+          amount
+        )} in ${paymentMethod} when you arrive at the facility.`;
+
+        if (paymentTiming === "advance" && advanceConfig) {
+          const balance = total - advanceConfig.amount;
+          description += ` Balance of ${currencyFormat(
+            balance
+          )} will be due later.`;
+        } else if (paymentTiming === "split" && splitConfig) {
+          description += ` This is part 1 of ${splitConfig.numberOfParts} payments.`;
+        }
+
+        toast({
+          title: "Rental Created Successfully",
+          description,
+          variant: "default",
+        });
+
+        // Redirect to user dashboard
+        router.push("/user/dashboard");
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create rental",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const images = (item as InventoryItem).images?.map(
@@ -639,11 +702,18 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                                 onClick={() => {
                                   setPaymentTiming("split");
                                   setSplitConfig({
-                                    parts: 2,
-                                    percentages: [50, 50],
-                                    amounts: [
-                                      taxResult.total * 0.5,
-                                      taxResult.total * 0.5,
+                                    numberOfParts: 2,
+                                    parts: [
+                                      {
+                                        amount: taxResult.total * 0.5,
+                                        dueDate: new Date(),
+                                      },
+                                      {
+                                        amount: taxResult.total * 0.5,
+                                        dueDate: new Date(
+                                          Date.now() + 7 * 24 * 60 * 60 * 1000
+                                        ),
+                                      },
                                     ],
                                   });
                                 }}
@@ -713,58 +783,69 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
 
                             {/* Split Payment Configuration */}
                             {paymentTiming === "split" && (
-                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                              <div className="border border-gray-200 rounded-lg p-4">
                                 <h4 className="font-medium text-gray-900 mb-3">
                                   Configure Split Payment
                                 </h4>
                                 <div className="space-y-3">
                                   <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                      Number of Parts (Max 3)
+                                      Number of Parts
                                     </label>
-                                    <select
-                                      value={splitConfig.parts}
-                                      onChange={(e) => {
-                                        const parts = parseInt(e.target.value);
-                                        const percentage = 100 / parts;
-                                        const percentages =
-                                          Array(parts).fill(percentage);
-                                        const amounts = percentages.map(
-                                          (p) => taxResult.total * (p / 100)
+                                    <Select
+                                      value={String(splitConfig.numberOfParts)}
+                                      onValueChange={(value) => {
+                                        const numberOfParts = parseInt(value);
+                                        const amountPerPart =
+                                          taxResult.total / numberOfParts;
+                                        const parts = Array.from(
+                                          { length: numberOfParts },
+                                          (_, index) => ({
+                                            amount: amountPerPart,
+                                            dueDate: new Date(
+                                              Date.now() +
+                                                index * 7 * 24 * 60 * 60 * 1000
+                                            ),
+                                          })
                                         );
 
                                         setSplitConfig({
+                                          numberOfParts,
                                           parts,
-                                          percentages,
-                                          amounts,
                                         });
                                       }}
-                                      className="w-full p-2 border border-gray-300 rounded-md"
                                     >
-                                      <option value={2}>2 Parts</option>
-                                      <option value={3}>3 Parts</option>
-                                    </select>
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select number of parts" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="2">
+                                          2 Parts
+                                        </SelectItem>
+                                        <SelectItem value="3">
+                                          3 Parts
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
                                   </div>
 
                                   <div className="space-y-2">
                                     <label className="block text-sm font-medium text-gray-700">
                                       Payment Breakdown
                                     </label>
-                                    {splitConfig.amounts.map(
-                                      (amount, index) => (
-                                        <div
-                                          key={index}
-                                          className="flex items-center justify-between p-2 bg-white rounded border"
-                                        >
-                                          <span className="text-sm">
-                                            Part {index + 1}
-                                          </span>
-                                          <span className="font-medium">
-                                            {currencyFormat(amount)}
-                                          </span>
-                                        </div>
-                                      )
-                                    )}
+                                    {splitConfig.parts.map((part, index) => (
+                                      <div
+                                        key={index}
+                                        className="flex items-center justify-between p-2 bg-white rounded border"
+                                      >
+                                        <span className="text-sm">
+                                          Part {index + 1}
+                                        </span>
+                                        <span className="font-medium">
+                                          {currencyFormat(part.amount)}
+                                        </span>
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
                               </div>
@@ -772,75 +853,212 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
 
                             {/* Advance Payment Configuration */}
                             {paymentTiming === "advance" && (
-                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                              <div className="border border-gray-200 rounded-lg p-4">
                                 <h4 className="font-medium text-gray-900 mb-3">
                                   Configure Advance Payment
                                 </h4>
                                 <div className="space-y-3">
                                   <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                      Advance Percentage
+                                      Advance Configuration
                                     </label>
-                                    <div className="flex items-center space-x-2">
-                                      <select
-                                        value={advanceConfig.percentage}
-                                        onChange={(e) => {
-                                          const percentage = parseInt(
-                                            e.target.value
-                                          );
-                                          const amount =
-                                            taxResult.total *
-                                            (percentage / 100);
 
+                                    {/* Input Mode Selection */}
+                                    <div className="mb-3">
+                                      <label className="block text-xs font-medium text-gray-600 mb-2">
+                                        Input Mode
+                                      </label>
+                                      <Select
+                                        value={
+                                          advanceConfig.inputMode ||
+                                          "percentage"
+                                        }
+                                        onValueChange={(value) => {
+                                          const currentAmount =
+                                            advanceConfig.amount ||
+                                            taxResult.total * 0.3;
                                           setAdvanceConfig({
-                                            percentage,
-                                            amount,
-                                            inputMode: "percentage",
+                                            percentage:
+                                              value === "percentage"
+                                                ? 30
+                                                : "custom",
+                                            amount: currentAmount,
+                                            inputMode: value as
+                                              | "percentage"
+                                              | "amount",
                                           });
                                         }}
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                       >
-                                        <option value={20}>20%</option>
-                                        <option value={25}>25%</option>
-                                        <option value={30}>30%</option>
-                                        <option value={35}>35%</option>
-                                        <option value={40}>40%</option>
-                                        <option value={45}>45%</option>
-                                        <option value={50}>50%</option>
-                                        <option value="custom">Custom</option>
-                                      </select>
-                                      {advanceConfig.percentage ===
-                                        "custom" && (
+                                        <SelectTrigger className="w-full">
+                                          <SelectValue placeholder="Select input mode" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="percentage">
+                                            Percentage
+                                          </SelectItem>
+                                          <SelectItem value="amount">
+                                            Amount
+                                          </SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+
+                                    {/* Percentage Input */}
+                                    {advanceConfig.inputMode ===
+                                      "percentage" && (
+                                      <div className="space-y-2">
+                                        <label className="block text-xs font-medium text-gray-600">
+                                          Advance Percentage
+                                        </label>
                                         <div className="flex items-center space-x-2">
-                                          <input
+                                          <Select
+                                            value={String(
+                                              advanceConfig.percentage || 30
+                                            )}
+                                            onValueChange={(value) => {
+                                              if (value === "custom") {
+                                                setAdvanceConfig({
+                                                  percentage: "custom",
+                                                  amount: taxResult.total * 0.3,
+                                                  inputMode: "percentage",
+                                                });
+                                              } else {
+                                                const percentage =
+                                                  parseInt(value);
+                                                const amount =
+                                                  taxResult.total *
+                                                  (percentage / 100);
+
+                                                setAdvanceConfig({
+                                                  percentage,
+                                                  amount,
+                                                  inputMode: "percentage",
+                                                });
+                                              }
+                                            }}
+                                          >
+                                            <SelectTrigger className="flex-1">
+                                              <SelectValue placeholder="Select percentage" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="30">
+                                                30%
+                                              </SelectItem>
+                                              <SelectItem value="35">
+                                                35%
+                                              </SelectItem>
+                                              <SelectItem value="40">
+                                                40%
+                                              </SelectItem>
+                                              <SelectItem value="45">
+                                                45%
+                                              </SelectItem>
+                                              <SelectItem value="50">
+                                                50%
+                                              </SelectItem>
+                                              <SelectItem value="custom">
+                                                Custom
+                                              </SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                          {advanceConfig.percentage ===
+                                            "custom" && (
+                                            <div className="flex items-center space-x-2">
+                                              <Input
+                                                type="number"
+                                                min="30"
+                                                max="80"
+                                                placeholder="30"
+                                                className="w-20"
+                                                value={
+                                                  typeof advanceConfig.percentage ===
+                                                  "number"
+                                                    ? advanceConfig.percentage
+                                                    : ""
+                                                }
+                                                onChange={(e) => {
+                                                  const percentage =
+                                                    parseInt(e.target.value) ||
+                                                    30;
+                                                  const amount =
+                                                    taxResult.total *
+                                                    (percentage / 100);
+
+                                                  setAdvanceConfig({
+                                                    percentage,
+                                                    amount,
+                                                    inputMode: "percentage",
+                                                  });
+                                                }}
+                                              />
+                                              <span className="text-sm text-gray-500">
+                                                %
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-gray-500">
+                                          Minimum 30%, Maximum 80%
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {/* Amount Input */}
+                                    {advanceConfig.inputMode === "amount" && (
+                                      <div className="space-y-2">
+                                        <label className="block text-xs font-medium text-gray-600">
+                                          Advance Amount
+                                        </label>
+                                        <div className="flex items-center space-x-2">
+                                          <Input
                                             type="number"
-                                            min="10"
-                                            max="80"
-                                            placeholder="%"
-                                            className="w-20 px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            min={taxResult.total * 0.3}
+                                            max={taxResult.total * 0.8}
+                                            step="0.01"
+                                            placeholder={currencyFormat(
+                                              taxResult.total * 0.3
+                                            )}
+                                            className="flex-1"
+                                            value={advanceConfig.amount || ""}
                                             onChange={(e) => {
-                                              const percentage =
-                                                parseInt(e.target.value) || 30;
                                               const amount =
-                                                taxResult.total *
-                                                (percentage / 100);
+                                                parseFloat(e.target.value) ||
+                                                taxResult.total * 0.3;
+                                              const percentage =
+                                                (amount / taxResult.total) *
+                                                100;
 
                                               setAdvanceConfig({
-                                                percentage,
+                                                percentage:
+                                                  Math.round(percentage),
                                                 amount,
-                                                inputMode: "percentage",
+                                                inputMode: "amount",
                                               });
                                             }}
                                           />
                                           <span className="text-sm text-gray-500">
-                                            %
+                                            (
+                                            {Math.round(
+                                              ((advanceConfig.amount ||
+                                                taxResult.total * 0.3) /
+                                                taxResult.total) *
+                                                100
+                                            )}
+                                            %)
                                           </span>
                                         </div>
-                                      )}
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      Minimum 10%, Maximum 80%
-                                    </p>
+                                        <p className="text-xs text-gray-500">
+                                          Minimum{" "}
+                                          {currencyFormat(
+                                            taxResult.total * 0.3
+                                          )}
+                                          , Maximum{" "}
+                                          {currencyFormat(
+                                            taxResult.total * 0.8
+                                          )}
+                                        </p>
+                                      </div>
+                                    )}
                                   </div>
 
                                   <div className="grid grid-cols-2 gap-4">
@@ -849,7 +1067,9 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                                         Advance Amount
                                       </div>
                                       <div className="font-medium">
-                                        {currencyFormat(advanceConfig.amount)}
+                                        {currencyFormat(
+                                          advanceConfig.amount || 0
+                                        )}
                                       </div>
                                     </div>
                                     <div className="p-3 bg-white rounded border">
@@ -858,7 +1078,8 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                                       </div>
                                       <div className="font-medium">
                                         {currencyFormat(
-                                          taxResult.total - advanceConfig.amount
+                                          taxResult.total -
+                                            (advanceConfig.amount || 0)
                                         )}
                                       </div>
                                     </div>

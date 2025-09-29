@@ -1054,9 +1054,14 @@ export const TaxesAPI = {
 
   // Individual tax operations
   get: (id: string) => apiFetch(`/taxes/${id}`, { method: "GET" }),
-  update: (id: string, payload: any) =>
-    apiFetch(`/taxes/${id}`, {
-      method: "PUT",
+  replace: (id: string, payload: any) =>
+    apiFetch(`/taxes/${id}/replace`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  archive: (id: string, payload: any) =>
+    apiFetch(`/taxes/${id}/archive`, {
+      method: "POST",
       body: JSON.stringify(payload),
     }),
   remove: (id: string) => apiFetch(`/taxes/${id}`, { method: "DELETE" }),
@@ -1163,25 +1168,23 @@ export const TransactionsAPI = {
 // Pending Transactions
 export const PendingTransactionsAPI = {
   create: (payload: any) =>
-    apiFetch(`/pending-transactions`, {
+    apiFetch(`/transaction/pending`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
   listCompany: (params?: PaginationParams) => {
     const qs = params ? `?${buildQueryParams(params)}` : "";
-    return apiFetch<PaginatedResponse<any>>(
-      `/pending-transactions/company${qs}`,
-      { method: "GET" }
-    );
-  },
-  getUserPendingTransactions: (params?: PaginationParams) => {
-    const qs = params ? `?${buildQueryParams(params)}` : "";
-    return apiFetch<PaginatedResponse<any>>(`/pending-transactions/user${qs}`, {
+    return apiFetch<PaginatedResponse<any>>(`/transaction/pending${qs}`, {
       method: "GET",
     });
   },
-  get: (id: string) =>
-    apiFetch(`/pending-transactions/${id}`, { method: "GET" }),
+  getUserPendingTransactions: (params?: PaginationParams) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<PaginatedResponse<any>>(`/transaction/pending/user${qs}`, {
+      method: "GET",
+    });
+  },
+  get: (id: string) => apiFetch(`/transaction/${id}`, { method: "GET" }),
   process: (
     id: string,
     payload: {
@@ -1190,12 +1193,11 @@ export const PendingTransactionsAPI = {
       rejectionReason?: string;
     }
   ) =>
-    apiFetch(`/pending-transactions/${id}/status`, {
-      method: "PATCH",
+    apiFetch(`/transaction/pending/${id}/process`, {
+      method: "PUT",
       body: JSON.stringify(payload),
     }),
-  cancel: (id: string) =>
-    apiFetch(`/pending-transactions/${id}`, { method: "DELETE" }),
+  cancel: (id: string) => apiFetch(`/transaction/${id}`, { method: "DELETE" }),
 };
 
 // Payouts
@@ -1357,6 +1359,9 @@ export const NotificationsAPI = {
 
   markAsRead: (notificationId: string) =>
     apiFetch(`/notifications/${notificationId}/read`, { method: "PATCH" }),
+
+  markAsUnread: (notificationId: string) =>
+    apiFetch(`/notifications/${notificationId}/unread`, { method: "PATCH" }),
 
   markAllAsRead: () => apiFetch(`/notifications/read-all`, { method: "PATCH" }),
 
@@ -1555,6 +1560,10 @@ export const NotificationAPI = {
   // Mark notification as read
   markAsRead: (notificationId: string) =>
     apiFetch(`/notifications/${notificationId}/read`, { method: "PATCH" }),
+
+  // Mark notification as unread
+  markAsUnread: (notificationId: string) =>
+    apiFetch(`/notifications/${notificationId}/unread`, { method: "PATCH" }),
 
   // Mark all notifications as read
   markAllAsRead: () => apiFetch("/notifications/read-all", { method: "PATCH" }),

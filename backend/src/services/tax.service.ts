@@ -14,6 +14,27 @@ const createTax = async (taxData: Partial<Tax>): Promise<TaxDocument> => {
   }
 };
 
+const createCompanyTax = async (
+  taxData: Partial<Tax>,
+  userId: string
+): Promise<TaxDocument> => {
+  try {
+    const tax = new TaxModel({
+      ...taxData,
+      createdBy: userId,
+      isSuperAdminTax: false, // Always false for company taxes, regardless of what's passed
+      active: true,
+    });
+    return await tax.save();
+  } catch (error) {
+    throw new Error(
+      `Failed to create company tax: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
 /**
  * Get all taxes with optional filtering and pagination
  */
@@ -29,7 +50,12 @@ const getAllTaxes = async (
     page?: number;
     limit?: number;
   } = {}
-): Promise<{ taxes: TaxDocument[]; total: number; totalPages: number; currentPage: number }> => {
+): Promise<{
+  taxes: TaxDocument[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
   try {
     const query: any = {};
 
@@ -62,14 +88,14 @@ const getAllTaxes = async (
         .sort({ priority: 1, createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      TaxModel.countDocuments(query)
+      TaxModel.countDocuments(query),
     ]);
 
     return {
       taxes,
       total,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     };
   } catch (error) {
     throw new Error(
@@ -94,7 +120,12 @@ const getCompanyTaxes = async (
     page?: number;
     limit?: number;
   } = {}
-): Promise<{ taxes: TaxDocument[]; total: number; totalPages: number; currentPage: number }> => {
+): Promise<{
+  taxes: TaxDocument[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
   try {
     const query: any = { company: filters.companyId };
 
@@ -119,14 +150,14 @@ const getCompanyTaxes = async (
         .sort({ priority: 1, createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      TaxModel.countDocuments(query)
+      TaxModel.countDocuments(query),
     ]);
 
     return {
       taxes,
       total,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     };
   } catch (error) {
     throw new Error(
@@ -153,24 +184,160 @@ const getTaxById = async (id: string): Promise<TaxDocument | null> => {
 };
 
 /**
- * Update tax by ID
+ * Create a new independent tax (replaces createNewTaxVersion)
+ * This maintains transaction integrity by creating a completely new tax
  */
-const updateTax = async (
-  id: string,
-  updateData: Partial<Tax>
-): Promise<TaxDocument | null> => {
+const createIndependentTax = async (
+  taxData: Partial<Tax>,
+  userId: string,
+  reason?: string,
+  replacedTaxId?: string
+): Promise<TaxDocument> => {
   try {
-    if (updateData.isSuperAdminTax) {
-      updateData.company = undefined;
+    const newTax = new TaxModel({
+      ...taxData,
+      createdBy: userId,
+      createdReason: reason,
+      replacedTax: replacedTaxId,
+      replacementReason: reason,
+      isArchived: false,
+    });
+
+    const savedTax = await newTax.save();
+
+    // If this tax is replacing another one, archive the old tax
+    // BUT keep it accessible for existing transactions
+    if (replacedTaxId) {
+      await archiveTax(
+        replacedTaxId,
+        userId,
+        `Replaced by new tax: ${savedTax._id}`
+      );
     }
 
-    return await TaxModel.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    return savedTax;
   } catch (error) {
     throw new Error(
-      `Failed to update tax: ${
+      `Failed to create independent tax: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
+/**
+ * Archive a tax (mark as archived but keep accessible for transactions)
+ * This maintains transaction integrity by preserving tax data
+ */
+const archiveTax = async (
+  taxId: string,
+  userId: string,
+  reason?: string
+): Promise<TaxDocument | null> => {
+  try {
+    const archivedTax = await TaxModel.findByIdAndUpdate(
+      taxId,
+      {
+        isArchived: true,
+        archivedAt: new Date(),
+        archivedBy: userId,
+        archivedReason: reason,
+        active: false, // Deactivate for new transactions but keep data intact
+      },
+      { new: true }
+    );
+
+    return archivedTax;
+  } catch (error) {
+    throw new Error(
+      `Failed to archive tax: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
+/**
+ * Get tax audit trail (shows which tax replaced which)
+ * This helps maintain audit integrity by showing the relationship between taxes
+ */
+const getTaxAuditTrail = async (
+  taxId: string
+): Promise<{
+  currentTax: TaxDocument | null;
+  replacedTax: TaxDocument | null;
+  replacedByTax: TaxDocument | null;
+}> => {
+  try {
+    const currentTax = await TaxModel.findById(taxId)
+      .populate("createdBy", "firstName lastName email")
+      .populate("replacedTax", "name rate createdAt");
+
+    const replacedTax = currentTax?.replacedTax
+      ? await TaxModel.findById(currentTax.replacedTax).populate(
+          "createdBy",
+          "firstName lastName email"
+        )
+      : null;
+
+    const replacedByTax = await TaxModel.findOne({
+      replacedTax: taxId,
+    }).populate("createdBy", "firstName lastName email");
+
+    return {
+      currentTax,
+      replacedTax,
+      replacedByTax,
+    };
+  } catch (error) {
+    throw new Error(
+      `Failed to get tax audit trail: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
+/**
+ * Get archived taxes
+ */
+const getArchivedTaxes = async (
+  companyId?: string,
+  pagination: { page: number; limit: number } = { page: 1, limit: 10 }
+): Promise<{
+  taxes: TaxDocument[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
+  try {
+    const query: any = { isArchived: true };
+
+    if (companyId) {
+      query.company = companyId;
+    }
+
+    const skip = (pagination.page - 1) * pagination.limit;
+
+    const [taxes, total] = await Promise.all([
+      TaxModel.find(query)
+        .populate("archivedBy", "firstName lastName email")
+        .populate("company", "name")
+        .sort({ archivedAt: -1 })
+        .skip(skip)
+        .limit(pagination.limit),
+      TaxModel.countDocuments(query),
+    ]);
+
+    return {
+      taxes,
+      total,
+      totalPages: Math.ceil(total / pagination.limit),
+      currentPage: pagination.page,
+    };
+  } catch (error) {
+    throw new Error(
+      `Failed to get archived taxes: ${
         error instanceof Error ? error.message : "Unknown error"
       }`
     );
@@ -198,8 +365,9 @@ const deleteTax = async (id: string): Promise<boolean> => {
  */
 const getDefaultTaxes = async (): Promise<TaxDocument[]> => {
   try {
-    return await TaxModel.find({ isDefault: true, isSuperAdminTax: true })
-      .sort({ priority: 1, createdAt: -1 });
+    return await TaxModel.find({ isDefault: true, isSuperAdminTax: true }).sort(
+      { priority: 1, createdAt: -1 }
+    );
   } catch (error) {
     throw new Error(
       `Failed to fetch default taxes: ${
@@ -225,7 +393,7 @@ const createDefaultTaxes = async (): Promise<TaxDocument[]> => {
         active: true,
         calculationMethod: "exclusive",
         appliesTo: ["facility", "inventory_item"],
-        description: "Value Added Tax - 15%"
+        description: "Value Added Tax - 15%",
       },
       {
         name: "NHIS",
@@ -237,7 +405,7 @@ const createDefaultTaxes = async (): Promise<TaxDocument[]> => {
         active: true,
         calculationMethod: "exclusive",
         appliesTo: ["facility", "inventory_item"],
-        description: "National Health Insurance Scheme - 2.5%"
+        description: "National Health Insurance Scheme - 2.5%",
       },
       {
         name: "COVID Levy",
@@ -249,7 +417,7 @@ const createDefaultTaxes = async (): Promise<TaxDocument[]> => {
         active: true,
         calculationMethod: "exclusive",
         appliesTo: ["facility", "inventory_item"],
-        description: "COVID-19 Health Levy - 1%"
+        description: "COVID-19 Health Levy - 1%",
       },
       {
         name: "GETFUND",
@@ -261,17 +429,17 @@ const createDefaultTaxes = async (): Promise<TaxDocument[]> => {
         active: true,
         calculationMethod: "exclusive",
         appliesTo: ["facility", "inventory_item"],
-        description: "Ghana Education Trust Fund - 2.5%"
-      }
+        description: "Ghana Education Trust Fund - 2.5%",
+      },
     ];
 
     const createdTaxes = [];
     for (const taxData of defaultTaxes) {
-      const existingTax = await TaxModel.findOne({ 
-        name: taxData.name, 
-        isDefault: true 
+      const existingTax = await TaxModel.findOne({
+        name: taxData.name,
+        isDefault: true,
       });
-      
+
       if (!existingTax) {
         const tax = new TaxModel(taxData);
         createdTaxes.push(await tax.save());
@@ -302,13 +470,15 @@ const getCombinedTaxes = async (
     page?: number;
     limit?: number;
   } = {}
-): Promise<{ taxes: TaxDocument[]; total: number; totalPages: number; currentPage: number }> => {
+): Promise<{
+  taxes: TaxDocument[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
   try {
     const query: any = {
-      $or: [
-        { isDefault: true, isSuperAdminTax: true },
-        { company: companyId }
-      ]
+      $or: [{ isDefault: true, isSuperAdminTax: true }, { company: companyId }],
     };
 
     if (filters.active !== undefined) {
@@ -332,14 +502,14 @@ const getCombinedTaxes = async (
         .sort({ priority: 1, createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      TaxModel.countDocuments(query)
+      TaxModel.countDocuments(query),
     ]);
 
     return {
       taxes,
       total,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     };
   } catch (error) {
     throw new Error(
@@ -363,11 +533,16 @@ const getGlobalTaxes = async (
     page?: number;
     limit?: number;
   } = {}
-): Promise<{ taxes: TaxDocument[]; total: number; totalPages: number; currentPage: number }> => {
+): Promise<{
+  taxes: TaxDocument[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
   try {
     const query: any = {
       isSuperAdminTax: true,
-      company: { $exists: false }
+      company: { $exists: false },
     };
 
     if (filters.active !== undefined) {
@@ -391,14 +566,14 @@ const getGlobalTaxes = async (
         .sort({ priority: 1, createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      TaxModel.countDocuments(query)
+      TaxModel.countDocuments(query),
     ]);
 
     return {
       taxes,
       total,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     };
   } catch (error) {
     throw new Error(
@@ -411,7 +586,11 @@ const getGlobalTaxes = async (
 
 export {
   createTax,
-  updateTax,
+  createCompanyTax,
+  createIndependentTax,
+  archiveTax,
+  getTaxAuditTrail,
+  getArchivedTaxes,
   getAllTaxes,
   getGlobalTaxes,
   getCompanyTaxes,

@@ -169,10 +169,10 @@ const EditUserModal = ({ user, show, onHide, onSave }: EditUserModalProps) => {
 
               {admin?.isSuperAdmin && (
                 <div className="space-y-2">
-                  <Label htmlFor="superAdmin">Make User SuperAdmin</Label>
+                  <Label htmlFor="super_admin">Make User SuperAdmin</Label>
                   <div className="flex items-start gap-2 justify-center">
                     <Checkbox
-                      id="superAdmin"
+                      id="super_admin"
                       checked={formData.isSuperAdmin || false}
                       onCheckedChange={(checked) =>
                         setFormData((prev) => ({

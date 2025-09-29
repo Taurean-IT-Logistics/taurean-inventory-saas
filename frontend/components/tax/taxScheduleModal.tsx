@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Calendar, Percent, DollarSign } from "lucide-react";
+import { Calendar, Percent, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { TaxSchedule, Tax } from "@/types";
 
 interface TaxScheduleModalProps {
@@ -46,54 +47,63 @@ const TaxScheduleModal = ({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    type: "percentage" as "percentage" | "fixed",
-    value: 0,
-    effectiveDate: "",
-    expiryDate: "",
+    effectiveDate: undefined as Date | undefined,
+    expiryDate: undefined as Date | undefined,
     isActive: true,
     appliesTo: "all" as "all" | "facilities" | "inventory" | "subscriptions",
     selectedTaxes: [] as string[],
-    taxInclusive: false,
-    taxExclusive: true, // Default to exclusive
-    taxOnTax: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Calculate total tax from selected taxes
+  const calculateTotalTax = () => {
+    if (formData.selectedTaxes.length === 0)
+      return { percentage: 0, fixedAmount: 0 };
+
+    const selectedTaxes = availableTaxes.filter((tax) =>
+      formData.selectedTaxes.includes(tax._id)
+    );
+
+    const percentageTotal = selectedTaxes
+      .filter((tax) => tax.taxType === "percentage" || !tax.taxType)
+      .reduce((total, tax) => total + tax.rate, 0);
+
+    const fixedAmountTotal = selectedTaxes
+      .filter((tax) => tax.taxType === "fixed_amount")
+      .reduce((total, tax) => total + (tax.fixedAmount || 0), 0);
+
+    return { percentage: percentageTotal, fixedAmount: fixedAmountTotal };
+  };
+
+  const totalTax = calculateTotalTax();
 
   useEffect(() => {
     if (isEdit && schedule) {
       setFormData({
         name: schedule.name || "",
         description: schedule.description || "",
-        type: schedule.type || "percentage",
-        value: schedule.value || 0,
         effectiveDate: schedule.effectiveDate
-          ? new Date(schedule.effectiveDate).toISOString().split("T")[0]
-          : "",
+          ? new Date(schedule.effectiveDate)
+          : undefined,
         expiryDate: schedule.expiryDate
-          ? new Date(schedule.expiryDate).toISOString().split("T")[0]
-          : "",
+          ? new Date(schedule.expiryDate)
+          : undefined,
         isActive: schedule.isActive ?? true,
         appliesTo: schedule.appliesTo || "all",
-        selectedTaxes: [], // This would be populated from the schedule's tax references
-        taxInclusive: (schedule as any).taxInclusive || false,
-        taxExclusive: (schedule as any).taxExclusive ?? true,
-        taxOnTax: (schedule as any).taxOnTax || false,
+        selectedTaxes: schedule.components
+          ? schedule.components.map((tax) => tax._id)
+          : [], // Extract tax IDs from components
       });
     } else {
       setFormData({
         name: "",
         description: "",
-        type: "percentage",
-        value: 0,
-        effectiveDate: "",
-        expiryDate: "",
+        effectiveDate: undefined,
+        expiryDate: undefined,
         isActive: true,
         appliesTo: "all",
         selectedTaxes: [],
-        taxInclusive: false,
-        taxExclusive: true, // Default to exclusive
-        taxOnTax: false,
       });
     }
     setErrors({});
@@ -106,20 +116,18 @@ const TaxScheduleModal = ({
       newErrors.name = "Schedule name is required";
     }
 
-    if (formData.value <= 0) {
-      newErrors.value = "Value must be greater than 0";
-    }
-
     if (!formData.effectiveDate) {
       newErrors.effectiveDate = "Effective date is required";
     }
 
     if (formData.expiryDate && formData.effectiveDate) {
-      const effectiveDate = new Date(formData.effectiveDate);
-      const expiryDate = new Date(formData.expiryDate);
-      if (expiryDate <= effectiveDate) {
+      if (formData.expiryDate <= formData.effectiveDate) {
         newErrors.expiryDate = "Expiry date must be after effective date";
       }
+    }
+
+    if (formData.selectedTaxes.length === 0) {
+      newErrors.selectedTaxes = "At least one tax must be selected";
     }
 
     setErrors(newErrors);
@@ -136,11 +144,11 @@ const TaxScheduleModal = ({
     try {
       const scheduleData = {
         ...formData,
-        effectiveDate: new Date(formData.effectiveDate),
-        expiryDate: formData.expiryDate
-          ? new Date(formData.expiryDate)
-          : undefined,
-        value: Number(formData.value),
+        effectiveDate: formData.effectiveDate,
+        expiryDate: formData.expiryDate,
+        components: formData.selectedTaxes
+          .map((taxId) => availableTaxes.find((tax) => tax._id === taxId))
+          .filter(Boolean) as Tax[], // Map tax IDs to Tax objects
       };
 
       await onSave(scheduleData);
@@ -230,64 +238,13 @@ const TaxScheduleModal = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Schedule Type *</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => handleInputChange("type", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentage">
-                    <div className="flex items-center gap-2">
-                      <Percent className="h-4 w-4" />
-                      Percentage
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="fixed">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Fixed Amount
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="value">Value *</Label>
-              <Input
-                id="value"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.value}
-                onChange={(e) => handleInputChange("value", e.target.value)}
-                placeholder={formData.type === "percentage" ? "15.5" : "25.00"}
-                className={errors.value ? "border-red-500" : ""}
-              />
-              {errors.value && (
-                <p className="text-sm text-red-500">{errors.value}</p>
-              )}
-              <p className="text-xs text-gray-500">
-                {formData.type === "percentage"
-                  ? "Enter percentage (e.g., 15.5 for 15.5%)"
-                  : "Enter fixed amount (e.g., 25.00)"}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="effectiveDate">Effective Date *</Label>
-              <Input
-                id="effectiveDate"
-                type="date"
-                value={formData.effectiveDate}
-                onChange={(e) =>
-                  handleInputChange("effectiveDate", e.target.value)
+              <Label>Effective Date *</Label>
+              <DatePicker
+                date={formData.effectiveDate}
+                onDateChange={(date) =>
+                  handleInputChange("effectiveDate", date)
                 }
+                placeholder="Select effective date"
                 className={errors.effectiveDate ? "border-red-500" : ""}
               />
               {errors.effectiveDate && (
@@ -296,14 +253,11 @@ const TaxScheduleModal = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="expiryDate">Expiry Date</Label>
-              <Input
-                id="expiryDate"
-                type="date"
-                value={formData.expiryDate}
-                onChange={(e) =>
-                  handleInputChange("expiryDate", e.target.value)
-                }
+              <Label>Expiry Date</Label>
+              <DatePicker
+                date={formData.expiryDate}
+                onDateChange={(date) => handleInputChange("expiryDate", date)}
+                placeholder="Select expiry date (optional)"
                 className={errors.expiryDate ? "border-red-500" : ""}
               />
               {errors.expiryDate && (
@@ -315,78 +269,30 @@ const TaxScheduleModal = ({
             </div>
           </div>
 
-          {/* Tax Calculation Settings for this Schedule */}
           <div className="space-y-4">
-            <Label>Tax Calculation Settings</Label>
-            <div className="flex flex-wrap items-center gap-4 p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="scheduleTaxInclusive"
-                  checked={formData.taxInclusive || false}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      // When inclusive is checked, uncheck exclusive
-                      handleInputChange("taxInclusive", true);
-                      handleInputChange("taxExclusive", false);
-                    } else {
-                      handleInputChange("taxInclusive", false);
-                    }
-                  }}
-                />
-                <label
-                  htmlFor="scheduleTaxInclusive"
-                  className="text-sm font-medium"
-                >
-                  Tax Inclusive
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="scheduleTaxExclusive"
-                  checked={formData.taxExclusive || true}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      // When exclusive is checked, uncheck inclusive
-                      handleInputChange("taxExclusive", true);
-                      handleInputChange("taxInclusive", false);
-                    } else {
-                      handleInputChange("taxExclusive", false);
-                    }
-                  }}
-                />
-                <label
-                  htmlFor="scheduleTaxExclusive"
-                  className="text-sm font-medium"
-                >
-                  Tax Exclusive
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="scheduleTaxOnTax"
-                  checked={formData.taxOnTax || false}
-                  onCheckedChange={(checked) =>
-                    handleInputChange("taxOnTax", checked)
-                  }
-                />
-                <label
-                  htmlFor="scheduleTaxOnTax"
-                  className="text-sm font-medium"
-                >
-                  Tax on Tax
-                </label>
-              </div>
-
-              <div className="text-xs text-gray-500 ml-auto">
-                Choose either inclusive OR exclusive (not both)
-              </div>
+            <div className="flex items-center justify-between">
+              <Label>Select Taxes for This Schedule</Label>
+              {(totalTax.percentage > 0 || totalTax.fixedAmount > 0) && (
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  {totalTax.percentage > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Percent className="h-4 w-4" />
+                      <span className="font-medium">
+                        Total Rate: {totalTax.percentage.toFixed(2)}%
+                      </span>
+                    </div>
+                  )}
+                  {totalTax.fixedAmount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      <span className="font-medium">
+                        Fixed Amount: GHS {totalTax.fixedAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <Label>Select Taxes for This Schedule</Label>
             <div className="max-h-40 overflow-y-auto border rounded-lg p-3 space-y-2">
               {availableTaxes.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-4">
@@ -406,7 +312,11 @@ const TaxScheduleModal = ({
                       htmlFor={`tax-${tax._id}`}
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1"
                     >
-                      {tax.name} ({tax.rate}%)
+                      {tax.name} (
+                      {tax.taxType === "fixed_amount"
+                        ? `GHS ${tax.fixedAmount}`
+                        : `${tax.rate}%`}
+                      )
                     </label>
                     <span className="text-xs text-gray-500">
                       {tax.isSuperAdminTax ? "Global" : "Company"}
@@ -415,6 +325,9 @@ const TaxScheduleModal = ({
                 ))
               )}
             </div>
+            {errors.selectedTaxes && (
+              <p className="text-sm text-red-500">{errors.selectedTaxes}</p>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
@@ -429,16 +342,27 @@ const TaxScheduleModal = ({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading
-                ? "Saving..."
-                : isEdit
-                ? "Update Schedule"
-                : "Create Schedule"}
-            </Button>
+            {!isEdit && availableTaxes.length === 0 && (
+              <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg mb-4">
+                <strong>Cannot create schedule:</strong> No taxes are available.
+                Please create some taxes first before creating a tax schedule.
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isLoading || (!isEdit && availableTaxes.length === 0)}
+              >
+                {isLoading
+                  ? "Saving..."
+                  : isEdit
+                  ? "Update Schedule"
+                  : "Create Schedule"}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

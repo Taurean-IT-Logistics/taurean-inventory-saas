@@ -262,14 +262,16 @@ export default function SuperAdminUsersPage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Role:</span>
                 <Badge
-                  variant={user.role === "superAdmin" ? "default" : "secondary"}
+                  variant={
+                    user.role === "super_admin" ? "default" : "secondary"
+                  }
                   className={
-                    user.role === "superAdmin"
+                    user.role === "super_admin"
                       ? "bg-purple-100 text-purple-800"
                       : "bg-gray-100 text-gray-800"
                   }
                 >
-                  {user.role === "superAdmin" ? (
+                  {user.role === "super_admin" ? (
                     <Crown className="h-3 w-3 mr-1" />
                   ) : (
                     <Shield className="h-3 w-3 mr-1" />
@@ -322,7 +324,7 @@ export default function SuperAdminUsersPage() {
                   }
                   disabled={
                     updateUserRoleMutation.isPending ||
-                    user.role === "superAdmin"
+                    user.role === "super_admin"
                   }
                 >
                   {user.role === "admin" ? "Make User" : "Make Admin"}
@@ -386,7 +388,7 @@ export default function SuperAdminUsersPage() {
                   <Label>Role</Label>
                   <Badge
                     variant={
-                      selectedUser.role === "superAdmin"
+                      selectedUser.role === "super_admin"
                         ? "default"
                         : "secondary"
                     }

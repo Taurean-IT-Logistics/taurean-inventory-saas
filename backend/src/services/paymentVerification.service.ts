@@ -7,6 +7,7 @@ import { Events } from "../utils/events";
 import { verifyPayment } from "./payment.service";
 import PaymentScheduleService from "./paymentSchedule.service";
 import ReferenceGenerator from "../utils/referenceGenerator";
+import NotificationService from "./notification.service";
 
 export interface PaymentVerificationResult {
   success: boolean;
@@ -204,9 +205,19 @@ export class PaymentVerificationService {
     reference: string
   ): Promise<PaymentVerificationResult> {
     try {
-      // For split payments, we need to check the payment schedule
+      // First find the transaction by reference to get the actual transaction ID
+      const transaction = await TransactionModel.findOne({
+        ref: reference,
+        isDeleted: false,
+      });
+
+      if (!transaction) {
+        throw new Error("Transaction not found");
+      }
+
+      // For split payments, we need to check the payment schedule using the transaction ID
       const schedule = await PaymentScheduleModel.findOne({
-        transactionId: reference,
+        transactionId: transaction._id.toString(),
         paymentType: "split",
         isDeleted: false,
       });
@@ -262,9 +273,19 @@ export class PaymentVerificationService {
     reference: string
   ): Promise<PaymentVerificationResult> {
     try {
-      // For advance payments, we need to check the payment schedule
+      // First find the transaction by reference to get the actual transaction ID
+      const transaction = await TransactionModel.findOne({
+        ref: reference,
+        isDeleted: false,
+      });
+
+      if (!transaction) {
+        throw new Error("Transaction not found");
+      }
+
+      // For advance payments, we need to check the payment schedule using the transaction ID
       const schedule = await PaymentScheduleModel.findOne({
-        transactionId: reference,
+        transactionId: transaction._id.toString(),
         paymentType: "advance",
         isDeleted: false,
       });
@@ -288,7 +309,7 @@ export class PaymentVerificationService {
         status: isAdvancePaid ? "success" : "pending",
         paidAt: advancePayment?.paidAt,
         channel: "advance",
-        currency: "NGN",
+        currency: "GHS",
         customer: {
           email: (schedule.userId as any)?.email,
           name: (schedule.userId as any)?.name,
@@ -374,43 +395,203 @@ export class PaymentVerificationService {
 
       // Update booking status if applicable
       if (transaction.category === "booking" && transaction.booking) {
-        await BookingModel.findByIdAndUpdate(transaction.booking, {
-          paymentStatus: "completed",
-          status: "confirmed",
-          updatedAt: new Date(),
-        });
+        const booking = await BookingModel.findById(transaction.booking);
+        if (booking) {
+          await BookingModel.findByIdAndUpdate(transaction.booking, {
+            paymentStatus: "completed",
+            status: "confirmed",
+            updatedAt: new Date(),
+          });
 
-        emitEvent(Events.BookingConfirmed, {
-          bookingId: transaction.booking,
-          transactionId: transaction._id,
-        });
+          // Send payment notification
+          try {
+            const notificationService = NotificationService;
+            await notificationService.createPaymentStatusNotification(
+              booking.user.toString(),
+              {
+                type: transaction.paymentTiming || "full",
+                amount: verificationResult.amount,
+                totalAmount: booking.totalPrice,
+                remainingAmount: booking.totalPrice - verificationResult.amount,
+                paymentMethod: verificationResult.method,
+                bookingId: booking._id.toString(),
+                transactionId: transaction._id.toString(),
+                status: "completed",
+              }
+            );
 
-        // Send booking confirmation email
-        try {
-          const { emailService } = await import("./email.service");
-          await emailService.sendBookingConfirmation(
-            transaction.booking.toString()
-          );
-        } catch (emailError) {
-          console.warn(
-            "Failed to send booking confirmation email:",
-            emailError
-          );
+            // Send email notification
+            try {
+              const { emailService } = await import("./email.service");
+              const user = await import("../models/user.model").then((m) =>
+                m.UserModel.findById(booking.user)
+              );
+              const company = await import("../models/company.model").then(
+                (m) => m.CompanyModel.findById(booking.company)
+              );
+
+              if (user && company) {
+                const emailSubject = `Payment Confirmation - ${transaction.paymentTiming === "advance" ? "Advance" : transaction.paymentTiming === "split" ? "Split" : "Full"} Payment`;
+                const emailContent = `
+                  <h2>Payment Confirmation</h2>
+                  <p>Dear ${user.name || "Customer"},</p>
+                  <p>Your ${transaction.paymentTiming || "full"} payment has been successfully processed.</p>
+                  <div style="background-color: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                    <h3>Payment Details:</h3>
+                    <ul>
+                      <li><strong>Amount Paid:</strong> ${verificationResult.amount}</li>
+                      <li><strong>Payment Method:</strong> ${verificationResult.method}</li>
+                      <li><strong>Transaction Reference:</strong> ${verificationResult.reference}</li>
+                      ${
+                        transaction.paymentTiming === "advance" ||
+                        transaction.paymentTiming === "split"
+                          ? `<li><strong>Remaining Balance:</strong> ${booking.totalPrice - verificationResult.amount}</li>`
+                          : ""
+                      }
+                    </ul>
+                  </div>
+                  <p>Thank you for your business!</p>
+                  <p>Best regards,<br>${company.name}</p>
+                `;
+
+                await emailService.sendEmail({
+                  to: user.email,
+                  subject: emailSubject,
+                  template: "payment-confirmation",
+                  context: {
+                    company,
+                    user,
+                    recipient: user,
+                  },
+                  companyId: booking.company.toString(),
+                });
+              }
+            } catch (emailError) {
+              console.warn(
+                "Failed to send payment confirmation email:",
+                emailError
+              );
+            }
+          } catch (notificationError) {
+            console.warn(
+              "Failed to send payment notification:",
+              notificationError
+            );
+          }
+
+          emitEvent(Events.BookingConfirmed, {
+            bookingId: transaction.booking,
+            transactionId: transaction._id,
+          });
+
+          // Send booking confirmation email
+          try {
+            const { emailService } = await import("./email.service");
+            await emailService.sendBookingConfirmation(
+              transaction.booking.toString()
+            );
+          } catch (emailError) {
+            console.warn(
+              "Failed to send booking confirmation email:",
+              emailError
+            );
+          }
         }
       }
 
       // Update rental status if applicable
       if (transaction.category === "rental" && transaction.rental) {
-        await RentalModel.findByIdAndUpdate(transaction.rental, {
-          paymentStatus: "completed",
-          status: "confirmed",
-          updatedAt: new Date(),
-        });
+        const rental = await RentalModel.findById(transaction.rental);
+        if (rental) {
+          await RentalModel.findByIdAndUpdate(transaction.rental, {
+            paymentStatus: "completed",
+            status: "confirmed",
+            updatedAt: new Date(),
+          });
 
-        emitEvent(Events.RentalConfirmed, {
-          rentalId: transaction.rental,
-          transactionId: transaction._id,
-        });
+          // Send payment notification
+          try {
+            const notificationService = NotificationService;
+            await notificationService.createPaymentStatusNotification(
+              rental.user.toString(),
+              {
+                type: transaction.paymentTiming || "full",
+                amount: verificationResult.amount,
+                totalAmount: rental.totalPrice || rental.amount,
+                remainingAmount:
+                  (rental.totalPrice || rental.amount) -
+                  verificationResult.amount,
+                paymentMethod: verificationResult.method,
+                rentalId: rental._id.toString(),
+                transactionId: transaction._id.toString(),
+                status: "completed",
+              }
+            );
+
+            // Send email notification
+            try {
+              const { emailService } = await import("./email.service");
+              const user = await import("../models/user.model").then((m) =>
+                m.UserModel.findById(rental.user)
+              );
+              const company = await import("../models/company.model").then(
+                (m) => m.CompanyModel.findById(rental.company)
+              );
+
+              if (user && company) {
+                const emailSubject = `Payment Confirmation - ${transaction.paymentTiming === "advance" ? "Advance" : transaction.paymentTiming === "split" ? "Split" : "Full"} Payment`;
+                const emailContent = `
+                  <h2>Payment Confirmation</h2>
+                  <p>Dear ${user.name || "Customer"},</p>
+                  <p>Your ${transaction.paymentTiming || "full"} payment has been successfully processed.</p>
+                  <div style="background-color: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                    <h3>Payment Details:</h3>
+                    <ul>
+                      <li><strong>Amount Paid:</strong> ${verificationResult.amount}</li>
+                      <li><strong>Payment Method:</strong> ${verificationResult.method}</li>
+                      <li><strong>Transaction Reference:</strong> ${verificationResult.reference}</li>
+                      ${
+                        transaction.paymentTiming === "advance" ||
+                        transaction.paymentTiming === "split"
+                          ? `<li><strong>Remaining Balance:</strong> ${(rental.totalPrice || rental.amount) - verificationResult.amount}</li>`
+                          : ""
+                      }
+                    </ul>
+                  </div>
+                  <p>Thank you for your business!</p>
+                  <p>Best regards,<br>${company.name}</p>
+                `;
+
+                await emailService.sendEmail({
+                  to: user.email,
+                  subject: emailSubject,
+                  template: "payment-confirmation",
+                  context: {
+                    company,
+                    user,
+                    recipient: user,
+                  },
+                  companyId: rental.company.toString(),
+                });
+              }
+            } catch (emailError) {
+              console.warn(
+                "Failed to send payment confirmation email:",
+                emailError
+              );
+            }
+          } catch (notificationError) {
+            console.warn(
+              "Failed to send payment notification:",
+              notificationError
+            );
+          }
+
+          emitEvent(Events.RentalConfirmed, {
+            rentalId: transaction.rental,
+            transactionId: transaction._id,
+          });
+        }
       }
 
       // Update payment schedule if applicable
@@ -419,7 +600,7 @@ export class PaymentVerificationService {
         verificationResult.method === "advance"
       ) {
         const schedule = await PaymentScheduleModel.findOne({
-          transactionId: transaction._id,
+          transactionId: transaction._id.toString(),
           isDeleted: false,
         });
 

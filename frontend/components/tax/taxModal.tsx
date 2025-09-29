@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -47,7 +48,10 @@ const TaxModal = ({
     appliesTo: "both",
     isSuperAdminTax: false,
     active: true,
+    taxType: "percentage",
+    fixedAmount: 0,
   });
+  const [reason, setReason] = useState("");
 
   useEffect(() => {
     if (tax && isEdit) {
@@ -59,8 +63,11 @@ const TaxModal = ({
         type: "",
         appliesTo: "both",
         active: true,
+        taxType: "percentage",
+        fixedAmount: 0,
       });
     }
+    setReason("");
   }, [tax, isEdit, show]);
 
   const handleInputChange = (
@@ -69,7 +76,10 @@ const TaxModal = ({
   ) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "rate" ? Number.parseFloat(value as string) || 0 : value,
+      [name]:
+        name === "rate" || name === "fixedAmount"
+          ? Number.parseFloat(value as string) || 0
+          : value,
     }));
   };
 
@@ -86,6 +96,11 @@ const TaxModal = ({
       updatedAt: new Date(),
     };
 
+    // If editing, include the reason for creating a new version
+    if (isEdit && reason) {
+      (taxData as any).reason = reason;
+    }
+
     onSave(taxData as Tax);
     onHide();
   };
@@ -94,10 +109,28 @@ const TaxModal = ({
     <Dialog open={show} onOpenChange={onHide}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Tax" : "Create New Tax"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? "Create New Independent Tax" : "Create New Tax"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
+            {isEdit && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-blue-800">
+                    Creating Independent Tax
+                  </span>
+                </div>
+                <p className="text-sm text-blue-700">
+                  This will create a completely new independent tax and archive
+                  the current one. The current tax will remain accessible for
+                  existing transactions to maintain audit integrity.
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Tax Name *</Label>
@@ -111,15 +144,30 @@ const TaxModal = ({
                 />
               </div>
               <div>
-                <Label htmlFor="rate">Rate (%) *</Label>
+                <Label htmlFor="rate">
+                  {formData.taxType === "fixed_amount"
+                    ? "Fixed Amount (GHS) *"
+                    : "Rate (%) *"}
+                </Label>
                 <Input
                   id="rate"
                   type="number"
                   step="0.01"
                   min="0"
-                  max="100"
-                  value={formData.rate || ""}
-                  onChange={(e) => handleInputChange("rate", e.target.value)}
+                  max={formData.taxType === "fixed_amount" ? undefined : "100"}
+                  value={
+                    formData.taxType === "fixed_amount"
+                      ? formData.fixedAmount || ""
+                      : formData.rate || ""
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      formData.taxType === "fixed_amount"
+                        ? "fixedAmount"
+                        : "rate",
+                      e.target.value
+                    )
+                  }
                   placeholder="0.00"
                   required
                   className="border-gray-300"
@@ -163,6 +211,42 @@ const TaxModal = ({
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="taxType">Tax Calculation Type *</Label>
+                <Select
+                  value={formData.taxType || "percentage"}
+                  onValueChange={(value) => handleInputChange("taxType", value)}
+                >
+                  <SelectTrigger className="border-gray-300">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                    <SelectItem value="fixed_amount">
+                      Fixed Amount (GHS)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>{/* Empty div for grid layout */}</div>
+            </div>
+
+            {isEdit && (
+              <div>
+                <Label htmlFor="reason">Reason for New Independent Tax *</Label>
+                <Textarea
+                  id="reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="e.g., Rate increase, regulatory change, etc."
+                  required
+                  rows={3}
+                  className="border-gray-300"
+                />
+              </div>
+            )}
+
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="active"
@@ -196,7 +280,7 @@ const TaxModal = ({
               Cancel
             </Button>
             <Button type="submit">
-              {isEdit ? "Update Tax" : "Create Tax"}
+              {isEdit ? "Create New Independent Tax" : "Create Tax"}
             </Button>
           </DialogFooter>
         </form>
