@@ -1517,8 +1517,9 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                   <div className="flex items-start space-x-3">
                     <Image
                       src={
-                        getResourceUrl(facility.images[0].path) ||
-                        "/placeholder.svg"
+                        facility.images?.[0]?.path
+                          ? getResourceUrl(facility.images[0].path)
+                          : "/placeholder.svg"
                       }
                       alt={facility.name}
                       width={60}
@@ -1733,7 +1734,9 @@ export default function BookingPage({ params }: { params: { id: string } }) {
             <div className="flex items-start space-x-4 mb-6">
               <Image
                 src={
-                  getResourceUrl(facility.images[0].path) || "/placeholder.svg"
+                  facility.images?.[0]?.path
+                    ? getResourceUrl(facility.images[0].path)
+                    : "/placeholder.svg"
                 }
                 alt={facility.name}
                 width={80}

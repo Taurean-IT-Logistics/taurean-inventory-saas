@@ -14,16 +14,14 @@ const TaxSchema: Schema = new Schema<TaxDocument>(
       default: "percentage",
     },
     fixedAmount: { type: Number, default: 0 }, // For fixed amount taxes
-    isSuperAdminTax: { type: Boolean, default: false },
-    company: { type: Schema.Types.ObjectId, ref: "Company" },
-    active: { type: Boolean, default: false },
+    company: { type: Schema.Types.ObjectId, ref: "Company", required: true },
     isDefault: { type: Boolean, default: false },
+    active: { type: Boolean, default: true },
     priority: { type: Number, default: 999 },
-    appliesTo: [{ type: String }],
     description: { type: String },
     effectiveDate: { type: Date },
     expiryDate: { type: Date },
-    copiedFrom: { type: Schema.Types.ObjectId, ref: "Tax" }, // Reference to original super admin tax
+    copiedFrom: { type: Schema.Types.ObjectId, ref: "Tax" }, // Reference to original tax
     // Independent tax fields
     isArchived: { type: Boolean, default: false },
     archivedAt: { type: Date },
@@ -43,8 +41,7 @@ const TaxSchema: Schema = new Schema<TaxDocument>(
 // Indexes for better performance
 TaxSchema.index({ priority: 1, createdAt: -1 });
 TaxSchema.index({ isDefault: 1 });
-TaxSchema.index({ company: 1, active: 1 });
-TaxSchema.index({ isSuperAdminTax: 1, active: 1 });
+TaxSchema.index({ company: 1 });
 // Audit trail indexes
 TaxSchema.index({ createdBy: 1, createdAt: -1 });
 TaxSchema.index({ isArchived: 1, archivedAt: -1 });

@@ -20,8 +20,10 @@ import {
   TransactionDocument,
   UserModel,
   TransactionModel,
+  CashModel,
+  ChequeModel,
 } from "../models";
-import { Transaction } from "../types";
+import { Transaction, Cash, Cheque } from "../types";
 import { isValidObjectId } from "mongoose";
 import fs from "fs";
 import { emailService } from "../services/email.service";
@@ -1147,6 +1149,105 @@ const getUserPendingTransactionsController = async (
   }
 };
 
+// Process check payment
+const processCheckPaymentController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const {
+      amount,
+      checkNumber,
+      bankName,
+      accountNumber,
+      checkDate,
+      description,
+      category,
+      reference,
+    } = req.body;
+
+    const userId = req.user?.id;
+    const companyId = req.user?.companyId;
+
+    if (!userId || !companyId) {
+      sendError(res, "User authentication required");
+      return;
+    }
+
+    if (!amount || amount <= 0) {
+      sendValidationError(res, "Amount must be greater than 0");
+      return;
+    }
+
+    if (!checkNumber || !bankName || !accountNumber || !checkDate) {
+      sendValidationError(
+        res,
+        "Check number, bank name, account number, and check date are required"
+      );
+      return;
+    }
+
+    if (!category) {
+      sendValidationError(res, "Category is required");
+      return;
+    }
+
+    // Validate check date
+    const checkDateObj = new Date(checkDate);
+    if (isNaN(checkDateObj.getTime())) {
+      sendValidationError(res, "Invalid check date");
+      return;
+    }
+
+    // Create cheque record
+    const cheque = new ChequeModel({
+      amount,
+      checkNumber,
+      bankName,
+      accountNumber,
+      checkDate: checkDateObj,
+      status: "pending",
+      processedAt: new Date(),
+    });
+    await cheque.save();
+
+    // Create transaction record
+    const transaction = new TransactionModel({
+      user: userId,
+      company: companyId,
+      type: "income",
+      category,
+      amount,
+      method: "cheque",
+      isCheque: true,
+      cheque: cheque._id,
+      description: description || "Check payment",
+      ref: reference,
+      paymentDetails: {
+        chequeNumber: checkNumber,
+        bankDetails: {
+          bankName,
+          accountNumber,
+        },
+        chequeDate: checkDateObj,
+      },
+      reconciled: false,
+      attachments: [],
+      tags: ["cheque", "admin-input"],
+      isDeleted: false,
+    });
+
+    const savedTransaction = await transaction.save();
+
+    // Populate the transaction with cheque details
+    await savedTransaction.populate("cheque");
+
+    sendSuccess(res, "Check payment processed successfully", savedTransaction);
+  } catch (error: any) {
+    sendError(res, error.message, error);
+  }
+};
+
 export {
   // Payment operations
   initializePaymentController,
@@ -1174,4 +1275,6 @@ export {
   getPendingTransactionsController,
   processPendingTransactionController,
   getUserPendingTransactionsController,
+  // Cash and Check payment processing
+  processCheckPaymentController,
 };

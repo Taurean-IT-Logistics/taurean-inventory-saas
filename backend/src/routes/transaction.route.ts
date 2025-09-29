@@ -185,4 +185,19 @@ router.get(
   TransactionController.getUserPendingTransactionsController
 );
 
+// Cash and Check payment processing routes
+router.post(
+  "/process-cash",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.processCashPaymentController
+);
+
+router.post(
+  "/process-check",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.processCheckPaymentController
+);
+
 export default router;

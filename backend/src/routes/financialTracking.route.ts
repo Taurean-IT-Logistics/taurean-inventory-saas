@@ -13,6 +13,10 @@ import {
   applyDiscountController,
   getProfitAndLossController,
   getFinancialDashboardController,
+  getCompanyFinancialPerformanceController,
+  getFeePercentageTrackingController,
+  getTaxOwedSummaryController,
+  getRevenueBreakdownController,
 } from "../controllers/financialTracking.controller";
 
 const router: Router = Router();
@@ -78,6 +82,35 @@ router.get(
   staffAndAbove,
   RequireActiveCompany(),
   getFinancialDashboardController
+);
+
+// Enhanced financial tracking routes
+router.get(
+  "/performance",
+  staffAndAbove,
+  RequireActiveCompany(),
+  getCompanyFinancialPerformanceController
+);
+
+router.get(
+  "/fee-tracking",
+  staffAndAbove,
+  RequireActiveCompany(),
+  getFeePercentageTrackingController
+);
+
+router.get(
+  "/tax-summary",
+  staffAndAbove,
+  RequireActiveCompany(),
+  getTaxOwedSummaryController
+);
+
+router.get(
+  "/revenue-breakdown",
+  staffAndAbove,
+  RequireActiveCompany(),
+  getRevenueBreakdownController
 );
 
 export default router;

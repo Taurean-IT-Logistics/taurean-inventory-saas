@@ -606,16 +606,16 @@ export class PaymentVerificationService {
 
         if (schedule) {
           // Find the payment that was just completed
-          const paymentIndex = schedule.scheduledPayments.findIndex(
-            (payment: any) => payment.status === "paid" && payment.paidAt
+          const completedPayment = schedule.scheduledPayments.find(
+            (payment: any) => payment.status === "pending" && !payment.paidAt
           );
 
-          if (paymentIndex !== -1) {
-            await PaymentScheduleService.updatePaymentStatus({
-              scheduleId: schedule._id.toString(),
-              paymentIndex,
-              transactionId: transaction._id.toString(),
-            });
+          if (completedPayment && completedPayment.paymentReference) {
+            await PaymentScheduleService.processPayment(
+              schedule._id.toString(),
+              completedPayment.paymentReference,
+              transaction._id.toString()
+            );
           }
         }
       }

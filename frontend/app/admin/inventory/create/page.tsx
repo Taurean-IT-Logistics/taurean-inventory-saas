@@ -273,7 +273,7 @@ const CreateInventory = () => {
             />
 
             <ImageUploadForm
-              images={formData.images as any}
+              images={formData.images || []}
               onImagesChange={handleImagesChange}
             />
 

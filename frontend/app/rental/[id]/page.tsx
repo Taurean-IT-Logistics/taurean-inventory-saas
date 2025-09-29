@@ -25,9 +25,7 @@ import {
 } from "@/lib/api";
 import { InventoryItem, TaxSchedule } from "@/types";
 import { currencyFormat } from "@/lib/utils";
-import {
-  calculateRentalTaxesFromSchedules,
-} from "@/lib/taxCalculator";
+import { calculateRentalTaxesFromSchedules } from "@/lib/taxCalculator";
 import {
   differenceInCalendarDays,
   format,
@@ -88,11 +86,31 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   });
 
   // Fetch tax schedules
-  const { data: taxSchedules = [] } = useQuery({
+  const { data: taxSchedulesData = { schedules: [] } } = useQuery({
     queryKey: ["tax-schedules"],
     queryFn: () => TaxScheduleAPI.getTaxSchedules(),
     enabled: !!user,
   });
+
+  // Extract tax schedules array from various API response formats
+  const extractTaxSchedulesArray = (data: any): TaxSchedule[] => {
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data && typeof data === "object") {
+      if (Array.isArray(data.data)) {
+        return data.data;
+      } else if (Array.isArray(data.taxSchedules)) {
+        return data.taxSchedules;
+      } else if (Array.isArray(data.schedules)) {
+        return data.schedules;
+      } else if (Array.isArray(data.items)) {
+        return data.items;
+      }
+    }
+    return [];
+  };
+
+  const taxSchedules = extractTaxSchedulesArray(taxSchedulesData);
 
   // Payment mutation
   const createPaymentMutation = useMutation({
@@ -194,7 +212,7 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   // Use the new tax schedule calculator
   const taxResult = calculateRentalTaxesFromSchedules(
     subtotal,
-    taxSchedules as TaxSchedule[],
+    taxSchedules,
     (item as any).company,
     (item as InventoryItem).isTaxable
   );

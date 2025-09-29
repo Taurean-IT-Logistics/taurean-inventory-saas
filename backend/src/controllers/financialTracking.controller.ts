@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { 
+import {
   createExpense,
   getExpenses,
   getExpenseStatistics,
@@ -8,13 +8,20 @@ import {
   applyDiscount,
   getProfitAndLoss,
   getFinancialDashboard,
+  getCompanyFinancialPerformance,
+  getFeePercentageTracking,
+  getTaxOwedSummary,
+  getRevenueBreakdown,
 } from "../services/financialTracking.service";
 import { sendSuccess, sendError, sendNotFound } from "../utils";
 
 /**
  * Create an expense
  */
-export const createExpenseController = async (req: Request, res: Response): Promise<void> => {
+export const createExpenseController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const expenseData = {
       ...req.body,
@@ -32,14 +39,21 @@ export const createExpenseController = async (req: Request, res: Response): Prom
 /**
  * Get expenses
  */
-export const getExpensesController = async (req: Request, res: Response): Promise<void> => {
+export const getExpensesController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const filters = {
       companyId: req.user?.companyId,
       category: req.query.category as string,
       status: req.query.status as string,
-      startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
-      endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      startDate: req.query.startDate
+        ? new Date(req.query.startDate as string)
+        : undefined,
+      endDate: req.query.endDate
+        ? new Date(req.query.endDate as string)
+        : undefined,
       createdBy: req.query.createdBy as string,
       isRecurring: req.query.isRecurring === "true" ? true : undefined,
     };
@@ -59,13 +73,24 @@ export const getExpensesController = async (req: Request, res: Response): Promis
 /**
  * Get expense statistics
  */
-export const getExpenseStatisticsController = async (req: Request, res: Response): Promise<void> => {
+export const getExpenseStatisticsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const companyId = req.user?.companyId;
-    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
-    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+    const startDate = req.query.startDate
+      ? new Date(req.query.startDate as string)
+      : undefined;
+    const endDate = req.query.endDate
+      ? new Date(req.query.endDate as string)
+      : undefined;
 
-    const statistics = await getExpenseStatistics(companyId, startDate, endDate);
+    const statistics = await getExpenseStatistics(
+      companyId,
+      startDate,
+      endDate
+    );
     sendSuccess(res, "Expense statistics fetched successfully", statistics);
   } catch (error) {
     sendError(res, "Failed to fetch expense statistics", error);
@@ -75,7 +100,10 @@ export const getExpenseStatisticsController = async (req: Request, res: Response
 /**
  * Create a discount
  */
-export const createDiscountController = async (req: Request, res: Response): Promise<void> => {
+export const createDiscountController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const discountData = {
       ...req.body,
@@ -93,14 +121,21 @@ export const createDiscountController = async (req: Request, res: Response): Pro
 /**
  * Get discounts
  */
-export const getDiscountsController = async (req: Request, res: Response): Promise<void> => {
+export const getDiscountsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const filters = {
       companyId: req.user?.companyId,
       isActive: req.query.isActive === "true" ? true : undefined,
       applicableTo: req.query.applicableTo as string,
-      startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
-      endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      startDate: req.query.startDate
+        ? new Date(req.query.startDate as string)
+        : undefined,
+      endDate: req.query.endDate
+        ? new Date(req.query.endDate as string)
+        : undefined,
     };
 
     const pagination = {
@@ -118,7 +153,10 @@ export const getDiscountsController = async (req: Request, res: Response): Promi
 /**
  * Apply discount
  */
-export const applyDiscountController = async (req: Request, res: Response): Promise<void> => {
+export const applyDiscountController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { discountId, amount, applicableItemId } = req.body;
 
@@ -137,11 +175,18 @@ export const applyDiscountController = async (req: Request, res: Response): Prom
 /**
  * Get profit and loss statement
  */
-export const getProfitAndLossController = async (req: Request, res: Response): Promise<void> => {
+export const getProfitAndLossController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const companyId = req.user?.companyId;
-    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
-    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+    const startDate = req.query.startDate
+      ? new Date(req.query.startDate as string)
+      : undefined;
+    const endDate = req.query.endDate
+      ? new Date(req.query.endDate as string)
+      : undefined;
 
     const result = await getProfitAndLoss(companyId, startDate, endDate);
     sendSuccess(res, "Profit and loss statement fetched successfully", result);
@@ -153,12 +198,127 @@ export const getProfitAndLossController = async (req: Request, res: Response): P
 /**
  * Get financial dashboard
  */
-export const getFinancialDashboardController = async (req: Request, res: Response): Promise<void> => {
+export const getFinancialDashboardController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const companyId = req.user?.companyId;
     const dashboard = await getFinancialDashboard(companyId);
     sendSuccess(res, "Financial dashboard fetched successfully", dashboard);
   } catch (error) {
     sendError(res, "Failed to fetch financial dashboard", error);
+  }
+};
+
+/**
+ * Get company financial performance
+ */
+export const getCompanyFinancialPerformanceController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId;
+    const startDate = req.query.startDate
+      ? new Date(req.query.startDate as string)
+      : undefined;
+    const endDate = req.query.endDate
+      ? new Date(req.query.endDate as string)
+      : undefined;
+    const period = (req.query.period as string) || "monthly";
+
+    const performance = await getCompanyFinancialPerformance(
+      companyId,
+      startDate,
+      endDate,
+      period
+    );
+    sendSuccess(
+      res,
+      "Company financial performance fetched successfully",
+      performance
+    );
+  } catch (error) {
+    sendError(res, "Failed to fetch company financial performance", error);
+  }
+};
+
+/**
+ * Get fee percentage tracking
+ */
+export const getFeePercentageTrackingController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId;
+    const startDate = req.query.startDate
+      ? new Date(req.query.startDate as string)
+      : undefined;
+    const endDate = req.query.endDate
+      ? new Date(req.query.endDate as string)
+      : undefined;
+
+    const tracking = await getFeePercentageTracking(
+      companyId,
+      startDate,
+      endDate
+    );
+    sendSuccess(res, "Fee percentage tracking fetched successfully", tracking);
+  } catch (error) {
+    sendError(res, "Failed to fetch fee percentage tracking", error);
+  }
+};
+
+/**
+ * Get tax owed summary
+ */
+export const getTaxOwedSummaryController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId;
+    const startDate = req.query.startDate
+      ? new Date(req.query.startDate as string)
+      : undefined;
+    const endDate = req.query.endDate
+      ? new Date(req.query.endDate as string)
+      : undefined;
+
+    const summary = await getTaxOwedSummary(companyId, startDate, endDate);
+    sendSuccess(res, "Tax owed summary fetched successfully", summary);
+  } catch (error) {
+    sendError(res, "Failed to fetch tax owed summary", error);
+  }
+};
+
+/**
+ * Get revenue breakdown
+ */
+export const getRevenueBreakdownController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId;
+    const startDate = req.query.startDate
+      ? new Date(req.query.startDate as string)
+      : undefined;
+    const endDate = req.query.endDate
+      ? new Date(req.query.endDate as string)
+      : undefined;
+    const breakdownBy = (req.query.breakdownBy as string) || "category";
+
+    const breakdown = await getRevenueBreakdown(
+      companyId,
+      startDate,
+      endDate,
+      breakdownBy
+    );
+    sendSuccess(res, "Revenue breakdown fetched successfully", breakdown);
+  } catch (error) {
+    sendError(res, "Failed to fetch revenue breakdown", error);
   }
 };
