@@ -4,8 +4,8 @@ import type React from "react";
 
 import { useState, useEffect } from "react";
 import { X, Plus, Upload } from "lucide-react";
-import type { Facility } from "@/types";
-import Image from "next/image";
+import { AddressPicker } from "../maps/AddressPicker";
+import GOOGLE_MAPS_CONFIG from "@/lib/mapsConfig";
 import {
   Dialog,
   DialogContent,
@@ -211,11 +211,36 @@ const FacilityModal = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                name="location.address"
+              <AddressPicker
                 value={formData.location?.address || ""}
-                onChange={handleInputChange}
+                coordinates={formData.location?.coordinates}
+                onChange={(address, coordinates) => {
+                  handleInputChange({
+                    target: {
+                      name: "location.address",
+                      value: address,
+                    },
+                  } as React.ChangeEvent<HTMLInputElement>);
+                  
+                  if (coordinates) {
+                    handleInputChange({
+                      target: {
+                        name: "location.coordinates.latitude",
+                        value: coordinates.latitude.toString(),
+                      },
+                    } as React.ChangeEvent<HTMLInputElement>);
+                    
+                    handleInputChange({
+                      target: {
+                        name: "location.coordinates.longitude",
+                        value: coordinates.longitude.toString(),
+                      },
+                    } as React.ChangeEvent<HTMLInputElement>);
+                  }
+                }}
+                label=""
+                placeholder="Search for facility address..."
+                className="space-y-2"
               />
             </div>
           </div>

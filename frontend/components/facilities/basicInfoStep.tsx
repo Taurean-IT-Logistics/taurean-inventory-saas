@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, X, Loader2 } from "lucide-react";
+import { AddressPicker } from "../maps/AddressPicker";
+import GOOGLE_MAPS_CONFIG from "@/lib/mapsConfig";
 import type { Facility } from "@/types";
 import Image from "next/image";
 
@@ -108,7 +110,7 @@ const BasicInfoStep = ({
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div>
             <Label htmlFor="name" className="text-sm font-semibold">
               Facility Name *
@@ -122,53 +124,39 @@ const BasicInfoStep = ({
               className="mt-1"
             />
           </div>
-          <div>
-            <Label htmlFor="address" className="text-sm font-semibold">
-              Address
-            </Label>
-            <Input
-              id="address"
-              name="location.address"
-              value={formData.location?.address || ""}
-              onChange={handleInputChange}
-              placeholder="Enter facility address"
-              className="mt-1"
-            />
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="latitude" className="text-sm font-semibold">
-              Latitude
-            </Label>
-            <Input
-              id="latitude"
-              type="number"
-              step="any"
-              name="location.coordinates.latitude"
-              value={formData.location?.coordinates?.latitude || ""}
-              onChange={handleInputChange}
-              placeholder="Latitude"
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="longitude" className="text-sm font-semibold">
-              Longitude
-            </Label>
-            <Input
-              id="longitude"
-              type="number"
-              step="any"
-              name="location.coordinates.longitude"
-              value={formData.location?.coordinates?.longitude || ""}
-              onChange={handleInputChange}
-              placeholder="Longitude"
-              className="mt-1"
-            />
-          </div>
-        </div>
+        {/* Address Picker */}
+        <AddressPicker
+          value={formData.location?.address || ""}
+          coordinates={formData.location?.coordinates}
+          onChange={(address, coordinates) => {
+            handleInputChange({
+              target: {
+                name: "location.address",
+                value: address,
+              },
+            } as React.ChangeEvent<HTMLInputElement>);
+
+            if (coordinates) {
+              handleInputChange({
+                target: {
+                  name: "location.coordinates.latitude",
+                  value: coordinates.latitude.toString(),
+                },
+              } as React.ChangeEvent<HTMLInputElement>);
+
+              handleInputChange({
+                target: {
+                  name: "location.coordinates.longitude",
+                  value: coordinates.longitude.toString(),
+                },
+              } as React.ChangeEvent<HTMLInputElement>);
+            }
+          }}
+          label="Facility Address"
+          placeholder="Search for facility address..."
+        />
 
         <div>
           <Label htmlFor="description" className="text-sm font-semibold">

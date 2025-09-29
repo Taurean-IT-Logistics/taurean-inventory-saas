@@ -4,13 +4,15 @@ import type React from "react";
 
 import { Star, Heart } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import type { Facility } from "@/types";
 import { getResourceUrl } from "@/lib/api";
 import { currencyFormat } from "@/lib/utils";
+import { useLocation } from "@/hooks/useLocation";
+import { calculateDistance, formatDistance } from "@/lib/distanceUtils";
 
 interface FacilityCardProps {
   facility: Facility;
@@ -18,6 +20,19 @@ interface FacilityCardProps {
 
 export function FacilityCard({ facility }: FacilityCardProps) {
   const [imageError, setImageError] = useState(false);
+  const [distance, setDistance] = useState<number | null>(null);
+  const { location } = useLocation();
+
+  // Calculate distance when user location is available
+  useEffect(() => {
+    if (location && facility.location.coordinates) {
+      const dist = calculateDistance(facility.location.coordinates, {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      });
+      setDistance(dist);
+    }
+  }, [location, facility.location.coordinates]);
 
   return (
     <Link href={`/facility/${facility._id}`}>
@@ -58,6 +73,15 @@ export function FacilityCard({ facility }: FacilityCardProps) {
           <p className="text-sm text-slate-500 font-medium">
             {facility.location.address}
           </p>
+
+          {/* Distance information */}
+          {distance !== null && (
+            <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>{formatDistance(distance)} away</span>
+            </div>
+          )}
+
           <p className="text-sm text-slate-500">
             {facility.rating?.totalReviews || 0} reviews
           </p>
