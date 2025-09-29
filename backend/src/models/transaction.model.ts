@@ -44,6 +44,19 @@ const TransactionSchema = new Schema<TransactionDocument>(
         phoneNumber: { type: String },
         transactionId: { type: String },
       },
+      // For cash payments
+      denominations: [
+        {
+          denomination: { type: Number },
+          quantity: { type: Number },
+        },
+      ],
+      // For cheque payments
+      bankName: { type: String },
+      chequeDate: { type: Date },
+      // For bank transfers
+      bankAccount: { type: String },
+      transactionReference: { type: String },
     },
     ref: { type: String },
     isPaystack: { type: Boolean },
@@ -66,6 +79,31 @@ const TransactionSchema = new Schema<TransactionDocument>(
     isDeleted: { type: Boolean, default: false },
     company: { type: Schema.Types.ObjectId, ref: "Company" },
     isPlatformRevenue: { type: Boolean, default: false },
+    paymentTiming: {
+      type: String,
+      enum: ["advance", "split", "full"],
+      default: "full",
+    },
+    advanceConfig: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
+    splitConfig: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
+    // Pending transaction fields
+    status: {
+      type: String,
+      enum: ["pending", "confirmed", "rejected", "cancelled"],
+      default: "confirmed",
+    },
+    notes: { type: String },
+    processedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    processedAt: { type: Date },
+    rejectionReason: { type: String },
+    currency: { type: String, default: "GHS" },
+    referenceId: { type: String }, // ID of the rental, booking, or purchase
   },
   { timestamps: true }
 );
@@ -78,6 +116,12 @@ TransactionSchema.index({ reconciled: 1 });
 TransactionSchema.index({ method: 1 });
 TransactionSchema.index({ company: 1, createdAt: -1 });
 TransactionSchema.index({ isPlatformRevenue: 1 });
+// Pending transaction indexes
+TransactionSchema.index({ status: 1, createdAt: -1 });
+TransactionSchema.index({ company: 1, status: 1 });
+TransactionSchema.index({ user: 1, status: 1 });
+TransactionSchema.index({ facility: 1, status: 1 });
+TransactionSchema.index({ referenceId: 1, type: 1 });
 
 const TransactionModel: Model<TransactionDocument> = model(
   "Transaction",

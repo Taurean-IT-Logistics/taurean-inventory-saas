@@ -4,7 +4,6 @@ import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import {
   Menu,
-  Bell,
   User2,
   PieChart,
   Home,
@@ -32,8 +31,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import type { User } from "@/types";
 import { useAuth } from "../AuthProvider";
-import NotificationPanel from "../notifications/NotificationPanel";
-import { useNotifications } from "../notifications/NotificationProvider";
+import { NotificationPopover } from "../notifications/NotificationPopover";
 import Image from "next/image";
 import { logo } from "@/assets";
 
@@ -43,13 +41,6 @@ export function Header() {
   const queryClient = useQueryClient();
   // const [showMinimalSearch, setShowMinimalSearch] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  // Get unread notification count from context
-  const notificationsContext = useNotifications();
-  const unreadCount = user ? notificationsContext?.unreadCount || 0 : 0;
-
-  console.log("Header unread count:", unreadCount);
 
   const hideHeader =
     pathname.startsWith("/auth") ||
@@ -61,7 +52,6 @@ export function Header() {
   useEffect(() => {
     if (!user) {
       setShowUserMenu(false);
-      setShowNotifications(false);
     }
   }, [user]);
 
@@ -73,7 +63,6 @@ export function Header() {
     clearTokens();
     queryClient.clear();
     setShowUserMenu(false);
-    setShowNotifications(false);
 
     toast({
       title: "Logged out",
@@ -157,22 +146,7 @@ export function Header() {
                 {/* Notification Icon - Only show when user is logged in */}
                 {user && (
                   <div className="relative hidden md:block mr-3">
-                    <button
-                      onClick={() => setShowNotifications(!showNotifications)}
-                      className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
-                    >
-                      <Bell className="h-5 w-5" />
-                      {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                          {unreadCount > 99 ? "99+" : unreadCount}
-                        </span>
-                      )}
-                    </button>
-
-                    <NotificationPanel
-                      isOpen={showNotifications}
-                      onClose={() => setShowNotifications(false)}
-                    />
+                    <NotificationPopover />
                   </div>
                 )}
 

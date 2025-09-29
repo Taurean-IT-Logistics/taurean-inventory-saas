@@ -1000,6 +1000,153 @@ const getAdvanceBalanceController = async (
   }
 };
 
+// Create a pending transaction
+const createPendingTransactionController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const {
+      facility,
+      category,
+      referenceId,
+      amount,
+      currency,
+      method,
+      paymentDetails,
+      notes,
+      paymentTiming,
+      advanceConfig,
+      splitConfig,
+    } = req.body;
+
+    const userId = req.user?.id!;
+    const companyId = req.user?.companyId!;
+
+    if (!category || !referenceId || !amount || !method) {
+      sendValidationError(
+        res,
+        "Missing required fields: category, referenceId, amount, and method are required"
+      );
+      return;
+    }
+
+    const pendingTransaction =
+      await TransactionService.createPendingTransaction({
+        user: userId,
+        company: companyId,
+        facility,
+        category,
+        referenceId,
+        amount,
+        currency,
+        method,
+        paymentDetails,
+        notes,
+        paymentTiming,
+        advanceConfig,
+        splitConfig,
+        type: "income", // Pending transactions are typically income
+      });
+
+    sendSuccess(
+      res,
+      "Pending transaction created successfully",
+      pendingTransaction
+    );
+  } catch (error: any) {
+    sendError(res, error.message, null, 400);
+  }
+};
+
+// Get pending transactions for a company
+const getPendingTransactionsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId!;
+    const { status, type, facility, page, limit } = req.query;
+
+    const result = await TransactionService.getPendingTransactions(companyId, {
+      status: status as string,
+      type: type as string,
+      facility: facility as string,
+      page: page ? parseInt(page as string) : undefined,
+      limit: limit ? parseInt(limit as string) : undefined,
+    });
+
+    sendSuccess(res, "Pending transactions retrieved successfully", result);
+  } catch (error: any) {
+    sendError(res, error.message, null, 400);
+  }
+};
+
+// Process pending transaction (approve/reject)
+const processPendingTransactionController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { transactionId, action, notes, rejectionReason } = req.body;
+    const processedBy = req.user?.id!;
+
+    if (!transactionId || !action) {
+      sendValidationError(
+        res,
+        "Missing required fields: transactionId and action are required"
+      );
+      return;
+    }
+
+    if (!["confirmed", "rejected"].includes(action)) {
+      sendValidationError(
+        res,
+        "Invalid action. Must be 'confirmed' or 'rejected'"
+      );
+      return;
+    }
+
+    const result = await TransactionService.processPendingTransaction(
+      transactionId,
+      action,
+      processedBy,
+      notes,
+      rejectionReason
+    );
+
+    sendSuccess(res, "Transaction processed successfully", result);
+  } catch (error: any) {
+    sendError(res, error.message, null, 400);
+  }
+};
+
+// Get user's pending transactions
+const getUserPendingTransactionsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.id!;
+    const { status, type, page, limit } = req.query;
+
+    const result = await TransactionService.getUserPendingTransactions(userId, {
+      status: status as string,
+      type: type as string,
+      page: page ? parseInt(page as string) : undefined,
+      limit: limit ? parseInt(limit as string) : undefined,
+    });
+
+    sendSuccess(
+      res,
+      "User pending transactions retrieved successfully",
+      result
+    );
+  } catch (error: any) {
+    sendError(res, error.message, null, 400);
+  }
+};
+
 export {
   // Payment operations
   initializePaymentController,
@@ -1022,4 +1169,9 @@ export {
   processAdvancePaymentController,
   applyAdvancePaymentController,
   getAdvanceBalanceController,
+  // Pending transaction operations
+  createPendingTransactionController,
+  getPendingTransactionsController,
+  processPendingTransactionController,
+  getUserPendingTransactionsController,
 };

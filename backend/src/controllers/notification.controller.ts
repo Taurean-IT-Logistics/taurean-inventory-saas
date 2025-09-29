@@ -65,6 +65,19 @@ async function markAsRead(req: Request, res: Response) {
   }
 }
 
+// Mark notification as unread
+async function markAsUnread(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const userId = (req.user as any)?.id;
+
+    await notificationService.markAsUnread(id, userId);
+    sendSuccess(res, "Notification marked as unread");
+  } catch (error: any) {
+    sendError(res, "Failed to mark notification as unread", error.message);
+  }
+}
+
 // Mark all notifications as read
 async function markAllAsRead(req: Request, res: Response) {
   try {
@@ -222,6 +235,7 @@ export {
   getUserNotifications,
   getNotifications,
   markAsRead,
+  markAsUnread,
   markAllAsRead,
   deleteNotification,
   getUnreadCount,

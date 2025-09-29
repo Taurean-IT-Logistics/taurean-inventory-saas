@@ -158,4 +158,31 @@ router.get(
   TransactionController.getAdvanceBalanceController
 );
 
+// Pending transaction routes
+router.post(
+  "/pending",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.createPendingTransactionController
+);
+
+router.get(
+  "/pending",
+  RequireCompanyContext(),
+  RequirePermissions(["accessFinancials"]),
+  TransactionController.getPendingTransactionsController
+);
+
+router.put(
+  "/pending/:id/process",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.processPendingTransactionController
+);
+
+router.get(
+  "/pending/user",
+  TransactionController.getUserPendingTransactionsController
+);
+
 export default router;

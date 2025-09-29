@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

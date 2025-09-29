@@ -161,7 +161,7 @@ const EmailSettingsPage = () => {
       toast({
         title: "Configuration Test Successful",
         description: `Email configuration is working properly. Tested by ${
-          data.userType === "superAdmin" ? "Super Admin" : "Company Admin"
+          data.userType === "super_admin" ? "Super Admin" : "Company Admin"
         }`,
       });
     },
@@ -225,7 +225,7 @@ const EmailSettingsPage = () => {
       toast({
         title: "Settings Saved",
         description: `Email settings have been saved successfully by ${
-          data.userType === "superAdmin" ? "Super Admin" : "Company Admin"
+          data.userType === "super_admin" ? "Super Admin" : "Company Admin"
         }`,
       });
       setHasUnsavedChanges(false);

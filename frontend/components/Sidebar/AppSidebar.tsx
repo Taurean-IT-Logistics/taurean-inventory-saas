@@ -126,12 +126,6 @@ const dashboardRoutes: Route[] = [
     link: "/admin/transactions",
   },
   {
-    id: "pending-transactions",
-    title: "Pending Payments",
-    icon: <Clock className="size-4" />,
-    link: "/admin/pending-transactions",
-  },
-  {
     id: "rentals",
     title: "Rentals",
     icon: <Package2 className="size-4" />,

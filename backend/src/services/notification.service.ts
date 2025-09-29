@@ -167,7 +167,7 @@ class NotificationService {
   }
 
   // Create notification for payment events
-  async createPaymentNotification(
+  async createTransactionPaymentNotification(
     transactionId: string,
     event: "initiated" | "successful" | "failed" | "refunded"
   ): Promise<void> {
@@ -543,6 +543,28 @@ class NotificationService {
     }
   }
 
+  // Mark notification as unread
+  async markAsUnread(notificationId: string, userId: string): Promise<void> {
+    try {
+      await NotificationModel.findOneAndUpdate(
+        { _id: notificationId, user: userId },
+        { isRead: false }
+      );
+
+      // Emit real-time event
+      emitEvent(
+        Events.NotificationUpdated,
+        {
+          notificationId,
+          updates: { isRead: false },
+        },
+        `user:${userId}`
+      );
+    } catch (error) {
+      throw new Error(`Error marking notification as unread: ${error.message}`);
+    }
+  }
+
   // Mark all notifications as read
   async markAllAsRead(userId: string): Promise<void> {
     try {
@@ -595,6 +617,78 @@ class NotificationService {
       });
     } catch (error) {
       throw new Error(`Error getting unread count: ${error.message}`);
+    }
+  }
+
+  // Create payment notification
+  async createPaymentStatusNotification(
+    userId: string,
+    paymentData: {
+      type: "advance" | "split" | "full";
+      amount: number;
+      totalAmount?: number;
+      remainingAmount?: number;
+      paymentMethod: string;
+      bookingId?: string;
+      rentalId?: string;
+      transactionId?: string;
+      status: "completed" | "pending" | "failed" | "balance_remaining";
+    }
+  ): Promise<void> {
+    try {
+      let title = "";
+      let message = "";
+      let notificationType: "info" | "success" | "warning" | "error" = "info";
+
+      switch (paymentData.status) {
+        case "completed":
+          if (paymentData.type === "advance") {
+            title = "Advance Payment Completed";
+            message = `Your advance payment of ${paymentData.amount} has been processed successfully. Balance of ${paymentData.remainingAmount} remains to be paid.`;
+            notificationType = "success";
+          } else if (paymentData.type === "split") {
+            title = "Split Payment Completed";
+            message = `Your split payment of ${paymentData.amount} has been processed successfully. Remaining balance: ${paymentData.remainingAmount}.`;
+            notificationType = "success";
+          } else {
+            title = "Payment Completed";
+            message = `Your full payment of ${paymentData.amount} has been processed successfully.`;
+            notificationType = "success";
+          }
+          break;
+
+        case "balance_remaining":
+          title = "Payment Balance Reminder";
+          message = `You have a remaining balance of ${paymentData.remainingAmount} for your ${paymentData.type} payment. Please complete your payment to avoid any delays.`;
+          notificationType = "warning";
+          break;
+
+        case "pending":
+          title = "Payment Pending";
+          message = `Your ${paymentData.type} payment of ${paymentData.amount} is pending confirmation.`;
+          notificationType = "info";
+          break;
+
+        case "failed":
+          title = "Payment Failed";
+          message = `Your ${paymentData.type} payment of ${paymentData.amount} failed to process. Please try again or contact support.`;
+          notificationType = "error";
+          break;
+      }
+
+      await this.createNotification({
+        userId,
+        title,
+        message,
+        type: notificationType,
+        category: "payment",
+        data: {
+          ...paymentData,
+          timestamp: new Date(),
+        },
+      });
+    } catch (error) {
+      throw new Error(`Error creating payment notification: ${error.message}`);
     }
   }
 
@@ -701,3 +795,4 @@ export const createSubscriptionNotification = async (
 };
 
 export { notificationService };
+export default notificationService;

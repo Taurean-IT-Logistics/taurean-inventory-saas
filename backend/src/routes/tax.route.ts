@@ -27,6 +27,12 @@ router.get(
   RequireActiveCompany(),
   TaxController.getCompanyTaxes
 ); // Get company taxes
+router.post(
+  "/company",
+  staffAndAbove,
+  RequireActiveCompany(),
+  TaxController.createCompanyTax
+); // Create company tax
 
 // Combined taxes (global + company for regular users)
 router.get(
@@ -38,12 +44,30 @@ router.get(
 
 // Individual tax operations
 router.get("/:id", allUsers, TaxController.getTax); // Get a single tax by ID
-router.put(
-  "/:id",
+router.post(
+  "/:id/replace",
   staffAndAbove,
   RequireActiveCompany(),
-  TaxController.updateTax
-); // Update tax by ID
+  TaxController.createIndependentTax
+); // Create new independent tax (replaces old one)
+router.post(
+  "/:id/archive",
+  staffAndAbove,
+  RequireActiveCompany(),
+  TaxController.archiveTax
+); // Archive tax
+router.get(
+  "/:id/audit-trail",
+  allUsers,
+  RequireActiveCompany(),
+  TaxController.getTaxAuditTrail
+); // Get tax audit trail
+router.get(
+  "/archived",
+  allUsers,
+  RequireActiveCompany(),
+  TaxController.getArchivedTaxes
+); // Get archived taxes
 router.delete(
   "/:id",
   staffAndAbove,
