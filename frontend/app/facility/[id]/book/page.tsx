@@ -191,17 +191,44 @@ export default function BookingPage({ params }: { params: { id: string } }) {
         variant: "default",
       });
 
-      // Create transaction data from the booking
+      // Determine payment amount and attach timing/configs
+      const grandTotal = calculateTotal().total;
+      let amountToCharge = grandTotal;
+      if (
+        bookingData.paymentTiming === "advance" &&
+        bookingData.advanceConfig
+      ) {
+        amountToCharge = bookingData.advanceConfig.amount;
+      } else if (
+        bookingData.paymentTiming === "split" &&
+        bookingData.splitConfig
+      ) {
+        amountToCharge =
+          bookingData.splitConfig.parts?.[0]?.amount ||
+          grandTotal / (bookingData.splitConfig.numberOfParts || 2);
+      }
+
+      // Create transaction data from the booking with schedule details
       const transactionData = {
         email: user?.email || "",
-        amount: calculateTotal().total,
+        amount: amountToCharge,
         category: "facility",
         description: `Booking for ${
           (facilityData as Facility)?.name || "Facility"
-        } - ${calculateDurationString(variables.startDate, variables.endDate)}`,
+        } - ${calculateDurationString(variables.startDate, variables.endDate)}$${
+          bookingData.paymentTiming === "advance"
+            ? " (Advance Payment)"
+            : bookingData.paymentTiming === "split"
+            ? " (Split Payment - Part 1)"
+            : ""
+        }`,
         facility: (facilityData as Facility)?._id || "",
         currency: "GHS",
-      };
+        paymentMethod: bookingData.paymentMethod,
+        paymentTiming: bookingData.paymentTiming,
+        advanceConfig: bookingData.advanceConfig,
+        splitConfig: bookingData.splitConfig,
+      } as any;
 
       createTransaction.mutate(transactionData);
     },
