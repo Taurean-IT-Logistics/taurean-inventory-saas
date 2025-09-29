@@ -16,10 +16,6 @@ const allUsers = [
   AuthorizeRoles("user", "staff", "admin", "super_admin"),
 ];
 
-// Global taxes (Super Admin only)
-router.get("/global", superAdminOnly, TaxController.getGlobalTaxes); // Get all global taxes
-router.post("/global", superAdminOnly, TaxController.createGlobalTax); // Create global tax
-
 // Company-specific taxes
 router.get(
   "/company",
@@ -34,13 +30,13 @@ router.post(
   TaxController.createCompanyTax
 ); // Create company tax
 
-// Combined taxes (global + company for regular users)
+// Taxes available for tax schedule creation
 router.get(
-  "/",
+  "/for-schedule-creation",
   allUsers,
   RequireActiveCompany(),
-  TaxController.getCombinedTaxes
-); // Get combined taxes
+  TaxController.getTaxesForScheduleCreation
+); // Get taxes available for schedule creation
 
 // Individual tax operations
 router.get("/:id", allUsers, TaxController.getTax); // Get a single tax by ID
@@ -74,12 +70,6 @@ router.delete(
   RequireActiveCompany(),
   TaxController.deleteTax
 ); // Delete tax by ID
-router.post(
-  "/:taxId/copy",
-  allUsers,
-  RequireActiveCompany(),
-  TaxController.copySuperAdminTax
-); // Copy super admin tax to company
 
 // Legacy routes for backward compatibility
 router.get("/defaults", TaxController.getDefaultTaxes); // Get default system taxes

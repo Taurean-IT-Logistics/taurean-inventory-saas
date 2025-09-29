@@ -14,6 +14,15 @@ import {
   getDocumentPreviewController,
   downloadDocumentController,
 } from "../controllers/documentManagement.controller";
+import {
+  getDocumentsForReviewController,
+  reviewDocumentController,
+  getDocumentReviewStatisticsController,
+  getCompanyDocumentsController,
+  getDocumentForReviewController,
+  downloadDocumentForReviewController,
+  bulkReviewDocumentsController,
+} from "../controllers/superAdminDocumentReview.controller";
 import { upload } from "../services/documentManagement.service";
 
 const router: Router = Router();
@@ -21,6 +30,7 @@ const router: Router = Router();
 const adminOnly = [AuthMiddleware, AuthorizeRoles("admin")];
 const staffAndAbove = [AuthMiddleware, AuthorizeRoles("staff", "admin")];
 const allUsers = [AuthMiddleware];
+const superAdminOnly = [AuthMiddleware, AuthorizeRoles("super_admin")];
 
 // Document upload
 router.post(
@@ -32,12 +42,7 @@ router.post(
 );
 
 // Document CRUD operations
-router.get(
-  "/",
-  staffAndAbove,
-  RequireActiveCompany(),
-  getDocumentsController
-);
+router.get("/", staffAndAbove, RequireActiveCompany(), getDocumentsController);
 
 router.get(
   "/statistics",
@@ -80,6 +85,45 @@ router.get(
   staffAndAbove,
   RequireActiveCompany(),
   downloadDocumentController
+);
+
+// Super Admin Document Review Routes
+router.get(
+  "/super-admin/review",
+  superAdminOnly,
+  getDocumentsForReviewController
+);
+
+router.get(
+  "/super-admin/statistics",
+  superAdminOnly,
+  getDocumentReviewStatisticsController
+);
+
+router.get(
+  "/super-admin/company/:companyId",
+  superAdminOnly,
+  getCompanyDocumentsController
+);
+
+router.get("/super-admin/:id", superAdminOnly, getDocumentForReviewController);
+
+router.get(
+  "/super-admin/:id/download",
+  superAdminOnly,
+  downloadDocumentForReviewController
+);
+
+router.post(
+  "/super-admin/:id/review",
+  superAdminOnly,
+  reviewDocumentController
+);
+
+router.post(
+  "/super-admin/bulk-review",
+  superAdminOnly,
+  bulkReviewDocumentsController
 );
 
 export default router;

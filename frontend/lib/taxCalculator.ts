@@ -18,7 +18,7 @@ export interface TaxCalculationResult {
 export interface TaxScheduleCalculationOptions {
   subtotal: number;
   taxSchedules: TaxSchedule[];
-  appliesTo: "facility" | "inventory_item" | "both";
+  appliesTo: "facility" | "inventoryItem" | "both";
   companyId?: string;
   isTaxable?: boolean;
   isTaxInclusive?: boolean;
@@ -55,27 +55,55 @@ export function calculateTaxesFromSchedules(
   }
 
   // Filter applicable tax schedules based on appliesTo and company
+  console.log("=== SCHEDULE FILTERING DEBUG ===");
+  console.log("Total schedules:", taxSchedules.length);
+
   const applicableSchedules = taxSchedules.filter((schedule) => {
     if (!schedule.isActive) return false;
 
-    // Map the appliesTo values
+    // Map the appliesTo values to match backend enum
     let scheduleAppliesTo: string;
     if (schedule.appliesTo === "facilities") {
       scheduleAppliesTo = "facility";
-    } else if (schedule.appliesTo === "inventory") {
-      scheduleAppliesTo = "inventory_item";
+    } else if (schedule.appliesTo === "inventoryItem") {
+      scheduleAppliesTo = "inventoryItem"; // Keep as inventoryItem to match backend
     } else {
       scheduleAppliesTo = schedule.appliesTo;
     }
 
     if (scheduleAppliesTo !== appliesTo && schedule.appliesTo !== "all")
       return false;
-    if (companyId && schedule.company !== companyId) return false;
+
+    // Handle company comparison - schedule.company can be a string ID or Company object
+    const scheduleCompanyId =
+      typeof schedule.company === "string"
+        ? schedule.company
+        : (schedule.company as any)?._id || (schedule.company as any)?.id;
+
+    // Only include schedules that belong to the specific company
+    // Both super admin and regular company schedules are company-specific
+    if (companyId && scheduleCompanyId !== companyId) {
+      console.log(
+        "Filtering out schedule from different company:",
+        schedule.name,
+        "Company:",
+        scheduleCompanyId,
+        "Expected:",
+        companyId
+      );
+      return false;
+    }
     return true;
   });
 
+  console.log(
+    "Applicable schedules after filtering:",
+    applicableSchedules.length
+  );
+
   // Get the single active tax schedule for the company
-  // Since a company can only have one active schedule at a time
+  // Business rule: A company can only have one active schedule at a time
+  // When a new schedule is created, all others are automatically deactivated
   const activeSchedule = applicableSchedules.find(
     (schedule) => schedule.isActive
   );
@@ -102,14 +130,24 @@ export function calculateTaxesFromSchedules(
   };
 
   // Get taxes from the active schedule
-  const applicableTaxes = (activeSchedule.components || []).filter((tax) => {
-    if (!tax.active) return false;
-    if (tax.appliesTo !== appliesTo && tax.appliesTo !== "both") return false;
-    // Exclude system-wide taxes - super admin charges automatically
-    if (tax.isSuperAdminTax) return false;
-    // Only include company-specific taxes
-    if (companyId && (tax.company as any) === companyId) return true;
-    return false;
+  const scheduleComponents = activeSchedule.components || [];
+
+  // Handle both populated and unpopulated components
+  const applicableTaxes = scheduleComponents.filter((component) => {
+    // If component is just an ID string, we can't filter it properly
+    // This should be handled by the backend population
+    if (typeof component === "string") {
+      console.warn("Tax schedule component is not populated:", component);
+      return false;
+    }
+
+    const tax = component as Tax;
+
+    // Since we only process company schedules now, include all taxes in the schedule
+    // The schedule filtering above ensures only company-specific schedules are processed
+    // Individual tax active status is ignored - if it's in the schedule, it's applied (integrity)
+    // The schedule's appliesTo field determines what the taxes apply to, not individual taxes
+    return true;
   });
 
   // Calculate taxes (both percentage and fixed amount)
@@ -194,7 +232,7 @@ export function calculateRentalTaxesFromSchedules(
   return calculateTaxesFromSchedules({
     subtotal,
     taxSchedules,
-    appliesTo: "inventory_item",
+    appliesTo: "inventoryItem",
     companyId,
     isTaxable,
     isTaxInclusive,

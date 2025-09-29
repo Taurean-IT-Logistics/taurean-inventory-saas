@@ -3,12 +3,39 @@ import { Types } from "mongoose";
 import { Transaction } from "../types"; // Assuming this is where your Transaction type is defined
 import { emitEvent } from "../realtime/socket";
 import { Events } from "../realtime/events";
+import { CompanyModel } from "../models";
+import { TaxScheduleModel } from "../models";
 
 // Create a new transaction
 const createTransaction = async (
   transactionData: Partial<Transaction>
 ): Promise<TransactionDocument> => {
   try {
+    // If company is provided, capture the active tax schedule snapshot
+    if (transactionData.company) {
+      const company = await CompanyModel.findById(
+        transactionData.company
+      ).populate("activeTaxSchedule");
+
+      if (company && company.activeTaxSchedule) {
+        const taxSchedule = company.activeTaxSchedule as any; // Type assertion for populated field
+        transactionData.taxScheduleSnapshot = {
+          scheduleId: taxSchedule._id,
+          name: taxSchedule.name,
+          components: taxSchedule.components.map((component: any) => ({
+            name: component.name,
+            rate: component.rate,
+            taxType: component.taxType,
+            description: component.description,
+          })),
+          taxInclusive: taxSchedule.taxInclusive,
+          taxExclusive: taxSchedule.taxExclusive,
+          taxOnTax: taxSchedule.taxOnTax,
+          appliedAt: new Date(),
+        };
+      }
+    }
+
     const newTransaction = new TransactionModel(transactionData);
     const saved = await newTransaction.save();
     try {
@@ -36,6 +63,10 @@ const getAllTransactions = async (
       .populate("facility", "name description location pricing")
       .populate("approvedBy", "name")
       .populate(
+        "taxScheduleSnapshot.scheduleId",
+        "name components taxInclusive taxExclusive taxOnTax"
+      )
+      .populate(
         "company",
         "name logo contactEmail contactPhone location currency invoiceFormat"
       );
@@ -58,6 +89,10 @@ const getAllUserTransactions = async (
       .populate("account")
       .populate("facility", "name description location pricing")
       .populate("approvedBy", "name")
+      .populate(
+        "taxScheduleSnapshot.scheduleId",
+        "name components taxInclusive taxExclusive taxOnTax"
+      )
       .populate(
         "company",
         "name logo contactEmail contactPhone location currency invoiceFormat"
@@ -83,6 +118,10 @@ const getTransactionById = async (
       .populate("account")
       .populate("facility", "name description location pricing")
       .populate("approvedBy", "name")
+      .populate(
+        "taxScheduleSnapshot.scheduleId",
+        "name components taxInclusive taxExclusive taxOnTax"
+      )
       .populate(
         "company",
         "name logo contactEmail contactPhone location currency invoiceFormat"
@@ -115,6 +154,10 @@ const updateTransaction = async (
       .populate("account")
       .populate("facility", "name description location pricing")
       .populate("approvedBy", "name")
+      .populate(
+        "taxScheduleSnapshot.scheduleId",
+        "name components taxInclusive taxExclusive taxOnTax"
+      )
       .populate(
         "company",
         "name logo contactEmail contactPhone location currency invoiceFormat"
@@ -188,6 +231,10 @@ const getTransactionsByUserId = async (
       .populate("facility", "name description location pricing")
       .populate("approvedBy", "name")
       .populate(
+        "taxScheduleSnapshot.scheduleId",
+        "name components taxInclusive taxExclusive taxOnTax"
+      )
+      .populate(
         "company",
         "name logo contactEmail contactPhone location currency invoiceFormat"
       );
@@ -215,6 +262,10 @@ const getTransactionsByFacilityId = async (
       .populate("facility", "name description location pricing")
       .populate("approvedBy", "name")
       .populate(
+        "taxScheduleSnapshot.scheduleId",
+        "name components taxInclusive taxExclusive taxOnTax"
+      )
+      .populate(
         "company",
         "name logo contactEmail location currency invoiceFormat"
       );
@@ -238,6 +289,10 @@ const getTransactionByReference = async (
       .populate("account")
       .populate("facility", "name description location pricing")
       .populate("approvedBy", "name")
+      .populate(
+        "taxScheduleSnapshot.scheduleId",
+        "name components taxInclusive taxExclusive taxOnTax"
+      )
       .populate(
         "company",
         "name logo contactEmail contactPhone location currency invoiceFormat"
@@ -263,6 +318,10 @@ const getCompanyTransactions = async (
       .populate("account")
       .populate("facility", "name description location pricing")
       .populate("approvedBy", "name")
+      .populate(
+        "taxScheduleSnapshot.scheduleId",
+        "name components taxInclusive taxExclusive taxOnTax"
+      )
       .populate(
         "company",
         "name logo contactEmail contactPhone location currency invoiceFormat"

@@ -88,6 +88,33 @@ interface PaymentTransaction {
     contactEmail: string;
     contactPhone: string;
     currency: string;
+    activeTaxSchedule?: {
+      _id: string;
+      name: string;
+      components: Array<{
+        name: string;
+        rate: number;
+        taxType: string;
+        description?: string;
+      }>;
+      taxInclusive: boolean;
+      taxExclusive: boolean;
+      taxOnTax: boolean;
+    };
+  };
+  taxScheduleSnapshot?: {
+    scheduleId: string;
+    name: string;
+    components: Array<{
+      name: string;
+      rate: number;
+      taxType: string;
+      description?: string;
+    }>;
+    taxInclusive: boolean;
+    taxExclusive: boolean;
+    taxOnTax: boolean;
+    appliedAt: string;
   };
   paymentDetails: {
     mobileMoneyDetails?: {
@@ -118,132 +145,97 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
   //   });
   // }, [transaction]);
 
-  // Fetch taxes using Tanstack Query
-  const {
-    data: taxes = [],
-    isLoading: taxLoading,
-    error: taxError,
-  } = useQuery({
-    queryKey: ["taxes"],
-    queryFn: () => TaxesAPI.list(),
-    enabled: !!transaction.company._id,
-  });
+  // Use the tax schedule snapshot stored at transaction time for audit integrity
+  const taxSchedule = transaction.taxScheduleSnapshot;
 
-  // Handle tax loading error
-  if (taxError) {
-    console.warn("Error loading taxes:", taxError);
-  }
-
-  // Calculate applicable taxes for this transaction
-  const applicableTaxes = React.useMemo(() => {
-    if (!taxes || !Array.isArray(taxes)) return [];
-
-    return taxes.filter((tax: any) => {
-      // Check if tax applies to this transaction type
-      const appliesToTransaction =
-        tax.appliesTo === "transaction" ||
-        tax.appliesTo === "both" ||
-        (tax.appliesTo === "inventory_item" && transaction.inventoryItem) ||
-        (tax.appliesTo === "facility" && transaction.facility);
-
-      // Check if it's a super admin tax or company-specific tax
-      const isCompanyTax =
-        tax.isSuperAdminTax ||
-        (tax.company && tax.company === transaction.company._id);
-
-      return appliesToTransaction && isCompanyTax;
-    });
-  }, [taxes, transaction]);
-
-  // Calculate tax amounts - taxes are already included in transaction.amount
+  // Calculate tax amounts based on TaxSchedule
   const taxBreakdown = React.useMemo(() => {
-    if (!applicableTaxes.length) {
+    if (
+      !taxSchedule ||
+      !taxSchedule.components ||
+      taxSchedule.components.length === 0
+    ) {
       return {
         subtotal: transaction.amount,
         totalTax: 0,
         total: transaction.amount,
+        taxBreakdown: [],
       };
     }
 
-    // Since taxes are already included, we need to work backwards
-    // Calculate what the original amount was before taxes
-    const totalTaxRate = applicableTaxes.reduce(
-      (sum, tax) => sum + (tax.rate || 0),
-      0
-    );
-    const taxMultiplier = totalTaxRate / 100;
+    // Get tax components from the schedule
+    const taxComponents = taxSchedule.components;
 
-    // Original amount before taxes: total / (1 + taxRate)
-    const subtotal = transaction.amount / (1 + taxMultiplier);
-    const totalTax = transaction.amount - subtotal;
+    if (taxSchedule.taxInclusive) {
+      // Tax is already included in the amount
+      // Calculate what the original amount was before taxes
+      const totalTaxRate = taxComponents.reduce(
+        (sum: number, tax: any) => sum + (tax.rate || 0),
+        0
+      );
+      const taxMultiplier = totalTaxRate / 100;
 
-    // Validate that our calculation is correct
-    const calculatedTotal = subtotal + totalTax;
-    const isCalculationValid =
-      Math.abs(calculatedTotal - transaction.amount) < 0.01;
+      // Original amount before taxes: total / (1 + taxRate)
+      const subtotal = transaction.amount / (1 + taxMultiplier);
+      const totalTax = transaction.amount - subtotal;
 
-    if (!isCalculationValid) {
-      console.warn("Tax calculation validation failed:", {
-        originalAmount: transaction.amount,
-        calculatedTotal,
-        difference: Math.abs(calculatedTotal - transaction.amount),
+      // Calculate individual tax amounts for display
+      const individualTaxBreakdown = taxComponents.map((tax: any) => {
+        const taxAmount = (subtotal * (tax.rate || 0)) / 100;
+        return {
+          name: tax.name,
+          rate: tax.rate || 0,
+          amount: Math.round(taxAmount * 100) / 100,
+          type: tax.taxType || "percentage",
+          description: tax.description || "",
+        };
       });
-    }
-
-    return {
-      subtotal: Math.round(subtotal * 100) / 100, // Round to 2 decimal places
-      totalTax: Math.round(totalTax * 100) / 100,
-      total: transaction.amount,
-      isValid: isCalculationValid,
-    };
-  }, [applicableTaxes, transaction.amount]);
-
-  // Calculate individual tax amounts for display
-  const individualTaxAmounts = React.useMemo(() => {
-    if (!applicableTaxes.length) return [];
-
-    return applicableTaxes.map((tax: any) => {
-      // Use the validated subtotal for calculations
-      const taxAmount = (taxBreakdown.subtotal * (tax.rate || 0)) / 100;
 
       return {
-        ...tax,
-        calculatedAmount: Math.round(taxAmount * 100) / 100,
-      };
-    });
-  }, [applicableTaxes, taxBreakdown.subtotal]);
-
-  // Verify that individual tax amounts sum up to total tax
-  const totalCalculatedTax = React.useMemo(() => {
-    return individualTaxAmounts.reduce(
-      (sum, tax) => sum + tax.calculatedAmount,
-      0
-    );
-  }, [individualTaxAmounts]);
-
-  // Use the more accurate calculation
-  const finalTaxBreakdown = React.useMemo(() => {
-    if (!applicableTaxes.length) {
-      return taxBreakdown;
-    }
-
-    // If individual calculations are more accurate, use them
-    if (Math.abs(totalCalculatedTax - taxBreakdown.totalTax) < 0.01) {
-      return {
-        subtotal: taxBreakdown.subtotal,
-        totalTax: totalCalculatedTax,
+        subtotal: Math.round(subtotal * 100) / 100,
+        totalTax: Math.round(totalTax * 100) / 100,
         total: transaction.amount,
-        isValid: true,
+        taxBreakdown: individualTaxBreakdown,
+        scheduleSettings: {
+          taxInclusive: true,
+          taxExclusive: false,
+          taxOnTax: taxSchedule.taxOnTax || false,
+        },
+      };
+    } else {
+      // Tax exclusive - tax is added on top
+      const totalTaxRate = taxComponents.reduce(
+        (sum: number, tax: any) => sum + (tax.rate || 0),
+        0
+      );
+      const totalTax = (transaction.amount * totalTaxRate) / 100;
+      const subtotal = transaction.amount;
+
+      // Calculate individual tax amounts for display
+      const individualTaxBreakdown = taxComponents.map((tax: any) => {
+        const taxAmount = (transaction.amount * (tax.rate || 0)) / 100;
+        return {
+          name: tax.name,
+          rate: tax.rate || 0,
+          amount: Math.round(taxAmount * 100) / 100,
+          type: tax.taxType || "percentage",
+          description: tax.description || "",
+        };
+      });
+
+      return {
+        subtotal: subtotal,
+        totalTax: Math.round(totalTax * 100) / 100,
+        total: Math.round((subtotal + totalTax) * 100) / 100,
+        taxBreakdown: individualTaxBreakdown,
+        scheduleSettings: {
+          taxInclusive: false,
+          taxExclusive: true,
+          taxOnTax: taxSchedule.taxOnTax || false,
+        },
       };
     }
-
-    return taxBreakdown;
-  }, [
-    taxBreakdown,
-    totalCalculatedTax,
-    transaction.amount,
-    applicableTaxes.length,
-  ]);
+  }, [taxSchedule, transaction.amount]);
 
   // Generate invoice number based on company configuration
   const getInvoiceNumber = () => {
@@ -645,7 +637,7 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
               <Card className="bg-primary text-primary-foreground">
                 <CardContent className="p-6 text-center">
                   <div className="text-lg mb-2 opacity-90">
-                    {applicableTaxes.length > 0
+                    {taxSchedule && taxBreakdown.taxBreakdown.length > 0
                       ? "Total Amount (Including Taxes)"
                       : "Total Amount"}
                   </div>
@@ -654,7 +646,7 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
                   </div>
                   <div className="text-sm mt-2 opacity-75">
                     {transaction.company.currency}
-                    {applicableTaxes.length > 0 && (
+                    {taxSchedule && taxBreakdown.taxBreakdown.length > 0 && (
                       <div className="mt-1 text-xs opacity-75">
                         Taxes already included
                       </div>
@@ -664,33 +656,56 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
               </Card>
 
               {/* Tax Breakdown */}
-              {!taxLoading && applicableTaxes.length > 0 && (
+              {taxSchedule && taxBreakdown.taxBreakdown.length > 0 && (
                 <Card>
                   <CardHeader className="pb-3">
                     <h3 className="font-semibold">Tax Breakdown</h3>
+                    <div className="text-sm text-gray-600">
+                      <p>
+                        <strong>Schedule:</strong> {taxSchedule.name}
+                      </p>
+                      <p>
+                        <strong>Method:</strong>{" "}
+                        {taxBreakdown.scheduleSettings?.taxInclusive
+                          ? "Tax Inclusive"
+                          : "Tax Exclusive"}
+                      </p>
+                      {taxBreakdown.scheduleSettings?.taxOnTax && (
+                        <p>
+                          <strong>Tax on Tax:</strong> Enabled
+                        </p>
+                      )}
+                      <p>
+                        <strong>Applied At:</strong>{" "}
+                        {new Date(taxSchedule.appliedAt).toLocaleString()}
+                      </p>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
-                    {individualTaxAmounts.map((tax: any) => {
-                      return (
-                        <div
-                          key={tax._id}
-                          className="flex justify-between items-center"
-                        >
-                          <span className="flex items-center gap-2">
-                            <span>{tax.name}</span>
-                            <Badge variant="outline" className="text-xs">
-                              {tax.rate}%
-                            </Badge>
-                          </span>
-                          <span className="font-mono">
-                            {currencyFormat(tax.calculatedAmount)}
-                          </span>
-                        </div>
-                      );
-                    })}
+                    {taxBreakdown.taxBreakdown.map((tax, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between items-center"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{tax.name}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {tax.rate}%
+                          </Badge>
+                          {tax.description && (
+                            <span className="text-gray-500 text-xs">
+                              - {tax.description}
+                            </span>
+                          )}
+                        </span>
+                        <span className="font-mono">
+                          {currencyFormat(tax.amount)}
+                        </span>
+                      </div>
+                    ))}
                     <Separator className="my-2" />
                     <div className="flex justify-between font-semibold">
-                      <span>Subtotal (Before Tax):</span>
+                      <span>Subtotal:</span>
                       <span>{currencyFormat(taxBreakdown.subtotal)}</span>
                     </div>
                     <div className="flex justify-between font-semibold">
@@ -699,7 +714,7 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
                     </div>
                     <div className="flex justify-between font-semibold border-t pt-2">
                       <span>Total Amount:</span>
-                      <span>{currencyFormat(transaction.amount)}</span>
+                      <span>{currencyFormat(taxBreakdown.total)}</span>
                     </div>
                   </CardContent>
                 </Card>

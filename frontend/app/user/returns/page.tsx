@@ -288,7 +288,7 @@ export default function UserReturnsPage() {
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                        {rental.item?.images?.[0] ? (
+                        {rental.item?.images?.[0]?.path ? (
                           <Image
                             src={getResourceUrl(rental.item.images[0].path)}
                             alt={rental.item.name}
@@ -369,7 +369,7 @@ export default function UserReturnsPage() {
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                        {returnItem.item?.images?.[0] ? (
+                        {returnItem.item?.images?.[0]?.path ? (
                           <Image
                             src={getResourceUrl(returnItem.item.images[0].path)}
                             alt={returnItem.item.name}

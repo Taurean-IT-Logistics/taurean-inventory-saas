@@ -45,6 +45,7 @@ const CompanySchema = new Schema<CompanyDocument>(
     },
     currency: { type: String, default: "GHS" },
     isActive: { type: Boolean, default: true },
+    activeTaxSchedule: { type: Schema.Types.ObjectId, ref: "TaxSchedule" },
     subscription: {
       plan: {
         type: String,

@@ -66,7 +66,23 @@ const TransactionSchema = new Schema<TransactionDocument>(
     splitPayment: { type: Schema.Types.ObjectId, ref: "SplitPayment" },
     isCash: { type: Boolean },
     cash: { type: Schema.Types.ObjectId, ref: "Cash" },
-    taxes: { type: Schema.Types.ObjectId, ref: "TaxSchedule" },
+    taxScheduleSnapshot: {
+      // Store the tax schedule that was active at the time of transaction
+      scheduleId: { type: Schema.Types.ObjectId, ref: "TaxSchedule" },
+      name: { type: String },
+      components: [
+        {
+          name: { type: String },
+          rate: { type: Number },
+          taxType: { type: String },
+          description: { type: String },
+        },
+      ],
+      taxInclusive: { type: Boolean },
+      taxExclusive: { type: Boolean },
+      taxOnTax: { type: Boolean },
+      appliedAt: { type: Date, default: Date.now },
+    },
     accessCode: { type: String },
     receiptUrl: { type: String },
     approvedBy: { type: Schema.Types.ObjectId, ref: "User" },

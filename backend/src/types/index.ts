@@ -233,7 +233,20 @@ export interface Transaction {
   splitPayment?: SplitPayment;
   isCash?: boolean;
   cash: Cash;
-  taxes: mongoose.Types.ObjectId | string;
+  taxScheduleSnapshot?: {
+    scheduleId: mongoose.Types.ObjectId | string;
+    name: string;
+    components: Array<{
+      name: string;
+      rate: number;
+      taxType: string;
+      description?: string;
+    }>;
+    taxInclusive: boolean;
+    taxExclusive: boolean;
+    taxOnTax: boolean;
+    appliedAt: Date;
+  };
   accessCode?: string;
   receiptUrl?: string;
   approvedBy?: User;
@@ -451,12 +464,10 @@ export interface Tax {
   type: string;
   taxType?: "percentage" | "fixed_amount";
   fixedAmount?: number;
-  isSuperAdminTax?: boolean;
-  company?: Company;
-  active: boolean;
+  company: Company;
   isDefault?: boolean; // For system default taxes
+  active?: boolean; // Whether the tax is active
   priority?: number; // For ordering (VAT should be 1)
-  appliesTo?: string[]; // What this tax applies to
   description?: string;
   effectiveDate?: Date;
   expiryDate?: Date;
@@ -493,6 +504,7 @@ export interface Company {
   };
   currency?: string; // GHS, USD, etc.
   isActive: boolean;
+  activeTaxSchedule?: string | mongoose.Types.ObjectId; // Reference to active TaxSchedule
   subscription?: {
     plan: "free_trial" | "monthly" | "biannual" | "annual" | "triannual";
     expiresAt: Date;
