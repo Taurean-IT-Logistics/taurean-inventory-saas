@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import { Icon, LatLngTuple } from "leaflet";
+import { Icon, LatLngTuple, Polyline } from "leaflet";
 import { MapPin, Navigation, User, Clock, Route } from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
 import {
@@ -32,23 +32,85 @@ interface LeafletMapProps {
   className?: string;
 }
 
-// Custom component to fit map bounds when user location is available
-const MapBoundsController: React.FC<{
+// Custom component to handle routing between user and facility
+const RouteController: React.FC<{
   facilityPosition: LatLngTuple;
   userPosition?: LatLngTuple;
 }> = ({ facilityPosition, userPosition }) => {
   const map = useMap();
+  const [routePolyline, setRoutePolyline] = useState<Polyline | null>(null);
 
   useEffect(() => {
     if (userPosition) {
-      // Fit map to show both facility and user location
-      const bounds = [facilityPosition, userPosition] as LatLngTuple[];
-      map.fitBounds(bounds, { padding: [20, 20] });
+      // Remove existing route if any
+      if (routePolyline) {
+        map.removeLayer(routePolyline);
+      }
+
+      // Try to get a real route using OpenRouteService API
+      const getRoute = async () => {
+        try {
+          // Using OpenRouteService API for routing (free tier available)
+          const apiKey = process.env.NEXT_PUBLIC_OPENROUTE_API_KEY;
+
+          if (apiKey && apiKey !== "your-api-key-here") {
+            const response = await fetch(
+              `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${userPosition[1]},${userPosition[0]}&end=${facilityPosition[1]},${facilityPosition[0]}`
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+
+              if (data.features && data.features[0]) {
+                const coordinates = data.features[0].geometry.coordinates;
+                const routePoints = coordinates.map(
+                  (coord: [number, number]) =>
+                    [coord[1], coord[0]] as LatLngTuple
+                );
+
+                const polyline = new Polyline(routePoints, {
+                  color: "#3b82f6",
+                  weight: 4,
+                  opacity: 0.8,
+                }).addTo(map);
+
+                setRoutePolyline(polyline);
+
+                // Fit map to show entire route
+                map.fitBounds(polyline.getBounds(), { padding: [20, 20] });
+                return;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn("Failed to fetch route, using straight line:", error);
+        }
+
+        // Fallback: draw straight line if routing fails or no API key
+        const straightLine = new Polyline([userPosition, facilityPosition], {
+          color: "#ef4444",
+          weight: 3,
+          opacity: 0.6,
+          dashArray: "10, 10",
+        }).addTo(map);
+
+        setRoutePolyline(straightLine);
+        map.fitBounds(straightLine.getBounds(), { padding: [20, 20] });
+      };
+
+      getRoute();
     } else {
-      // Center on facility location
+      // Center on facility location if no user location
       map.setView(facilityPosition, 15);
     }
-  }, [map, facilityPosition, userPosition]);
+
+    // Cleanup function
+    return () => {
+      if (routePolyline) {
+        map.removeLayer(routePolyline);
+      }
+    };
+  }, [map, facilityPosition, userPosition, routePolyline]);
 
   return null;
 };
@@ -80,13 +142,6 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       setTravelTime(calculateTravelTime(dist));
     }
   }, [location, latitude, longitude]);
-
-  const handleGetDirections = () => {
-    const url = location
-      ? `https://www.google.com/maps/dir/?api=1&origin=${location.latitude},${location.longitude}&destination=${latitude},${longitude}`
-      : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
-    window.open(url, "_blank");
-  };
 
   // Custom marker icons
   const facilityIcon = new Icon({
@@ -137,7 +192,14 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               <h3 className="font-semibold text-gray-900 mb-1">
                 {facilityName || "Facility"}
               </h3>
-              {address && <p className="text-sm text-gray-600">{address}</p>}
+              {address && (
+                <p className="text-sm text-gray-600 mb-2">{address}</p>
+              )}
+              <div className="text-xs text-gray-500">
+                <p>
+                  Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                </p>
+              </div>
             </div>
           </Popup>
         </Marker>
@@ -150,7 +212,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                 <h3 className="font-semibold text-gray-900 mb-1">
                   Your Location
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 mb-2">
                   {distance !== null && travelTime !== null && (
                     <>
                       {formatDistance(distance)} away
@@ -159,44 +221,23 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
                     </>
                   )}
                 </p>
+                <div className="text-xs text-gray-500">
+                  <p>
+                    Coordinates: {userPosition[0].toFixed(6)},{" "}
+                    {userPosition[1].toFixed(6)}
+                  </p>
+                </div>
               </div>
             </Popup>
           </Marker>
         )}
 
-        {/* Map bounds controller */}
-        <MapBoundsController
+        {/* Route controller */}
+        <RouteController
           facilityPosition={facilityPosition}
           userPosition={userPosition}
         />
       </MapContainer>
-
-      {/* Action buttons overlay */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
-        <button
-          onClick={handleGetDirections}
-          className="bg-white hover:bg-gray-50 text-gray-700 p-2 rounded-full shadow-lg border border-gray-200 transition-colors"
-          title="Get directions"
-        >
-          <Navigation className="h-4 w-4" />
-        </button>
-
-        {!location && !isLoading && (
-          <button
-            onClick={requestLocation}
-            className="bg-white hover:bg-gray-50 text-gray-700 p-2 rounded-full shadow-lg border border-gray-200 transition-colors"
-            title="Show my location"
-          >
-            <User className="h-4 w-4" />
-          </button>
-        )}
-
-        {isLoading && (
-          <div className="bg-white p-2 rounded-full shadow-lg border border-gray-200">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          </div>
-        )}
-      </div>
 
       {/* Address and distance overlay */}
       {address && (

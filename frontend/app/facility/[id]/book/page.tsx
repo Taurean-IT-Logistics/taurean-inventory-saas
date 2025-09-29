@@ -32,10 +32,7 @@ import { ErrorComponent } from "@/components/ui/error";
 import { Loader } from "@/components/ui/loader";
 import { Booking, Facility, TaxSchedule } from "@/types";
 import { currencyFormat } from "@/lib/utils";
-import {
-  calculateBookingTaxesFromSchedules,
-  formatTaxBreakdown,
-} from "@/lib/taxCalculator";
+import { calculateBookingTaxesFromSchedules } from "@/lib/taxCalculator";
 import { useAuth } from "@/components/AuthProvider";
 import { useRedirect } from "@/hooks/useRedirect";
 import { DatePicker } from "@/components/ui/date-picker";
