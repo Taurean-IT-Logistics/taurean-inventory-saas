@@ -27,3 +27,7 @@ export * from "./useRedirect";
 // Pagination and infinite scroll hooks
 export * from "./usePagination";
 export * from "./useInfiniteScroll";
+
+// Maps and location hooks
+export * from "./useGoogleMapsServices";
+export * from "./useUserLocation";

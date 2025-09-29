@@ -42,11 +42,6 @@ export const GoogleMapsWrapper: React.FC<GoogleMapsWrapperProps> = ({
   children,
   apiKey,
 }) => {
-  console.log("GoogleMapsWrapper:", {
-    apiKey: !!apiKey,
-    apiKeyLength: apiKey?.length,
-  });
-
   if (!apiKey) {
     return (
       <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
