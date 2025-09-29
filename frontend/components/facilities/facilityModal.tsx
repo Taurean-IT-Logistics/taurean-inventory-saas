@@ -4,6 +4,7 @@ import type React from "react";
 
 import { useState, useEffect } from "react";
 import { X, Plus, Upload } from "lucide-react";
+import Image from "next/image";
 import { AddressPicker } from "../maps/AddressPicker";
 import GOOGLE_MAPS_CONFIG from "@/lib/mapsConfig";
 import {
@@ -23,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import PricingForm from "./pricingForm";
 import { getResourceUrl } from "@/lib/api";
 import { TimePicker } from "@/components/ui/time-picker";
+import { Facility } from "@/types/index";
 
 interface FacilityModalProps {
   show: boolean;
@@ -195,54 +197,40 @@ const FacilityModal = ({
           </div>
 
           {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Facility Name *</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name || ""}
-                onChange={handleInputChange}
-                className={errors.name ? "border-red-500" : ""}
-              />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <AddressPicker
-                value={formData.location?.address || ""}
-                coordinates={formData.location?.coordinates}
-                onChange={(address, coordinates) => {
-                  handleInputChange({
-                    target: {
-                      name: "location.address",
-                      value: address,
-                    },
-                  } as React.ChangeEvent<HTMLInputElement>);
-                  
-                  if (coordinates) {
-                    handleInputChange({
-                      target: {
-                        name: "location.coordinates.latitude",
-                        value: coordinates.latitude.toString(),
-                      },
-                    } as React.ChangeEvent<HTMLInputElement>);
-                    
-                    handleInputChange({
-                      target: {
-                        name: "location.coordinates.longitude",
-                        value: coordinates.longitude.toString(),
-                      },
-                    } as React.ChangeEvent<HTMLInputElement>);
-                  }
-                }}
-                label=""
-                placeholder="Search for facility address..."
-                className="space-y-2"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Facility Name *</Label>
+            <Input
+              id="name"
+              name="name"
+              value={formData.name || ""}
+              onChange={handleInputChange}
+              className={errors.name ? "border-red-500" : ""}
+            />
+            {errors.name && (
+              <p className="text-sm text-red-500">{errors.name}</p>
+            )}
+          </div>
+
+          {/* Location Section */}
+          <div className="space-y-4">
+            <Label>Facility Location</Label>
+            <AddressPicker
+              value={formData.location?.address || ""}
+              coordinates={formData.location?.coordinates}
+              onChange={(address, coordinates) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  location: {
+                    ...prev.location,
+                    address: address,
+                    coordinates: coordinates || prev.location?.coordinates,
+                  },
+                }));
+              }}
+              label=""
+              placeholder="Search for facility address..."
+              className="space-y-2"
+            />
           </div>
 
           <div className="space-y-2">

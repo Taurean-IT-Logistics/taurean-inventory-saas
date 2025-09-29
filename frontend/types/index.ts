@@ -956,3 +956,6 @@ export interface SystemNotification {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Maps and Location Types
+export * from "./PlaceResult";
