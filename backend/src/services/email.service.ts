@@ -19,6 +19,14 @@ interface EmailConfig {
     user: string;
     pass: string;
   };
+  connectionTimeout?: number;
+  greetingTimeout?: number;
+  socketTimeout?: number;
+  pool?: boolean;
+  maxConnections?: number;
+  maxMessages?: number;
+  retryDelay?: number;
+  maxRetries?: number;
 }
 
 interface EmailContext {
@@ -61,10 +69,42 @@ class EmailService {
         user: process.env.EMAIL_USER || "",
         pass: process.env.EMAIL_PASS || "",
       },
+      // Add connection timeout and retry settings
+      connectionTimeout: 60000, // 60 seconds
+      greetingTimeout: 30000, // 30 seconds
+      socketTimeout: 60000, // 60 seconds
+      pool: true, // Use connection pooling
+      maxConnections: 5, // Maximum number of connections
+      maxMessages: 100, // Maximum number of messages per connection
+      // Add retry settings
+      retryDelay: 5000, // 5 seconds between retries
+      maxRetries: 3, // Maximum number of retries
     };
 
     if (config.auth.user && config.auth.pass) {
       this.transporter = nodemailer.createTransport(config);
+
+      // Verify connection configuration with better error handling
+      this.transporter.verify((error, success) => {
+        if (error) {
+          console.error("Email service configuration error:", error.message);
+          console.error("SMTP Host:", config.host);
+          console.error("SMTP Port:", config.port);
+          console.error("SMTP User:", config.auth.user);
+          console.error("SMTP Secure:", config.secure);
+
+          // Don't fail the entire service, just log the error
+          console.warn(
+            "Email service will attempt to send emails but may fail"
+          );
+        } else {
+          console.log("Email service is ready to send messages");
+        }
+      });
+    } else {
+      console.warn(
+        "Email service not configured: Missing EMAIL_USER or EMAIL_PASS"
+      );
     }
   }
 
@@ -141,7 +181,32 @@ class EmailService {
         attachments: options.attachments || [],
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
+      // Retry mechanism for sending email
+      let info;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (retryCount < maxRetries) {
+        try {
+          info = await this.transporter.sendMail(mailOptions);
+          break; // Success, exit retry loop
+        } catch (sendError: any) {
+          retryCount++;
+          console.error(
+            `Email send attempt ${retryCount} failed:`,
+            sendError.message
+          );
+
+          if (retryCount >= maxRetries) {
+            throw sendError; // Re-throw the error if all retries failed
+          }
+
+          // Wait before retrying (exponential backoff)
+          const delay = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
+          console.log(`Retrying email send in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
 
       // Emit real-time email delivery success event
       try {
@@ -213,6 +278,47 @@ class EmailService {
     });
   }
 
+  public async sendBookingSubmitted(bookingId: string): Promise<boolean> {
+    try {
+      const booking = await BookingModel.findById(bookingId)
+        .populate("user")
+        .populate("facility")
+        .populate("company")
+        .lean();
+
+      if (!booking) return false;
+
+      const user = booking.user as any;
+      const facility = booking.facility as any;
+      const company = (booking as any).company;
+
+      return this.sendEmail({
+        to: user.email,
+        subject: `Booking Request Submitted - ${facility.name}`,
+        template: "booking-submitted",
+        context: {
+          company,
+          user,
+          booking: {
+            id: booking._id.toString(),
+            facilityName: facility.name,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            totalAmount: parseFloat(
+              (booking as any).totalAmount?.toFixed(2) || "0.00"
+            ),
+            currency: (booking as any).currency || "GHS",
+            status: "pending",
+          },
+        },
+        companyId: company?._id?.toString(),
+      });
+    } catch (error) {
+      console.error("Failed to send booking submitted email:", error);
+      return false;
+    }
+  }
+
   public async sendBookingConfirmation(bookingId: string): Promise<boolean> {
     try {
       const booking = await BookingModel.findById(bookingId)
@@ -246,6 +352,7 @@ class EmailService {
             status: "confirmed",
           },
         },
+        companyId: company?._id?.toString(),
       });
     } catch (error) {
       console.error("Failed to send booking confirmation email:", error);
@@ -615,6 +722,27 @@ class EmailService {
         error: error.message || "Unknown error occurred",
       };
     }
+  }
+
+  /**
+   * Get email service diagnostics
+   */
+  public getEmailDiagnostics(): {
+    configured: boolean;
+    smtpHost: string;
+    smtpPort: number;
+    smtpUser: string;
+    smtpSecure: boolean;
+    hasCredentials: boolean;
+  } {
+    return {
+      configured: !!this.transporter,
+      smtpHost: process.env.EMAIL_HOST || "smtp.gmail.com",
+      smtpPort: parseInt(process.env.EMAIL_PORT || "587"),
+      smtpUser: process.env.EMAIL_USER || "",
+      smtpSecure: process.env.EMAIL_SECURE === "true",
+      hasCredentials: !!(process.env.EMAIL_USER && process.env.EMAIL_PASS),
+    };
   }
 }
 

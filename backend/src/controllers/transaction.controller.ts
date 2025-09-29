@@ -6,6 +6,7 @@ import {
   BookingService,
   FacilityService,
 } from "../services";
+import PaymentVerificationService from "../services/paymentVerification.service";
 import {
   sendSuccess,
   sendError,
@@ -213,21 +214,14 @@ const verifyPaymentController = async (
 ): Promise<void> => {
   try {
     const { reference } = req.params;
+    const { paymentMethod } = req.body; // Optional: specify payment method
 
     if (!reference) {
       sendValidationError(res, "Payment reference is required");
       return;
     }
 
-    // Verify payment with Paystack
-    const verificationResponse = await PaymentService.verifyPayment(reference);
-
-    if (!verificationResponse.data) {
-      sendNotFound(res, "Payment not found");
-      return;
-    }
-
-    // Find transaction by reference
+    // Find transaction by reference first to determine payment method
     const transaction =
       await TransactionService.getTransactionByReference(reference);
 
@@ -236,142 +230,48 @@ const verifyPaymentController = async (
       return;
     }
 
-    const updatedDoc: Partial<Transaction> = {
-      booking: transaction.booking,
-      user: transaction.user,
-      account: transaction.account,
-      type: transaction.type,
-      category: transaction.category,
-      amount: verificationResponse.data.amount / 100,
-      method: verificationResponse.data.channel,
-      paymentDetails: {
-        paystackReference: verificationResponse.data.reference,
-        chequeNumber: transaction.paymentDetails?.chequeNumber,
-        bankDetails: transaction.paymentDetails?.bankDetails,
-        mobileMoneyDetails: transaction.paymentDetails?.mobileMoneyDetails,
-      },
-      ref: verificationResponse.data.reference,
-      accessCode: transaction.accessCode,
-      receiptUrl: transaction.receiptUrl,
-      approvedBy: transaction.approvedBy,
-      reconciled: verificationResponse.data.status === "success",
-      reconciledAt:
-        verificationResponse.data.status === "success" ? new Date() : undefined,
-      facility: transaction.facility,
-      description:
-        verificationResponse.data.status === "success"
-          ? `Payment successful: ${verificationResponse.data.reference}`
-          : `Payment failed: ${verificationResponse.data.reference}`,
-      attachments: transaction.attachments,
-      tags: transaction.tags,
-      isDeleted: transaction.isDeleted,
-      createdAt: transaction.createdAt,
-      updatedAt: new Date(),
-    };
+    // Use payment method from transaction or request body
+    const method = paymentMethod || transaction.method || "paystack";
 
-    const doc = await TransactionService.updateTransaction(
-      transaction._id!.toString(),
-      updatedDoc
+    // Verify payment using the appropriate method
+    const verificationResult = await PaymentVerificationService.verifyPayment(
+      reference,
+      method
     );
 
-    if (!doc) {
-      throw new Error("Error updating transaction");
+    if (!verificationResult.success && verificationResult.status === "failed") {
+      sendError(
+        res,
+        "Payment verification failed",
+        "Payment was not successful"
+      );
+      return;
     }
 
-    // Category-specific logic after transaction update
-    if (updatedDoc.category) {
-      if (updatedDoc.category === "booking" && updatedDoc.booking) {
-        if (doc.reconciled) {
-          await BookingService.updateBooking(
-            (updatedDoc.booking as BookingDocument)._id!.toString(),
-            {
-              paymentStatus: "completed",
-              updatedAt: new Date(),
-            }
-          );
-        }
-      } else if (updatedDoc.category === "activation" && transaction.company) {
-        await CompanyModel.findByIdAndUpdate(
-          transaction.company,
-          { isActive: true },
-          { new: true }
-        );
-      }
-    }
+    // Update transaction using the verification service
+    const updatedTransaction =
+      await PaymentVerificationService.updateTransactionFromVerification(
+        transaction._id!.toString(),
+        verificationResult
+      );
 
-    // Send email notification based on payment status
-    try {
-      if (verificationResponse.data.status === "success" && transaction.user) {
-        await emailService.sendPaymentSuccessEmail(doc._id!.toString());
-
-        // Update user loyalty profile for successful payments
-        try {
-          await UserService.updateUserLoyaltyProfile(
-            transaction.user.toString(),
-            verificationResponse.data.amount / 100, // Convert from kobo to naira
-            transaction.facility?.toString()
-          );
-          console.log(`Updated loyalty profile for user ${transaction.user}`);
-        } catch (loyaltyError) {
-          console.warn("Failed to update user loyalty profile:", loyaltyError);
-        }
-
-        // Send payment success notification
-        try {
-          await notificationService.createPaymentNotification(
-            doc._id!.toString(),
-            "successful"
-          );
-        } catch (notificationError) {
-          console.warn(
-            "Failed to send payment success notification:",
-            notificationError
-          );
-        }
-      } else if (
-        verificationResponse.data.status === "failed" &&
-        transaction.user
-      ) {
-        const userDoc = await UserService.getUserByIdentifier(
-          transaction.user.toString()
-        );
-        if (userDoc) {
-          await emailService.sendPaymentFailedEmail(
-            userDoc.email,
-            verificationResponse.data.amount / 100,
-            verificationResponse.data.currency,
-            "Payment verification failed"
-          );
-        }
-
-        // Send payment failed notification
-        try {
-          await notificationService.createPaymentNotification(
-            doc._id!.toString(),
-            "failed"
-          );
-        } catch (notificationError) {
-          console.warn(
-            "Failed to send payment failed notification:",
-            notificationError
-          );
-        }
-      }
-    } catch (emailError) {
-      console.warn("Failed to send payment notification email:", emailError);
-    }
+    // Handle post-verification actions
+    await PaymentVerificationService.handlePostVerificationActions(
+      updatedTransaction,
+      verificationResult
+    );
 
     // Format the response
     const formattedResponse = {
-      reference: verificationResponse.data.reference,
-      amount: verificationResponse.data.amount / 100, // Convert from kobo to naira
-      status: verificationResponse.data.status,
-      paid_at: verificationResponse.data.paid_at,
-      created_at: verificationResponse.data.created_at,
-      channel: verificationResponse.data.channel,
-      currency: verificationResponse.data.currency,
-      customer: verificationResponse.data.customer,
-      transaction: doc,
+      reference: verificationResult.reference,
+      amount: verificationResult.amount,
+      status: verificationResult.status,
+      paid_at: verificationResult.paidAt,
+      created_at: new Date(),
+      channel: verificationResult.channel,
+      currency: verificationResult.currency,
+      customer: verificationResult.customer,
+      transaction: updatedTransaction,
     };
 
     sendSuccess(res, "Payment verified successfully", formattedResponse);
@@ -1100,6 +1000,153 @@ const getAdvanceBalanceController = async (
   }
 };
 
+// Create a pending transaction
+const createPendingTransactionController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const {
+      facility,
+      category,
+      referenceId,
+      amount,
+      currency,
+      method,
+      paymentDetails,
+      notes,
+      paymentTiming,
+      advanceConfig,
+      splitConfig,
+    } = req.body;
+
+    const userId = req.user?.id!;
+    const companyId = req.user?.companyId!;
+
+    if (!category || !referenceId || !amount || !method) {
+      sendValidationError(
+        res,
+        "Missing required fields: category, referenceId, amount, and method are required"
+      );
+      return;
+    }
+
+    const pendingTransaction =
+      await TransactionService.createPendingTransaction({
+        user: userId,
+        company: companyId,
+        facility,
+        category,
+        referenceId,
+        amount,
+        currency,
+        method,
+        paymentDetails,
+        notes,
+        paymentTiming,
+        advanceConfig,
+        splitConfig,
+        type: "income", // Pending transactions are typically income
+      });
+
+    sendSuccess(
+      res,
+      "Pending transaction created successfully",
+      pendingTransaction
+    );
+  } catch (error: any) {
+    sendError(res, error.message, null, 400);
+  }
+};
+
+// Get pending transactions for a company
+const getPendingTransactionsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId!;
+    const { status, type, facility, page, limit } = req.query;
+
+    const result = await TransactionService.getPendingTransactions(companyId, {
+      status: status as string,
+      type: type as string,
+      facility: facility as string,
+      page: page ? parseInt(page as string) : undefined,
+      limit: limit ? parseInt(limit as string) : undefined,
+    });
+
+    sendSuccess(res, "Pending transactions retrieved successfully", result);
+  } catch (error: any) {
+    sendError(res, error.message, null, 400);
+  }
+};
+
+// Process pending transaction (approve/reject)
+const processPendingTransactionController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { transactionId, action, notes, rejectionReason } = req.body;
+    const processedBy = req.user?.id!;
+
+    if (!transactionId || !action) {
+      sendValidationError(
+        res,
+        "Missing required fields: transactionId and action are required"
+      );
+      return;
+    }
+
+    if (!["confirmed", "rejected"].includes(action)) {
+      sendValidationError(
+        res,
+        "Invalid action. Must be 'confirmed' or 'rejected'"
+      );
+      return;
+    }
+
+    const result = await TransactionService.processPendingTransaction(
+      transactionId,
+      action,
+      processedBy,
+      notes,
+      rejectionReason
+    );
+
+    sendSuccess(res, "Transaction processed successfully", result);
+  } catch (error: any) {
+    sendError(res, error.message, null, 400);
+  }
+};
+
+// Get user's pending transactions
+const getUserPendingTransactionsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.id!;
+    const { status, type, page, limit } = req.query;
+
+    const result = await TransactionService.getUserPendingTransactions(userId, {
+      status: status as string,
+      type: type as string,
+      page: page ? parseInt(page as string) : undefined,
+      limit: limit ? parseInt(limit as string) : undefined,
+    });
+
+    sendSuccess(
+      res,
+      "User pending transactions retrieved successfully",
+      result
+    );
+  } catch (error: any) {
+    sendError(res, error.message, null, 400);
+  }
+};
+
 export {
   // Payment operations
   initializePaymentController,
@@ -1122,4 +1169,9 @@ export {
   processAdvancePaymentController,
   applyAdvancePaymentController,
   getAdvanceBalanceController,
+  // Pending transaction operations
+  createPendingTransactionController,
+  getPendingTransactionsController,
+  processPendingTransactionController,
+  getUserPendingTransactionsController,
 };

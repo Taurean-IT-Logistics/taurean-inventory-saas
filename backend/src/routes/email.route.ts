@@ -43,6 +43,14 @@ router.post(
   EmailController.sendWelcomeEmail
 );
 
+// Send booking submitted - admin/staff with booking permissions
+router.post(
+  "/booking-submitted/:bookingId",
+  RequireActiveCompany(),
+  RequirePermissions(["manageBookings"]),
+  EmailController.sendBookingSubmitted
+);
+
 // Send booking confirmation - admin/staff with booking permissions
 router.post(
   "/booking-confirmation/:bookingId",

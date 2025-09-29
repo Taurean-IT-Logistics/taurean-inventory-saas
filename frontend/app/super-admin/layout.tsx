@@ -7,7 +7,7 @@ interface SuperAdminRouteProps {
 
 export default function SuperAdminRoute({ children }: SuperAdminRouteProps) {
   return (
-    <ProtectedRoute allowedRoles={["superAdmin"]}>
+    <ProtectedRoute allowedRoles={["super_admin"]}>
       <SuperAdminLayoutWrapper>{children}</SuperAdminLayoutWrapper>
     </ProtectedRoute>
   );

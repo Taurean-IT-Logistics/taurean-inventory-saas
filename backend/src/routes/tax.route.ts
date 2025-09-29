@@ -8,34 +8,81 @@ import { TaxController } from "../controllers";
 
 const router: Router = Router();
 
+const superAdminOnly = [AuthMiddleware, AuthorizeRoles("super_admin")];
 const adminOnly = [AuthMiddleware, AuthorizeRoles("admin")];
 const staffAndAbove = [AuthMiddleware, AuthorizeRoles("staff", "admin")];
+const allUsers = [
+  AuthMiddleware,
+  AuthorizeRoles("user", "staff", "admin", "super_admin"),
+];
 
-router.post("/", adminOnly, RequireActiveCompany(), TaxController.createTax); // Create a new tax
-router.get("/", TaxController.getTaxes); // Get all taxes (with filters)
+// Global taxes (Super Admin only)
+router.get("/global", superAdminOnly, TaxController.getGlobalTaxes); // Get all global taxes
+router.post("/global", superAdminOnly, TaxController.createGlobalTax); // Create global tax
 
-// Company-specific: Get taxes for the authenticated user's company
+// Company-specific taxes
 router.get(
+  "/company",
+  allUsers,
+  RequireActiveCompany(),
+  TaxController.getCompanyTaxes
+); // Get company taxes
+router.post(
   "/company",
   staffAndAbove,
   RequireActiveCompany(),
-  TaxController.getCompanyTaxes
-);
+  TaxController.createCompanyTax
+); // Create company tax
 
-// Get combined taxes (default + company specific)
+// Combined taxes (global + company for regular users)
 router.get(
-  "/combined",
-  staffAndAbove,
+  "/",
+  allUsers,
   RequireActiveCompany(),
   TaxController.getCombinedTaxes
-);
+); // Get combined taxes
 
-// Default system taxes
+// Individual tax operations
+router.get("/:id", allUsers, TaxController.getTax); // Get a single tax by ID
+router.post(
+  "/:id/replace",
+  staffAndAbove,
+  RequireActiveCompany(),
+  TaxController.createIndependentTax
+); // Create new independent tax (replaces old one)
+router.post(
+  "/:id/archive",
+  staffAndAbove,
+  RequireActiveCompany(),
+  TaxController.archiveTax
+); // Archive tax
+router.get(
+  "/:id/audit-trail",
+  allUsers,
+  RequireActiveCompany(),
+  TaxController.getTaxAuditTrail
+); // Get tax audit trail
+router.get(
+  "/archived",
+  allUsers,
+  RequireActiveCompany(),
+  TaxController.getArchivedTaxes
+); // Get archived taxes
+router.delete(
+  "/:id",
+  staffAndAbove,
+  RequireActiveCompany(),
+  TaxController.deleteTax
+); // Delete tax by ID
+router.post(
+  "/:taxId/copy",
+  allUsers,
+  RequireActiveCompany(),
+  TaxController.copySuperAdminTax
+); // Copy super admin tax to company
+
+// Legacy routes for backward compatibility
 router.get("/defaults", TaxController.getDefaultTaxes); // Get default system taxes
-router.post("/defaults", adminOnly, TaxController.createDefaultTaxes); // Create default system taxes
-
-router.get("/:id", staffAndAbove, TaxController.getTax); // Get a single tax by ID
-router.put("/:id", adminOnly, RequireActiveCompany(), TaxController.updateTax); // Update tax by ID
-router.delete("/:id", adminOnly, TaxController.deleteTax); // Delete tax by ID
+router.post("/defaults", superAdminOnly, TaxController.createDefaultTaxes); // Create default system taxes
 
 export default router;

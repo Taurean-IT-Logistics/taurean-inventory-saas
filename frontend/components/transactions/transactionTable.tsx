@@ -17,6 +17,7 @@ import {
   MoreVertical,
   FileText,
   Printer,
+  X,
 } from "lucide-react";
 import type { Transaction } from "@/types";
 import { currencyFormat } from "@/lib/utils";
@@ -62,6 +63,7 @@ const TransactionTable = ({
 
   const getMethodBadge = (method: string) => {
     const methodConfig = {
+      paystack: { className: "bg-blue-100 text-blue-800", text: "Paystack" },
       card: { className: "bg-blue-100 text-blue-800", text: "Card" },
       mobile_money: {
         className: "bg-cyan-100 text-cyan-800",
@@ -69,6 +71,15 @@ const TransactionTable = ({
       },
       bank: { className: "bg-gray-100 text-gray-800", text: "Bank Transfer" },
       cash: { className: "bg-green-100 text-green-800", text: "Cash" },
+      cheque: { className: "bg-orange-100 text-orange-800", text: "Cheque" },
+      split: {
+        className: "bg-indigo-100 text-indigo-800",
+        text: "Split Payment",
+      },
+      advance: {
+        className: "bg-pink-100 text-pink-800",
+        text: "Advance Payment",
+      },
     };
 
     const config = methodConfig[method as keyof typeof methodConfig] || {
@@ -132,28 +143,22 @@ const TransactionTable = ({
 
   const tableHeaders = (
     <tr>
-      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
         Reference
       </th>
-      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-        User
-      </th>
-      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-        Type
-      </th>
-      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
         Amount
       </th>
-      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
         Method
       </th>
-      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
         Status
       </th>
-      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
         Date
       </th>
-      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
         Actions
       </th>
     </tr>
@@ -161,40 +166,31 @@ const TransactionTable = ({
 
   const renderRow = (txn: Transaction, index: number) => (
     <tr key={index} className="hover:bg-gray-50">
-      <td className="px-4 py-4 whitespace-nowrap">
+      <td className="px-3 py-3 whitespace-nowrap">
         <div>
-          <div className="font-semibold text-gray-900">{txn.ref}</div>
-          <div className="text-sm text-gray-500">{txn.description}</div>
+          <div className="font-semibold text-gray-900 text-sm">{txn.ref}</div>
+          <div className="text-xs text-gray-500 truncate max-w-[120px]">
+            {txn.description || `${txn.user.name} • ${txn.type}`}
+          </div>
         </div>
       </td>
-      <td className="px-4 py-4 whitespace-nowrap">
-        <div>
-          <div className="text-gray-900">{txn.user.name}</div>
-          <div className="text-sm text-gray-500">{txn.user.email}</div>
-        </div>
-      </td>
-      <td className="px-4 py-4 whitespace-nowrap">
-        <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-          {txn.type}
-        </Badge>
-      </td>
-      <td className="px-4 py-4 whitespace-nowrap">
-        <span className="font-bold text-gray-900">
+      <td className="px-3 py-3 whitespace-nowrap">
+        <span className="font-bold text-gray-900 text-sm">
           {currencyFormat(txn.amount)}
         </span>
       </td>
-      <td className="px-4 py-4 whitespace-nowrap">
+      <td className="px-3 py-3 whitespace-nowrap">
         {getMethodBadge(txn.method)}
       </td>
-      <td className="px-4 py-4 whitespace-nowrap">
+      <td className="px-3 py-3 whitespace-nowrap">
         {getStatusBadge(txn.reconciled)}
       </td>
-      <td className="px-4 py-4 whitespace-nowrap">
-        <span className="text-gray-500">
+      <td className="px-3 py-3 whitespace-nowrap">
+        <span className="text-gray-500 text-sm">
           {new Date(txn.createdAt).toLocaleDateString()}
         </span>
       </td>
-      <td className="px-4 py-4 whitespace-nowrap">
+      <td className="px-3 py-3 whitespace-nowrap">
         <div className="flex gap-1">
           <Button
             variant="outline"
@@ -203,20 +199,32 @@ const TransactionTable = ({
             title={txn.reconciled ? "Unreconcile" : "Reconcile"}
             className={
               txn.reconciled
-                ? "border-red-300 text-red-600 hover:bg-red-50"
-                : "border-green-300 text-green-600 hover:bg-green-50"
+                ? "border-red-300 text-red-600 hover:bg-red-50 h-7 w-7 p-0"
+                : "border-green-300 text-green-600 hover:bg-green-50 h-7 w-7 p-0"
             }
           >
-            <Check className="w-4 h-4" />
+            {txn.reconciled ? (
+              <X className="w-3 h-3" />
+            ) : (
+              <Check className="w-3 h-3" />
+            )}
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" title="More">
-                <MoreVertical className="w-4 h-4" />
+              <Button
+                variant="outline"
+                size="sm"
+                title="More"
+                className="h-7 w-7 p-0"
+              >
+                <MoreVertical className="w-3 h-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => onView(txn)}>
+                View Details
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowInvoice(txn._id)}>
                 View Invoice
               </DropdownMenuItem>
@@ -231,45 +239,49 @@ const TransactionTable = ({
   );
 
   return (
-    <div>
-      <Card>
-        <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-lg font-semibold">Transactions</h3>
-          <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={exportToExcel}>
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Export to Excel
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={exportToCSV}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Export to CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={printReport}>
-                  <Printer className="w-4 h-4 mr-2" />
-                  Print Report
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+    <div className="flex justify-center">
+      <div className="w-full max-w-7xl">
+        <Card>
+          <div className="flex justify-between items-center p-4 border-b">
+            <h3 className="text-lg font-semibold">Transactions</h3>
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={exportToExcel}>
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Export to Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToCSV}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Export to CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={printReport}>
+                    <Printer className="w-4 h-4 mr-2" />
+                    Print Report
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-        </div>
-        <div className="p-2">
-          <SimplePaginatedList
-            data={transactions}
-            itemsPerPage={5}
-            emptyMessage="No transactions found"
-            tableHeaders={tableHeaders}
-            renderRow={renderRow}
-          />
-        </div>
-      </Card>
+          <div className="p-2">
+            <div className="overflow-x-auto">
+              <SimplePaginatedList
+                data={transactions}
+                itemsPerPage={10}
+                emptyMessage="No transactions found"
+                tableHeaders={tableHeaders}
+                renderRow={renderRow}
+              />
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {showInvoice && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

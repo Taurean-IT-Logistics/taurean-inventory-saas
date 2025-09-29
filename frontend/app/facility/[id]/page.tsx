@@ -21,6 +21,7 @@ import {
   Monitor,
   Snowflake,
   Calendar,
+  Navigation,
 } from "lucide-react";
 import { currencyFormat } from "@/lib/utils";
 import type { Facility, User } from "@/types";
@@ -37,6 +38,14 @@ import Image from "next/image";
 import ReviewForm from "@/components/ReviewForm";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "@/hooks/use-toast";
+import { LeafletMap } from "@/components/maps/LeafletMap";
+import { useLocation } from "@/hooks/useLocation";
+import {
+  calculateDistance,
+  formatDistance,
+  calculateTravelTime,
+  formatTravelTime,
+} from "@/lib/distanceUtils";
 
 // Define Review interface locally to avoid conflicts
 interface Review {
@@ -642,6 +651,200 @@ const FacilityContactCard = () => (
   </Card>
 );
 
+const FacilityLocationSection = ({ facility }: { facility: Facility }) => {
+  const { location, requestLocation, isLoading, error } = useLocation();
+  const [distance, setDistance] = useState<number | null>(null);
+  const [travelTime, setTravelTime] = useState<number | null>(null);
+
+  // Calculate distance when user location is available
+  useEffect(() => {
+    if (location && facility.location.coordinates) {
+      const dist = calculateDistance(facility.location.coordinates, {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      });
+      setDistance(dist);
+      setTravelTime(calculateTravelTime(dist));
+    }
+  }, [location, facility.location.coordinates]);
+
+  const handleGetDirections = () => {
+    const facilityName = encodeURIComponent(facility.name || "");
+    const facilityAddress = encodeURIComponent(facility.location.address || "");
+    const coordinates = facility.location.coordinates;
+
+    if (location && coordinates) {
+      // With user location - provide turn-by-turn directions
+      const url = `https://www.google.com/maps/dir/?api=1&origin=${location.latitude},${location.longitude}&destination=${coordinates.latitude},${coordinates.longitude}&destination_place_id=${facilityName}`;
+      window.open(url, "_blank");
+    } else if (coordinates) {
+      // Without user location - show facility location
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates.latitude},${coordinates.longitude}&destination_place_id=${facilityName}`;
+      window.open(url, "_blank");
+    } else if (facilityAddress) {
+      // Fallback to address search
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${facilityAddress}`;
+      window.open(url, "_blank");
+    }
+  };
+
+  const handleViewInMaps = () => {
+    // Detect if user is on mobile (iOS/Android)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    const facilityName = encodeURIComponent(facility.name || "");
+    const facilityAddress = encodeURIComponent(facility.location.address || "");
+    const coordinates = facility.location.coordinates;
+
+    if (isMobile && isIOS) {
+      // Open in Apple Maps on iOS
+      if (coordinates) {
+        // Use coordinates with facility name for better accuracy
+        const url = `http://maps.apple.com/?daddr=${coordinates.latitude},${coordinates.longitude}&q=${facilityName}`;
+        window.open(url, "_blank");
+      } else if (facilityAddress) {
+        // Fallback to address
+        const url = `http://maps.apple.com/?daddr=${facilityAddress}`;
+        window.open(url, "_blank");
+      }
+    } else if (isMobile) {
+      // Open in Google Maps on Android
+      if (coordinates) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}&query_place_id=${facilityName}`;
+        window.open(url, "_blank");
+      } else if (facilityAddress) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${facilityAddress}`;
+        window.open(url, "_blank");
+      }
+    } else {
+      // Desktop - open in Google Maps
+      if (coordinates) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}&query_place_id=${facilityName}`;
+        window.open(url, "_blank");
+      } else if (facilityAddress) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${facilityAddress}`;
+        window.open(url, "_blank");
+      }
+    }
+  };
+
+  return (
+    <div className="mb-8">
+      <h3 className="text-xl font-semibold text-gray-900 mb-4">
+        Where you&apos;ll be
+      </h3>
+
+      {/* Distance and travel time info */}
+      {distance !== null && travelTime !== null && (
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-700">
+                Your Location
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">
+                {formatDistance(distance)} away
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">
+                {formatTravelTime(travelTime)} drive
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Location permission prompt */}
+      {!location && !isLoading && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-gray-600" />
+              <span className="text-sm text-gray-700">
+                Want to see how far you are from this facility?
+              </span>
+            </div>
+            <Button
+              onClick={requestLocation}
+              size="sm"
+              variant="outline"
+              className="text-xs"
+            >
+              Show Distance
+            </Button>
+          </div>
+          {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+        </div>
+      )}
+
+      <p className="text-gray-600 mb-6 flex items-center">
+        <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+        {facility.location.address}
+      </p>
+
+      {facility.location.coordinates && (
+        <div className="mb-4 text-sm text-gray-500">
+          <p>
+            Coordinates: {facility.location.coordinates.latitude},{" "}
+            {facility.location.coordinates.longitude}
+          </p>
+        </div>
+      )}
+
+      <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl h-64 sm:h-80 lg:h-96 flex items-center justify-center border border-gray-200">
+        {facility.location.coordinates ? (
+          <LeafletMap
+            latitude={facility.location.coordinates.latitude}
+            longitude={facility.location.coordinates.longitude}
+            address={facility.location.address}
+            facilityName={facility.name}
+            className="h-full w-full rounded-xl"
+          />
+        ) : (
+          <div className="text-center px-4">
+            <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">
+              Map not available - coordinates not set
+            </p>
+            <p className="text-sm text-gray-400 mt-2">
+              {facility.location.address || "Address not specified"}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Map action buttons */}
+      {facility.location.coordinates && (
+        <div className="mt-4 flex gap-3">
+          <Button
+            onClick={handleGetDirections}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Navigation className="h-4 w-4" />
+            Get Directions
+          </Button>
+          <Button
+            onClick={handleViewInMaps}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <MapPin className="h-4 w-4" />
+            View in Maps
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const FacilityDetailPage = ({ params }: { params: { id: string } }) => {
   const {
     data: facility,
@@ -698,6 +901,7 @@ const FacilityDetailPage = ({ params }: { params: { id: string } }) => {
               hasVerifiedReviews={hasVerifiedReviews}
             />
             <FacilityAmenities amenities={(facility as Facility).amenities} />
+            <FacilityLocationSection facility={facility as Facility} />
             {reviews && (
               <FacilityReviews
                 facility={facility}

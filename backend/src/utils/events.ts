@@ -22,6 +22,7 @@ export enum Events {
   RentalUpdated = "rental:updated",
   RentalReturned = "rental:returned",
   RentalOverdue = "rental:overdue",
+  RentalConfirmed = "rental:confirmed",
 
   // Booking Events
   BookingCreated = "booking:created",
@@ -34,6 +35,11 @@ export enum Events {
   TransactionUpdated = "transaction:updated",
   PaymentProcessed = "payment:processed",
   PaymentFailed = "payment:failed",
+
+  // Payment Schedule Events
+  PaymentScheduleCreated = "payment_schedule:created",
+  PaymentScheduleUpdated = "payment_schedule:updated",
+  PaymentScheduleCancelled = "payment_schedule:cancelled",
 
   // Notification Events
   NotificationCreated = "notification:created",

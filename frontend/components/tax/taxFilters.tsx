@@ -16,21 +16,28 @@ import { Label } from "@/components/ui/label";
 interface TaxFiltersProps {
   filters: {
     search: string;
-    appliesTo: string;
     status: string;
     type: string;
   };
-  onFilterChange: (filters: any) => void;
-  onClearFilters: () => void;
+  onFiltersChange: (filters: any) => void;
+  isSuperAdmin?: boolean;
 }
 
 const TaxFilters = ({
   filters,
-  onFilterChange,
-  onClearFilters,
+  onFiltersChange,
+  isSuperAdmin = false,
 }: TaxFiltersProps) => {
   const handleInputChange = (name: string, value: string) => {
-    onFilterChange({ ...filters, [name]: value });
+    onFiltersChange({ ...filters, [name]: value });
+  };
+
+  const handleClearFilters = () => {
+    onFiltersChange({
+      search: "",
+      status: "",
+      type: "",
+    });
   };
 
   return (
@@ -40,13 +47,13 @@ const TaxFilters = ({
           <Filter className="h-5 w-5 text-blue-600" />
           <h6 className="font-semibold">Filters</h6>
         </div>
-        <Button variant="outline" size="sm" onClick={onClearFilters}>
+        <Button variant="outline" size="sm" onClick={handleClearFilters}>
           <X className="h-4 w-4 mr-1" />
           Clear
         </Button>
       </CardHeader>
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="search">Search</Label>
             <Input
@@ -56,24 +63,6 @@ const TaxFilters = ({
               onChange={(e) => handleInputChange("search", e.target.value)}
               className="border-gray-300"
             />
-          </div>
-
-          <div>
-            <Label htmlFor="appliesTo">Applies To</Label>
-            <Select
-              value={filters.appliesTo}
-              onValueChange={(value) => handleInputChange("appliesTo", value)}
-            >
-              <SelectTrigger className="border-gray-300">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="inventory_item">Inventory Items</SelectItem>
-                <SelectItem value="facility">Facilities</SelectItem>
-                <SelectItem value="both">Both</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <div>

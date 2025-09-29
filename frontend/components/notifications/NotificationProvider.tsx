@@ -26,6 +26,7 @@ interface NotificationContextType {
   unreadCount: number;
   isLoading: boolean;
   markAsRead: (notificationId: string) => Promise<void>;
+  markAsUnread: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (notificationId: string) => Promise<void>;
   refreshNotifications: () => void;
@@ -93,7 +94,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Socket event listeners for real-time notifications
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      return;
+    }
+
+    console.log("Socket available for notifications:", socket.connected);
 
     const handleNewNotification = (notification: Notification) => {
       // Add new notification to the list
@@ -105,8 +110,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       });
 
-      // Update unread count
-      setUnreadCount((prev) => prev + 1);
+      // Update unread count only if notification is not read
+      if (!notification.isRead) {
+        setUnreadCount((prev) => {
+          console.log("Previous count:", prev, "New count:", prev + 1);
+          return prev + 1;
+        });
+      }
 
       // Show toast notification
       toast({
@@ -130,6 +140,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
           notifications: updatedNotifications,
         };
       });
+
+      // Update unread count based on read status change
+      if (data.updates.isRead !== undefined) {
+        if (data.updates.isRead) {
+          // Notification was marked as read
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        } else {
+          // Notification was marked as unread
+          setUnreadCount((prev) => prev + 1);
+        }
+      }
     };
 
     const handleNotificationDelete = (notificationId: string) => {
@@ -138,6 +159,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         const filteredNotifications = oldNotifications.filter(
           (n: Notification) => n._id !== notificationId
         );
+
+        // Update unread count if deleted notification was unread
+        const deletedNotification = oldNotifications.find(
+          (n: Notification) => n._id === notificationId
+        );
+        if (deletedNotification && !deletedNotification.isRead) {
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        }
+
         return {
           ...old,
           notifications: filteredNotifications,
@@ -174,7 +204,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       // Update unread count
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      setUnreadCount((prev) => {
+        console.log(
+          "Previous count:",
+          prev,
+          "New count:",
+          Math.max(0, prev - 1)
+        );
+        return Math.max(0, prev - 1);
+      });
 
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({
@@ -182,6 +220,36 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
+    }
+  };
+
+  const markAsUnread = async (notificationId: string) => {
+    try {
+      await NotificationsAPI.markAsUnread(notificationId);
+
+      // Update local state
+      queryClient.setQueryData(["notifications"], (old: any) => {
+        const oldNotifications = old?.notifications || old || [];
+        const updatedNotifications = oldNotifications.map((n: Notification) =>
+          n._id === notificationId ? { ...n, isRead: false } : n
+        );
+        return {
+          ...old,
+          notifications: updatedNotifications,
+        };
+      });
+
+      // Update unread count
+      setUnreadCount((prev) => {
+        return prev + 1;
+      });
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({
+        queryKey: ["notifications-unread-count"],
+      });
+    } catch (error) {
+      console.error("Error marking notification as unread:", error);
     }
   };
 
@@ -257,6 +325,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     unreadCount,
     isLoading,
     markAsRead,
+    markAsUnread,
     markAllAsRead,
     deleteNotification,
     refreshNotifications,
