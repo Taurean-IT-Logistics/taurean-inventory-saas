@@ -6,6 +6,7 @@ import { Bell, Check, Trash2, Settings, X, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -325,7 +326,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
           )}
 
           {/* Notifications List */}
-          <div className="max-h-96 overflow-y-auto">
+          <ScrollArea className="max-h-96">
             {isLoading ? (
               <div className="px-4 py-8 text-center text-gray-500">
                 Loading notifications...
@@ -398,7 +399,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
                 </motion.div>
               ))
             )}
-          </div>
+          </ScrollArea>
 
           {/* Footer */}
           {notifications.length > 0 && (

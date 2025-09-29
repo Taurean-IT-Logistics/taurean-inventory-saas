@@ -11,7 +11,29 @@ import type {
   UsageStats,
   Company,
 } from "@/types";
+
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  order?: "asc" | "desc";
+  search?: string;
+  status?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000/api/v1";
@@ -47,6 +69,22 @@ export function loadTokensFromStorage() {
   }
 
   return { accessToken, refreshToken };
+}
+
+export function buildQueryParams(params: Record<string, any>): string {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      if (Array.isArray(value)) {
+        value.forEach((item) => searchParams.append(key, item.toString()));
+      } else {
+        searchParams.append(key, value.toString());
+      }
+    }
+  });
+
+  return searchParams.toString();
 }
 
 async function refreshAccessToken() {
@@ -319,27 +357,23 @@ export const SubscriptionsAPI = {
 
 // Facilities
 export const FacilitiesAPI = {
-  list: (params?: Record<string, string | number | boolean>) => {
-    const qs = params
-      ? `?${new URLSearchParams(
-          Object.entries(params).map(([k, v]) => [k, String(v)])
-        )}`
-      : "";
-    return apiFetch<{ items?: any[]; facilities?: any[]; data?: any }>(
-      `/facilities${qs}`,
-      { method: "GET" }
-    );
+  list: (
+    params?: Record<string, string | number | boolean> & PaginationParams
+  ) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<
+      | PaginatedResponse<Facility>
+      | { items?: any[]; facilities?: any[]; data?: any }
+    >(`/facilities${qs}`, { method: "GET" });
   },
-  listCompany: (params?: Record<string, string | number | boolean>) => {
-    const qs = params
-      ? `?${new URLSearchParams(
-          Object.entries(params).map(([k, v]) => [k, String(v)])
-        )}`
-      : "";
-    return apiFetch<{ items?: any[]; facilities?: any[]; data?: any }>(
-      `/facilities/company${qs}`,
-      { method: "GET" }
-    );
+  listCompany: (
+    params?: Record<string, string | number | boolean> & PaginationParams
+  ) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<
+      | PaginatedResponse<Facility>
+      | { items?: any[]; facilities?: any[]; data?: any }
+    >(`/facilities/company${qs}`, { method: "GET" });
   },
   detail: (id: string) => apiFetch(`/facilities/${id}`, { method: "GET" }),
   reviews: (id: string) =>
@@ -852,7 +886,9 @@ export const InventoryAPI = {
   // Enhanced Inventory Methods
   getInventoryWithRentalStatus: (params?: Record<string, string>) => {
     const qs = params ? `?${new URLSearchParams(params)}` : "";
-    return apiFetch(`/inventory-items/with-rental-status${qs}`, { method: "GET" });
+    return apiFetch(`/inventory-items/with-rental-status${qs}`, {
+      method: "GET",
+    });
   },
   getInventoryItemWithRentalHistory: (id: string) =>
     apiFetch(`/inventory-items/${id}/rental-history`, { method: "GET" }),
@@ -891,11 +927,31 @@ export const BookingsAPI = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  me: () => apiFetch(`/bookings/me`, { method: "GET" }),
-  getUserBookings: () => apiFetch(`/bookings/me`, { method: "GET" }),
+  me: (params?: PaginationParams) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<PaginatedResponse<Booking>>(`/bookings/me${qs}`, {
+      method: "GET",
+    });
+  },
+  getUserBookings: (params?: PaginationParams) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<PaginatedResponse<Booking>>(`/bookings/me${qs}`, {
+      method: "GET",
+    });
+  },
   get: (id: string) => apiFetch(`/bookings/${id}`, { method: "GET" }),
-  listAll: () => apiFetch(`/bookings`, { method: "GET" }),
-  listCompany: () => apiFetch(`/bookings/company`, { method: "GET" }),
+  listAll: (params?: PaginationParams) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<PaginatedResponse<Booking>>(`/bookings${qs}`, {
+      method: "GET",
+    });
+  },
+  listCompany: (params?: PaginationParams) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<PaginatedResponse<Booking>>(`/bookings/company${qs}`, {
+      method: "GET",
+    });
+  },
   update: (id: string, payload: any) =>
     apiFetch(`/bookings/${id}`, {
       method: "PUT",
@@ -977,24 +1033,70 @@ export const TaxSchedulesAPI = {
 
 // Taxes
 export const TaxesAPI = {
-  list: () => apiFetch(`/taxes`, { method: "GET" }),
+  // Global taxes (Super Admin only)
+  list: () => apiFetch(`/taxes/global`, { method: "GET" }),
+  createGlobal: (payload: any) =>
+    apiFetch(`/taxes/global`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // Company taxes
   listCompany: () => apiFetch(`/taxes/company`, { method: "GET" }),
-  create: (payload: any) =>
-    apiFetch(`/taxes`, { method: "POST", body: JSON.stringify(payload) }),
-  update: (id: string, payload: any) =>
-    apiFetch(`/taxes/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  createCompany: (payload: any) =>
+    apiFetch(`/taxes/company`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // Combined taxes (global + company)
+  listCombined: () => apiFetch(`/taxes`, { method: "GET" }),
+
+  // Individual tax operations
+  get: (id: string) => apiFetch(`/taxes/${id}`, { method: "GET" }),
+  replace: (id: string, payload: any) =>
+    apiFetch(`/taxes/${id}/replace`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  archive: (id: string, payload: any) =>
+    apiFetch(`/taxes/${id}/archive`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   remove: (id: string) => apiFetch(`/taxes/${id}`, { method: "DELETE" }),
+  copy: (taxId: string) => apiFetch(`/taxes/${taxId}/copy`, { method: "POST" }),
+
+  // Legacy methods for backward compatibility
+  create: (payload: any) => {
+    // Determine if this should be a global or company tax based on payload
+    if (payload.isSuperAdminTax) {
+      return apiFetch(`/taxes/global`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    } else {
+      return apiFetch(`/taxes/company`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    }
+  },
 };
 
 // Transactions
 export const TransactionsAPI = {
-  listCompany: (params?: Record<string, string>) => {
-    const qs = params ? `?${new URLSearchParams(params)}` : "";
-    return apiFetch(`/transaction${qs}`, { method: "GET" });
+  listCompany: (params?: Record<string, string> & PaginationParams) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<PaginatedResponse<Transaction>>(`/transaction${qs}`, {
+      method: "GET",
+    });
   },
-  getUserTransactions: (params?: Record<string, string>) => {
-    const qs = params ? `?${new URLSearchParams(params)}` : "";
-    return apiFetch(`/transaction/user${qs}`, { method: "GET" });
+  getUserTransactions: (params?: Record<string, string> & PaginationParams) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<PaginatedResponse<Transaction>>(`/transaction/user${qs}`, {
+      method: "GET",
+    });
   },
   initializePayment: (payload: any) =>
     apiFetch(`/transaction/initialize`, {
@@ -1061,6 +1163,41 @@ export const TransactionsAPI = {
     }),
   getAdvanceBalance: () =>
     apiFetch(`/transaction/advance/balance`, { method: "GET" }),
+};
+
+// Pending Transactions
+export const PendingTransactionsAPI = {
+  create: (payload: any) =>
+    apiFetch(`/transaction/pending`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  listCompany: (params?: PaginationParams) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<PaginatedResponse<any>>(`/transaction/pending${qs}`, {
+      method: "GET",
+    });
+  },
+  getUserPendingTransactions: (params?: PaginationParams) => {
+    const qs = params ? `?${buildQueryParams(params)}` : "";
+    return apiFetch<PaginatedResponse<any>>(`/transaction/pending/user${qs}`, {
+      method: "GET",
+    });
+  },
+  get: (id: string) => apiFetch(`/transaction/${id}`, { method: "GET" }),
+  process: (
+    id: string,
+    payload: {
+      status: "confirmed" | "rejected";
+      notes?: string;
+      rejectionReason?: string;
+    }
+  ) =>
+    apiFetch(`/transaction/pending/${id}/process`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  cancel: (id: string) => apiFetch(`/transaction/${id}`, { method: "DELETE" }),
 };
 
 // Payouts
@@ -1222,6 +1359,9 @@ export const NotificationsAPI = {
 
   markAsRead: (notificationId: string) =>
     apiFetch(`/notifications/${notificationId}/read`, { method: "PATCH" }),
+
+  markAsUnread: (notificationId: string) =>
+    apiFetch(`/notifications/${notificationId}/unread`, { method: "PATCH" }),
 
   markAllAsRead: () => apiFetch(`/notifications/read-all`, { method: "PATCH" }),
 
@@ -1420,6 +1560,10 @@ export const NotificationAPI = {
   // Mark notification as read
   markAsRead: (notificationId: string) =>
     apiFetch(`/notifications/${notificationId}/read`, { method: "PATCH" }),
+
+  // Mark notification as unread
+  markAsUnread: (notificationId: string) =>
+    apiFetch(`/notifications/${notificationId}/unread`, { method: "PATCH" }),
 
   // Mark all notifications as read
   markAllAsRead: () => apiFetch("/notifications/read-all", { method: "PATCH" }),
@@ -1683,8 +1827,7 @@ export const SuperAdminAPI = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  getSystemHealth: () =>
-    apiFetch("/super-admin/health", { method: "GET" }),
+  getSystemHealth: () => apiFetch("/super-admin/health", { method: "GET" }),
 };
 
 // Rental Management API
@@ -1829,8 +1972,7 @@ export const FinancialAPI = {
   },
 
   // Get financial summary
-  getFinancialSummary: () =>
-    apiFetch("/financial/summary", { method: "GET" }),
+  getFinancialSummary: () => apiFetch("/financial/summary", { method: "GET" }),
 };
 
 export const getResourceUrl = (path: string): string => {

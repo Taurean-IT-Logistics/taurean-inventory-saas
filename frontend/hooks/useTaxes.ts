@@ -53,7 +53,7 @@ export function useUpdateTax() {
 
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: any }) =>
-      TaxesAPI.update(id, payload),
+      TaxesAPI.replace(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["taxes"] });
       toast({

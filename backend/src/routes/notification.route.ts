@@ -20,6 +20,7 @@ router.get(
   NotificationController.getUserNotifications
 );
 router.patch("/:id/read", AuthMiddleware, NotificationController.markAsRead);
+router.patch("/:id/unread", AuthMiddleware, NotificationController.markAsUnread);
 router.patch("/read-all", AuthMiddleware, NotificationController.markAllAsRead);
 router.delete(
   "/:id",

@@ -335,7 +335,7 @@ export default function SuperAdminActivityPage() {
                   {users
                     .filter(
                       (user: any) =>
-                        user.role === "admin" || user.role === "superAdmin"
+                        user.role === "admin" || user.role === "super_admin"
                     )
                     .map((user: any) => (
                       <SelectItem key={user._id} value={user.name}>

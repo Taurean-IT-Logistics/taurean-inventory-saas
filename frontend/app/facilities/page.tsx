@@ -87,13 +87,14 @@ function FacilitiesPage() {
 
   const allAmenities = React.useMemo(() => {
     try {
-      if (!Array.isArray(data?.facilities) || data?.facilities.length === 0) {
+      const facilities = (data as any)?.data || (data as any)?.facilities || [];
+      if (!Array.isArray(facilities) || facilities.length === 0) {
         return [];
       }
 
-      const amenities = data?.facilities
-        .filter((f) => f?.amenities && Array.isArray(f.amenities))
-        .flatMap((f) =>
+      const amenities = facilities
+        .filter((f: any) => f?.amenities && Array.isArray(f.amenities))
+        .flatMap((f: any) =>
           f.amenities.filter(
             (amenity: any) => amenity && typeof amenity === "string"
           )
@@ -110,12 +111,14 @@ function FacilitiesPage() {
   useEffect(() => {
     const applyFiltersAndSort = () => {
       try {
-        if (!Array.isArray(data?.facilities)) {
+        const facilities =
+          (data as any)?.data || (data as any)?.facilities || [];
+        if (!Array.isArray(facilities)) {
           setFilteredFacilities([]);
           return;
         }
 
-        let filtered = [...data.facilities];
+        let filtered = [...facilities];
 
         // Search
         if (filters.search?.trim()) {
@@ -350,7 +353,9 @@ function FacilitiesPage() {
         <Header
           filteredCount={filteredFacilities?.length || 0}
           totalCount={
-            Array.isArray(data?.facilities) ? data.facilities.length : 0
+            Array.isArray((data as any)?.data || (data as any)?.facilities)
+              ? ((data as any)?.data || (data as any)?.facilities).length
+              : 0
           }
           viewMode={viewMode}
           setViewMode={setViewMode}

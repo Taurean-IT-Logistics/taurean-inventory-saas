@@ -13,6 +13,7 @@ import { Logger } from "./utils";
 import swaggerUi from "swagger-ui-express";
 import routes from "./routes";
 import { initSocket } from "./realtime/socket";
+import CronJobInitService from "./services/cronJobInit.service";
 
 const app: express.Application = express();
 const server = createServer(app);
@@ -37,9 +38,18 @@ const swaggerDocument = YAML.load("./src/utils/swagger/swagger.yaml");
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/api/v1", routes);
 
-function startServer() {
+async function startServer() {
   Logger("Initializing Server...", null, "server-core", "info");
   const PORT = process.env.PORT || 3000;
+
+  // Initialize cron jobs
+  try {
+    const cronJobService = CronJobInitService.getInstance();
+    await cronJobService.initializeCronJobs();
+    console.log("✅ Cron jobs initialized successfully");
+  } catch (error) {
+    console.error("❌ Failed to initialize cron jobs:", error);
+  }
 
   server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
@@ -50,8 +60,18 @@ function startServer() {
   });
 }
 
-function stopServer() {
+async function stopServer() {
   Logger("Stopping Server...", null, "server-core", "info");
+
+  // Stop cron jobs
+  try {
+    const cronJobService = CronJobInitService.getInstance();
+    await cronJobService.stopCronJobs();
+    console.log("✅ Cron jobs stopped successfully");
+  } catch (error) {
+    console.error("❌ Failed to stop cron jobs:", error);
+  }
+
   server.close((error: Error | undefined) => {
     if (error) {
       console.error(`Error stopping server: ${error.message}`);

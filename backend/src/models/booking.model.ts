@@ -62,6 +62,23 @@ const BookingSchema = new Schema<BookingDocument>(
     internalNotes: { type: String, trim: true },
     isDeleted: { type: Boolean, default: false },
     company: { type: Schema.Types.ObjectId, ref: "Company" },
+    paymentMethod: {
+      type: String,
+      enum: ["online", "cash", "cheque"],
+    },
+    paymentTiming: {
+      type: String,
+      enum: ["advance", "split", "full"],
+      default: "full",
+    },
+    advanceConfig: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
+    splitConfig: {
+      type: Schema.Types.Mixed,
+      default: null,
+    },
   },
   { timestamps: true }
 );

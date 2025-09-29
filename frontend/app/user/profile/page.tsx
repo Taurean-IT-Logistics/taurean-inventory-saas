@@ -194,7 +194,7 @@ const UserProfilePage = () => {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case "superAdmin":
+      case "super_admin":
         return "bg-red-100 text-red-800";
       case "admin":
         return "bg-blue-100 text-blue-800";
@@ -306,7 +306,7 @@ const UserProfilePage = () => {
                   <p className="text-muted-foreground">@{user.username}</p>
                   <div className="flex items-center gap-2">
                     <Badge className={getRoleColor(user.role)}>
-                      {user.role === "superAdmin" && (
+                      {user.role === "super_admin" && (
                         <Crown className="h-3 w-3 mr-1" />
                       )}
                       {user.role}

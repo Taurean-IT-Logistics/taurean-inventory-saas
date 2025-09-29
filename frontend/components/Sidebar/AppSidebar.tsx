@@ -26,6 +26,7 @@ import {
   Mail,
   CreditCard,
   DollarSign,
+  Clock,
 } from "lucide-react";
 import Logo from "../logo/Logo";
 import type { Route } from "./NavMain";

@@ -257,7 +257,9 @@ const UserManagement = () => {
             />
 
             <UserTable
-              transactions={transactions as Transaction[]}
+              transactions={
+                (transactions as any)?.data || (transactions as any) || []
+              }
               users={filteredUsers}
               onEdit={handleEdit}
               onDelete={handleDelete}

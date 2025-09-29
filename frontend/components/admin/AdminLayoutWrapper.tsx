@@ -58,14 +58,14 @@ export function AdminLayoutWrapper({ children }: AdminLayoutWrapperProps) {
   // Show mobile error message if user is on mobile
   if (isMobile) {
     return (
-      <ProtectedRoute allowedRoles={["admin", "superAdmin", "staff"]}>
+      <ProtectedRoute allowedRoles={["admin", "super_admin", "staff"]}>
         <MobileError />
       </ProtectedRoute>
     );
   }
 
   return (
-    <ProtectedRoute allowedRoles={["admin", "superAdmin", "staff"]}>
+    <ProtectedRoute allowedRoles={["admin", "super_admin", "staff"]}>
       <SidebarProvider defaultOpen={true}>
         <div className="relative flex h-screen w-full">
           <DashboardSidebar />

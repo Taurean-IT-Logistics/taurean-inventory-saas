@@ -3,14 +3,30 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { Tax } from "@/types";
 
 interface TaxStatsCardsProps {
-  taxes: Tax[];
+  taxes: Tax[] | any; // Allow any type to handle different API response formats
 }
 
 const TaxStatsCards = ({ taxes }: TaxStatsCardsProps) => {
-  const activeTaxes = taxes.filter((tax) => tax.active);
+  // Handle different data structures that might be returned from API
+  let taxesArray: Tax[] = [];
+
+  if (Array.isArray(taxes)) {
+    taxesArray = taxes;
+  } else if (taxes && typeof taxes === "object") {
+    // Handle paginated response or object with data property
+    if (Array.isArray(taxes.data)) {
+      taxesArray = taxes.data;
+    } else if (Array.isArray(taxes.taxes)) {
+      taxesArray = taxes.taxes;
+    } else if (Array.isArray(taxes.items)) {
+      taxesArray = taxes.items;
+    }
+  }
+
+  const activeTaxes = taxesArray.filter((tax) => tax.active);
   const averageRate =
-    taxes.length > 0
-      ? taxes.reduce((sum, tax) => sum + tax.rate, 0) / taxes.length
+    taxesArray.length > 0
+      ? taxesArray.reduce((sum, tax) => sum + tax.rate, 0) / taxesArray.length
       : 0;
 
   return (
@@ -18,7 +34,9 @@ const TaxStatsCards = ({ taxes }: TaxStatsCardsProps) => {
       <Card className="border-gray-200">
         <CardContent className="p-6 text-center">
           <Calculator className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-          <h4 className="text-2xl font-bold text-blue-600">{taxes.length}</h4>
+          <h4 className="text-2xl font-bold text-blue-600">
+            {taxesArray.length}
+          </h4>
           <p className="text-gray-600 text-sm">Total Taxes</p>
         </CardContent>
       </Card>

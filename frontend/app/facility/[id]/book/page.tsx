@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Star, CheckCircle } from "lucide-react";
+import { ArrowLeft, Star, CheckCircle, Info } from "lucide-react";
 import { differenceInDays, format, parseISO } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -23,14 +23,16 @@ import {
   BookingsAPI,
   FacilitiesAPI,
   getResourceUrl,
-  TaxesAPI,
+  TaxScheduleAPI,
   TransactionsAPI,
+  PendingTransactionsAPI,
 } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { ErrorComponent } from "@/components/ui/error";
 import { Loader } from "@/components/ui/loader";
-import { Booking, Facility, Tax } from "@/types";
+import { Booking, Facility, TaxSchedule } from "@/types";
 import { currencyFormat } from "@/lib/utils";
+import { calculateBookingTaxesFromSchedules } from "@/lib/taxCalculator";
 import { useAuth } from "@/components/AuthProvider";
 import { useRedirect } from "@/hooks/useRedirect";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -41,11 +43,24 @@ export default function BookingPage({ params }: { params: { id: string } }) {
   const { redirectToLogin } = useRedirect();
 
   const [step, setStep] = useState(1);
+  const [paymentStep, setPaymentStep] = useState(1); // 1: Payment Method, 2: Payment Timing
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [bookingData, setBookingData] = useState<
     Partial<Booking> & {
       guests?: number;
       startDate?: string | Date;
       endDate?: string | Date;
+      paymentMethod?: string;
+      paymentTiming?: string;
+      splitConfig?: {
+        numberOfParts: number;
+        parts: Array<{ amount: number; dueDate: Date }>;
+      };
+      advanceConfig?: {
+        percentage: number | string;
+        amount: number;
+        inputMode: "percentage" | "amount";
+      };
     }
   >({});
   const [availabilityError, setAvailabilityError] = useState<string | null>(
@@ -93,11 +108,31 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     },
   });
 
-  const { data: taxes = [] } = useQuery({
-    queryKey: ["taxes"],
-    queryFn: () => TaxesAPI.list(),
+  const { data: taxSchedulesData = [] } = useQuery({
+    queryKey: ["tax-schedules"],
+    queryFn: () => TaxScheduleAPI.getTaxSchedules(),
     enabled: !!user,
-  }) as { data: Tax[] };
+  });
+
+  // Extract tax schedules array from various API response formats
+  const extractTaxSchedulesArray = (data: any): TaxSchedule[] => {
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data && typeof data === "object") {
+      if (Array.isArray(data.data)) {
+        return data.data;
+      } else if (Array.isArray(data.taxSchedules)) {
+        return data.taxSchedules;
+      } else if (Array.isArray(data.schedules)) {
+        return data.schedules;
+      } else if (Array.isArray(data.items)) {
+        return data.items;
+      }
+    }
+    return [];
+  };
+
+  const taxSchedules = extractTaxSchedulesArray(taxSchedulesData);
 
   // Calculate pricing and taxes
   const calculateTotal = () => {
@@ -112,6 +147,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
         serviceFeeRate: 0,
         totalTaxRate: 0,
         applicableTaxes: [],
+        taxBreakdown: [],
       };
     }
 
@@ -123,45 +159,24 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     const basePrice = facility.pricing.find((p) => p.isDefault)?.amount || 0;
     const subtotal = basePrice * days;
 
-    // Calculate service fee from taxes
-    const serviceFeeRate =
-      taxes.find(
-        (t: Tax) =>
-          t.name.toLowerCase().includes("service") &&
-          t.active &&
-          (t.appliesTo === "facility" || t.appliesTo === "both") &&
-          (t.isSuperAdminTax || t.company === (facility.company as any)?._id)
-      )?.rate || 0;
-
-    const serviceFee = Math.round(subtotal * (serviceFeeRate / 100));
-
-    // Calculate applicable taxes
-    const applicableTaxes = taxes.filter(
-      (t: Tax) =>
-        !t.name.toLowerCase().includes("service") &&
-        t.active &&
-        (t.appliesTo === "facility" || t.appliesTo === "both") &&
-        (t.isSuperAdminTax || t.company === (facility.company as any)?._id)
+    // Use the new tax schedule calculator
+    const taxResult = calculateBookingTaxesFromSchedules(
+      subtotal,
+      taxSchedules,
+      (facility.company as any)?._id
     );
-
-    const totalTaxRate = applicableTaxes.reduce(
-      (sum, tax) => sum + (tax.rate || 0),
-      0
-    );
-    const tax = Math.round((subtotal + serviceFee) * (totalTaxRate / 100));
-
-    const total = subtotal + serviceFee + tax;
 
     return {
-      subtotal,
-      serviceFee,
-      tax,
-      total,
+      subtotal: taxResult.subtotal,
+      serviceFee: taxResult.serviceFee,
+      tax: taxResult.tax,
+      total: taxResult.total,
       days,
       basePrice,
-      serviceFeeRate,
-      totalTaxRate,
-      applicableTaxes,
+      serviceFeeRate: taxResult.serviceFeeRate,
+      totalTaxRate: taxResult.totalTaxRate,
+      applicableTaxes: taxResult.applicableTaxes,
+      taxBreakdown: taxResult.taxBreakdown,
     };
   };
 
@@ -222,6 +237,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     serviceFeeRate,
     totalTaxRate,
     applicableTaxes,
+    taxBreakdown,
   } = calculateTotal();
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -352,7 +368,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
   let facility = facilityData as Facility;
 
-  const handleProceedToCheckout = () => {
+  const handleProceedToCheckout = async () => {
     // Check if user is authenticated
     if (!user) {
       // Store the current URL so user can be redirected back after login
@@ -373,26 +389,127 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       startDate: parseDate(bookingData.startDate),
       endDate: parseDate(bookingData.endDate),
       items: [], // Add empty items array as required by the model
-      status: "pending", // Set default status
+      status: bookingData.paymentMethod === "online" ? "pending" : "pending", // Set default status
       paymentStatus: "pending", // Set default payment status
     };
 
-    // Format data for transaction API
-    const transactionData = {
-      email: user?.email || "",
-      amount: total,
-      category: "facility",
-      description: `Booking for ${
-        (facilityData as Facility)?.name || "Facility"
-      } - ${calculateDurationString(
-        bookingData.startDate,
-        bookingData.endDate
-      )}`,
-      facility: (facilityData as Facility)?._id || "",
-      currency: "GHS",
-    };
+    // Handle different payment methods and timing
+    if (bookingData.paymentMethod === "online") {
+      // Online payment - proceed with normal flow
+      const transactionData = {
+        email: user?.email || "",
+        amount:
+          bookingData.paymentTiming === "advance" && bookingData.advanceConfig
+            ? bookingData.advanceConfig.amount
+            : total,
+        category: "facility",
+        description: `Booking for ${
+          (facilityData as Facility)?.name || "Facility"
+        } - ${calculateDurationString(
+          bookingData.startDate,
+          bookingData.endDate
+        )}${
+          bookingData.paymentTiming === "advance" ? " (Advance Payment)" : ""
+        }`,
+        facility: (facilityData as Facility)?._id || "",
+        currency: "GHS",
+        paymentTiming: bookingData.paymentTiming,
+        advanceConfig: bookingData.advanceConfig,
+        splitConfig: bookingData.splitConfig,
+      };
 
-    bookingsMutation.mutate(finalBookingData);
+      bookingsMutation.mutate(finalBookingData);
+    } else if (
+      bookingData.paymentMethod === "cash" ||
+      bookingData.paymentMethod === "cheque"
+    ) {
+      // Cash/Cheque payment - create pending transaction
+      setIsProcessingPayment(true);
+      try {
+        // First create the booking
+        const bookingResponse = await BookingsAPI.create(finalBookingData);
+
+        if (bookingResponse) {
+          // Determine the amount based on payment timing
+          let paymentAmount = total;
+          if (
+            bookingData.paymentTiming === "advance" &&
+            bookingData.advanceConfig
+          ) {
+            paymentAmount = bookingData.advanceConfig.amount;
+          } else if (
+            bookingData.paymentTiming === "split" &&
+            bookingData.splitConfig
+          ) {
+            // For split payments, the first payment is the split amount
+            paymentAmount =
+              bookingData.splitConfig.parts?.[0]?.amount ||
+              total / bookingData.splitConfig.numberOfParts;
+          }
+
+          // Create pending transaction
+          const pendingTransactionData = {
+            type: "booking",
+            referenceId:
+              (bookingResponse as any)._id || (bookingResponse as any).id,
+            amount: paymentAmount,
+            paymentMethod: bookingData.paymentMethod,
+            paymentTiming: bookingData.paymentTiming,
+            advanceConfig: bookingData.advanceConfig,
+            splitConfig: bookingData.splitConfig,
+            notes: `Payment at facility for booking ${
+              (bookingResponse as any)._id || (bookingResponse as any).id
+            }${
+              bookingData.paymentTiming === "advance"
+                ? " (Advance Payment)"
+                : ""
+            }${
+              bookingData.paymentTiming === "split"
+                ? " (Split Payment - Part 1)"
+                : ""
+            }`,
+          };
+
+          await PendingTransactionsAPI.create(pendingTransactionData);
+
+          let description = `Your booking has been created. Please bring ${currencyFormat(
+            paymentAmount
+          )} in ${bookingData.paymentMethod} when you arrive at the facility.`;
+
+          if (
+            bookingData.paymentTiming === "advance" &&
+            bookingData.advanceConfig
+          ) {
+            const balance = total - bookingData.advanceConfig.amount;
+            description += ` Balance of ${currencyFormat(
+              balance
+            )} will be due later.`;
+          } else if (
+            bookingData.paymentTiming === "split" &&
+            bookingData.splitConfig
+          ) {
+            description += ` This is part 1 of ${bookingData.splitConfig.numberOfParts} payments.`;
+          }
+
+          toast({
+            title: "Booking Created Successfully",
+            description,
+            variant: "default",
+          });
+
+          // Redirect to user dashboard
+          router.push("/user/dashboard");
+        }
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create booking",
+          variant: "destructive",
+        });
+      } finally {
+        setIsProcessingPayment(false);
+      }
+    }
   };
 
   return (
@@ -416,7 +533,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
 
             {/* Progress Steps */}
             <div className="flex items-center mb-8">
-              {[1, 2, 3].map((stepNumber) => (
+              {[1, 2, 3, 4].map((stepNumber) => (
                 <div key={stepNumber} className="flex items-center">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -427,7 +544,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                   >
                     {stepNumber}
                   </div>
-                  {stepNumber < 3 && (
+                  {stepNumber < 4 && (
                     <div
                       className={`w-16 h-1 mx-2 ${
                         step > stepNumber ? "bg-[#1e3a5f]" : "bg-gray-200"
@@ -723,8 +840,666 @@ export default function BookingPage({ params }: { params: { id: string } }) {
               </motion.div>
             )}
 
-            {/* Step 3: Booking Summary */}
+            {/* Step 3: Payment Method Selection */}
             {step === 3 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                {/* Step 1: Payment Method Selection */}
+                {paymentStep === 1 && (
+                  <>
+                    <div className="flex items-center space-x-2 mb-4">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-semibold text-sm">
+                          1
+                        </span>
+                      </div>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        Select Payment Method
+                      </h2>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        {/* Online Payment */}
+                        <div
+                          className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                            bookingData.paymentMethod === "online"
+                              ? "border-[#1e3a5f] bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() =>
+                            setBookingData({
+                              ...bookingData,
+                              paymentMethod: "online",
+                            })
+                          }
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 ${
+                                bookingData.paymentMethod === "online"
+                                  ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {bookingData.paymentMethod === "online" && (
+                                <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">
+                                Online Payment
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                Pay securely with card or mobile money
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Cash Payment */}
+                        <div
+                          className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                            bookingData.paymentMethod === "cash"
+                              ? "border-[#1e3a5f] bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() =>
+                            setBookingData({
+                              ...bookingData,
+                              paymentMethod: "cash",
+                            })
+                          }
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 ${
+                                bookingData.paymentMethod === "cash"
+                                  ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {bookingData.paymentMethod === "cash" && (
+                                <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">
+                                Cash Payment
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                Pay with cash directly at the facility
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Cheque Payment */}
+                        <div
+                          className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                            bookingData.paymentMethod === "cheque"
+                              ? "border-[#1e3a5f] bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() =>
+                            setBookingData({
+                              ...bookingData,
+                              paymentMethod: "cheque",
+                            })
+                          }
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 ${
+                                bookingData.paymentMethod === "cheque"
+                                  ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {bookingData.paymentMethod === "cheque" && (
+                                <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">
+                                Cheque Payment
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                Pay with cheque directly at the facility
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setStep(2)}
+                        className="flex-1"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={() => setPaymentStep(2)}
+                        className="flex-1 bg-[#ff8c00] hover:bg-[#e67c00] text-white"
+                        disabled={!bookingData.paymentMethod}
+                      >
+                        Continue
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {/* Step 2: Payment Timing Selection */}
+                {paymentStep === 2 && (
+                  <>
+                    <div className="flex items-center space-x-2 mb-4">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-semibold text-sm">
+                          2
+                        </span>
+                      </div>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        How would you like to pay?
+                      </h2>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        {/* Full Payment */}
+                        <div
+                          className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                            bookingData.paymentTiming === "full"
+                              ? "border-[#1e3a5f] bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() =>
+                            setBookingData({
+                              ...bookingData,
+                              paymentTiming: "full",
+                            })
+                          }
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 ${
+                                bookingData.paymentTiming === "full"
+                                  ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {bookingData.paymentTiming === "full" && (
+                                <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">
+                                Pay Full Amount Now
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                Pay the full amount{" "}
+                                {bookingData.paymentMethod === "online"
+                                  ? "online now"
+                                  : `in ${bookingData.paymentMethod} at the facility`}
+                              </p>
+                            </div>
+                            <div className="text-sm font-medium text-[#1e3a5f]">
+                              {currencyFormat(total)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Split Payment */}
+                        <div
+                          className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                            bookingData.paymentTiming === "split"
+                              ? "border-[#1e3a5f] bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() =>
+                            setBookingData({
+                              ...bookingData,
+                              paymentTiming: "split",
+                              splitConfig: {
+                                numberOfParts: 2,
+                                parts: [
+                                  { amount: total * 0.5, dueDate: new Date() },
+                                  {
+                                    amount: total * 0.5,
+                                    dueDate: new Date(
+                                      Date.now() + 7 * 24 * 60 * 60 * 1000
+                                    ),
+                                  },
+                                ],
+                              },
+                            })
+                          }
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 ${
+                                bookingData.paymentTiming === "split"
+                                  ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {bookingData.paymentTiming === "split" && (
+                                <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">
+                                Split Payment
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                Pay in multiple installments (max 3 parts)
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Advance Payment */}
+                        <div
+                          className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                            bookingData.paymentTiming === "advance"
+                              ? "border-[#1e3a5f] bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() =>
+                            setBookingData({
+                              ...bookingData,
+                              paymentTiming: "advance",
+                              advanceConfig: {
+                                percentage: 30,
+                                amount: total * 0.3,
+                                inputMode: "percentage",
+                              },
+                            })
+                          }
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 ${
+                                bookingData.paymentTiming === "advance"
+                                  ? "border-[#1e3a5f] bg-[#1e3a5f]"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {bookingData.paymentTiming === "advance" && (
+                                <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">
+                                Advance Payment
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                Pay advance amount now, balance later
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Split Payment Configuration */}
+                      {bookingData.paymentTiming === "split" && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <h4 className="font-medium text-gray-900 mb-3">
+                            Configure Split Payment
+                          </h4>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Number of Parts (Max 3)
+                              </label>
+                              <Select
+                                value={String(
+                                  bookingData.splitConfig?.numberOfParts || 2
+                                )}
+                                onValueChange={(value) => {
+                                  const numberOfParts = parseInt(value);
+                                  const amountPerPart = total / numberOfParts;
+                                  const parts = Array.from(
+                                    { length: numberOfParts },
+                                    (_, index) => ({
+                                      amount: amountPerPart,
+                                      dueDate: new Date(
+                                        Date.now() +
+                                          index * 7 * 24 * 60 * 60 * 1000
+                                      ),
+                                    })
+                                  );
+
+                                  setBookingData({
+                                    ...bookingData,
+                                    splitConfig: {
+                                      numberOfParts,
+                                      parts,
+                                    },
+                                  });
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select number of parts" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="2">2 Parts</SelectItem>
+                                  <SelectItem value="3">3 Parts</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="block text-sm font-medium text-gray-700">
+                                Payment Breakdown
+                              </label>
+                              {bookingData.splitConfig?.parts.map(
+                                (part, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center justify-between p-2 bg-white rounded border"
+                                  >
+                                    <span className="text-sm">
+                                      Part {index + 1}
+                                    </span>
+                                    <span className="font-medium">
+                                      {currencyFormat(part.amount)}
+                                    </span>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Advance Payment Configuration */}
+                      {bookingData.paymentTiming === "advance" && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <h4 className="font-medium text-gray-900 mb-3">
+                            Configure Advance Payment
+                          </h4>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Advance Configuration
+                              </label>
+
+                              {/* Input Mode Selection */}
+                              <div className="mb-3">
+                                <label className="block text-xs font-medium text-gray-600 mb-2">
+                                  Input Mode
+                                </label>
+                                <Select
+                                  value={
+                                    bookingData.advanceConfig?.inputMode ||
+                                    "percentage"
+                                  }
+                                  onValueChange={(value) => {
+                                    const currentAmount =
+                                      bookingData.advanceConfig?.amount ||
+                                      total * 0.3;
+                                    setBookingData({
+                                      ...bookingData,
+                                      advanceConfig: {
+                                        percentage:
+                                          value === "percentage"
+                                            ? 30
+                                            : "custom",
+                                        amount: currentAmount,
+                                        inputMode: value as
+                                          | "percentage"
+                                          | "amount",
+                                      },
+                                    });
+                                  }}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select input mode" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="percentage">
+                                      Percentage
+                                    </SelectItem>
+                                    <SelectItem value="amount">
+                                      Amount
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Percentage Input */}
+                              {bookingData.advanceConfig?.inputMode ===
+                                "percentage" && (
+                                <div className="space-y-2">
+                                  <label className="block text-xs font-medium text-gray-600">
+                                    Advance Percentage
+                                  </label>
+                                  <div className="flex items-center space-x-2">
+                                    <Select
+                                      value={String(
+                                        bookingData.advanceConfig?.percentage ||
+                                          30
+                                      )}
+                                      onValueChange={(value) => {
+                                        if (value === "custom") {
+                                          setBookingData({
+                                            ...bookingData,
+                                            advanceConfig: {
+                                              percentage: "custom",
+                                              amount: total * 0.3,
+                                              inputMode: "percentage",
+                                            },
+                                          });
+                                        } else {
+                                          const percentage = parseInt(value);
+                                          const amount =
+                                            total * (percentage / 100);
+
+                                          setBookingData({
+                                            ...bookingData,
+                                            advanceConfig: {
+                                              percentage,
+                                              amount,
+                                              inputMode: "percentage",
+                                            },
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="flex-1">
+                                        <SelectValue placeholder="Select percentage" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="30">30%</SelectItem>
+                                        <SelectItem value="35">35%</SelectItem>
+                                        <SelectItem value="40">40%</SelectItem>
+                                        <SelectItem value="45">45%</SelectItem>
+                                        <SelectItem value="50">50%</SelectItem>
+                                        <SelectItem value="custom">
+                                          Custom
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    {bookingData.advanceConfig?.percentage ===
+                                      "custom" && (
+                                      <div className="flex items-center space-x-2">
+                                        <Input
+                                          type="number"
+                                          min="30"
+                                          max="80"
+                                          placeholder="30"
+                                          className="w-20"
+                                          value={
+                                            typeof bookingData.advanceConfig
+                                              ?.percentage === "number"
+                                              ? bookingData.advanceConfig
+                                                  .percentage
+                                              : ""
+                                          }
+                                          onChange={(e) => {
+                                            const percentage =
+                                              parseInt(e.target.value) || 30;
+                                            const amount =
+                                              total * (percentage / 100);
+
+                                            setBookingData({
+                                              ...bookingData,
+                                              advanceConfig: {
+                                                percentage,
+                                                amount,
+                                                inputMode: "percentage",
+                                              },
+                                            });
+                                          }}
+                                        />
+                                        <span className="text-sm text-gray-500">
+                                          %
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    Minimum 30%, Maximum 80%
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Amount Input */}
+                              {bookingData.advanceConfig?.inputMode ===
+                                "amount" && (
+                                <div className="space-y-2">
+                                  <label className="block text-xs font-medium text-gray-600">
+                                    Advance Amount
+                                  </label>
+                                  <div className="flex items-center space-x-2">
+                                    <Input
+                                      type="number"
+                                      min={total * 0.3}
+                                      max={total * 0.8}
+                                      step="0.01"
+                                      placeholder={currencyFormat(total * 0.3)}
+                                      className="flex-1"
+                                      value={
+                                        bookingData.advanceConfig?.amount || ""
+                                      }
+                                      onChange={(e) => {
+                                        const amount =
+                                          parseFloat(e.target.value) ||
+                                          total * 0.3;
+                                        const percentage =
+                                          (amount / total) * 100;
+
+                                        setBookingData({
+                                          ...bookingData,
+                                          advanceConfig: {
+                                            percentage: Math.round(percentage),
+                                            amount,
+                                            inputMode: "amount",
+                                          },
+                                        });
+                                      }}
+                                    />
+                                    <span className="text-sm text-gray-500">
+                                      (
+                                      {Math.round(
+                                        ((bookingData.advanceConfig?.amount ||
+                                          total * 0.3) /
+                                          total) *
+                                          100
+                                      )}
+                                      %)
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    Minimum {currencyFormat(total * 0.3)},
+                                    Maximum {currencyFormat(total * 0.8)}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="p-3 bg-white rounded border">
+                                <div className="text-sm text-gray-600">
+                                  Advance Amount
+                                </div>
+                                <div className="font-medium">
+                                  {currencyFormat(
+                                    bookingData.advanceConfig?.amount || 0
+                                  )}
+                                </div>
+                              </div>
+                              <div className="p-3 bg-white rounded border">
+                                <div className="text-sm text-gray-600">
+                                  Balance
+                                </div>
+                                <div className="font-medium">
+                                  {currencyFormat(
+                                    total -
+                                      (bookingData.advanceConfig?.amount || 0)
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Payment Method Info */}
+                      {(bookingData.paymentMethod === "cash" ||
+                        bookingData.paymentMethod === "cheque") &&
+                        (bookingData.paymentTiming === "split" ||
+                          bookingData.paymentTiming === "advance") && (
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                            <div className="flex items-start space-x-3">
+                              <div className="w-5 h-5 text-amber-600 mt-0.5">
+                                <Info className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-amber-800">
+                                  Partial Payment Required
+                                </h4>
+                                <p className="text-sm text-amber-700 mt-1">
+                                  Your booking will be confirmed pending partial
+                                  payment. You can pay a portion online now and
+                                  the remainder in {bookingData.paymentMethod}{" "}
+                                  at the facility.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                    </div>
+
+                    <div className="flex space-x-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setPaymentStep(1)}
+                        className="flex-1"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={() => setStep(4)}
+                        className="flex-1 bg-[#ff8c00] hover:bg-[#e67c00] text-white"
+                        disabled={!bookingData.paymentTiming}
+                      >
+                        Continue
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            )}
+
+            {/* Step 4: Booking Summary */}
+            {step === 4 && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -789,11 +1564,132 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-gray-600">Total:</span>
-                      <p className="font-medium text-lg text-[#1e3a5f]">
-                        {currencyFormat(total)}
+                      <span className="text-gray-600">Payment Method:</span>
+                      <p className="font-medium capitalize">
+                        {bookingData.paymentMethod} Payment
                       </p>
                     </div>
+                    <div className="col-span-2">
+                      <span className="text-gray-600">Payment Timing:</span>
+                      <p className="font-medium capitalize">
+                        {bookingData.paymentTiming === "full"
+                          ? "Full Payment"
+                          : bookingData.paymentTiming === "split"
+                          ? "Split Payment"
+                          : bookingData.paymentTiming === "advance"
+                          ? "Advance Payment"
+                          : "Not Selected"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Payment Breakdown */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium text-gray-900 mb-3">
+                      Payment Breakdown
+                    </h4>
+
+                    {/* Full Payment */}
+                    {bookingData.paymentTiming === "full" && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">
+                            Total Due Today:
+                          </span>
+                          <span className="font-medium text-lg text-[#1e3a5f]">
+                            {currencyFormat(total)}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {bookingData.paymentMethod === "online"
+                            ? "Pay the full amount online now"
+                            : `Pay the full amount in ${bookingData.paymentMethod} at the facility`}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Split Payment */}
+                    {bookingData.paymentTiming === "split" &&
+                      bookingData.splitConfig && (
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Total Amount:</span>
+                            <span className="font-medium">
+                              {currencyFormat(total)}
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {bookingData.splitConfig.parts.map(
+                              (part, index) => (
+                                <div
+                                  key={index}
+                                  className="flex justify-between items-center"
+                                >
+                                  <span className="text-gray-600">
+                                    Part {index + 1}:
+                                  </span>
+                                  <span className="font-medium">
+                                    {currencyFormat(part.amount)}
+                                  </span>
+                                </div>
+                              )
+                            )}
+                          </div>
+                          <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                            <div className="text-sm text-blue-800">
+                              <strong>Due Today:</strong>{" "}
+                              {currencyFormat(
+                                bookingData.splitConfig.parts[0].amount
+                              )}
+                            </div>
+                            <div className="text-sm text-blue-600">
+                              Remaining parts due later as scheduled
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Advance Payment */}
+                    {bookingData.paymentTiming === "advance" &&
+                      bookingData.advanceConfig && (
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Total Amount:</span>
+                            <span className="font-medium">
+                              {currencyFormat(total)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">
+                              Advance Payment:
+                            </span>
+                            <span className="font-medium">
+                              {currencyFormat(bookingData.advanceConfig.amount)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Balance:</span>
+                            <span className="font-medium">
+                              {currencyFormat(
+                                total - bookingData.advanceConfig.amount
+                              )}
+                            </span>
+                          </div>
+                          <div className="bg-amber-50 border border-amber-200 rounded p-3">
+                            <div className="text-sm text-amber-800">
+                              <strong>Due Today:</strong>{" "}
+                              {currencyFormat(bookingData.advanceConfig.amount)}
+                            </div>
+                            <div className="text-sm text-amber-600">
+                              Balance of{" "}
+                              {currencyFormat(
+                                total - bookingData.advanceConfig.amount
+                              )}{" "}
+                              due later
+                            </div>
+                          </div>
+                        </div>
+                      )}
                   </div>
 
                   {bookingData.notes && (
@@ -809,7 +1705,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                 <div className="flex space-x-4">
                   <Button
                     variant="outline"
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(3)}
                     className="flex-1"
                   >
                     Back
@@ -817,9 +1713,9 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                   <Button
                     onClick={handleProceedToCheckout}
                     className="flex-1 bg-[#ff8c00] hover:bg-[#e67c00] text-white"
-                    disabled={bookingsMutation.isPending}
+                    disabled={bookingsMutation.isPending || isProcessingPayment}
                   >
-                    {bookingsMutation.isPending
+                    {bookingsMutation.isPending || isProcessingPayment
                       ? "Processing..."
                       : "Proceed to Checkout"}
                   </Button>
@@ -902,17 +1798,15 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                 </div>
               )}
 
-              {applicableTaxes.length > 0 && (
+              {taxBreakdown.length > 0 && (
                 <>
-                  {applicableTaxes.map((tax: Tax, index: number) => (
+                  {taxBreakdown.map((item, index) => (
                     <div key={index} className="flex justify-between">
                       <span className="text-gray-600">
-                        {tax.name} ({tax.rate}%)
+                        {item.tax.name} ({item.rate}%)
                       </span>
                       <span className="text-gray-900">
-                        {currencyFormat(
-                          Math.round((subtotal + serviceFee) * (tax.rate / 100))
-                        )}
+                        {currencyFormat(item.amount)}
                       </span>
                     </div>
                   ))}

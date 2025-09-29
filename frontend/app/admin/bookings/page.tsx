@@ -411,7 +411,8 @@ const BookingDashboard = () => {
 
     if (typeof booking.facility === "string") {
       // If it's a string ID, find the facility in the facilities array
-      const facility = facilities?.facilities?.find(
+      const facilityList = (facilities as any)?.data || (facilities as any)?.facilities || [];
+      const facility = facilityList.find(
         (f: any) => f._id === booking.facility
       );
       return facility?.name || "Unknown Facility";
@@ -709,7 +710,7 @@ const BookingDashboard = () => {
 
           <TabsContent value="calendar">
             <BookingCalendar
-              facilities={facilities?.facilities as Facility[]}
+              facilities={(facilities as any)?.data || (facilities as any)?.facilities || []}
               bookings={bookings as Booking[]}
               onUpdateBooking={handleUpdateBooking}
               onDeleteBooking={handleDeleteBooking}
@@ -720,7 +721,7 @@ const BookingDashboard = () => {
           <TabsContent value="bookings">
             <BookingManagement
               bookings={bookings as Booking[]}
-              facilities={facilities?.facilities as Facility[]}
+              facilities={(facilities as any)?.data || (facilities as any)?.facilities || []}
               onRefresh={facilitiesRefetch}
               onUpdateBooking={handleUpdateBooking}
               onDeleteBooking={handleDeleteBooking}

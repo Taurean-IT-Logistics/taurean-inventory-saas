@@ -54,6 +54,9 @@ import {
   DollarSign,
   Calendar,
   X,
+  RefreshCw,
+  Download,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -94,6 +97,8 @@ interface RentalStatistics {
   returnedRentals: number;
   totalRevenue: number;
   pendingFees: number;
+  pendingReturns: number;
+  processedToday: number;
 }
 
 export default function RentalsPage() {
@@ -292,9 +297,12 @@ export default function RentalsPage() {
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Rental Management</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            Rental & Return Management
+          </h1>
           <p className="text-muted-foreground">
-            Manage inventory item rentals and returns
+            Manage inventory item rentals, process returns, and track rental
+            status
           </p>
         </div>
 
@@ -393,6 +401,73 @@ export default function RentalsPage() {
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Return Processing Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5" />
+              Return Processing
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Process rental returns and manage return requests
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-blue-900">
+                    Pending Returns
+                  </span>
+                </div>
+                <p className="text-2xl font-bold text-blue-600">
+                  {statistics?.pendingReturns || 0}
+                </p>
+                <p className="text-sm text-blue-700">Awaiting processing</p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="font-medium text-green-900">
+                    Processed Today
+                  </span>
+                </div>
+                <p className="text-2xl font-bold text-green-600">
+                  {statistics?.processedToday || 0}
+                </p>
+                <p className="text-sm text-green-700">Returns completed</p>
+              </div>
+              <div className="bg-yellow-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <span className="font-medium text-yellow-900">
+                    Overdue Items
+                  </span>
+                </div>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {statistics?.overdueRentals || 0}
+                </p>
+                <p className="text-sm text-yellow-700">Need attention</p>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Process Returns
+              </Button>
+              <Button variant="outline" size="sm">
+                <AlertCircle className="h-4 w-4 mr-2" />
+                View Overdue
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Export Returns
+              </Button>
             </div>
           </CardContent>
         </Card>

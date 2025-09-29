@@ -285,7 +285,7 @@ export default function SuperAdminDashboard() {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case "superAdmin":
+      case "super_admin":
         return "bg-purple-100 text-purple-800";
       case "admin":
         return "bg-blue-100 text-blue-800";
@@ -1141,7 +1141,7 @@ export default function SuperAdminDashboard() {
                       <SelectItem value="user">User</SelectItem>
                       <SelectItem value="staff">Staff</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="superAdmin">Super Admin</SelectItem>
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
