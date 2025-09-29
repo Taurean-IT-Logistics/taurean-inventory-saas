@@ -27,7 +27,6 @@ import { InventoryItem, TaxSchedule } from "@/types";
 import { currencyFormat } from "@/lib/utils";
 import {
   calculateRentalTaxesFromSchedules,
-  formatTaxBreakdown,
 } from "@/lib/taxCalculator";
 import {
   differenceInCalendarDays,
