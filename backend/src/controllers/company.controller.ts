@@ -204,17 +204,29 @@ export async function updateCompany(req: Request, res: Response) {
     }
 
     // Handle file uploads
-    const logoFile = (req as any).file;
+    const files = (req as any).files;
     let logoData = null;
+    let registrationDocsData = [];
 
-    if (logoFile) {
-      // Structure logo data according to company model
+    // Handle logo file
+    if (files && files.file && files.file[0]) {
+      const logoFile = files.file[0];
       logoData = {
         path: logoFile.path,
         originalName: logoFile.originalname,
         mimetype: logoFile.mimetype,
         size: logoFile.size,
       };
+    }
+
+    // Handle registration documents
+    if (files && files.registrationDocs) {
+      registrationDocsData = files.registrationDocs.map((file: any) => ({
+        path: file.path,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      }));
     }
 
     // Update company fields
@@ -282,6 +294,36 @@ export async function updateCompany(req: Request, res: Response) {
           isTrial: false,
         };
       }
+    }
+
+    // Update logo if provided
+    if (logoData) {
+      (company as any).logo = logoData;
+    }
+
+    // Update registration documents if provided
+    if (registrationDocsData.length > 0 || req.body.existingDocs) {
+      let finalDocs = [];
+
+      // Add existing documents that should be kept
+      if (req.body.existingDocs) {
+        try {
+          const existingDocsToKeep = JSON.parse(req.body.existingDocs);
+          finalDocs = [...existingDocsToKeep];
+        } catch (e) {
+          console.warn("Failed to parse existingDocs:", e);
+          // If parsing fails, keep current existing docs
+          finalDocs = (company as any).registrationDocs || [];
+        }
+      } else {
+        // If no existingDocs provided, keep all current docs
+        finalDocs = (company as any).registrationDocs || [];
+      }
+
+      // Add new documents
+      finalDocs = [...finalDocs, ...registrationDocsData];
+
+      (company as any).registrationDocs = finalDocs;
     }
 
     await company.save();
@@ -665,11 +707,13 @@ export async function onboardCompany(
     } = req.body;
 
     // Handle file uploads
-    const logoFile = (req as any).file;
+    const files = (req as any).files;
     let logoData = null;
+    let registrationDocsData = [];
 
-    if (logoFile) {
-      // Structure logo data according to company model
+    // Handle logo file
+    if (files && files.file && files.file[0]) {
+      const logoFile = files.file[0];
       logoData = {
         path: logoFile.path,
         originalName: logoFile.originalname,
@@ -678,14 +722,14 @@ export async function onboardCompany(
       };
     }
 
-    // Parse registration docs if provided
-    let parsedRegistrationDocs = [];
-    if (registrationDocs) {
-      try {
-        parsedRegistrationDocs = JSON.parse(registrationDocs);
-      } catch (parseError) {
-        console.warn("Failed to parse registration docs:", parseError);
-      }
+    // Handle registration documents
+    if (files && files.registrationDocs) {
+      registrationDocsData = files.registrationDocs.map((file: any) => ({
+        path: file.path,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      }));
     }
 
     // Validate required fields
@@ -765,7 +809,7 @@ export async function onboardCompany(
       paystackSubaccountCode: subaccountCode,
       feePercent: parseFloat(percentage_charge),
       logo: logoData,
-      registrationDocs: parsedRegistrationDocs,
+      registrationDocs: registrationDocsData,
       invoiceFormat: parsedInvoiceFormat,
       subscription: {
         plan: "free_trial",

@@ -1033,24 +1033,21 @@ export const TaxSchedulesAPI = {
 
 // Taxes
 export const TaxesAPI = {
-  // Global taxes (Super Admin only)
-  list: () => apiFetch(`/taxes/global`, { method: "GET" }),
-  createGlobal: (payload: any) =>
-    apiFetch(`/taxes/global`, {
+  // Company taxes (main endpoints)
+  list: () => apiFetch(`/taxes`, { method: "GET" }), // Main route for company taxes
+  listCompany: () => apiFetch(`/taxes/company`, { method: "GET" }),
+  create: (payload: any) => {
+    // All taxes are company-specific now
+    return apiFetch(`/taxes/company`, {
       method: "POST",
       body: JSON.stringify(payload),
-    }),
-
-  // Company taxes
-  listCompany: () => apiFetch(`/taxes/company`, { method: "GET" }),
+    });
+  },
   createCompany: (payload: any) =>
     apiFetch(`/taxes/company`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-
-  // Combined taxes (global + company)
-  listCombined: () => apiFetch(`/taxes`, { method: "GET" }),
 
   // Get taxes available for tax schedule creation
   getTaxesForScheduleCreation: () =>

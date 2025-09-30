@@ -36,19 +36,6 @@ const RentalSchema = new Schema<RentalDocument>(
       type: String,
       enum: ["online", "cash", "cheque"],
     },
-    paymentTiming: {
-      type: String,
-      enum: ["advance", "split", "full"],
-      default: "full",
-    },
-    advanceConfig: {
-      type: Schema.Types.Mixed,
-      default: null,
-    },
-    splitConfig: {
-      type: Schema.Types.Mixed,
-      default: null,
-    },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

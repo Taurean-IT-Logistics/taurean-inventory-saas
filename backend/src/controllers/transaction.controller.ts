@@ -153,6 +153,10 @@ const initializePaymentController = async (
       { companyId }
     );
 
+    // Debug logging
+    console.log("Payment Data received:", paymentData);
+    console.log("Company ID for transaction:", companyId);
+
     // Create transaction document
     const transactionData: Partial<Transaction> = {
       user: userDoc.id,
@@ -160,7 +164,7 @@ const initializePaymentController = async (
       type: "income",
       category: category,
       amount,
-      method: "n/a",
+      method: paymentData.paymentTiming === "split" ? "split" : "paystack",
       paymentDetails: {
         paystackReference: paymentResponse.data.reference,
       },
@@ -216,7 +220,6 @@ const verifyPaymentController = async (
 ): Promise<void> => {
   try {
     const { reference } = req.params;
-    const { paymentMethod } = req.body; // Optional: specify payment method
 
     if (!reference) {
       sendValidationError(res, "Payment reference is required");
@@ -232,8 +235,44 @@ const verifyPaymentController = async (
       return;
     }
 
-    // Use payment method from transaction or request body
-    const method = paymentMethod || transaction.method || "paystack";
+    // Determine payment method from transaction or reference pattern
+    let method = transaction.method;
+
+    console.log("Transaction method from DB:", method);
+    console.log("Reference:", reference);
+    console.log("PaymentDetails:", transaction.paymentDetails);
+    console.log("AccessCode:", (transaction as any).accessCode);
+
+    // If method is undefined, null, "n/a", or empty, determine from transaction data
+    if (!method || method === "n/a" || method.trim() === "") {
+      // Check payment timing first to determine if it's a split payment
+      const paymentTiming = (transaction as any).paymentTiming;
+
+      if (paymentTiming === "split") {
+        method = "split";
+        console.log("Detected as split payment based on paymentTiming");
+      } else {
+        // Check if this is a Paystack transaction by looking for Paystack-specific fields
+        const hasPaystackReference =
+          transaction.paymentDetails?.paystackReference;
+        const hasAccessCode = (transaction as any).accessCode;
+        const refMatchesPaystackReference =
+          transaction.paymentDetails?.paystackReference === reference;
+
+        if (
+          hasPaystackReference ||
+          hasAccessCode ||
+          refMatchesPaystackReference
+        ) {
+          method = "paystack";
+          console.log("Detected as Paystack transaction based on fields");
+        } else {
+          method = "paystack"; // Default to paystack for online payments
+          console.log("Defaulting to paystack");
+        }
+      }
+      console.log("Method determined as:", method);
+    }
 
     // Verify payment using the appropriate method
     const verificationResult = await PaymentVerificationService.verifyPayment(
@@ -278,6 +317,11 @@ const verifyPaymentController = async (
 
     sendSuccess(res, "Payment verified successfully", formattedResponse);
   } catch (error) {
+    console.error("Payment verification error:", error);
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
     sendError(res, "Failed to verify payment", error);
   }
 };

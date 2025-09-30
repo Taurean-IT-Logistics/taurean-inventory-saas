@@ -29,7 +29,8 @@ const createRental = async (
     const rental = new RentalModel(rentalData);
     const saved = await rental.save();
 
-    // Create payment schedule for advance or split payments
+    // Payment schedules are now handled by transaction service, not rental service
+    /*
     if (rentalData.paymentTiming === "advance" && rentalData.advanceConfig) {
       try {
         const { PaymentScheduleService } = await import(
@@ -107,6 +108,7 @@ const createRental = async (
         console.warn("Failed to create split payment schedule:", scheduleError);
       }
     }
+    */
 
     // Update inventory quantity
     await InventoryItemModel.findByIdAndUpdate(rentalData.item, {

@@ -15,6 +15,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  File,
+  X,
+  Download,
 } from "lucide-react";
 import {
   Card,
@@ -77,8 +80,7 @@ export default function CompanyOnboardingPage() {
     feePercent: "5",
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [registrationDocs, setRegistrationDocs] = useState<string[]>([]);
-  const [newDoc, setNewDoc] = useState("");
+  const [registrationDocs, setRegistrationDocs] = useState<File[]>([]);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
@@ -211,6 +213,54 @@ export default function CompanyOnboardingPage() {
     }
   };
 
+  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate files
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "text/plain",
+    ];
+
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    files.forEach((file) => {
+      if (!allowedTypes.includes(file.type)) {
+        invalidFiles.push(file.name);
+      } else if (file.size > 10 * 1024 * 1024) {
+        invalidFiles.push(`${file.name} (too large)`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "Invalid Files",
+        description: `Some files were not uploaded: ${invalidFiles.join(", ")}`,
+        variant: "destructive",
+      });
+    }
+
+    if (validFiles.length > 0) {
+      setRegistrationDocs((prev) => [...prev, ...validFiles]);
+      setErrors((prev) => ({ ...prev, documents: "" }));
+    }
+  };
+
+  const removeDocument = (index: number) => {
+    setRegistrationDocs((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -296,10 +346,10 @@ export default function CompanyOnboardingPage() {
       submitData.append("file", logoFile);
     }
 
-    // Add registration docs array
-    if (registrationDocs.length > 0) {
-      submitData.append("registrationDocs", JSON.stringify(registrationDocs));
-    }
+    // Add registration documents as files
+    registrationDocs.forEach((file, index) => {
+      submitData.append("registrationDocs", file);
+    });
 
     onboardMutation.mutate(submitData);
   };
@@ -424,54 +474,79 @@ export default function CompanyOnboardingPage() {
 
               <div>
                 <Label htmlFor="registrationDocs">Registration Documents</Label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newDoc}
-                      onChange={(e) => setNewDoc(e.target.value)}
-                      placeholder="Enter document URL or description..."
-                      className="flex-1"
+                <div className="space-y-4">
+                  {/* File Upload Area */}
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                    <input
+                      type="file"
+                      id="documentUpload"
+                      multiple
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt"
+                      onChange={handleDocumentUpload}
+                      className="hidden"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        if (newDoc.trim()) {
-                          setRegistrationDocs([
-                            ...registrationDocs,
-                            newDoc.trim(),
-                          ]);
-                          setNewDoc("");
-                        }
-                      }}
+                    <label
+                      htmlFor="documentUpload"
+                      className="cursor-pointer flex flex-col items-center gap-2"
                     >
-                      Add
-                    </Button>
+                      <Upload className="w-8 h-8 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Click to upload documents
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, TXT (max
+                          10MB each)
+                        </p>
+                      </div>
+                    </label>
                   </div>
+
+                  {/* Uploaded Documents List */}
                   {registrationDocs.length > 0 && (
-                    <div className="space-y-1">
-                      {registrationDocs.map((doc, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm"
-                        >
-                          <span className="truncate">{doc}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setRegistrationDocs(
-                                registrationDocs.filter((_, i) => i !== index)
-                              );
-                            }}
-                            className="text-red-500 hover:text-red-700"
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          Selected Documents ({registrationDocs.length})
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          Documents will be uploaded when you submit the form
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        {registrationDocs.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
                           >
-                            ✕
-                          </Button>
-                        </div>
-                      ))}
+                            <div className="flex items-center gap-3">
+                              <File className="w-5 h-5 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeDocument(index)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
+                  )}
+
+                  {errors.documents && (
+                    <p className="text-sm text-red-500">{errors.documents}</p>
                   )}
                 </div>
               </div>

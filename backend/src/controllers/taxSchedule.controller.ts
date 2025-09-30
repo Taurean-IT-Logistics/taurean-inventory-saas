@@ -1,17 +1,12 @@
 import { Request, Response } from "express";
 import { TaxScheduleModel } from "../models/taxSchedule.model";
+import { CompanyModel } from "../models/company.model";
 import { sendSuccess, sendError } from "../utils";
 
 export async function create(req: Request, res: Response) {
   try {
-    // Get company ID from user - extract ObjectId if it's a populated object
-    let companyId = (req.user as any)?.companyId;
-    const isSuperAdmin = (req.user as any)?.isSuperAdmin;
-
-    // Handle case where companyId might be a populated object
-    if (companyId && typeof companyId === "object") {
-      companyId = companyId._id || companyId.id;
-    }
+    // Get company ID from user (set by RequireActiveCompany middleware)
+    const companyId = (req.user as any)?.companyId;
 
     if (!companyId) {
       sendError(
@@ -48,12 +43,14 @@ export async function create(req: Request, res: Response) {
     // Create the new schedule
     const doc = await TaxScheduleModel.create(scheduleData);
 
+    // Set this schedule as the company's active tax schedule
+    await CompanyModel.findByIdAndUpdate(companyId, {
+      activeTaxSchedule: doc._id,
+    });
+
     // Populate the created schedule with tax details
     const populatedDoc = await TaxScheduleModel.findById(doc._id)
-      .populate(
-        "components",
-        "name rate type taxType fixedAmount isSuperAdminTax active"
-      )
+      .populate("components", "name rate type taxType fixedAmount active")
       .populate("createdBy", "firstName lastName email")
       .populate("company", "name");
 
@@ -66,21 +63,21 @@ export async function create(req: Request, res: Response) {
 
 export async function list(req: Request, res: Response) {
   try {
+    // Get company ID from user (set by RequireActiveCompany middleware)
     const companyId = (req.user as any)?.companyId;
 
     // All users only see their own company's schedules - full data isolation
-    const query = companyId ? { company: companyId } : {};
+    const query = { company: companyId };
 
     const docs = await TaxScheduleModel.find(query)
-      .populate(
-        "components",
-        "name rate type taxType fixedAmount isSuperAdminTax active"
-      )
+      .populate("components", "name rate type taxType fixedAmount active")
       .populate("createdBy", "firstName lastName email")
       .populate("company", "name")
       .sort({ startDate: -1 });
+    console.log(docs);
     sendSuccess(res, "Tax schedules", { schedules: docs });
   } catch (e: any) {
+    console.error("Tax schedule listing error:", e);
     sendError(res, "Failed to list schedules", e.message);
   }
 }
@@ -88,6 +85,7 @@ export async function list(req: Request, res: Response) {
 export async function update(req: Request, res: Response) {
   try {
     const { id } = req.params;
+    // Get company ID from user (set by RequireActiveCompany middleware)
     const companyId = (req.user as any)?.companyId;
 
     // Find the schedule first to check permissions
@@ -98,7 +96,7 @@ export async function update(req: Request, res: Response) {
     }
 
     // Check if user has permission to update this schedule - full data isolation
-    if (!companyId || existingSchedule.company?.toString() !== companyId) {
+    if (existingSchedule.company?.toString() !== companyId) {
       sendError(res, "Forbidden", null, 403);
       return;
     }
@@ -119,10 +117,7 @@ export async function update(req: Request, res: Response) {
     const doc = await TaxScheduleModel.findByIdAndUpdate(id, req.body, {
       new: true,
     })
-      .populate(
-        "components",
-        "name rate type taxType fixedAmount isSuperAdminTax active"
-      )
+      .populate("components", "name rate type taxType fixedAmount active")
       .populate("createdBy", "firstName lastName email")
       .populate("company", "name");
     sendSuccess(res, "Tax schedule updated", { schedule: doc });
@@ -134,6 +129,7 @@ export async function update(req: Request, res: Response) {
 export async function remove(req: Request, res: Response) {
   try {
     const { id } = req.params;
+    // Get company ID from user (set by RequireActiveCompany middleware)
     const companyId = (req.user as any)?.companyId;
 
     // Find the schedule first to check permissions
@@ -144,7 +140,7 @@ export async function remove(req: Request, res: Response) {
     }
 
     // Check if user has permission to delete this schedule - full data isolation
-    if (!companyId || existingSchedule.company?.toString() !== companyId) {
+    if (existingSchedule.company?.toString() !== companyId) {
       sendError(res, "Forbidden", null, 403);
       return;
     }
