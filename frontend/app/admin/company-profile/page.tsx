@@ -32,6 +32,10 @@ import {
   Upload,
   X,
   Image as ImageIcon,
+  File,
+  Download,
+  Trash2,
+  Plus,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -63,6 +67,8 @@ export default function CompanyProfilePage() {
   });
   const [companyImage, setCompanyImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [registrationDocs, setRegistrationDocs] = useState<File[]>([]);
+  const [existingDocs, setExistingDocs] = useState<any[]>([]);
 
   // Company update mutation
   const updateCompanyMutation = useMutation({
@@ -73,14 +79,15 @@ export default function CompanyProfilePage() {
       }
       return CompanyAPI.update(companyId, formData);
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       toast({
         title: "Success",
         description: "Company updated successfully!",
         variant: "default",
       });
       setIsEditMode(false);
-      // Refresh user data
+
+      // Invalidate and refetch user data using TanStack Query
       queryClient.invalidateQueries({ queryKey: ["user"] });
     },
     onError: (error: any) => {
@@ -131,6 +138,11 @@ export default function CompanyProfilePage() {
         invoiceFormatPadding: company.invoiceFormat?.padding || 4,
         invoiceFormatNextNumber: company.invoiceFormat?.nextNumber || 1,
       });
+
+      // Initialize existing registration documents
+      if (company.registrationDocs && Array.isArray(company.registrationDocs)) {
+        setExistingDocs(company.registrationDocs);
+      }
     }
   }, [user?.company, isEditMode]);
 
@@ -153,6 +165,60 @@ export default function CompanyProfilePage() {
   const removeImage = () => {
     setCompanyImage(null);
     setPreviewImage(null);
+  };
+
+  // Handle document upload
+  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate files
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "text/plain",
+    ];
+
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    files.forEach((file) => {
+      if (!allowedTypes.includes(file.type)) {
+        invalidFiles.push(file.name);
+      } else if (file.size > 10 * 1024 * 1024) {
+        invalidFiles.push(`${file.name} (too large)`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "Invalid Files",
+        description: `Some files were not uploaded: ${invalidFiles.join(", ")}`,
+        variant: "destructive",
+      });
+    }
+
+    if (validFiles.length > 0) {
+      setRegistrationDocs((prev) => [...prev, ...validFiles]);
+    }
+  };
+
+  // Remove document
+  const removeDocument = (index: number) => {
+    setRegistrationDocs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove existing document
+  const removeExistingDocument = (index: number) => {
+    setExistingDocs((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Handle form submission
@@ -180,6 +246,16 @@ export default function CompanyProfilePage() {
     // Add image
     if (companyImage) {
       formData.append("file", companyImage);
+    }
+
+    // Add registration documents
+    registrationDocs.forEach((file) => {
+      formData.append("registrationDocs", file);
+    });
+
+    // Add remaining existing documents (so backend knows which ones to keep)
+    if (existingDocs.length > 0) {
+      formData.append("existingDocs", JSON.stringify(existingDocs));
     }
 
     updateCompanyMutation.mutate(formData);
@@ -367,6 +443,55 @@ export default function CompanyProfilePage() {
                             height={128}
                             className="w-32 h-32 object-cover rounded-lg border"
                           />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Display registration documents */}
+                    {existingDocs.length > 0 && (
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <h3 className="font-semibold text-blue-900 mb-3">
+                          Registration Documents ({existingDocs.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {existingDocs.map((doc, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between bg-white p-3 rounded-lg border"
+                            >
+                              <div className="flex items-center gap-3">
+                                <File className="w-5 h-5 text-blue-500" />
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {doc.originalName ||
+                                      doc.path?.split("/").pop() ||
+                                      `Document ${index + 1}`}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {doc.size
+                                      ? `${(doc.size / 1024 / 1024).toFixed(
+                                          2
+                                        )} MB`
+                                      : "Unknown size"}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const url = getResourceUrl(doc.path);
+                                    window.open(url, "_blank");
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -664,6 +789,138 @@ export default function CompanyProfilePage() {
                             >
                               <X className="h-3 w-3" />
                             </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Document Upload Section */}
+                    <div>
+                      <Label>Registration Documents</Label>
+                      <div className="mt-2 space-y-4">
+                        {/* File Upload Area */}
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                          <input
+                            type="file"
+                            id="documentUpload"
+                            multiple
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt"
+                            onChange={handleDocumentUpload}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="documentUpload"
+                            className="cursor-pointer flex flex-col items-center gap-2"
+                          >
+                            <Upload className="w-8 h-8 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                Click to upload documents
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, TXT
+                                (max 10MB each)
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Existing Documents */}
+                        {existingDocs.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-gray-900">
+                              Current Documents ({existingDocs.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {existingDocs.map((doc, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <File className="w-5 h-5 text-gray-400" />
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">
+                                        {doc.originalName ||
+                                          doc.path?.split("/").pop() ||
+                                          `Document ${index + 1}`}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {doc.size
+                                          ? `${(doc.size / 1024 / 1024).toFixed(
+                                              2
+                                            )} MB`
+                                          : "Unknown size"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const url = getResourceUrl(doc.path);
+                                        window.open(url, "_blank");
+                                      }}
+                                      className="text-blue-600 hover:text-blue-800"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        removeExistingDocument(index)
+                                      }
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* New Documents */}
+                        {registrationDocs.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-gray-900">
+                              New Documents ({registrationDocs.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {registrationDocs.map((file, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between bg-blue-50 p-3 rounded-lg"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <File className="w-5 h-5 text-blue-500" />
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">
+                                        {file.name}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {(file.size / 1024 / 1024).toFixed(2)}{" "}
+                                        MB
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeDocument(index)}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>

@@ -30,14 +30,20 @@ router.use(AuthMiddleware);
 // Company onboarding route
 router.post(
   "/onboard",
-  multer(uploadConfig).single("file"),
+  multer(uploadConfig).fields([
+    { name: "file", maxCount: 1 }, // Logo file
+    { name: "registrationDocs", maxCount: 10 }, // Registration documents
+  ]),
   CompanyController.onboardCompany
 );
 
 // Company management routes
 router.put(
   "/:companyId",
-  multer(uploadConfig).single("file"),
+  multer(uploadConfig).fields([
+    { name: "file", maxCount: 1 }, // Logo file
+    { name: "registrationDocs", maxCount: 10 }, // Registration documents
+  ]),
   RequireActiveCompany(),
   CompanyController.updateCompany
 );

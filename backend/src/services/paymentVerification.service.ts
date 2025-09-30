@@ -7,7 +7,7 @@ import { Events } from "../utils/events";
 import { verifyPayment } from "./payment.service";
 import PaymentScheduleService from "./paymentSchedule.service";
 import ReferenceGenerator from "../utils/referenceGenerator";
-import NotificationService from "./notification.service";
+import notificationService from "./notification.service";
 
 export interface PaymentVerificationResult {
   success: boolean;
@@ -405,7 +405,6 @@ export class PaymentVerificationService {
 
           // Send payment notification
           try {
-            const notificationService = NotificationService;
             await notificationService.createPaymentStatusNotification(
               booking.user.toString(),
               {
@@ -511,7 +510,6 @@ export class PaymentVerificationService {
 
           // Send payment notification
           try {
-            const notificationService = NotificationService;
             await notificationService.createPaymentStatusNotification(
               rental.user.toString(),
               {

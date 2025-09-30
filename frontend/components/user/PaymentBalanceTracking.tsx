@@ -125,7 +125,17 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
       bookings.forEach((booking: any) => {
         // Only process bookings that are confirmed and not completed/cancelled
         if (booking.status === "confirmed" || booking.status === "pending") {
-          if (booking.paymentTiming === "advance" && booking.advanceConfig) {
+          // Find the transaction for this booking to get payment timing info
+          const relatedTransaction = transactions.find(
+            (tx: any) =>
+              tx.booking &&
+              (tx.booking === booking._id || tx.booking._id === booking._id)
+          );
+
+          if (
+            relatedTransaction?.paymentTiming === "advance" &&
+            relatedTransaction?.advanceConfig
+          ) {
             const totalAmount = booking.totalPrice || 0;
             const verifiedPaidAmount = getVerifiedPaidAmount(
               booking._id,
@@ -149,7 +159,10 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
                 status: booking.status,
               });
             }
-          } else if (booking.paymentTiming === "split" && booking.splitConfig) {
+          } else if (
+            relatedTransaction?.paymentTiming === "split" &&
+            relatedTransaction?.splitConfig
+          ) {
             const totalAmount = booking.totalPrice || 0;
             const verifiedPaidAmount = getVerifiedPaidAmount(
               booking._id,
@@ -169,8 +182,8 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
                 paidAmount: verifiedPaidAmount,
                 remainingAmount,
                 paymentTiming: "split",
-                dueDate: booking.splitConfig.parts?.[1]?.dueDate
-                  ? new Date(booking.splitConfig.parts[1].dueDate)
+                dueDate: relatedTransaction.splitConfig.parts?.[1]?.dueDate
+                  ? new Date(relatedTransaction.splitConfig.parts[1].dueDate)
                   : undefined,
                 status: booking.status,
               });
@@ -185,7 +198,19 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
       rentals.forEach((rental: any) => {
         // Only process rentals that are active and not returned/cancelled
         if (rental.status === "active" || rental.status === "pending") {
-          if (rental.paymentTiming === "advance" && rental.advanceConfig) {
+          // Find the transaction for this rental to get payment timing info
+          const relatedTransaction = transactions.find(
+            (tx: any) =>
+              (tx.category === "inventory_item" || tx.category === "rental") &&
+              (tx.referenceId === rental._id ||
+                tx.rental === rental._id ||
+                tx.rental?._id === rental._id)
+          );
+
+          if (
+            relatedTransaction?.paymentTiming === "advance" &&
+            relatedTransaction?.advanceConfig
+          ) {
             const totalAmount = rental.totalPrice || rental.amount || 0;
             const verifiedPaidAmount = getVerifiedPaidAmount(
               rental._id,
@@ -207,7 +232,10 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
                 status: rental.status,
               });
             }
-          } else if (rental.paymentTiming === "split" && rental.splitConfig) {
+          } else if (
+            relatedTransaction?.paymentTiming === "split" &&
+            relatedTransaction?.splitConfig
+          ) {
             const totalAmount = rental.totalPrice || rental.amount || 0;
             const verifiedPaidAmount = getVerifiedPaidAmount(
               rental._id,
@@ -225,8 +253,8 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
                 paidAmount: verifiedPaidAmount,
                 remainingAmount,
                 paymentTiming: "split",
-                dueDate: rental.splitConfig.parts?.[1]?.dueDate
-                  ? new Date(rental.splitConfig.parts[1].dueDate)
+                dueDate: relatedTransaction.splitConfig.parts?.[1]?.dueDate
+                  ? new Date(relatedTransaction.splitConfig.parts[1].dueDate)
                   : undefined,
                 status: rental.status,
               });

@@ -29,7 +29,14 @@ const CompanySchema = new Schema<CompanyDocument>(
       mimetype: { type: String },
       size: { type: Number },
     },
-    registrationDocs: [{ type: String }],
+    registrationDocs: [
+      {
+        path: { type: String },
+        originalName: { type: String },
+        mimetype: { type: String },
+        size: { type: Number },
+      },
+    ],
     location: { type: String },
     contactEmail: { type: String },
     contactPhone: { type: String },

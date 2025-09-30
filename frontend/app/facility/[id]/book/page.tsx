@@ -396,21 +396,37 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     // Handle different payment methods and timing
     if (bookingData.paymentMethod === "online") {
       // Online payment - proceed with normal flow
+      // Calculate the correct amount based on payment timing
+      let paymentAmount = total;
+      let descriptionSuffix = "";
+
+      if (
+        bookingData.paymentTiming === "advance" &&
+        bookingData.advanceConfig
+      ) {
+        paymentAmount = bookingData.advanceConfig.amount;
+        descriptionSuffix = " (Advance Payment)";
+      } else if (
+        bookingData.paymentTiming === "split" &&
+        bookingData.splitConfig
+      ) {
+        // For split payments, charge the first part amount
+        paymentAmount =
+          bookingData.splitConfig.parts?.[0]?.amount ||
+          total / bookingData.splitConfig.numberOfParts;
+        descriptionSuffix = " (Split Payment - Part 1)";
+      }
+
       const transactionData = {
         email: user?.email || "",
-        amount:
-          bookingData.paymentTiming === "advance" && bookingData.advanceConfig
-            ? bookingData.advanceConfig.amount
-            : total,
+        amount: paymentAmount,
         category: "facility",
         description: `Booking for ${
           (facilityData as Facility)?.name || "Facility"
         } - ${calculateDurationString(
           bookingData.startDate,
           bookingData.endDate
-        )}${
-          bookingData.paymentTiming === "advance" ? " (Advance Payment)" : ""
-        }`,
+        )}${descriptionSuffix}`,
         facility: (facilityData as Facility)?._id || "",
         currency: "GHS",
         paymentTiming: bookingData.paymentTiming,
@@ -418,7 +434,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
         splitConfig: bookingData.splitConfig,
       };
 
-      bookingsMutation.mutate(finalBookingData);
+      createTransaction.mutate(transactionData);
     } else if (
       bookingData.paymentMethod === "cash" ||
       bookingData.paymentMethod === "cheque"

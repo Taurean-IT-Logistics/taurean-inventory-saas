@@ -13,12 +13,18 @@ const createTransaction = async (
   try {
     // If company is provided, capture the active tax schedule snapshot
     if (transactionData.company) {
+      console.log("Looking for company:", transactionData.company);
       const company = await CompanyModel.findById(
         transactionData.company
       ).populate("activeTaxSchedule");
 
+      console.log("Company found:", company?.name);
+      console.log("Active tax schedule:", company?.activeTaxSchedule);
+
       if (company && company.activeTaxSchedule) {
         const taxSchedule = company.activeTaxSchedule as any; // Type assertion for populated field
+        console.log("Tax schedule components:", taxSchedule.components);
+
         transactionData.taxScheduleSnapshot = {
           scheduleId: taxSchedule._id,
           name: taxSchedule.name,
@@ -33,7 +39,15 @@ const createTransaction = async (
           taxOnTax: taxSchedule.taxOnTax,
           appliedAt: new Date(),
         };
+        console.log(
+          "Tax schedule snapshot created:",
+          transactionData.taxScheduleSnapshot
+        );
+      } else {
+        console.log("No active tax schedule found for company");
       }
+    } else {
+      console.log("No company provided for transaction");
     }
 
     const newTransaction = new TransactionModel(transactionData);

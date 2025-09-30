@@ -177,16 +177,6 @@ export interface Booking {
   company: Company;
   internalNotes?: string;
   paymentMethod?: "online" | "cash" | "cheque";
-  paymentTiming?: "advance" | "split" | "full";
-  advanceConfig?: {
-    percentage: number | string;
-    amount: number;
-    inputMode: "percentage" | "amount";
-  };
-  splitConfig?: {
-    numberOfParts: number;
-    parts: Array<{ amount: number; dueDate: Date }>;
-  };
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -641,16 +631,6 @@ export interface Rental {
   company: Company | mongoose.Types.ObjectId | string;
   totalPrice?: number;
   paymentMethod?: "online" | "cash" | "cheque";
-  paymentTiming?: "advance" | "split" | "full";
-  advanceConfig?: {
-    percentage: number | string;
-    amount: number;
-    inputMode: "percentage" | "amount";
-  };
-  splitConfig?: {
-    numberOfParts: number;
-    parts: Array<{ amount: number; dueDate: Date }>;
-  };
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;

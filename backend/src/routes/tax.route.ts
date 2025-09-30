@@ -18,11 +18,17 @@ const allUsers = [
 
 // Company-specific taxes
 router.get(
+  "/",
+  allUsers,
+  RequireActiveCompany(),
+  TaxController.getCompanyTaxes
+); // Get company taxes (main route)
+router.get(
   "/company",
   allUsers,
   RequireActiveCompany(),
   TaxController.getCompanyTaxes
-); // Get company taxes
+); // Get company taxes (alias)
 router.post(
   "/company",
   staffAndAbove,

@@ -10,7 +10,20 @@ export const createCompanyTax = async (
   res: Response
 ): Promise<void> => {
   try {
-    const taxData = req.body;
+    if (!req.user?.companyId) {
+      sendError(
+        res,
+        "Company ID not found. User must be associated with a company.",
+        400
+      );
+      return;
+    }
+
+    const taxData = {
+      ...req.body,
+      company: req.user.companyId,
+    };
+
     const newTax = await TaxService.createCompanyTax(
       taxData,
       req.user?.id || ""
@@ -101,14 +114,29 @@ export const createIndependentTax = async (
   res: Response
 ): Promise<void> => {
   try {
+    if (!req.user?.companyId) {
+      sendError(
+        res,
+        "Company ID not found. User must be associated with a company.",
+        400
+      );
+      return;
+    }
+
     const { id } = req.params;
     const { reason, ...taxData } = req.body;
     const userId = req.user?.id!;
 
+    // Add company ID to tax data
+    const taxDataWithCompany = {
+      ...taxData,
+      company: req.user.companyId,
+    };
+
     // If updating an existing tax, create a new independent tax
     if (id && id !== "new") {
       const newTax = await TaxService.createIndependentTax(
-        taxData,
+        taxDataWithCompany,
         userId,
         reason,
         id // This tax replaces the one with this ID
@@ -122,7 +150,7 @@ export const createIndependentTax = async (
     } else {
       // Creating a brand new tax
       const newTax = await TaxService.createIndependentTax(
-        taxData,
+        taxDataWithCompany,
         userId,
         reason
       );

@@ -73,7 +73,7 @@ const TaxManagement = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Fetch combined taxes (global + company)
+  // Fetch company taxes
   const {
     data: allTaxesData,
     isLoading: isLoadingTaxes,
@@ -81,8 +81,8 @@ const TaxManagement = () => {
     error: taxesError,
     refetch: refetchTaxes,
   } = useQuery({
-    queryKey: ["taxes-combined"],
-    queryFn: () => TaxesAPI.listCombined(),
+    queryKey: ["taxes-company"],
+    queryFn: () => TaxesAPI.list(),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -94,7 +94,7 @@ const TaxManagement = () => {
     error: companyTaxesError,
     refetch: refetchCompanyTaxes,
   } = useQuery({
-    queryKey: ["taxes-company"],
+    queryKey: ["taxes-company-specific"],
     queryFn: () => TaxesAPI.listCompany(),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -151,7 +151,7 @@ const TaxManagement = () => {
         variant: "default",
       });
       queryClient.invalidateQueries({
-        queryKey: ["taxes-combined", "taxes-global", "taxes-company"],
+        queryKey: ["taxes-company", "taxes-company-specific", "taxes-for-schedule-creation"],
       });
     },
     onError: (error: Error) => {
@@ -195,7 +195,7 @@ const TaxManagement = () => {
         variant: "default",
       });
       queryClient.invalidateQueries({
-        queryKey: ["taxes-combined", "taxes-global", "taxes-company"],
+        queryKey: ["taxes-company", "taxes-company-specific", "taxes-for-schedule-creation"],
       });
     },
     onError: (error: Error) => {
@@ -217,7 +217,7 @@ const TaxManagement = () => {
         variant: "default",
       });
       queryClient.invalidateQueries({
-        queryKey: ["taxes-combined", "taxes-global", "taxes-company"],
+        queryKey: ["taxes-company", "taxes-company-specific", "taxes-for-schedule-creation"],
       });
     },
     onError: (error: Error) => {
@@ -240,7 +240,7 @@ const TaxManagement = () => {
         variant: "default",
       });
       queryClient.invalidateQueries({
-        queryKey: ["taxes-combined", "taxes-global", "taxes-company"],
+        queryKey: ["taxes-company", "taxes-company-specific", "taxes-for-schedule-creation"],
       });
     },
     onError: (error: Error) => {

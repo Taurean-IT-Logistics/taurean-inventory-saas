@@ -99,7 +99,8 @@ const createBooking = async (
     const booking = new BookingModel(bookingData);
     const saved = await booking.save();
 
-    // Create payment schedule for advance or split payments
+    // Payment schedules are now handled by transaction service, not booking service
+    /*
     if (bookingData.paymentTiming === "advance" && bookingData.advanceConfig) {
       try {
         const { PaymentScheduleService } = await import(
@@ -142,10 +143,10 @@ const createBooking = async (
           scheduleError
         );
       }
-    } else if (
-      bookingData.paymentTiming === "split" &&
-      bookingData.splitConfig
-    ) {
+    // } else if (
+    //   bookingData.paymentTiming === "split" &&
+    //   bookingData.splitConfig
+    // ) {
       try {
         const { PaymentScheduleService } = await import(
           "./paymentSchedule.service"
@@ -180,6 +181,7 @@ const createBooking = async (
         console.warn("Failed to create split payment schedule:", scheduleError);
       }
     }
+    */
 
     // Update user loyalty profile to increment total bookings
     try {
