@@ -13,7 +13,8 @@ import {
 interface SubscriptionActivationEmailProps {
   company: {
     name: string;
-    contactEmail: string;
+    contactEmail?: string;
+    logo?: string;
   };
   user: {
     name: string;
@@ -27,6 +28,7 @@ interface SubscriptionActivationEmailProps {
     currency: string;
     features: string[];
   };
+  baseUrl: string;
 }
 
 export const SubscriptionActivationEmail: React.FC<

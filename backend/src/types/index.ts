@@ -184,6 +184,7 @@ export interface Booking {
 
 export interface Transaction {
   booking?: Booking;
+  rental?: Rental;
   user: mongoose.Types.ObjectId | string;
   account?: Account;
   type: string;

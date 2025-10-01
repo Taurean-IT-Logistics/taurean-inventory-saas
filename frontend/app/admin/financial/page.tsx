@@ -6,45 +6,46 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader } from "@/components/ui/loader";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  PieChart, 
-  BarChart3, 
-  Plus, 
-  Search, 
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  PieChart,
+  BarChart3,
+  Plus,
+  Search,
   Filter,
   Receipt,
   CreditCard,
   Calendar,
-  FileText
+  FileText,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FinancialAPI, TransactionsAPI } from "@/lib/api";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface FinancialDashboard {
   totalRevenue: number;
@@ -101,7 +102,7 @@ export default function FinancialPage() {
     subcategory: "",
     description: "",
     amount: "",
-    date: "",
+    date: undefined as Date | undefined,
     paymentMethod: "cash",
     vendor: "",
     tags: "",
@@ -111,8 +112,8 @@ export default function FinancialPage() {
     type: "percentage" as "percentage" | "fixed",
     value: "",
     applicableTo: "all",
-    startDate: "",
-    endDate: "",
+    startDate: undefined as Date | undefined,
+    endDate: undefined as Date | undefined,
     usageLimit: "",
   });
 
@@ -122,7 +123,7 @@ export default function FinancialPage() {
   const { data: dashboardData, isLoading: isLoadingDashboard } = useQuery({
     queryKey: ["financial-dashboard"],
     queryFn: async () => {
-      return await FinancialAPI.getFinancialSummary() as FinancialDashboard;
+      return (await FinancialAPI.getFinancialSummary()) as FinancialDashboard;
     },
   });
 
@@ -136,7 +137,7 @@ export default function FinancialPage() {
         ...(categoryFilter !== "all" && { category: categoryFilter }),
         ...(searchTerm && { search: searchTerm }),
       };
-      
+
       return await FinancialAPI.getExpenses(params);
     },
   });
@@ -149,7 +150,7 @@ export default function FinancialPage() {
         page: discountPage.toString(),
         limit: "10",
       };
-      
+
       return await FinancialAPI.getDiscounts(params);
     },
   });
@@ -172,7 +173,7 @@ export default function FinancialPage() {
         subcategory: "",
         description: "",
         amount: "",
-        date: "",
+        date: undefined,
         paymentMethod: "cash",
         vendor: "",
         tags: "",
@@ -181,7 +182,8 @@ export default function FinancialPage() {
     onError: (error: any) => {
       toast({
         title: "Error creating expense",
-        description: error.response?.data?.message || "Failed to create expense",
+        description:
+          error.response?.data?.message || "Failed to create expense",
         variant: "destructive",
       });
     },
@@ -204,22 +206,28 @@ export default function FinancialPage() {
         type: "percentage",
         value: "",
         applicableTo: "all",
-        startDate: "",
-        endDate: "",
+        startDate: undefined,
+        endDate: undefined,
         usageLimit: "",
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error creating discount",
-        description: error.response?.data?.message || "Failed to create discount",
+        description:
+          error.response?.data?.message || "Failed to create discount",
         variant: "destructive",
       });
     },
   });
 
   const handleCreateExpense = () => {
-    if (!expenseForm.category || !expenseForm.description || !expenseForm.amount || !expenseForm.date) {
+    if (
+      !expenseForm.category ||
+      !expenseForm.description ||
+      !expenseForm.amount ||
+      !expenseForm.date
+    ) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -231,12 +239,20 @@ export default function FinancialPage() {
     createExpenseMutation.mutate({
       ...expenseForm,
       amount: parseFloat(expenseForm.amount),
-      tags: expenseForm.tags ? expenseForm.tags.split(',').map(tag => tag.trim()) : [],
+      date: expenseForm.date?.toISOString(),
+      tags: expenseForm.tags
+        ? expenseForm.tags.split(",").map((tag) => tag.trim())
+        : [],
     });
   };
 
   const handleCreateDiscount = () => {
-    if (!discountForm.name || !discountForm.value || !discountForm.startDate || !discountForm.endDate) {
+    if (
+      !discountForm.name ||
+      !discountForm.value ||
+      !discountForm.startDate ||
+      !discountForm.endDate
+    ) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -248,7 +264,11 @@ export default function FinancialPage() {
     createDiscountMutation.mutate({
       ...discountForm,
       value: parseFloat(discountForm.value),
-      usageLimit: discountForm.usageLimit ? parseInt(discountForm.usageLimit) : undefined,
+      startDate: discountForm.startDate?.toISOString(),
+      endDate: discountForm.endDate?.toISOString(),
+      usageLimit: discountForm.usageLimit
+        ? parseInt(discountForm.usageLimit)
+        : undefined,
     });
   };
 
@@ -278,7 +298,9 @@ export default function FinancialPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Revenue
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -291,7 +313,9 @@ export default function FinancialPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Expenses
+                </CardTitle>
                 <TrendingDown className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -304,11 +328,19 @@ export default function FinancialPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Net Profit
+                </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${dashboardData.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div
+                  className={`text-2xl font-bold ${
+                    dashboardData.netProfit >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
                   ₵{dashboardData.netProfit.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">This month</p>
@@ -317,11 +349,19 @@ export default function FinancialPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Profit Margin</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Profit Margin
+                </CardTitle>
                 <PieChart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${dashboardData.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div
+                  className={`text-2xl font-bold ${
+                    dashboardData.profitMargin >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
                   {dashboardData.profitMargin.toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground">This month</p>
@@ -362,22 +402,40 @@ export default function FinancialPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {dashboardData?.recentTransactions?.slice(0, 5).map((transaction: any) => (
-                    <div key={transaction._id} className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{transaction.description || "Transaction"}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(transaction.createdAt).toLocaleDateString()}
-                        </p>
+                  {dashboardData?.recentTransactions
+                    ?.slice(0, 5)
+                    .map((transaction: any) => (
+                      <div
+                        key={transaction._id}
+                        className="flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-medium">
+                            {transaction.description || "Transaction"}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(
+                              transaction.createdAt
+                            ).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p
+                            className={`font-medium ${
+                              transaction.type === "income"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {transaction.type === "income" ? "+" : "-"}₵
+                            {transaction.amount.toLocaleString()}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {transaction.method}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className={`font-medium ${transaction.type === "income" ? "text-green-600" : "text-red-600"}`}>
-                          {transaction.type === "income" ? "+" : "-"}₵{transaction.amount.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{transaction.method}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -389,17 +447,30 @@ export default function FinancialPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {dashboardData?.topExpenseCategories?.map((category, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium capitalize">{category.category}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {((category.amount / dashboardData.totalExpenses) * 100).toFixed(1)}% of total
+                  {dashboardData?.topExpenseCategories?.map(
+                    (category, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-medium capitalize">
+                            {category.category}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {(
+                              (category.amount / dashboardData.totalExpenses) *
+                              100
+                            ).toFixed(1)}
+                            % of total
+                          </p>
+                        </div>
+                        <p className="font-medium">
+                          ₵{category.amount.toLocaleString()}
                         </p>
                       </div>
-                      <p className="font-medium">₵{category.amount.toLocaleString()}</p>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -414,7 +485,10 @@ export default function FinancialPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Expenses</CardTitle>
-                  <Dialog open={isExpenseDialogOpen} onOpenChange={setIsExpenseDialogOpen}>
+                  <Dialog
+                    open={isExpenseDialogOpen}
+                    onOpenChange={setIsExpenseDialogOpen}
+                  >
                     <DialogTrigger asChild>
                       <Button>
                         <Plus className="h-4 w-4 mr-2" />
@@ -427,59 +501,91 @@ export default function FinancialPage() {
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>
-                          <label className="text-sm font-medium">Category *</label>
+                          <label className="text-sm font-medium">
+                            Category *
+                          </label>
                           <Input
                             value={expenseForm.category}
-                            onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
+                            onChange={(e) =>
+                              setExpenseForm({
+                                ...expenseForm,
+                                category: e.target.value,
+                              })
+                            }
                             placeholder="e.g., Office Supplies"
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium">Description *</label>
+                          <label className="text-sm font-medium">
+                            Description *
+                          </label>
                           <Input
                             value={expenseForm.description}
-                            onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
+                            onChange={(e) =>
+                              setExpenseForm({
+                                ...expenseForm,
+                                description: e.target.value,
+                              })
+                            }
                             placeholder="Expense description"
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">Amount *</label>
+                            <label className="text-sm font-medium">
+                              Amount *
+                            </label>
                             <Input
                               type="number"
                               value={expenseForm.amount}
-                              onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                              onChange={(e) =>
+                                setExpenseForm({
+                                  ...expenseForm,
+                                  amount: e.target.value,
+                                })
+                              }
                               placeholder="0.00"
                             />
                           </div>
                           <div>
-                            <label className="text-sm font-medium">Date *</label>
-                            <Input
-                              type="date"
-                              value={expenseForm.date}
-                              onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
+                            <label className="text-sm font-medium">
+                              Date *
+                            </label>
+                            <DatePicker
+                              date={expenseForm.date}
+                              onDateChange={(date) =>
+                                setExpenseForm({ ...expenseForm, date })
+                              }
+                              placeholder="Select date"
                             />
                           </div>
                         </div>
                         <div>
-                          <label className="text-sm font-medium">Payment Method</label>
+                          <label className="text-sm font-medium">
+                            Payment Method
+                          </label>
                           <Select
                             value={expenseForm.paymentMethod}
-                            onValueChange={(value) => setExpenseForm({ ...expenseForm, paymentMethod: value })}
+                            onValueChange={(value) =>
+                              setExpenseForm({
+                                ...expenseForm,
+                                paymentMethod: value,
+                              })
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="cash">Cash</SelectItem>
-                              <SelectItem value="paystack">Paystack</SelectItem>
-                              <SelectItem value="mobile_money">Mobile Money</SelectItem>
-                              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                               <SelectItem value="cheque">Cheque</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
-                        <Button onClick={handleCreateExpense} className="w-full">
+                        <Button
+                          onClick={handleCreateExpense}
+                          className="w-full"
+                        >
                           Create Expense
                         </Button>
                       </div>
@@ -498,13 +604,18 @@ export default function FinancialPage() {
                       className="pl-10"
                     />
                   </div>
-                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <Select
+                    value={categoryFilter}
+                    onValueChange={setCategoryFilter}
+                  >
                     <SelectTrigger className="w-48">
                       <SelectValue placeholder="Filter by category" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="office_supplies">Office Supplies</SelectItem>
+                      <SelectItem value="office_supplies">
+                        Office Supplies
+                      </SelectItem>
                       <SelectItem value="utilities">Utilities</SelectItem>
                       <SelectItem value="rent">Rent</SelectItem>
                       <SelectItem value="marketing">Marketing</SelectItem>
@@ -530,20 +641,29 @@ export default function FinancialPage() {
                           <div>
                             <p className="font-medium">{expense.description}</p>
                             {expense.vendor && (
-                              <p className="text-sm text-muted-foreground">{expense.vendor}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {expense.vendor}
+                              </p>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{expense.category}</Badge>
                         </TableCell>
-                        <TableCell>₵{expense.amount.toLocaleString()}</TableCell>
-                        <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          ₵{expense.amount.toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(expense.date).toLocaleDateString()}
+                        </TableCell>
                         <TableCell>
                           <Badge
                             variant={
-                              expense.status === "approved" ? "default" :
-                              expense.status === "pending" ? "secondary" : "destructive"
+                              expense.status === "approved"
+                                ? "default"
+                                : expense.status === "pending"
+                                ? "secondary"
+                                : "destructive"
                             }
                           >
                             {expense.status}
@@ -565,7 +685,10 @@ export default function FinancialPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Discounts</CardTitle>
-                  <Dialog open={isDiscountDialogOpen} onOpenChange={setIsDiscountDialogOpen}>
+                  <Dialog
+                    open={isDiscountDialogOpen}
+                    onOpenChange={setIsDiscountDialogOpen}
+                  >
                     <DialogTrigger asChild>
                       <Button>
                         <Plus className="h-4 w-4 mr-2" />
@@ -581,57 +704,97 @@ export default function FinancialPage() {
                           <label className="text-sm font-medium">Name *</label>
                           <Input
                             value={discountForm.name}
-                            onChange={(e) => setDiscountForm({ ...discountForm, name: e.target.value })}
+                            onChange={(e) =>
+                              setDiscountForm({
+                                ...discountForm,
+                                name: e.target.value,
+                              })
+                            }
                             placeholder="e.g., Summer Sale"
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">Type *</label>
+                            <label className="text-sm font-medium">
+                              Type *
+                            </label>
                             <Select
                               value={discountForm.type}
-                              onValueChange={(value: "percentage" | "fixed") => 
-                                setDiscountForm({ ...discountForm, type: value })
+                              onValueChange={(value: "percentage" | "fixed") =>
+                                setDiscountForm({
+                                  ...discountForm,
+                                  type: value,
+                                })
                               }
                             >
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="percentage">Percentage</SelectItem>
-                                <SelectItem value="fixed">Fixed Amount</SelectItem>
+                                <SelectItem value="percentage">
+                                  Percentage
+                                </SelectItem>
+                                <SelectItem value="fixed">
+                                  Fixed Amount
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                           <div>
-                            <label className="text-sm font-medium">Value *</label>
+                            <label className="text-sm font-medium">
+                              Value *
+                            </label>
                             <Input
                               type="number"
                               value={discountForm.value}
-                              onChange={(e) => setDiscountForm({ ...discountForm, value: e.target.value })}
-                              placeholder={discountForm.type === "percentage" ? "10" : "50"}
+                              onChange={(e) =>
+                                setDiscountForm({
+                                  ...discountForm,
+                                  value: e.target.value,
+                                })
+                              }
+                              placeholder={
+                                discountForm.type === "percentage" ? "10" : "50"
+                              }
                             />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">Start Date *</label>
-                            <Input
-                              type="date"
-                              value={discountForm.startDate}
-                              onChange={(e) => setDiscountForm({ ...discountForm, startDate: e.target.value })}
+                            <label className="text-sm font-medium">
+                              Start Date *
+                            </label>
+                            <DatePicker
+                              date={discountForm.startDate}
+                              onDateChange={(date) =>
+                                setDiscountForm({
+                                  ...discountForm,
+                                  startDate: date,
+                                })
+                              }
+                              placeholder="Select start date"
                             />
                           </div>
                           <div>
-                            <label className="text-sm font-medium">End Date *</label>
-                            <Input
-                              type="date"
-                              value={discountForm.endDate}
-                              onChange={(e) => setDiscountForm({ ...discountForm, endDate: e.target.value })}
+                            <label className="text-sm font-medium">
+                              End Date *
+                            </label>
+                            <DatePicker
+                              date={discountForm.endDate}
+                              onDateChange={(date) =>
+                                setDiscountForm({
+                                  ...discountForm,
+                                  endDate: date,
+                                })
+                              }
+                              placeholder="Select end date"
                             />
                           </div>
                         </div>
-                        <Button onClick={handleCreateDiscount} className="w-full">
+                        <Button
+                          onClick={handleCreateDiscount}
+                          className="w-full"
+                        >
                           Create Discount
                         </Button>
                       </div>
@@ -654,24 +817,33 @@ export default function FinancialPage() {
                   <TableBody>
                     {discounts.map((discount: Discount) => (
                       <TableRow key={discount._id}>
-                        <TableCell className="font-medium">{discount.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {discount.name}
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline">
                             {discount.type === "percentage" ? "%" : "₵"}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {discount.type === "percentage" ? `${discount.value}%` : `₵${discount.value}`}
+                          {discount.type === "percentage"
+                            ? `${discount.value}%`
+                            : `₵${discount.value}`}
                         </TableCell>
                         <TableCell>
-                          {new Date(discount.startDate).toLocaleDateString()} - {new Date(discount.endDate).toLocaleDateString()}
+                          {new Date(discount.startDate).toLocaleDateString()} -{" "}
+                          {new Date(discount.endDate).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
                           {discount.usedCount}
                           {discount.usageLimit && ` / ${discount.usageLimit}`}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={discount.isActive ? "default" : "secondary"}>
+                          <Badge
+                            variant={
+                              discount.isActive ? "default" : "secondary"
+                            }
+                          >
                             {discount.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>

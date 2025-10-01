@@ -11,6 +11,7 @@ import {
   processPaymentController,
   getPendingAdvancePaymentsController,
   getPendingSplitPaymentsController,
+  getPendingPaymentsController,
   getPaymentScheduleByIdController,
   cancelPaymentScheduleController,
 } from "../controllers/paymentSchedule.controller";
@@ -67,6 +68,14 @@ router.get(
   allUsers,
   RequireActiveCompany(),
   getPendingSplitPaymentsController
+);
+
+// Get all pending payments (unified endpoint)
+router.get(
+  "/pending",
+  allUsers,
+  RequireActiveCompany(),
+  getPendingPaymentsController
 );
 
 // Get payment schedule by ID

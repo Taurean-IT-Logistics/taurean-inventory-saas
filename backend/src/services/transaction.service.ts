@@ -13,17 +13,12 @@ const createTransaction = async (
   try {
     // If company is provided, capture the active tax schedule snapshot
     if (transactionData.company) {
-      console.log("Looking for company:", transactionData.company);
       const company = await CompanyModel.findById(
         transactionData.company
       ).populate("activeTaxSchedule");
 
-      console.log("Company found:", company?.name);
-      console.log("Active tax schedule:", company?.activeTaxSchedule);
-
       if (company && company.activeTaxSchedule) {
         const taxSchedule = company.activeTaxSchedule as any; // Type assertion for populated field
-        console.log("Tax schedule components:", taxSchedule.components);
 
         transactionData.taxScheduleSnapshot = {
           scheduleId: taxSchedule._id,
@@ -39,15 +34,7 @@ const createTransaction = async (
           taxOnTax: taxSchedule.taxOnTax,
           appliedAt: new Date(),
         };
-        console.log(
-          "Tax schedule snapshot created:",
-          transactionData.taxScheduleSnapshot
-        );
-      } else {
-        console.log("No active tax schedule found for company");
       }
-    } else {
-      console.log("No company provided for transaction");
     }
 
     const newTransaction = new TransactionModel(transactionData);
@@ -267,9 +254,15 @@ const getTransactionsByFacilityId = async (
     if (!Types.ObjectId.isValid(facilityId)) {
       throw new Error("Invalid Facility ID format");
     }
-    const filter = showDeleted
+    const filter: any = showDeleted
       ? { facility: facilityId }
       : { facility: facilityId, isDeleted: false };
+
+    // Exclude subscription-related transactions from facility view
+    filter.category = {
+      $nin: ["subscription", "subscription_renewal", "subscription_upgrade"],
+    };
+
     return await TransactionModel.find(filter)
       .populate("user", "name email phone address")
       .populate("booking", "startDate endDate duration totalPrice items")
@@ -323,7 +316,13 @@ const getCompanyTransactions = async (
   showDeleted = false
 ): Promise<TransactionDocument[]> => {
   try {
-    const filter: any = { company: companyId };
+    const filter: any = {
+      company: companyId,
+      // Exclude subscription-related transactions from company view
+      category: {
+        $nin: ["subscription", "subscription_renewal", "subscription_upgrade"],
+      },
+    };
     if (!showDeleted) {
       filter.isDeleted = false;
     }
@@ -361,10 +360,6 @@ const fixTransactionCompanyFields = async (): Promise<{
       company: { $exists: false },
     }).populate("user", "company");
 
-    console.log(
-      `Found ${transactionsWithoutCompany.length} transactions without company field`
-    );
-
     for (const transaction of transactionsWithoutCompany) {
       try {
         if (transaction.user && (transaction.user as any).company) {
@@ -373,9 +368,6 @@ const fixTransactionCompanyFields = async (): Promise<{
           });
           fixed++;
         } else {
-          console.log(
-            `Transaction ${transaction._id} has no user or user has no company`
-          );
           errors++;
         }
       } catch (error) {

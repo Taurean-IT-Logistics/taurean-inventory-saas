@@ -39,7 +39,6 @@ import { currencyFormat } from "@/lib/utils";
 interface CashChequeTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  transactionType: "cash" | "cheque" | "split" | "advance";
 }
 
 interface Denomination {
@@ -55,7 +54,6 @@ interface SplitPart {
 export default function CashChequeTransactionModal({
   isOpen,
   onClose,
-  transactionType,
 }: CashChequeTransactionModalProps) {
   const queryClient = useQueryClient();
 
@@ -64,6 +62,12 @@ export default function CashChequeTransactionModal({
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [reference, setReference] = useState("");
+
+  // Payment method and timing
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "cheque">("cash");
+  const [paymentTiming, setPaymentTiming] = useState<
+    "full" | "advance" | "split"
+  >("full");
 
   // Cash-specific fields
   const [denominations, setDenominations] = useState<Denomination[]>([
@@ -202,6 +206,8 @@ export default function CashChequeTransactionModal({
     setDescription("");
     setCategory("");
     setReference("");
+    setPaymentMethod("cash");
+    setPaymentTiming("full");
     setDenominations([
       { denomination: 1000, quantity: 0 },
       { denomination: 500, quantity: 0 },
@@ -239,26 +245,79 @@ export default function CashChequeTransactionModal({
     setIsSubmitting(true);
 
     try {
-      if (transactionType === "cash") {
+      // Handle different payment methods and timing combinations
+      if (paymentMethod === "cash") {
+        // Validate denominations for cash payments
         const totalFromDenominations = calculateTotalFromDenominations();
-        if (totalFromDenominations !== parseFloat(amount)) {
+        if (Math.abs(totalFromDenominations - parseFloat(amount)) >= 0.01) {
           toast({
             title: "Error",
-            description: "Denomination total doesn't match the amount",
+            description: "Denominations must sum up to the transaction amount",
             variant: "destructive",
           });
           setIsSubmitting(false);
           return;
         }
 
-        await cashPaymentMutation.mutateAsync({
-          amount: parseFloat(amount),
-          denominations,
-          description,
-          category,
-          reference: reference || undefined,
-        });
-      } else if (transactionType === "cheque") {
+        if (paymentTiming === "split") {
+          // Cash split payment
+          const totalFromSplit = calculateTotalFromSplit();
+          if (Math.abs(totalFromSplit - parseFloat(amount)) >= 0.01) {
+            toast({
+              title: "Error",
+              description: "Split parts must sum up to the transaction amount",
+              variant: "destructive",
+            });
+            setIsSubmitting(false);
+            return;
+          }
+
+          await splitPaymentMutation.mutateAsync({
+            totalAmount: parseFloat(amount),
+            currency: "GHS",
+            paymentMethod: "cash",
+            denominations,
+            splits: splitParts.map((part) => ({
+              amount: part.amount,
+              dueDate: new Date(part.dueDate),
+            })),
+            description,
+            category,
+            reference: reference || undefined,
+          });
+        } else if (paymentTiming === "advance") {
+          // Cash advance payment
+          await advancePaymentMutation.mutateAsync({
+            amount: parseFloat(amount),
+            currency: "GHS",
+            paymentMethod: "cash",
+            denominations,
+            description,
+            category,
+            reference: reference || undefined,
+            advanceConfig: {
+              percentage:
+                advanceInputMode === "percentage"
+                  ? parseFloat(advancePercentage)
+                  : undefined,
+              amount:
+                advanceInputMode === "amount"
+                  ? parseFloat(advanceAmount)
+                  : undefined,
+              inputMode: advanceInputMode,
+            },
+          });
+        } else {
+          // Cash full payment
+          await cashPaymentMutation.mutateAsync({
+            amount: parseFloat(amount),
+            denominations,
+            description,
+            category,
+            reference: reference || undefined,
+          });
+        }
+      } else if (paymentMethod === "cheque") {
         if (!chequeNumber || !bankName || !accountNumber || !chequeDate) {
           toast({
             title: "Error",
@@ -269,72 +328,87 @@ export default function CashChequeTransactionModal({
           return;
         }
 
-        await chequePaymentMutation.mutateAsync({
-          amount: parseFloat(amount),
-          checkNumber: chequeNumber,
-          bankName,
-          accountNumber,
-          checkDate: chequeDate,
-          description,
-          category,
-          reference: reference || undefined,
-        });
-      } else if (transactionType === "split") {
-        const totalFromSplit = calculateTotalFromSplit();
-        if (totalFromSplit !== parseFloat(amount)) {
-          toast({
-            title: "Error",
-            description: "Split parts total doesn't match the amount",
-            variant: "destructive",
-          });
-          setIsSubmitting(false);
-          return;
-        }
+        if (paymentTiming === "split") {
+          // Cheque split payment
+          const totalFromSplit = calculateTotalFromSplit();
+          if (Math.abs(totalFromSplit - parseFloat(amount)) >= 0.01) {
+            toast({
+              title: "Error",
+              description: "Split parts must sum up to the transaction amount",
+              variant: "destructive",
+            });
+            setIsSubmitting(false);
+            return;
+          }
 
-        await splitPaymentMutation.mutateAsync({
-          totalAmount: parseFloat(amount),
-          currency: "GHS", // Default currency
-          splits: splitParts.map((part) => ({
-            amount: part.amount,
-            dueDate: new Date(part.dueDate),
-          })),
-          description,
-          category,
-          reference: reference || undefined,
-        });
-      } else if (transactionType === "advance") {
-        if (!advanceAmount && !advancePercentage) {
-          toast({
-            title: "Error",
-            description: "Please specify advance amount or percentage",
-            variant: "destructive",
+          await splitPaymentMutation.mutateAsync({
+            totalAmount: parseFloat(amount),
+            currency: "GHS",
+            paymentMethod: "cheque",
+            chequeNumber,
+            bankName,
+            accountNumber,
+            chequeDate: new Date(chequeDate),
+            splits: splitParts.map((part) => ({
+              amount: part.amount,
+              dueDate: new Date(part.dueDate),
+            })),
+            description,
+            category,
+            reference: reference || undefined,
           });
-          setIsSubmitting(false);
-          return;
+        } else if (paymentTiming === "advance") {
+          // Cheque advance payment
+          await advancePaymentMutation.mutateAsync({
+            amount: parseFloat(amount),
+            currency: "GHS",
+            paymentMethod: "cheque",
+            chequeNumber,
+            bankName,
+            accountNumber,
+            chequeDate: new Date(chequeDate),
+            description,
+            category,
+            reference: reference || undefined,
+            advanceConfig: {
+              percentage:
+                advanceInputMode === "percentage"
+                  ? parseFloat(advancePercentage)
+                  : undefined,
+              amount:
+                advanceInputMode === "amount"
+                  ? parseFloat(advanceAmount)
+                  : undefined,
+              inputMode: advanceInputMode,
+            },
+          });
+        } else {
+          // Cheque full payment
+          await chequePaymentMutation.mutateAsync({
+            amount: parseFloat(amount),
+            checkNumber: chequeNumber,
+            bankName,
+            accountNumber,
+            checkDate: chequeDate,
+            description,
+            category,
+            reference: reference || undefined,
+          });
         }
-
-        await advancePaymentMutation.mutateAsync({
-          amount: parseFloat(amount),
-          currency: "GHS", // Default currency
-          paymentMethod: "cash", // Default payment method for advance payments
-          description,
-          category,
-          reference: reference || undefined,
-          advanceConfig: {
-            percentage:
-              advanceInputMode === "percentage"
-                ? parseFloat(advancePercentage)
-                : undefined,
-            amount:
-              advanceInputMode === "amount"
-                ? parseFloat(advanceAmount)
-                : undefined,
-            inputMode: advanceInputMode,
-          },
-        });
       }
-    } catch (error) {
-      console.error("Transaction creation error:", error);
+
+      toast({
+        title: "Success",
+        description: "Transaction created successfully!",
+      });
+      onClose();
+      resetForm();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create transaction",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -370,33 +444,33 @@ export default function CashChequeTransactionModal({
   };
 
   const getTitle = () => {
-    switch (transactionType) {
-      case "cash":
-        return "Add Cash Transaction";
-      case "cheque":
-        return "Add Cheque Transaction";
-      case "split":
-        return "Add Split Payment Transaction";
-      case "advance":
-        return "Add Advance Payment Transaction";
-      default:
-        return "Add Transaction";
-    }
+    const methodLabels = {
+      cash: "Cash",
+      cheque: "Cheque",
+    };
+
+    const timingLabels = {
+      full: "Full Payment",
+      advance: "Advance Payment",
+      split: "Split Payment",
+    };
+
+    return `Add ${methodLabels[paymentMethod]} ${timingLabels[paymentTiming]}`;
   };
 
   const getDescription = () => {
-    switch (transactionType) {
-      case "cash":
-        return "Record a cash payment with denomination breakdown";
-      case "cheque":
-        return "Record a cheque payment with bank details";
-      case "split":
-        return "Create a split payment with multiple due dates";
-      case "advance":
-        return "Create an advance payment with percentage or fixed amount";
-      default:
-        return "Add a new transaction";
-    }
+    const methodDescriptions = {
+      cash: "Record a cash payment with denomination breakdown",
+      cheque: "Record a cheque payment with bank details",
+    };
+
+    const timingDescriptions = {
+      full: "Full payment upfront",
+      advance: "Advance payment with balance due later",
+      split: "Split payment across multiple dates",
+    };
+
+    return `${methodDescriptions[paymentMethod]}. ${timingDescriptions[paymentTiming]}.`;
   };
 
   return (
@@ -404,17 +478,11 @@ export default function CashChequeTransactionModal({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {transactionType === "cash" && (
+            {paymentMethod === "cash" && (
               <Banknote className="h-5 w-5 text-green-600" />
             )}
-            {transactionType === "cheque" && (
+            {paymentMethod === "cheque" && (
               <CreditCard className="h-5 w-5 text-orange-600" />
-            )}
-            {transactionType === "split" && (
-              <Calendar className="h-5 w-5 text-blue-600" />
-            )}
-            {transactionType === "advance" && (
-              <TrendingUp className="h-5 w-5 text-purple-600" />
             )}
             {getTitle()}
           </DialogTitle>
@@ -478,11 +546,46 @@ export default function CashChequeTransactionModal({
                   placeholder="Transaction reference..."
                 />
               </div>
+
+              {/* Payment Method and Timing Selection */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="paymentMethod">Payment Method *</Label>
+                  <Select
+                    value={paymentMethod}
+                    onValueChange={(value: any) => setPaymentMethod(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="cheque">Cheque</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="paymentTiming">Payment Timing *</Label>
+                  <Select
+                    value={paymentTiming}
+                    onValueChange={(value: any) => setPaymentTiming(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment timing" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full">Full Payment</SelectItem>
+                      <SelectItem value="advance">Advance Payment</SelectItem>
+                      <SelectItem value="split">Split Payment</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           {/* Cash Denomination Breakdown */}
-          {transactionType === "cash" && (
+          {paymentMethod === "cash" && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center justify-between">
@@ -547,12 +650,59 @@ export default function CashChequeTransactionModal({
                     </div>
                   ))}
                 </div>
+
+                {/* Validation Section */}
+                <div className="mt-4 p-3 bg-white rounded border">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium">
+                      Denomination Total:
+                    </span>
+                    <span className="text-sm font-bold">
+                      {currencyFormat(calculateTotalFromDenominations())}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium">
+                      Transaction Amount:
+                    </span>
+                    <span className="text-sm font-bold">
+                      {currencyFormat(parseFloat(amount) || 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Difference:</span>
+                    <span
+                      className={`text-sm font-bold ${
+                        Math.abs(
+                          calculateTotalFromDenominations() -
+                            (parseFloat(amount) || 0)
+                        ) < 0.01
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {currencyFormat(
+                        calculateTotalFromDenominations() -
+                          (parseFloat(amount) || 0)
+                      )}
+                    </span>
+                  </div>
+                  {Math.abs(
+                    calculateTotalFromDenominations() -
+                      (parseFloat(amount) || 0)
+                  ) >= 0.01 && (
+                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                      ⚠️ Denominations must sum up to the transaction amount.
+                      Please adjust the denominations or transaction amount.
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
 
           {/* Cheque Details */}
-          {transactionType === "cheque" && (
+          {paymentMethod === "cheque" && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Cheque Details</CardTitle>
@@ -604,7 +754,7 @@ export default function CashChequeTransactionModal({
           )}
 
           {/* Split Payment Configuration */}
-          {transactionType === "split" && (
+          {paymentTiming === "split" && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center justify-between">
@@ -678,7 +828,7 @@ export default function CashChequeTransactionModal({
           )}
 
           {/* Advance Payment Configuration */}
-          {transactionType === "advance" && (
+          {paymentTiming === "advance" && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">
@@ -794,21 +944,18 @@ export default function CashChequeTransactionModal({
             onClick={handleSubmit}
             disabled={isSubmitting}
             className={
-              transactionType === "cash"
+              paymentMethod === "cash"
                 ? "bg-green-600 hover:bg-green-700"
-                : transactionType === "cheque"
-                ? "bg-orange-600 hover:bg-orange-700"
-                : transactionType === "split"
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-purple-600 hover:bg-purple-700"
+                : "bg-orange-600 hover:bg-orange-700"
             }
           >
             {isSubmitting
               ? "Creating..."
               : `Create ${
-                  transactionType.charAt(0).toUpperCase() +
-                  transactionType.slice(1)
-                } Transaction`}
+                  paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)
+                } ${
+                  paymentTiming.charAt(0).toUpperCase() + paymentTiming.slice(1)
+                }`}
           </Button>
         </DialogFooter>
       </DialogContent>

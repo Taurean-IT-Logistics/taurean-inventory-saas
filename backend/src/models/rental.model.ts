@@ -16,7 +16,7 @@ const RentalSchema = new Schema<RentalDocument>(
       required: true,
     },
     notes: { type: String },
-    user: { type: Schema.Types.ObjectId, ref: "Users", required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     status: {
       type: String,
       enum: ["active", "returned", "overdue", "cancelled"],

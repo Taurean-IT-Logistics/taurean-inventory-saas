@@ -61,19 +61,37 @@ export class PaymentVerificationService {
     reference: string,
     paymentMethod: string
   ): Promise<PaymentVerificationResult> {
-    switch (paymentMethod.toLowerCase()) {
-      case "paystack":
-        return await this.verifyPaystackPayment(reference);
-      case "cash":
-        return await this.verifyCashPayment(reference);
-      case "cheque":
-        return await this.verifyChequePayment(reference);
-      case "split":
-        return await this.verifySplitPayment(reference);
-      case "advance":
-        return await this.verifyAdvancePayment(reference);
-      default:
-        throw new Error(`Unsupported payment method: ${paymentMethod}`);
+    console.log(
+      `🔍 Starting payment verification for reference: ${reference}, method: ${paymentMethod}`
+    );
+
+    try {
+      switch (paymentMethod.toLowerCase()) {
+        case "paystack":
+          console.log("📱 Verifying Paystack payment...");
+          return await this.verifyPaystackPayment(reference);
+        case "cash":
+          console.log("💵 Verifying cash payment...");
+          return await this.verifyCashPayment(reference);
+        case "cheque":
+          console.log("📄 Verifying cheque payment...");
+          return await this.verifyChequePayment(reference);
+        case "split":
+          console.log("✂️ Verifying split payment...");
+          return await this.verifySplitPayment(reference);
+        case "advance":
+          console.log("⏰ Verifying advance payment...");
+          return await this.verifyAdvancePayment(reference);
+        default:
+          console.error(`❌ Unsupported payment method: ${paymentMethod}`);
+          throw new Error(`Unsupported payment method: ${paymentMethod}`);
+      }
+    } catch (error: any) {
+      console.error(
+        `❌ Payment verification failed for ${reference}:`,
+        error.message
+      );
+      throw error;
     }
   }
 
@@ -205,6 +223,10 @@ export class PaymentVerificationService {
     reference: string
   ): Promise<PaymentVerificationResult> {
     try {
+      console.log(
+        `🔍 Looking up transaction for split payment reference: ${reference}`
+      );
+
       // First find the transaction by reference to get the actual transaction ID
       const transaction = await TransactionModel.findOne({
         ref: reference,
@@ -212,10 +234,20 @@ export class PaymentVerificationService {
       });
 
       if (!transaction) {
+        console.error(
+          `❌ Transaction not found for split payment reference: ${reference}`
+        );
         throw new Error("Transaction not found");
       }
 
+      console.log(
+        `✅ Transaction found: ${transaction._id}, method: ${transaction.method}`
+      );
+
       // For split payments, we need to check the payment schedule using the transaction ID
+      console.log(
+        `🔍 Looking up payment schedule for transaction: ${transaction._id}`
+      );
       const schedule = await PaymentScheduleModel.findOne({
         transactionId: transaction._id.toString(),
         paymentType: "split",
@@ -223,8 +255,27 @@ export class PaymentVerificationService {
       });
 
       if (!schedule) {
-        throw new Error("Split payment schedule not found");
+        // If no payment schedule exists, this is a critical error for split payments
+        // Split payments require proper scheduling to track partial payments
+        // We cannot verify this as a regular payment as it would cause financial loss
+        console.error(
+          `❌ CRITICAL: No payment schedule found for split payment ${reference}`
+        );
+        console.error(`📋 Transaction ID: ${transaction._id}`);
+        console.error(`📋 Transaction method: ${transaction.method}`);
+        console.error(`📋 Transaction amount: ${transaction.amount}`);
+
+        throw new Error(
+          `Split payment ${reference} cannot be verified without a payment schedule. ` +
+            `Please ensure the payment schedule was created when the split payment was initiated. ` +
+            `Contact support if this payment was created correctly.`
+        );
       }
+
+      console.log(`✅ Payment schedule found: ${schedule._id}`);
+      console.log(
+        `📊 Schedule details: ${schedule.scheduledPayments.length} payments, total: ${schedule.totalAmount}`
+      );
 
       // Check if any payments in the schedule are completed
       const completedPayments = schedule.scheduledPayments.filter(
@@ -238,7 +289,14 @@ export class PaymentVerificationService {
 
       const isFullyPaid = totalPaid >= schedule.totalAmount;
 
-      return {
+      console.log(
+        `📊 Payment status: ${completedPayments.length}/${schedule.scheduledPayments.length} completed`
+      );
+      console.log(
+        `💰 Total paid: ${totalPaid}/${schedule.totalAmount} (${isFullyPaid ? "FULLY PAID" : "PARTIAL"})`
+      );
+
+      const result: PaymentVerificationResult = {
         success: isFullyPaid,
         amount: totalPaid,
         method: "split",
@@ -259,9 +317,19 @@ export class PaymentVerificationService {
           remainingAmount: schedule.remainingAmount,
           completedPayments: completedPayments.length,
           totalScheduledPayments: schedule.scheduledPayments.length,
+          verificationMethod: "schedule_based",
         },
       };
+
+      console.log(
+        `✅ Split payment verification completed: ${result.success ? "SUCCESS" : "PENDING"}`
+      );
+      return result;
     } catch (error: any) {
+      console.error(
+        `❌ Split payment verification failed for ${reference}:`,
+        error.message
+      );
       throw new Error(`Split payment verification failed: ${error.message}`);
     }
   }
@@ -291,7 +359,14 @@ export class PaymentVerificationService {
       });
 
       if (!schedule) {
-        throw new Error("Advance payment schedule not found");
+        // If no payment schedule exists, this is a critical error for advance payments
+        // Advance payments require proper scheduling to track remaining balance
+        // We cannot verify this as a regular payment as it would cause financial loss
+        throw new Error(
+          `Advance payment ${reference} cannot be verified without a payment schedule. ` +
+            `Please ensure the payment schedule was created when the advance payment was initiated. ` +
+            `Contact support if this payment was created correctly.`
+        );
       }
 
       // Check if advance payment is completed
@@ -319,6 +394,7 @@ export class PaymentVerificationService {
           remainingAmount: schedule.remainingAmount,
           advanceAmount: advancePayment?.amount || 0,
           balanceAmount: schedule.remainingAmount,
+          verificationMethod: "schedule_based",
         },
       };
     } catch (error: any) {
@@ -361,7 +437,20 @@ export class PaymentVerificationService {
         transactionId,
         updateData,
         { new: true }
-      );
+      )
+        .populate("user", "name email phone address")
+        .populate("booking", "startDate endDate duration totalPrice items")
+        .populate("account")
+        .populate("facility", "name description location pricing")
+        .populate("approvedBy", "name")
+        .populate(
+          "taxScheduleSnapshot.scheduleId",
+          "name components taxInclusive taxExclusive taxOnTax"
+        )
+        .populate(
+          "company",
+          "name logo contactEmail contactPhone location currency invoiceFormat"
+        );
 
       if (!updatedTransaction) {
         throw new Error("Transaction not found");
@@ -393,19 +482,139 @@ export class PaymentVerificationService {
         return; // Only handle successful payments
       }
 
-      // Handle subscription transactions (now using "activation" category)
+      // Handle subscription transactions (now using specific subscription categories)
       if (
-        transaction.category === "activation" &&
+        (transaction.category === "subscription" ||
+          transaction.category === "subscription_renewal" ||
+          transaction.category === "subscription_upgrade") &&
         transaction.metadata?.type &&
         (transaction.metadata.type === "subscription" ||
           transaction.metadata.type === "subscription_renewal" ||
           transaction.metadata.type === "subscription_upgrade")
       ) {
-        // Subscription transactions are handled by the subscription controller
-        // No additional actions needed here as subscription activation is handled separately
-        console.log(
-          `Subscription transaction ${transaction.metadata.type} verified successfully`
-        );
+        // Extract metadata for subscription handling
+        const { companyId, planId } = transaction.metadata;
+
+        if (!companyId || !planId) {
+          console.error(
+            `Missing subscription metadata - companyId: ${companyId}, planId: ${planId}`
+          );
+          return;
+        }
+
+        try {
+          // Import subscription service
+          const { SubscriptionService } = await import(
+            "../services/subscription.service"
+          );
+
+          // Handle different subscription types
+          switch (transaction.metadata.type) {
+            case "subscription":
+              // Initial subscription activation
+              await SubscriptionService.activateSubscription(
+                companyId,
+                planId,
+                transaction.ref ||
+                  transaction.paymentDetails?.paystackReference ||
+                  `verified-${Date.now()}`
+              );
+              break;
+
+            case "subscription_renewal":
+              // Subscription renewal
+              await SubscriptionService.renewSubscription(
+                companyId,
+                planId,
+                transaction.ref ||
+                  transaction.paymentDetails?.paystackReference ||
+                  `renewed-${Date.now()}`
+              );
+              break;
+
+            case "subscription_upgrade":
+              // Subscription upgrade
+              await SubscriptionService.upgradeSubscription(
+                companyId,
+                planId,
+                transaction.ref ||
+                  transaction.paymentDetails?.paystackReference ||
+                  `upgraded-${Date.now()}`
+              );
+              break;
+
+            default:
+              console.warn(
+                `Unknown subscription type: ${transaction.metadata.type}`
+              );
+          }
+
+          // Send subscription notification email and in-app notification
+          // Handle email notifications separately to prevent interruption
+          const sendSubscriptionEmail = async () => {
+            try {
+              const { emailService } = await import(
+                "../services/email.service"
+              );
+              const company = await (
+                await import("../models/company.model")
+              ).CompanyModel.findById(companyId);
+
+              if (company && company.subscription) {
+                await emailService.sendSubscriptionActivationEmail(companyId, {
+                  plan: company.subscription.plan,
+                  licenseKey: company.subscription.licenseKey,
+                  expiresAt: company.subscription.expiresAt,
+                  amount: transaction.amount,
+                  currency: transaction.currency || "GHS",
+                });
+              }
+            } catch (emailError) {
+              console.warn(
+                `Failed to send subscription notification email:`,
+                emailError
+              );
+            }
+          };
+
+          // Handle in-app notifications separately
+          const sendSubscriptionNotification = async () => {
+            try {
+              await notificationService.createPaymentStatusNotification(
+                transaction.user._id.toString(),
+                {
+                  type: "subscription",
+                  amount: transaction.amount,
+                  totalAmount: transaction.amount,
+                  remainingAmount: 0,
+                  paymentMethod: transaction.method,
+                  transactionId: transaction._id.toString(),
+                  status: "completed",
+                  subscriptionType: transaction.metadata.type,
+                  plan: transaction.metadata.planName,
+                }
+              );
+            } catch (notificationError) {
+              console.warn(
+                `Failed to send subscription notification:`,
+                notificationError
+              );
+            }
+          };
+
+          // Execute both operations independently
+          await Promise.allSettled([
+            sendSubscriptionEmail(),
+            sendSubscriptionNotification(),
+          ]);
+        } catch (subscriptionError) {
+          console.error(
+            `Failed to handle subscription ${transaction.metadata.type}:`,
+            subscriptionError
+          );
+          // Don't throw the error to avoid breaking the payment verification flow
+        }
+
         return;
       }
 
@@ -419,23 +628,32 @@ export class PaymentVerificationService {
             updatedAt: new Date(),
           });
 
-          // Send payment notification
-          try {
-            await notificationService.createPaymentStatusNotification(
-              booking.user.toString(),
-              {
-                type: transaction.paymentTiming || "full",
-                amount: verificationResult.amount,
-                totalAmount: booking.totalPrice,
-                remainingAmount: booking.totalPrice - verificationResult.amount,
-                paymentMethod: verificationResult.method,
-                bookingId: booking._id.toString(),
-                transactionId: transaction._id.toString(),
-                status: "completed",
-              }
-            );
+          // Send payment notification and email separately to prevent interruption
+          const sendBookingNotification = async () => {
+            try {
+              await notificationService.createPaymentStatusNotification(
+                booking.user._id.toString(),
+                {
+                  type: transaction.paymentTiming || "full",
+                  amount: verificationResult.amount,
+                  totalAmount: booking.totalPrice,
+                  remainingAmount:
+                    booking.totalPrice - verificationResult.amount,
+                  paymentMethod: verificationResult.method,
+                  bookingId: booking._id.toString(),
+                  transactionId: transaction._id.toString(),
+                  status: "completed",
+                }
+              );
+            } catch (notificationError) {
+              console.warn(
+                "Failed to send payment notification:",
+                notificationError
+              );
+            }
+          };
 
-            // Send email notification
+          const sendBookingEmail = async () => {
             try {
               const { emailService } = await import("./email.service");
               const user = await import("../models/user.model").then((m) =>
@@ -487,30 +705,33 @@ export class PaymentVerificationService {
                 emailError
               );
             }
-          } catch (notificationError) {
-            console.warn(
-              "Failed to send payment notification:",
-              notificationError
-            );
-          }
+          };
+
+          const sendBookingConfirmationEmail = async () => {
+            try {
+              const { emailService } = await import("./email.service");
+              await emailService.sendBookingConfirmation(
+                transaction.booking.toString()
+              );
+            } catch (emailError) {
+              console.warn(
+                "Failed to send booking confirmation email:",
+                emailError
+              );
+            }
+          };
+
+          // Execute all operations independently
+          await Promise.allSettled([
+            sendBookingNotification(),
+            sendBookingEmail(),
+            sendBookingConfirmationEmail(),
+          ]);
 
           emitEvent(Events.BookingConfirmed, {
             bookingId: transaction.booking,
             transactionId: transaction._id,
           });
-
-          // Send booking confirmation email
-          try {
-            const { emailService } = await import("./email.service");
-            await emailService.sendBookingConfirmation(
-              transaction.booking.toString()
-            );
-          } catch (emailError) {
-            console.warn(
-              "Failed to send booking confirmation email:",
-              emailError
-            );
-          }
         }
       }
 
@@ -524,25 +745,33 @@ export class PaymentVerificationService {
             updatedAt: new Date(),
           });
 
-          // Send payment notification
-          try {
-            await notificationService.createPaymentStatusNotification(
-              rental.user.toString(),
-              {
-                type: transaction.paymentTiming || "full",
-                amount: verificationResult.amount,
-                totalAmount: rental.totalPrice || rental.amount,
-                remainingAmount:
-                  (rental.totalPrice || rental.amount) -
-                  verificationResult.amount,
-                paymentMethod: verificationResult.method,
-                rentalId: rental._id.toString(),
-                transactionId: transaction._id.toString(),
-                status: "completed",
-              }
-            );
+          // Send payment notification and email separately to prevent interruption
+          const sendRentalNotification = async () => {
+            try {
+              await notificationService.createPaymentStatusNotification(
+                rental.user.toString(),
+                {
+                  type: transaction.paymentTiming || "full",
+                  amount: verificationResult.amount,
+                  totalAmount: rental.totalPrice || rental.amount,
+                  remainingAmount:
+                    (rental.totalPrice || rental.amount) -
+                    verificationResult.amount,
+                  paymentMethod: verificationResult.method,
+                  rentalId: rental._id.toString(),
+                  transactionId: transaction._id.toString(),
+                  status: "completed",
+                }
+              );
+            } catch (notificationError) {
+              console.warn(
+                "Failed to send payment notification:",
+                notificationError
+              );
+            }
+          };
 
-            // Send email notification
+          const sendRentalEmail = async () => {
             try {
               const { emailService } = await import("./email.service");
               const user = await import("../models/user.model").then((m) =>
@@ -594,12 +823,13 @@ export class PaymentVerificationService {
                 emailError
               );
             }
-          } catch (notificationError) {
-            console.warn(
-              "Failed to send payment notification:",
-              notificationError
-            );
-          }
+          };
+
+          // Execute all operations independently
+          await Promise.allSettled([
+            sendRentalNotification(),
+            sendRentalEmail(),
+          ]);
 
           emitEvent(Events.RentalConfirmed, {
             rentalId: transaction.rental,

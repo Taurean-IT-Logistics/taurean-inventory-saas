@@ -161,9 +161,6 @@ export default function AdminTransactionsPage() {
 
   // Cash/Cheque transaction modal state
   const [isCashChequeModalOpen, setIsCashChequeModalOpen] = useState(false);
-  const [selectedTransactionType, setSelectedTransactionType] = useState<
-    "cash" | "cheque" | "split" | "advance"
-  >("cash");
 
   const filteredTransactions = (transactions as Transaction[]).filter((txn) => {
     const matchesSearch =
@@ -223,18 +220,14 @@ export default function AdminTransactionsPage() {
     setIsProcessDialogOpen(true);
   };
 
-  // Handle opening cash/cheque transaction modal
-  const handleOpenCashChequeModal = (
-    type: "cash" | "cheque" | "split" | "advance"
-  ) => {
-    setSelectedTransactionType(type);
+  // Handle opening transaction modal
+  const handleOpenCashChequeModal = () => {
     setIsCashChequeModalOpen(true);
   };
 
-  // Handle closing cash/cheque transaction modal
+  // Handle closing transaction modal
   const handleCloseCashChequeModal = () => {
     setIsCashChequeModalOpen(false);
-    setSelectedTransactionType("cash");
   };
 
   const getPaymentMethodBadge = (method: string) => {
@@ -304,41 +297,10 @@ export default function AdminTransactionsPage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Transaction
-                  <MoreVertical className="w-4 h-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem
-                  onClick={() => handleOpenCashChequeModal("cash")}
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Cash Payment
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleOpenCashChequeModal("cheque")}
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Cheque Payment
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleOpenCashChequeModal("split")}
-                >
-                  <Split className="w-4 h-4 mr-2" />
-                  Split Payment
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleOpenCashChequeModal("advance")}
-                >
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Advance Payment
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button onClick={handleOpenCashChequeModal}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Transaction
+            </Button>
           </div>
         </div>
 
@@ -578,11 +540,10 @@ export default function AdminTransactionsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Cash/Cheque Transaction Modal */}
+        {/* Transaction Modal */}
         <CashChequeTransactionModal
           isOpen={isCashChequeModalOpen}
           onClose={handleCloseCashChequeModal}
-          transactionType={selectedTransactionType}
         />
       </div>
     </div>

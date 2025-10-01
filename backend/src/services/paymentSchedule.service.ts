@@ -16,6 +16,7 @@ export interface CreatePaymentScheduleData {
   transactionId?: string;
   totalAmount: number;
   paymentType: "advance" | "split" | "full";
+  paymentMethod?: "paystack" | "cash" | "cheque";
   advanceConfig?: {
     percentage?: number;
     fixedAmount?: number;
@@ -52,22 +53,12 @@ export class PaymentScheduleService {
     data: CreatePaymentScheduleData
   ): Promise<PaymentScheduleDocument> {
     try {
-      // Check for existing active schedule to prevent duplicates
-      const existingSchedule = await PaymentScheduleModel.findOne({
-        $or: [{ bookingId: data.bookingId }, { rentalId: data.rentalId }],
-        isDeleted: false,
-        status: { $in: ["active", "overdue", "partial"] },
-      });
-
-      if (existingSchedule) {
-        throw new Error(
-          "Payment schedule already exists for this booking/rental"
-        );
-      }
-
       let scheduledPayments: any[] = [];
       let advanceAmount = 0;
       let balanceAmount = data.totalAmount;
+
+      // Use the user's selected payment method, default to paystack if not specified
+      const userPaymentMethod = data.paymentMethod || "paystack";
 
       // Generate scheduled payments based on payment type
       if (data.paymentType === "advance" && data.advanceConfig) {
@@ -85,7 +76,7 @@ export class PaymentScheduleService {
         scheduledPayments.push({
           amount: advanceAmount,
           dueDate: data.advanceConfig.dueDate || new Date(),
-          paymentMethod: "paystack", // Default to online for advance
+          paymentMethod: userPaymentMethod,
           status: "pending",
           notes: "Advance payment",
           isAdvance: true,
@@ -97,7 +88,7 @@ export class PaymentScheduleService {
           scheduledPayments.push({
             amount: balanceAmount,
             dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-            paymentMethod: "paystack",
+            paymentMethod: data.paymentMethod || "paystack",
             status: "pending",
             notes: "Balance payment",
             isAdvance: false,
@@ -118,7 +109,7 @@ export class PaymentScheduleService {
             dueDate: new Date(
               Date.now() + i * intervalDays * 24 * 60 * 60 * 1000
             ),
-            paymentMethod: "paystack",
+            paymentMethod: data.paymentMethod || "paystack",
             status: "pending",
             notes: `Split payment part ${i + 1} of ${numberOfParts}`,
             isAdvance: false,
@@ -138,7 +129,7 @@ export class PaymentScheduleService {
         scheduledPayments.push({
           amount: data.totalAmount,
           dueDate: new Date(),
-          paymentMethod: "paystack",
+          paymentMethod: data.paymentMethod || "paystack",
           status: "pending",
           notes: "Full payment",
           isAdvance: false,
@@ -270,6 +261,306 @@ export class PaymentScheduleService {
       throw new Error(
         `Failed to get company payment schedules: ${error.message}`
       );
+    }
+  }
+
+  /**
+   * Update payment schedule configuration
+   */
+  static async updatePaymentSchedule(
+    scheduleId: string,
+    updateData: {
+      splitConfig?: {
+        numberOfParts: number;
+        intervalDays: number;
+      };
+      advanceConfig?: {
+        percentage?: number;
+        fixedAmount?: number;
+        inputMode: "percentage" | "amount";
+      };
+    }
+  ): Promise<PaymentScheduleDocument> {
+    try {
+      const schedule = await PaymentScheduleModel.findById(scheduleId);
+      if (!schedule) {
+        throw new Error("Payment schedule not found");
+      }
+
+      if (schedule.status === "completed") {
+        throw new Error("Cannot update completed payment schedule");
+      }
+
+      // Update split configuration
+      if (updateData.splitConfig && schedule.paymentType === "split") {
+        schedule.splitConfig = {
+          ...schedule.splitConfig,
+          ...updateData.splitConfig,
+        };
+
+        // Regenerate scheduled payments for split payments
+        // Use remaining amount for split calculation, not total amount
+        const amountPerPart =
+          schedule.remainingAmount / updateData.splitConfig.numberOfParts;
+        const newScheduledPayments = [];
+
+        for (let i = 0; i < updateData.splitConfig.numberOfParts; i++) {
+          const dueDate = new Date();
+          dueDate.setDate(
+            dueDate.getDate() + i * updateData.splitConfig.intervalDays
+          );
+
+          // Last payment gets any remainder to avoid rounding issues
+          const paymentAmount =
+            i === updateData.splitConfig.numberOfParts - 1
+              ? schedule.remainingAmount -
+                amountPerPart * (updateData.splitConfig.numberOfParts - 1)
+              : amountPerPart;
+
+          newScheduledPayments.push({
+            amount: paymentAmount,
+            dueDate,
+            paymentMethod:
+              schedule.scheduledPayments[0]?.paymentMethod || "paystack",
+            status: "pending",
+            notes: `Split payment part ${i + 1} of ${updateData.splitConfig.numberOfParts}`,
+            paymentReference: `SPLIT-${scheduleId}-${i + 1}-${Date.now()}`,
+          });
+        }
+
+        schedule.scheduledPayments = newScheduledPayments;
+        schedule.remainingAmount = schedule.totalAmount - schedule.paidAmount;
+        schedule.nextPaymentDate = newScheduledPayments[0]?.dueDate;
+      }
+
+      // Update advance configuration
+      if (updateData.advanceConfig && schedule.paymentType === "advance") {
+        schedule.advanceConfig = {
+          ...schedule.advanceConfig,
+          ...updateData.advanceConfig,
+        };
+
+        // Recalculate advance amount
+        let advanceAmount = 0;
+        if (updateData.advanceConfig.inputMode === "percentage") {
+          advanceAmount =
+            (schedule.totalAmount *
+              (updateData.advanceConfig.percentage || 0)) /
+            100;
+        } else {
+          advanceAmount = updateData.advanceConfig.fixedAmount || 0;
+        }
+
+        const balanceAmount = schedule.totalAmount - advanceAmount;
+
+        // Regenerate scheduled payments for advance payments
+        const newScheduledPayments = [];
+
+        // Advance payment
+        newScheduledPayments.push({
+          amount: advanceAmount,
+          dueDate: new Date(),
+          paymentMethod:
+            schedule.scheduledPayments[0]?.paymentMethod || "paystack",
+          status: "pending",
+          notes: "Advance payment",
+          isAdvance: true,
+          paymentReference: `ADV-${scheduleId}-${Date.now()}`,
+        });
+
+        // Balance payment
+        if (balanceAmount > 0) {
+          newScheduledPayments.push({
+            amount: balanceAmount,
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+            paymentMethod:
+              schedule.scheduledPayments[0]?.paymentMethod || "paystack",
+            status: "pending",
+            notes: "Balance payment",
+            paymentReference: `BAL-${scheduleId}-${Date.now()}`,
+          });
+        }
+
+        schedule.scheduledPayments = newScheduledPayments;
+        schedule.advanceAmount = advanceAmount;
+        schedule.balanceAmount = balanceAmount;
+        schedule.remainingAmount = schedule.totalAmount - schedule.paidAmount;
+        schedule.nextPaymentDate = newScheduledPayments[0]?.dueDate;
+      }
+
+      schedule.updatedAt = new Date();
+      const updatedSchedule = await schedule.save();
+
+      // Emit event for real-time updates
+      emitEvent(Events.PaymentScheduleUpdated, {
+        scheduleId: updatedSchedule._id,
+        schedule: updatedSchedule,
+      });
+
+      return updatedSchedule;
+    } catch (error: any) {
+      throw new Error(`Failed to update payment schedule: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get pending payments for a user
+   */
+  static async getPendingPayments(
+    userId: string
+  ): Promise<PaymentScheduleDocument[]> {
+    try {
+      const schedules = await PaymentScheduleModel.find({
+        userId,
+        isDeleted: false,
+        status: { $in: ["active", "partial", "overdue"] },
+        "scheduledPayments.status": "pending",
+      })
+        .populate("bookingId", "facility startDate endDate status")
+        .populate("rentalId", "item startDate endDate status")
+        .populate("transactionId", "ref amount status")
+        .sort({ nextPaymentDate: 1 });
+
+      return schedules;
+    } catch (error: any) {
+      throw new Error(`Failed to get pending payments: ${error.message}`);
+    }
+  }
+
+  /**
+   * Authorize payment for a specific scheduled payment (ONLINE PAYMENTS ONLY)
+   */
+  static async authorizeScheduledPayment(
+    scheduleId: string,
+    paymentIndex: number,
+    userEmail: string,
+    paymentMethod: string
+  ): Promise<{
+    authorizationUrl?: string;
+    paymentReference: string;
+    requiresOnlinePayment: boolean;
+  }> {
+    try {
+      const schedule = await PaymentScheduleModel.findById(scheduleId);
+      if (!schedule) {
+        throw new Error("Payment schedule not found");
+      }
+
+      const scheduledPayment = schedule.scheduledPayments[paymentIndex];
+      if (!scheduledPayment) {
+        throw new Error("Scheduled payment not found");
+      }
+
+      if (scheduledPayment.status === "paid") {
+        throw new Error("Payment already completed");
+      }
+
+      // Generate new payment reference
+      const paymentReference = `SPLIT-${scheduleId}-${paymentIndex + 1}-${Date.now()}`;
+
+      // Update the scheduled payment with new reference
+      schedule.scheduledPayments[paymentIndex].paymentReference =
+        paymentReference;
+      await schedule.save();
+
+      // Check if this is an online payment method
+      const onlinePaymentMethods = ["paystack", "mobile_money", "bank"];
+      const requiresOnlinePayment = onlinePaymentMethods.includes(
+        paymentMethod.toLowerCase()
+      );
+
+      if (!requiresOnlinePayment) {
+        // For cash/cheque payments, just return the reference - no authorization URL needed
+        return {
+          paymentReference: paymentReference,
+          requiresOnlinePayment: false,
+        };
+      }
+
+      // Initialize payment with Paystack for online payments
+      const { initializePayment } = await import("./payment.service");
+
+      const paymentData = {
+        email: userEmail,
+        amount: scheduledPayment.amount * 100, // Convert to kobo without rounding
+        currency: "GHS", // Default currency
+        metadata: {
+          full_name: `Scheduled Payment ${paymentIndex + 1}`,
+          scheduleId: scheduleId,
+          paymentIndex: paymentIndex,
+          paymentType: schedule.paymentType,
+          transactionId: schedule.transactionId,
+        },
+      };
+
+      const paymentResponse = await initializePayment(paymentData, {
+        companyId: schedule.companyId,
+      });
+
+      return {
+        authorizationUrl: paymentResponse.data.authorization_url,
+        paymentReference: paymentReference,
+        requiresOnlinePayment: true,
+      };
+    } catch (error: any) {
+      throw new Error(
+        `Failed to authorize scheduled payment: ${error.message}`
+      );
+    }
+  }
+
+  /**
+   * Mark a cash/cheque payment as completed
+   */
+  static async markPaymentCompleted(
+    scheduleId: string,
+    paymentIndex: number,
+    notes?: string
+  ): Promise<PaymentScheduleDocument> {
+    try {
+      const schedule = await PaymentScheduleModel.findById(scheduleId);
+      if (!schedule) {
+        throw new Error("Payment schedule not found");
+      }
+
+      const scheduledPayment = schedule.scheduledPayments[paymentIndex];
+      if (!scheduledPayment) {
+        throw new Error("Scheduled payment not found");
+      }
+
+      if (scheduledPayment.status === "paid") {
+        throw new Error("Payment already completed");
+      }
+
+      // Mark the payment as paid
+      schedule.scheduledPayments[paymentIndex].status = "paid";
+      schedule.scheduledPayments[paymentIndex].paidAt = new Date();
+      schedule.scheduledPayments[paymentIndex].notes = notes;
+
+      // Update schedule totals
+      schedule.paidAmount += scheduledPayment.amount;
+      schedule.remainingAmount = schedule.totalAmount - schedule.paidAmount;
+
+      // Check if all payments are completed
+      const allPaid = schedule.scheduledPayments.every(
+        (payment) => payment.status === "paid"
+      );
+      if (allPaid) {
+        schedule.status = "completed";
+      } else {
+        // Update next payment date
+        const nextPendingPayment = schedule.scheduledPayments.find(
+          (payment) => payment.status === "pending"
+        );
+        if (nextPendingPayment) {
+          schedule.nextPaymentDate = nextPendingPayment.dueDate;
+        }
+      }
+
+      await schedule.save();
+      return schedule;
+    } catch (error: any) {
+      throw new Error(`Failed to mark payment as completed: ${error.message}`);
     }
   }
 

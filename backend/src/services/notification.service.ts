@@ -620,11 +620,11 @@ class NotificationService {
     }
   }
 
-  // Create payment notification
+  // Create payment notification - Updated to support subscription payments
   async createPaymentStatusNotification(
     userId: string,
     paymentData: {
-      type: "advance" | "split" | "full";
+      type: "advance" | "split" | "full" | "subscription";
       amount: number;
       totalAmount?: number;
       remainingAmount?: number;
@@ -633,6 +633,8 @@ class NotificationService {
       rentalId?: string;
       transactionId?: string;
       status: "completed" | "pending" | "failed" | "balance_remaining";
+      subscriptionType?: string;
+      plan?: string;
     }
   ): Promise<void> {
     try {
@@ -642,7 +644,11 @@ class NotificationService {
 
       switch (paymentData.status) {
         case "completed":
-          if (paymentData.type === "advance") {
+          if (paymentData.type === "subscription") {
+            title = "Subscription Payment Completed";
+            message = `Your ${paymentData.subscriptionType || "subscription"} payment of ${paymentData.amount} for ${paymentData.plan || "your plan"} has been processed successfully.`;
+            notificationType = "success";
+          } else if (paymentData.type === "advance") {
             title = "Advance Payment Completed";
             message = `Your advance payment of ${paymentData.amount} has been processed successfully. Balance of ${paymentData.remainingAmount} remains to be paid.`;
             notificationType = "success";

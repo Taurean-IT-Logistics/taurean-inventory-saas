@@ -6,6 +6,7 @@ interface TransactionDocument extends Document, Transaction {}
 const TransactionSchema = new Schema<TransactionDocument>(
   {
     booking: { type: Schema.Types.ObjectId, ref: "Booking" },
+    rental: { type: Schema.Types.ObjectId, ref: "Rental" },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     account: { type: Schema.Types.ObjectId, ref: "Account" },
     type: { type: String, enum: ["income", "expense"], required: true },
@@ -18,6 +19,11 @@ const TransactionSchema = new Schema<TransactionDocument>(
         "inventory_item",
         "company",
         "activation",
+        "subscription",
+        "subscription_renewal",
+        "subscription_upgrade",
+        "maintenance",
+        "payment",
         "other",
       ],
       required: true,

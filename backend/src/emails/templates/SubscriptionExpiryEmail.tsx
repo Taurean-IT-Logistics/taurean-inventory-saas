@@ -13,7 +13,8 @@ import {
 interface SubscriptionExpiryEmailProps {
   company: {
     name: string;
-    contactEmail: string;
+    contactEmail?: string;
+    logo?: string;
   };
   user: {
     name: string;
@@ -23,6 +24,7 @@ interface SubscriptionExpiryEmailProps {
     daysRemaining: number;
     expiryDate: string;
   };
+  baseUrl: string;
 }
 
 export const SubscriptionExpiryEmail: React.FC<

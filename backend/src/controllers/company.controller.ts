@@ -34,24 +34,17 @@ export async function activateSubscription(req: Request, res: Response) {
     }
 
     const { companyId, plan } = req.body;
-    const company = await CompanyModel.findById(companyId);
-    if (!company) {
-      sendError(res, "Company not found", null, 404);
-      return;
-    }
 
-    const p = plans.find((x) => x.id === plan);
-    if (!p) {
-      sendError(res, "Invalid plan", null, 400);
-      return;
-    }
-
-    const expiresAt = new Date(
-      Date.now() + p.durationDays * 24 * 60 * 60 * 1000
+    // Use the subscription service for proper activation
+    const { SubscriptionService } = await import(
+      "../services/subscription.service"
     );
-    const licenseKey = generateLicenseKey((company as any)._id.toString());
-    company.subscription = { plan: plan as any, expiresAt, licenseKey } as any;
-    await company.save();
+    const company = await SubscriptionService.activateSubscription(
+      companyId,
+      plan,
+      `admin-activated-${Date.now()}` // Generate a reference for admin activation
+    );
+
     sendSuccess(res, "Subscription activated", { company });
   } catch (e: any) {
     sendError(res, "Failed to activate subscription", e.message);
@@ -65,29 +58,18 @@ export async function renewSubscription(req: Request, res: Response) {
       return;
     }
 
-    const { companyId } = req.body;
-    const company = await CompanyModel.findById(companyId);
-    if (!company || !company.subscription) {
-      sendError(res, "Company or subscription not found", null, 404);
-      return;
-    }
+    const { companyId, plan } = req.body;
 
-    const p = plans.find((x) => x.id === (company.subscription as any).plan);
-    if (!p) {
-      sendError(res, "Invalid plan on company", null, 400);
-      return;
-    }
-
-    const expiresAt = new Date(
-      Date.now() + p.durationDays * 24 * 60 * 60 * 1000
+    // Use the subscription service for proper renewal
+    const { SubscriptionService } = await import(
+      "../services/subscription.service"
     );
-    const licenseKey = generateLicenseKey((company as any)._id.toString());
-    company.subscription = {
-      plan: (company.subscription as any).plan,
-      expiresAt,
-      licenseKey,
-    } as any;
-    await company.save();
+    const company = await SubscriptionService.renewSubscription(
+      companyId,
+      plan || "monthly", // Default to monthly if no plan specified
+      `admin-renewed-${Date.now()}` // Generate a reference for admin renewal
+    );
+
     sendSuccess(res, "Subscription renewed", { company });
   } catch (e: any) {
     sendError(res, "Failed to renew subscription", e.message);
@@ -863,9 +845,9 @@ export async function onboardCompany(
       invoiceFormat: parsedInvoiceFormat,
       subscription: {
         plan: "free_trial",
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
+        expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 day trial
         status: "active",
-        hasUsedTrial: false,
+        hasUsedTrial: true, // Company gets trial automatically, so trial is considered used
         isTrial: true,
       },
     };
