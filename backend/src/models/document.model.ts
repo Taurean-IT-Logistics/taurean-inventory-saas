@@ -13,6 +13,12 @@ export interface DocumentFile {
   uploadedBy: string | Types.ObjectId;
   isPublic: boolean;
   isDeleted: boolean;
+  // Review fields for super admin
+  status?: "pending" | "approved" | "rejected";
+  reviewedBy?: string | Types.ObjectId;
+  reviewedAt?: Date;
+  reviewNotes?: string;
+  rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +43,16 @@ const DocumentFileSchema = new Schema<DocumentFileDocument>(
     uploadedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     isPublic: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
+    // Review fields for super admin
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    reviewedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    reviewedAt: { type: Date },
+    reviewNotes: { type: String, trim: true },
+    rejectionReason: { type: String, trim: true },
   },
   { timestamps: true }
 );
@@ -46,6 +62,8 @@ DocumentFileSchema.index({ company: 1, category: 1, createdAt: -1 });
 DocumentFileSchema.index({ uploadedBy: 1, createdAt: -1 });
 DocumentFileSchema.index({ tags: 1 });
 DocumentFileSchema.index({ isPublic: 1, isDeleted: 1 });
+DocumentFileSchema.index({ status: 1, createdAt: -1 });
+DocumentFileSchema.index({ reviewedBy: 1, reviewedAt: -1 });
 
 const DocumentFileModel: Model<DocumentFileDocument> =
   model<DocumentFileDocument>("DocumentFile", DocumentFileSchema);

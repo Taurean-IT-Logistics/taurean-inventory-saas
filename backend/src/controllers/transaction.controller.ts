@@ -14,14 +14,22 @@ import {
   sendValidationError,
 } from "../utils";
 import {
+  validateSplitConfig,
+  validateAdvanceConfig,
+  generateDefaultSplitConfig,
+  generateDefaultAdvanceConfig,
+} from "../utils/paymentConfigHelpers";
+import {
   BookingDocument,
   CompanyModel,
   InventoryItemModel,
   TransactionDocument,
   UserModel,
   TransactionModel,
+  CashModel,
+  ChequeModel,
 } from "../models";
-import { Transaction } from "../types";
+import { Transaction, Cash, Cheque } from "../types";
 import { isValidObjectId } from "mongoose";
 import fs from "fs";
 import { emailService } from "../services/email.service";
@@ -83,9 +91,58 @@ const initializePaymentController = async (
       return;
     }
 
+    // Validate payment timing configurations
+    if (paymentData.paymentTiming === "split") {
+      if (!paymentData.splitConfig) {
+        // Generate default split config if none provided
+        paymentData.splitConfig = generateDefaultSplitConfig(amount);
+        console.log(
+          "📋 Generated default split config:",
+          paymentData.splitConfig
+        );
+      }
+
+      // Validate split configuration using helper function
+      const splitValidation = validateSplitConfig(
+        paymentData.splitConfig,
+        amount
+      );
+      if (!splitValidation.isValid) {
+        sendValidationError(
+          res,
+          `Split payment validation failed: ${splitValidation.errors.join(", ")}`
+        );
+        return;
+      }
+    }
+
+    if (paymentData.paymentTiming === "advance") {
+      if (!paymentData.advanceConfig) {
+        // Generate default advance config if none provided
+        paymentData.advanceConfig = generateDefaultAdvanceConfig(amount);
+        console.log(
+          "📋 Generated default advance config:",
+          paymentData.advanceConfig
+        );
+      }
+
+      // Validate advance configuration using helper function
+      const advanceValidation = validateAdvanceConfig(
+        paymentData.advanceConfig,
+        amount
+      );
+      if (!advanceValidation.isValid) {
+        sendValidationError(
+          res,
+          `Advance payment validation failed: ${advanceValidation.errors.join(", ")}`
+        );
+        return;
+      }
+    }
+
     const formattedPaymentData = {
       email,
-      amount: Math.round(amount * 100), // Convert to kobo
+      amount: amount * 100, // Convert to kobo without rounding
       metadata: {
         full_name: userDoc.name,
       },
@@ -94,13 +151,10 @@ const initializePaymentController = async (
 
     if (paymentData.discount) {
       if (paymentData.discount.type === "percentage") {
-        formattedPaymentData.amount -= Math.round(
-          (formattedPaymentData.amount * paymentData.discount.value) / 100
-        );
+        formattedPaymentData.amount -=
+          (formattedPaymentData.amount * paymentData.discount.value) / 100;
       } else {
-        formattedPaymentData.amount -= Math.round(
-          paymentData.discount.value * 100
-        );
+        formattedPaymentData.amount -= paymentData.discount.value * 100;
       }
     }
 
@@ -151,6 +205,10 @@ const initializePaymentController = async (
       { companyId }
     );
 
+    // Debug logging
+    console.log("Payment Data received:", paymentData);
+    console.log("Company ID for transaction:", companyId);
+
     // Create transaction document
     const transactionData: Partial<Transaction> = {
       user: userDoc.id,
@@ -158,7 +216,7 @@ const initializePaymentController = async (
       type: "income",
       category: category,
       amount,
-      method: "n/a",
+      method: paymentData.paymentTiming === "split" ? "split" : "paystack",
       paymentDetails: {
         paystackReference: paymentResponse.data.reference,
       },
@@ -191,6 +249,151 @@ const initializePaymentController = async (
     const transaction =
       await TransactionService.createTransaction(transactionData);
 
+    // Create rental document if this is a rental transaction
+    if (category === "inventory_item" && paymentData.inventoryItem) {
+      try {
+        const { createRental } = await import("../services/rental.service");
+
+        const rentalData = {
+          item: paymentData.inventoryItem,
+          quantity: paymentData.quantity || 1,
+          startDate: paymentData.startDate || new Date(),
+          endDate:
+            paymentData.endDate ||
+            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days
+          amount: amount,
+          transaction: transaction._id.toString(),
+          user: userDoc.id,
+          company: companyId,
+          notes: description || `Rental for ${paymentData.inventoryItem}`,
+          status: "active" as const,
+          paymentStatus: "pending",
+        };
+
+        const rental = await createRental(rentalData);
+
+        // Update transaction with rental reference
+        await TransactionService.updateTransaction(transaction._id.toString(), {
+          rental: rental._id,
+        } as Partial<Transaction>);
+
+        console.log(`✅ Rental document created: ${rental._id}`);
+      } catch (rentalError: any) {
+        console.error(`❌ Failed to create rental document:`, rentalError);
+        // Don't fail the transaction creation if rental creation fails
+      }
+    }
+
+    // If this is a split payment, create a payment schedule
+    if (paymentData.paymentTiming === "split" && paymentData.splitConfig) {
+      try {
+        const { PaymentScheduleService } = await import(
+          "../services/paymentSchedule.service"
+        );
+
+        const scheduleData = {
+          transactionId: transaction._id.toString(),
+          userId: userDoc.id,
+          companyId: companyId!,
+          totalAmount: amount,
+          currency: currency || "GHS",
+          paymentType: "split" as const,
+          paymentMethod: paymentData.paymentMethod || "paystack",
+          splitConfig: paymentData.splitConfig,
+          bookingId: paymentData.booking,
+          rentalId: paymentData.rental,
+          description: description || `Split payment for ${email}`,
+        };
+
+        const paymentSchedule =
+          await PaymentScheduleService.createPaymentSchedule(scheduleData);
+
+        console.log(
+          `✅ Payment schedule created for split payment: ${paymentSchedule._id}`
+        );
+        console.log(
+          `📊 Split config: ${paymentData.splitConfig.numberOfParts} parts, ${paymentData.splitConfig.intervalDays} days interval`
+        );
+      } catch (scheduleError: any) {
+        console.error(
+          "❌ CRITICAL: Failed to create payment schedule for split payment:",
+          scheduleError
+        );
+        console.error("📋 Transaction ID:", transaction._id);
+        console.error("📋 Split Config:", paymentData.splitConfig);
+
+        // This is a critical error - the payment cannot be verified without a schedule
+        // We should fail the request to prevent financial issues
+        await TransactionService.deleteTransaction(transaction._id.toString());
+
+        sendError(
+          res,
+          `Failed to create payment schedule for split payment: ${scheduleError.message}. ` +
+            `Transaction has been cancelled to prevent verification issues.`,
+          scheduleError,
+          500
+        );
+        return;
+      }
+    }
+
+    // If this is an advance payment, create a payment schedule
+    if (paymentData.paymentTiming === "advance" && paymentData.advanceConfig) {
+      try {
+        const { PaymentScheduleService } = await import(
+          "../services/paymentSchedule.service"
+        );
+
+        const scheduleData = {
+          transactionId: transaction._id.toString(),
+          userId: userDoc.id,
+          companyId: companyId!,
+          totalAmount: amount,
+          currency: currency || "GHS",
+          paymentType: "advance" as const,
+          paymentMethod: paymentData.paymentMethod || "paystack",
+          advanceConfig: paymentData.advanceConfig,
+          bookingId: paymentData.booking,
+          rentalId: paymentData.rental,
+          description: description || `Advance payment for ${email}`,
+        };
+
+        const paymentSchedule =
+          await PaymentScheduleService.createPaymentSchedule(scheduleData);
+
+        console.log(
+          `✅ Payment schedule created for advance payment: ${paymentSchedule._id}`
+        );
+        console.log(
+          `📊 Advance config: ${paymentData.advanceConfig.inputMode}, ${
+            paymentData.advanceConfig.inputMode === "percentage"
+              ? `${paymentData.advanceConfig.percentage}%`
+              : `${paymentData.advanceConfig.fixedAmount} fixed`
+          }`
+        );
+      } catch (scheduleError: any) {
+        console.error(
+          "❌ CRITICAL: Failed to create payment schedule for advance payment:",
+          scheduleError
+        );
+        console.error("📋 Transaction ID:", transaction._id);
+        console.error("📋 Advance Config:", paymentData.advanceConfig);
+
+        // This is a critical error - the payment cannot be verified without a schedule
+        // We should fail the request to prevent financial issues
+        await TransactionService.deleteTransaction(transaction._id.toString());
+
+        sendError(
+          res,
+          `Failed to create payment schedule for advance payment: ${scheduleError.message}. ` +
+            `Transaction has been cancelled to prevent verification issues.`,
+          scheduleError,
+          500
+        );
+        return;
+      }
+    }
+
     const response = {
       payment: paymentResponse.data,
       transaction: transaction,
@@ -214,30 +417,68 @@ const verifyPaymentController = async (
 ): Promise<void> => {
   try {
     const { reference } = req.params;
-    const { paymentMethod } = req.body; // Optional: specify payment method
 
     if (!reference) {
       sendValidationError(res, "Payment reference is required");
       return;
     }
 
+    console.log("🔍 Looking for transaction with reference:", reference);
+
     // Find transaction by reference first to determine payment method
     const transaction =
       await TransactionService.getTransactionByReference(reference);
 
     if (!transaction) {
+      console.error("❌ Transaction not found for reference:", reference);
       sendNotFound(res, "Transaction not found");
       return;
     }
 
-    // Use payment method from transaction or request body
-    const method = paymentMethod || transaction.method || "paystack";
+    console.log("✅ Transaction found:", transaction._id);
+
+    // Determine payment method from transaction or reference pattern
+    let method = transaction.method;
+
+    console.log("Transaction method from DB:", method);
+    console.log("Reference:", reference);
+    console.log("PaymentDetails:", transaction.paymentDetails);
+    console.log("AccessCode:", (transaction as any).accessCode);
+
+    // If method is undefined, null, "n/a", or empty, determine from transaction data
+    if (!method || method === "n/a" || method.trim() === "") {
+      // Check payment timing first to determine if it's a split payment
+      const paymentTiming = (transaction as any).paymentTiming;
+
+      if (paymentTiming === "split") {
+        method = "split";
+      } else {
+        // Check if this is a Paystack transaction by looking for Paystack-specific fields
+        const hasPaystackReference =
+          transaction.paymentDetails?.paystackReference;
+        const hasAccessCode = (transaction as any).accessCode;
+        const refMatchesPaystackReference =
+          transaction.paymentDetails?.paystackReference === reference;
+
+        if (
+          hasPaystackReference ||
+          hasAccessCode ||
+          refMatchesPaystackReference
+        ) {
+          method = "paystack";
+        } else {
+          method = "paystack"; // Default to paystack for online payments
+        }
+      }
+    }
 
     // Verify payment using the appropriate method
     const verificationResult = await PaymentVerificationService.verifyPayment(
       reference,
       method
     );
+
+    console.log("Verification Result", verificationResult);
 
     if (!verificationResult.success && verificationResult.status === "failed") {
       sendError(
@@ -248,6 +489,8 @@ const verifyPaymentController = async (
       return;
     }
 
+    console.log("Transaction passed verification");
+
     // Update transaction using the verification service
     const updatedTransaction =
       await PaymentVerificationService.updateTransactionFromVerification(
@@ -255,11 +498,15 @@ const verifyPaymentController = async (
         verificationResult
       );
 
+    console.log("Transaction updated", updatedTransaction);
+
     // Handle post-verification actions
     await PaymentVerificationService.handlePostVerificationActions(
       updatedTransaction,
       verificationResult
     );
+
+    console.log("Post verification actions completed");
 
     // Format the response
     const formattedResponse = {
@@ -274,8 +521,18 @@ const verifyPaymentController = async (
       transaction: updatedTransaction,
     };
 
+    console.log("📤 Sending verification response:", formattedResponse);
+
+    console.log("Sending verification response");
+
     sendSuccess(res, "Payment verified successfully", formattedResponse);
+    console.log("✅ Verification response sent successfully");
   } catch (error) {
+    console.error("Payment verification error:", error);
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
     sendError(res, "Failed to verify payment", error);
   }
 };
@@ -826,27 +1083,62 @@ const processCashPaymentController = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { amount, denominations, transactionId } = req.body;
+    const { amount, denominations, description, category, reference } =
+      req.body;
     const userId = req.user?.id!;
     const companyId = req.user?.companyId!;
 
-    if (!amount || !denominations || !transactionId) {
+    if (!amount || !denominations) {
       sendValidationError(
         res,
-        "Missing required fields: amount, denominations, and transactionId are required"
+        "Missing required fields: amount and denominations are required"
       );
       return;
     }
 
-    const result = await PaymentService.processCashPayment({
+    if (!category) {
+      sendValidationError(res, "Category is required");
+      return;
+    }
+
+    // Create cash record
+    const cash = new CashModel({
       amount,
       denominations,
-      transactionId,
-      userId,
-      companyId,
+    });
+    await cash.save();
+
+    // Create transaction record
+    const transaction = new TransactionModel({
+      user: userId,
+      company: companyId,
+      type: "income",
+      category,
+      amount,
+      method: "cash",
+      isCash: true,
+      cash: cash._id,
+      description: description || "Cash payment",
+      ref: reference,
+      paymentDetails: {
+        cashDetails: {
+          amount,
+          denominations,
+          processedAt: new Date(),
+        },
+      },
+      reconciled: false,
+      attachments: [],
+      tags: ["cash", "admin-input"],
+      isDeleted: false,
     });
 
-    sendSuccess(res, "Cash payment processed successfully", result);
+    const savedTransaction = await transaction.save();
+
+    // Populate the transaction with cash details
+    await savedTransaction.populate("cash");
+
+    sendSuccess(res, "Cash payment processed successfully", savedTransaction);
   } catch (error) {
     sendError(res, "Failed to process cash payment", error);
   }
@@ -1031,6 +1323,9 @@ const createPendingTransactionController = async (
       return;
     }
 
+    // Generate unique transaction reference
+    const transactionRef = `${category.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     const pendingTransaction =
       await TransactionService.createPendingTransaction({
         user: userId,
@@ -1046,8 +1341,90 @@ const createPendingTransactionController = async (
         paymentTiming,
         advanceConfig,
         splitConfig,
+        ref: transactionRef, // Unique transaction reference
         type: "income", // Pending transactions are typically income
       });
+
+    // Create rental document if this is a rental transaction
+    if (category === "inventory_item" && referenceId) {
+      try {
+        const { createRental } = await import("../services/rental.service");
+
+        const rentalData = {
+          item: referenceId, // For rentals, referenceId is the inventory item ID
+          quantity: 1, // Default quantity
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days
+          amount: amount,
+          transaction: pendingTransaction._id.toString(),
+          user: userId,
+          company: companyId,
+          notes: notes || `Pending rental for ${referenceId}`,
+          status: "active" as const,
+          paymentStatus: "pending",
+        };
+
+        const rental = await createRental(rentalData);
+
+        // Update transaction with rental reference
+        await TransactionService.updateTransaction(
+          pendingTransaction._id.toString(),
+          {
+            rental: rental._id,
+          } as Partial<Transaction>
+        );
+
+        console.log(
+          `✅ Rental document created for pending transaction: ${rental._id}`
+        );
+      } catch (rentalError: any) {
+        console.error(
+          `❌ Failed to create rental document for pending transaction:`,
+          rentalError
+        );
+        // Don't fail the transaction creation if rental creation fails
+      }
+    }
+
+    // If this is a split or advance payment, create a payment schedule
+    if (
+      (paymentTiming === "split" && splitConfig) ||
+      (paymentTiming === "advance" && advanceConfig)
+    ) {
+      try {
+        const { PaymentScheduleService } = await import(
+          "../services/paymentSchedule.service"
+        );
+
+        const scheduleData = {
+          transactionId: pendingTransaction._id.toString(),
+          userId: userId,
+          companyId: companyId,
+          totalAmount: amount,
+          currency: currency || "GHS",
+          paymentType: paymentTiming as "split" | "advance",
+          paymentMethod: method,
+          splitConfig: splitConfig,
+          advanceConfig: advanceConfig,
+          rentalId: category === "inventory_item" ? referenceId : undefined,
+          bookingId: category === "booking" ? referenceId : undefined,
+          description: notes || `Pending ${paymentTiming} payment`,
+        };
+
+        const paymentSchedule =
+          await PaymentScheduleService.createPaymentSchedule(scheduleData);
+
+        console.log(
+          `✅ Payment schedule created for pending ${paymentTiming} payment: ${paymentSchedule._id}`
+        );
+      } catch (scheduleError: any) {
+        console.error(
+          `❌ Failed to create payment schedule for pending ${paymentTiming} payment:`,
+          scheduleError
+        );
+        // Don't fail the transaction creation if schedule creation fails
+      }
+    }
 
     sendSuccess(
       res,
@@ -1147,6 +1524,195 @@ const getUserPendingTransactionsController = async (
   }
 };
 
+// Process check payment
+const processCheckPaymentController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const {
+      amount,
+      checkNumber,
+      bankName,
+      accountNumber,
+      checkDate,
+      description,
+      category,
+      reference,
+    } = req.body;
+
+    const userId = req.user?.id;
+    const companyId = req.user?.companyId;
+
+    if (!userId || !companyId) {
+      sendError(res, "User authentication required");
+      return;
+    }
+
+    if (!amount || amount <= 0) {
+      sendValidationError(res, "Amount must be greater than 0");
+      return;
+    }
+
+    if (!checkNumber || !bankName || !accountNumber || !checkDate) {
+      sendValidationError(
+        res,
+        "Check number, bank name, account number, and check date are required"
+      );
+      return;
+    }
+
+    if (!category) {
+      sendValidationError(res, "Category is required");
+      return;
+    }
+
+    // Validate check date
+    const checkDateObj = new Date(checkDate);
+    if (isNaN(checkDateObj.getTime())) {
+      sendValidationError(res, "Invalid check date");
+      return;
+    }
+
+    // Create cheque record
+    const cheque = new ChequeModel({
+      amount,
+      checkNumber,
+      bankName,
+      accountNumber,
+      checkDate: checkDateObj,
+      status: "pending",
+      processedAt: new Date(),
+    });
+    await cheque.save();
+
+    // Create transaction record
+    const transaction = new TransactionModel({
+      user: userId,
+      company: companyId,
+      type: "income",
+      category,
+      amount,
+      method: "cheque",
+      isCheque: true,
+      cheque: cheque._id,
+      description: description || "Check payment",
+      ref: reference,
+      paymentDetails: {
+        chequeNumber: checkNumber,
+        bankDetails: {
+          bankName,
+          accountNumber,
+        },
+        chequeDate: checkDateObj,
+      },
+      reconciled: false,
+      attachments: [],
+      tags: ["cheque", "admin-input"],
+      isDeleted: false,
+    });
+
+    const savedTransaction = await transaction.save();
+
+    // Populate the transaction with cheque details
+    await savedTransaction.populate("cheque");
+
+    sendSuccess(res, "Check payment processed successfully", savedTransaction);
+  } catch (error: any) {
+    sendError(res, error.message, error);
+  }
+};
+
+// Get pending payment schedules for a user
+const getPendingPaymentsController = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return sendError(res, "User not authenticated", null, 401);
+    }
+
+    const { PaymentScheduleService } = await import(
+      "../services/paymentSchedule.service"
+    );
+    const pendingPayments =
+      await PaymentScheduleService.getPendingPayments(userId);
+
+    sendSuccess(
+      res,
+      "Pending payments retrieved successfully",
+      pendingPayments
+    );
+  } catch (error: any) {
+    console.error("Error getting pending payments:", error);
+    sendError(res, "Failed to get pending payments", error, 500);
+  }
+};
+
+// Authorize a scheduled payment (for online payments)
+const authorizeScheduledPaymentController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { scheduleId, paymentIndex } = req.params;
+    const { userEmail, paymentMethod } = req.body;
+
+    if (!userEmail || !paymentMethod) {
+      return sendError(
+        res,
+        "User email and payment method are required",
+        null,
+        400
+      );
+    }
+
+    const { PaymentScheduleService } = await import(
+      "../services/paymentSchedule.service"
+    );
+    const result = await PaymentScheduleService.authorizeScheduledPayment(
+      scheduleId,
+      parseInt(paymentIndex),
+      userEmail,
+      paymentMethod
+    );
+
+    sendSuccess(res, "Payment authorization successful", result);
+  } catch (error: any) {
+    console.error("Error authorizing scheduled payment:", error);
+    sendError(res, "Failed to authorize scheduled payment", error, 500);
+  }
+};
+
+// Mark a scheduled payment as completed (for cash/cheque payments)
+const markPaymentCompletedController = async (req: Request, res: Response) => {
+  try {
+    const { scheduleId, paymentIndex } = req.params;
+    const { paymentMethod, notes } = req.body;
+
+    if (!paymentMethod) {
+      return sendError(res, "Payment method is required", null, 400);
+    }
+
+    const { PaymentScheduleService } = await import(
+      "../services/paymentSchedule.service"
+    );
+    const updatedSchedule = await PaymentScheduleService.markPaymentCompleted(
+      scheduleId,
+      parseInt(paymentIndex),
+      notes
+    );
+
+    sendSuccess(
+      res,
+      "Payment marked as completed successfully",
+      updatedSchedule
+    );
+  } catch (error: any) {
+    console.error("Error marking payment as completed:", error);
+    sendError(res, "Failed to mark payment as completed", error, 500);
+  }
+};
+
 export {
   // Payment operations
   initializePaymentController,
@@ -1174,4 +1740,10 @@ export {
   getPendingTransactionsController,
   processPendingTransactionController,
   getUserPendingTransactionsController,
+  // Cash and Check payment processing
+  processCheckPaymentController,
+  // Payment schedule controllers
+  getPendingPaymentsController,
+  authorizeScheduledPaymentController,
+  markPaymentCompletedController,
 };

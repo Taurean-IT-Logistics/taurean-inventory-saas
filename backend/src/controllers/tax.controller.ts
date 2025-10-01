@@ -3,27 +3,6 @@ import { TaxService } from "../services";
 import { sendSuccess, sendError, sendNotFound } from "../utils";
 
 /**
- * Create a global tax (Super Admin only)
- */
-export const createGlobalTax = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const taxData = {
-      ...req.body,
-      isSuperAdminTax: true,
-      company: undefined, // Global taxes don't belong to a company
-    };
-
-    const newTax = await TaxService.createTax(taxData);
-    sendSuccess(res, "Global tax created successfully", newTax);
-  } catch (error) {
-    sendError(res, "Failed to create global tax", error);
-  }
-};
-
-/**
  * Create a company tax
  */
 export const createCompanyTax = async (
@@ -31,7 +10,20 @@ export const createCompanyTax = async (
   res: Response
 ): Promise<void> => {
   try {
-    const taxData = req.body;
+    if (!req.user?.companyId) {
+      sendError(
+        res,
+        "Company ID not found. User must be associated with a company.",
+        400
+      );
+      return;
+    }
+
+    const taxData = {
+      ...req.body,
+      company: req.user.companyId,
+    };
+
     const newTax = await TaxService.createCompanyTax(
       taxData,
       req.user?.id || ""
@@ -43,104 +35,13 @@ export const createCompanyTax = async (
 };
 
 /**
- * Copy a super admin tax to company taxes
- */
-export const copySuperAdminTax = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { taxId } = req.params;
-
-    if (!req.user?.companyId) {
-      sendError(
-        res,
-        "Company ID not found. User must be associated with a company."
-      );
-      return;
-    }
-
-    // Get the super admin tax
-    const superAdminTax = await TaxService.getTaxById(taxId);
-
-    if (!superAdminTax) {
-      sendNotFound(res, "Tax not found");
-      return;
-    }
-
-    if (!superAdminTax.isSuperAdminTax) {
-      sendError(res, "Only super admin taxes can be copied");
-      return;
-    }
-
-    // Create a copy for the company
-    const taxData = {
-      name: superAdminTax.name,
-      description: superAdminTax.description,
-      rate: superAdminTax.rate,
-      type: superAdminTax.type,
-      appliesTo: superAdminTax.appliesTo,
-      active: superAdminTax.active,
-      isSuperAdminTax: false,
-      company: req.user.companyId as any, // Cast to any to satisfy TypeScript
-      copiedFrom: superAdminTax._id?.toString(), // Track the original tax
-    };
-
-    const newTax = await TaxService.createTax(taxData);
-    sendSuccess(res, "Tax copied successfully", newTax);
-  } catch (error) {
-    sendError(res, "Failed to copy tax", error);
-  }
-};
-
-/**
- * Get global taxes (Super Admin only)
- */
-export const getGlobalTaxes = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const filters = {
-      active:
-        req.query.active === "true"
-          ? true
-          : req.query.active === "false"
-            ? false
-            : undefined,
-      type: req.query.type as string,
-      appliesTo: req.query.appliesTo as string,
-      isSuperAdminTax: true,
-    };
-
-    const pagination = {
-      page: parseInt(req.query.page as string) || 1,
-      limit: Math.min(parseInt(req.query.limit as string) || 10, 100),
-    };
-
-    const result = await TaxService.getGlobalTaxes(filters, pagination);
-    sendSuccess(res, "Global taxes fetched successfully", result);
-  } catch (error) {
-    sendError(res, "Failed to fetch global taxes", error);
-  }
-};
-
-/**
  * Get all taxes with optional filters and pagination
  */
 export const getTaxes = async (req: Request, res: Response): Promise<void> => {
   try {
     const filters = {
-      active:
-        req.query.active === "true"
-          ? true
-          : req.query.active === "false"
-            ? false
-            : undefined,
       type: req.query.type as string,
-      appliesTo: req.query.appliesTo as string,
       isDefault: req.query.isDefault === "true" ? true : undefined,
-      isSuperAdminTax: req.query.isSuperAdminTax === "true" ? true : undefined,
     };
 
     const pagination = {
@@ -172,14 +73,7 @@ export const getCompanyTaxes = async (
     }
 
     const filters = {
-      active:
-        req.query.active === "true"
-          ? true
-          : req.query.active === "false"
-            ? false
-            : undefined,
       type: req.query.type as string,
-      appliesTo: req.query.appliesTo as string,
       companyId: req.user.companyId,
     };
 
@@ -220,14 +114,29 @@ export const createIndependentTax = async (
   res: Response
 ): Promise<void> => {
   try {
+    if (!req.user?.companyId) {
+      sendError(
+        res,
+        "Company ID not found. User must be associated with a company.",
+        400
+      );
+      return;
+    }
+
     const { id } = req.params;
     const { reason, ...taxData } = req.body;
     const userId = req.user?.id!;
 
+    // Add company ID to tax data
+    const taxDataWithCompany = {
+      ...taxData,
+      company: req.user.companyId,
+    };
+
     // If updating an existing tax, create a new independent tax
     if (id && id !== "new") {
       const newTax = await TaxService.createIndependentTax(
-        taxData,
+        taxDataWithCompany,
         userId,
         reason,
         id // This tax replaces the one with this ID
@@ -241,7 +150,7 @@ export const createIndependentTax = async (
     } else {
       // Creating a brand new tax
       const newTax = await TaxService.createIndependentTax(
-        taxData,
+        taxDataWithCompany,
         userId,
         reason
       );
@@ -365,73 +274,27 @@ export const createDefaultTaxes = async (
 };
 
 /**
- * Get combined taxes (global + company specific)
+ * Get taxes available for tax schedule creation
+ * This includes company-specific taxes only
  */
-export const getCombinedTaxes = async (
+export const getTaxesForScheduleCreation = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user?.companyId) {
-      sendError(
-        res,
-        "Company ID not found. User must be associated with a company."
-      );
-      return;
-    }
-
-    const filters = {
-      active:
-        req.query.active === "true"
-          ? true
-          : req.query.active === "false"
-            ? false
-            : undefined,
-      type: req.query.type as string,
-      appliesTo: req.query.appliesTo as string,
-    };
-
-    const pagination = {
-      page: parseInt(req.query.page as string) || 1,
-      limit: Math.min(parseInt(req.query.limit as string) || 10, 100),
-    };
-
-    // Get both global and company taxes
-    const [globalTaxes, companyTaxes] = await Promise.all([
-      TaxService.getGlobalTaxes(filters, pagination),
-      TaxService.getCompanyTaxes(
-        { ...filters, companyId: req.user.companyId },
-        pagination
-      ),
-    ]);
-
-    // Combine the results
-    const combinedTaxes = [
-      ...(globalTaxes.taxes || []),
-      ...(companyTaxes.taxes || []),
-    ];
-
-    const result = {
-      taxes: combinedTaxes,
-      total: combinedTaxes.length,
-      page: pagination.page,
-      limit: pagination.limit,
-      totalPages: Math.ceil(combinedTaxes.length / pagination.limit),
-    };
-
-    sendSuccess(res, "Combined taxes fetched successfully", result);
+    const companyId = req.user?.companyId;
+    const taxes = await TaxService.getTaxesForScheduleCreation(companyId);
+    sendSuccess(res, "Taxes for schedule creation fetched successfully", {
+      taxes,
+    });
   } catch (error) {
-    sendError(res, "Failed to fetch combined taxes", error);
+    sendError(res, "Failed to fetch taxes for schedule creation", error);
   }
 };
 
 export const TaxController = {
-  createGlobalTax,
   createCompanyTax,
-  copySuperAdminTax,
-  getGlobalTaxes,
   getCompanyTaxes,
-  getCombinedTaxes,
   getTaxes,
   getTax,
   createIndependentTax,
@@ -441,4 +304,5 @@ export const TaxController = {
   deleteTax,
   getDefaultTaxes,
   createDefaultTaxes,
+  getTaxesForScheduleCreation,
 };

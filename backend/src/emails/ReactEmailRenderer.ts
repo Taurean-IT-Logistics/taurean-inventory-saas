@@ -3,8 +3,11 @@ import React from "react";
 import { WelcomeEmail } from "./templates/WelcomeEmail";
 import { PasswordResetEmail } from "./templates/PasswordResetEmail";
 import { BookingConfirmationEmail } from "./templates/BookingConfirmationEmail";
+import { BookingSubmittedEmail } from "./templates/BookingSubmittedEmail";
 import { CustomEmail } from "./templates/CustomEmail";
 import { PaymentSuccessEmail } from "./templates/PaymentSuccessEmail";
+import { SubscriptionActivationEmail } from "./templates/SubscriptionActivationEmail";
+import { SubscriptionExpiryEmail } from "./templates/SubscriptionExpiryEmail";
 
 export interface EmailTemplateData {
   company: {
@@ -105,6 +108,48 @@ export class ReactEmailRenderer {
     return render(emailComponent);
   }
 
+  static async renderSubscriptionActivationEmail(
+    data: EmailTemplateData
+  ): Promise<string> {
+    const logoUrl = this.getCompanyLogoUrl(data.company.name);
+    const emailComponent = React.createElement(SubscriptionActivationEmail, {
+      company: { ...data.company, logo: logoUrl },
+      user: data.user!,
+      data: data.data!,
+      baseUrl: data.baseUrl,
+    });
+
+    return render(emailComponent);
+  }
+
+  static async renderSubscriptionExpiryEmail(
+    data: EmailTemplateData
+  ): Promise<string> {
+    const logoUrl = this.getCompanyLogoUrl(data.company.name);
+    const emailComponent = React.createElement(SubscriptionExpiryEmail, {
+      company: { ...data.company, logo: logoUrl },
+      user: data.user!,
+      data: data.data!,
+      baseUrl: data.baseUrl,
+    });
+
+    return render(emailComponent);
+  }
+
+  static async renderBookingSubmittedEmail(
+    data: EmailTemplateData
+  ): Promise<string> {
+    const logoUrl = this.getCompanyLogoUrl(data.company.name);
+    const emailComponent = React.createElement(BookingSubmittedEmail, {
+      company: { ...data.company, logo: logoUrl },
+      user: data.user!,
+      booking: data.booking!,
+      baseUrl: data.baseUrl,
+    });
+
+    return render(emailComponent);
+  }
+
   static async renderEmail(
     templateName: string,
     data: EmailTemplateData
@@ -116,10 +161,16 @@ export class ReactEmailRenderer {
         return this.renderPasswordResetEmail(data);
       case "booking-confirmation":
         return this.renderBookingConfirmationEmail(data);
+      case "booking-submitted":
+        return this.renderBookingSubmittedEmail(data);
       case "custom":
         return this.renderCustomEmail(data);
       case "payment-success":
         return this.renderPaymentSuccessEmail(data);
+      case "subscription-activation":
+        return this.renderSubscriptionActivationEmail(data);
+      case "subscription-expiry":
+        return this.renderSubscriptionExpiryEmail(data);
       default:
         throw new Error(`Email template '${templateName}' not found`);
     }

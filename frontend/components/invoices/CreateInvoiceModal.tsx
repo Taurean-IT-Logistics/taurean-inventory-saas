@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -78,20 +79,25 @@ export function CreateInvoiceModal({
       0
     );
     const taxAmount = formData.items.reduce(
-      (sum, item) => sum + (item.quantity * item.unitPrice * item.taxRate) / 100,
+      (sum, item) =>
+        sum + (item.quantity * item.unitPrice * item.taxRate) / 100,
       0
     );
     const total = subtotal + taxAmount;
     return { subtotal, taxAmount, total };
   };
 
-  const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
+  const handleItemChange = (
+    index: number,
+    field: keyof InvoiceItem,
+    value: any
+  ) => {
     const newItems = [...formData.items];
     newItems[index] = { ...newItems[index], [field]: value };
-    
+
     // Recalculate amount
     newItems[index].amount = calculateItemAmount(newItems[index]);
-    
+
     setFormData({ ...formData, items: newItems });
   };
 
@@ -180,7 +186,7 @@ export function CreateInvoiceModal({
 
       onSuccess?.();
       onClose();
-      
+
       // Reset form
       setFormData({
         customerInfo: {
@@ -230,7 +236,9 @@ export function CreateInvoiceModal({
           <div className="space-y-6 py-4 pr-4">
             {/* Customer Information */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                Customer Information
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="customerName">Customer Name *</Label>
@@ -328,14 +336,17 @@ export function CreateInvoiceModal({
                 </div>
                 <div>
                   <Label htmlFor="dueDate">Due Date *</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={formData.dueDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, dueDate: e.target.value })
+                  <DatePicker
+                    date={
+                      formData.dueDate ? new Date(formData.dueDate) : undefined
                     }
-                    min={new Date().toISOString().split('T')[0]}
+                    onDateChange={(date: Date | undefined) =>
+                      setFormData({
+                        ...formData,
+                        dueDate: date ? date.toISOString().split("T")[0] : "",
+                      })
+                    }
+                    placeholder="Select due date"
                   />
                 </div>
               </div>
@@ -355,7 +366,7 @@ export function CreateInvoiceModal({
                   Add Item
                 </Button>
               </div>
-              
+
               <div className="space-y-4">
                 {formData.items.map((item, index) => (
                   <div
@@ -364,12 +375,18 @@ export function CreateInvoiceModal({
                   >
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div className="md:col-span-2">
-                        <Label htmlFor={`description-${index}`}>Description</Label>
+                        <Label htmlFor={`description-${index}`}>
+                          Description
+                        </Label>
                         <Input
                           id={`description-${index}`}
                           value={item.description}
                           onChange={(e) =>
-                            handleItemChange(index, "description", e.target.value)
+                            handleItemChange(
+                              index,
+                              "description",
+                              e.target.value
+                            )
                           }
                           placeholder="Item description"
                         />
@@ -382,7 +399,11 @@ export function CreateInvoiceModal({
                           min="1"
                           value={item.quantity}
                           onChange={(e) =>
-                            handleItemChange(index, "quantity", parseInt(e.target.value) || 0)
+                            handleItemChange(
+                              index,
+                              "quantity",
+                              parseInt(e.target.value) || 0
+                            )
                           }
                         />
                       </div>
@@ -395,7 +416,11 @@ export function CreateInvoiceModal({
                           step="0.01"
                           value={item.unitPrice}
                           onChange={(e) =>
-                            handleItemChange(index, "unitPrice", parseFloat(e.target.value) || 0)
+                            handleItemChange(
+                              index,
+                              "unitPrice",
+                              parseFloat(e.target.value) || 0
+                            )
                           }
                         />
                       </div>
@@ -409,7 +434,11 @@ export function CreateInvoiceModal({
                           step="0.01"
                           value={item.taxRate}
                           onChange={(e) =>
-                            handleItemChange(index, "taxRate", parseFloat(e.target.value) || 0)
+                            handleItemChange(
+                              index,
+                              "taxRate",
+                              parseFloat(e.target.value) || 0
+                            )
                           }
                         />
                       </div>
@@ -441,15 +470,21 @@ export function CreateInvoiceModal({
                 <div className="w-64 space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>{formData.currency} {subtotal.toFixed(2)}</span>
+                    <span>
+                      {formData.currency} {subtotal.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Tax:</span>
-                    <span>{formData.currency} {taxAmount.toFixed(2)}</span>
+                    <span>
+                      {formData.currency} {taxAmount.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between font-bold text-lg border-t pt-2">
                     <span>Total:</span>
-                    <span>{formData.currency} {total.toFixed(2)}</span>
+                    <span>
+                      {formData.currency} {total.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>

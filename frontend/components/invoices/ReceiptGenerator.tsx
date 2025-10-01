@@ -265,12 +265,38 @@ const ReceiptGenerator = forwardRef<ReceiptGeneratorRef, ReceiptGeneratorProps>(
                 <span className="font-semibold">Subtotal:</span>
                 <span>{currencyFormat(data.subtotal, data.currency)}</span>
               </div>
-              {data.taxAmount > 0 && (
+
+              {/* Tax Breakdown */}
+              {data.taxBreakdown && data.taxBreakdown.length > 0 && (
+                <>
+                  {data.taxBreakdown.map((tax, index) => (
+                    <div
+                      key={index}
+                      className="flex justify-between py-1 text-sm"
+                    >
+                      <span className="flex items-center gap-1">
+                        <span>{tax.tax.name}</span>
+                        <span className="text-gray-500">({tax.rate}%)</span>
+                      </span>
+                      <span>{currencyFormat(tax.amount, data.currency)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between py-2 border-t border-gray-200">
+                    <span className="font-semibold">Total Tax:</span>
+                    <span className="font-semibold">
+                      {currencyFormat(data.taxAmount, data.currency)}
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {data.taxAmount > 0 && !data.taxBreakdown && (
                 <div className="flex justify-between py-2">
                   <span>Tax:</span>
                   <span>{currencyFormat(data.taxAmount, data.currency)}</span>
                 </div>
               )}
+
               {data.discountAmount > 0 && (
                 <div className="flex justify-between py-2">
                   <span>Discount:</span>

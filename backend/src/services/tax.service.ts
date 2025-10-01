@@ -22,8 +22,6 @@ const createCompanyTax = async (
     const tax = new TaxModel({
       ...taxData,
       createdBy: userId,
-      isSuperAdminTax: false, // Always false for company taxes, regardless of what's passed
-      active: true,
     });
     return await tax.save();
   } catch (error) {
@@ -40,11 +38,9 @@ const createCompanyTax = async (
  */
 const getAllTaxes = async (
   filters: {
-    active?: boolean;
     type?: string;
     appliesTo?: string;
     isDefault?: boolean;
-    isSuperAdminTax?: boolean;
   } = {},
   pagination: {
     page?: number;
@@ -59,10 +55,6 @@ const getAllTaxes = async (
   try {
     const query: any = {};
 
-    if (filters.active !== undefined) {
-      query.active = filters.active;
-    }
-
     if (filters.type) {
       query.type = filters.type;
     }
@@ -73,10 +65,6 @@ const getAllTaxes = async (
 
     if (filters.isDefault !== undefined) {
       query.isDefault = filters.isDefault;
-    }
-
-    if (filters.isSuperAdminTax !== undefined) {
-      query.isSuperAdminTax = filters.isSuperAdminTax;
     }
 
     const page = pagination.page || 1;
@@ -365,9 +353,10 @@ const deleteTax = async (id: string): Promise<boolean> => {
  */
 const getDefaultTaxes = async (): Promise<TaxDocument[]> => {
   try {
-    return await TaxModel.find({ isDefault: true, isSuperAdminTax: true }).sort(
-      { priority: 1, createdAt: -1 }
-    );
+    return await TaxModel.find({ isDefault: true }).sort({
+      priority: 1,
+      createdAt: -1,
+    });
   } catch (error) {
     throw new Error(
       `Failed to fetch default taxes: ${
@@ -387,7 +376,6 @@ const createDefaultTaxes = async (): Promise<TaxDocument[]> => {
         name: "VAT",
         rate: 0.15,
         type: "VAT",
-        isSuperAdminTax: true,
         isDefault: true,
         priority: 1,
         active: true,
@@ -399,7 +387,6 @@ const createDefaultTaxes = async (): Promise<TaxDocument[]> => {
         name: "NHIS",
         rate: 0.025,
         type: "NHIS",
-        isSuperAdminTax: true,
         isDefault: true,
         priority: 2,
         active: true,
@@ -411,7 +398,6 @@ const createDefaultTaxes = async (): Promise<TaxDocument[]> => {
         name: "COVID Levy",
         rate: 0.01,
         type: "COVID",
-        isSuperAdminTax: true,
         isDefault: true,
         priority: 3,
         active: true,
@@ -423,7 +409,6 @@ const createDefaultTaxes = async (): Promise<TaxDocument[]> => {
         name: "GETFUND",
         rate: 0.025,
         type: "GETFUND",
-        isSuperAdminTax: true,
         isDefault: true,
         priority: 4,
         active: true,
@@ -478,7 +463,7 @@ const getCombinedTaxes = async (
 }> => {
   try {
     const query: any = {
-      $or: [{ isDefault: true, isSuperAdminTax: true }, { company: companyId }],
+      $or: [{ isDefault: true }, { company: companyId }],
     };
 
     if (filters.active !== undefined) {
@@ -521,63 +506,25 @@ const getCombinedTaxes = async (
 };
 
 /**
- * Get global taxes (Super Admin taxes)
+ * Get taxes available for tax schedule creation
+ * This includes company-specific taxes only
  */
-const getGlobalTaxes = async (
-  filters: {
-    active?: boolean;
-    type?: string;
-    appliesTo?: string;
-  } = {},
-  pagination: {
-    page?: number;
-    limit?: number;
-  } = {}
-): Promise<{
-  taxes: TaxDocument[];
-  total: number;
-  totalPages: number;
-  currentPage: number;
-}> => {
+const getTaxesForScheduleCreation = async (
+  companyId?: string
+): Promise<TaxDocument[]> => {
   try {
     const query: any = {
-      isSuperAdminTax: true,
-      company: { $exists: false },
+      company: companyId, // Only company-specific taxes
     };
 
-    if (filters.active !== undefined) {
-      query.active = filters.active;
-    }
+    const taxes = await TaxModel.find(query)
+      .populate("company", "name")
+      .sort({ priority: 1, createdAt: -1 });
 
-    if (filters.type) {
-      query.type = filters.type;
-    }
-
-    if (filters.appliesTo) {
-      query.appliesTo = filters.appliesTo;
-    }
-
-    const page = pagination.page || 1;
-    const limit = pagination.limit || 10;
-    const skip = (page - 1) * limit;
-
-    const [taxes, total] = await Promise.all([
-      TaxModel.find(query)
-        .sort({ priority: 1, createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
-      TaxModel.countDocuments(query),
-    ]);
-
-    return {
-      taxes,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-    };
+    return taxes;
   } catch (error) {
     throw new Error(
-      `Failed to fetch global taxes: ${
+      `Failed to get taxes for schedule creation: ${
         error instanceof Error ? error.message : "Unknown error"
       }`
     );
@@ -592,11 +539,11 @@ export {
   getTaxAuditTrail,
   getArchivedTaxes,
   getAllTaxes,
-  getGlobalTaxes,
   getCompanyTaxes,
   getTaxById,
   deleteTax,
   getDefaultTaxes,
   createDefaultTaxes,
   getCombinedTaxes,
+  getTaxesForScheduleCreation,
 };

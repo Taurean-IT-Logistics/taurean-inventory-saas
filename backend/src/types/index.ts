@@ -177,16 +177,6 @@ export interface Booking {
   company: Company;
   internalNotes?: string;
   paymentMethod?: "online" | "cash" | "cheque";
-  paymentTiming?: "advance" | "split" | "full";
-  advanceConfig?: {
-    percentage: number | string;
-    amount: number;
-    inputMode: "percentage" | "amount";
-  };
-  splitConfig?: {
-    numberOfParts: number;
-    parts: Array<{ amount: number; dueDate: Date }>;
-  };
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -194,6 +184,7 @@ export interface Booking {
 
 export interface Transaction {
   booking?: Booking;
+  rental?: Rental;
   user: mongoose.Types.ObjectId | string;
   account?: Account;
   type: string;
@@ -232,8 +223,21 @@ export interface Transaction {
   isSplitPayment?: boolean;
   splitPayment?: SplitPayment;
   isCash?: boolean;
-  cash: Cash;
-  taxes: mongoose.Types.ObjectId | string;
+  cash?: Cash;
+  taxScheduleSnapshot?: {
+    scheduleId: mongoose.Types.ObjectId | string;
+    name: string;
+    components: Array<{
+      name: string;
+      rate: number;
+      taxType: string;
+      description?: string;
+    }>;
+    taxInclusive: boolean;
+    taxExclusive: boolean;
+    taxOnTax: boolean;
+    appliedAt: Date;
+  };
   accessCode?: string;
   receiptUrl?: string;
   approvedBy?: User;
@@ -267,6 +271,14 @@ export interface Transaction {
   rejectionReason?: string;
   currency?: string;
   referenceId?: string; // ID of the rental, booking, or purchase
+  metadata?: {
+    type?: string;
+    companyId?: string;
+    planId?: string;
+    planName?: string;
+    durationDays?: number;
+    [key: string]: any;
+  };
 }
 
 export interface InventoryItem {
@@ -451,12 +463,10 @@ export interface Tax {
   type: string;
   taxType?: "percentage" | "fixed_amount";
   fixedAmount?: number;
-  isSuperAdminTax?: boolean;
-  company?: Company;
-  active: boolean;
+  company: Company;
   isDefault?: boolean; // For system default taxes
+  active?: boolean; // Whether the tax is active
   priority?: number; // For ordering (VAT should be 1)
-  appliesTo?: string[]; // What this tax applies to
   description?: string;
   effectiveDate?: Date;
   expiryDate?: Date;
@@ -493,6 +503,7 @@ export interface Company {
   };
   currency?: string; // GHS, USD, etc.
   isActive: boolean;
+  activeTaxSchedule?: string | mongoose.Types.ObjectId; // Reference to active TaxSchedule
   subscription?: {
     plan: "free_trial" | "monthly" | "biannual" | "annual" | "triannual";
     expiresAt: Date;
@@ -629,16 +640,6 @@ export interface Rental {
   company: Company | mongoose.Types.ObjectId | string;
   totalPrice?: number;
   paymentMethod?: "online" | "cash" | "cheque";
-  paymentTiming?: "advance" | "split" | "full";
-  advanceConfig?: {
-    percentage: number | string;
-    amount: number;
-    inputMode: "percentage" | "amount";
-  };
-  splitConfig?: {
-    numberOfParts: number;
-    parts: Array<{ amount: number; dueDate: Date }>;
-  };
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;

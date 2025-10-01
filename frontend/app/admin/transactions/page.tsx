@@ -52,6 +52,7 @@ import TransactionStatsCards from "@/components/transactions/transactionStatCard
 import TransactionFilters from "@/components/transactions/transactionFilters";
 import TransactionTable from "@/components/transactions/transactionTable";
 import EditTransactionModal from "@/components/transactions/editTransactionModal";
+import CashChequeTransactionModal from "@/components/transactions/CashChequeTransactionModal";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { TransactionsAPI, PendingTransactionsAPI } from "@/lib/api";
@@ -158,6 +159,9 @@ export default function AdminTransactionsPage() {
     rejectionReason: "",
   });
 
+  // Cash/Cheque transaction modal state
+  const [isCashChequeModalOpen, setIsCashChequeModalOpen] = useState(false);
+
   const filteredTransactions = (transactions as Transaction[]).filter((txn) => {
     const matchesSearch =
       txn.ref?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -214,6 +218,16 @@ export default function AdminTransactionsPage() {
   const handleProcessPendingTransaction = (transaction: any) => {
     setEditingTransaction(transaction);
     setIsProcessDialogOpen(true);
+  };
+
+  // Handle opening transaction modal
+  const handleOpenCashChequeModal = () => {
+    setIsCashChequeModalOpen(true);
+  };
+
+  // Handle closing transaction modal
+  const handleCloseCashChequeModal = () => {
+    setIsCashChequeModalOpen(false);
   };
 
   const getPaymentMethodBadge = (method: string) => {
@@ -283,29 +297,10 @@ export default function AdminTransactionsPage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Transaction
-                  <MoreVertical className="w-4 h-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem>
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Cash Payment
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Split className="w-4 h-4 mr-2" />
-                  Split Payment
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Advance Payment
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button onClick={handleOpenCashChequeModal}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Transaction
+            </Button>
           </div>
         </div>
 
@@ -544,6 +539,12 @@ export default function AdminTransactionsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Transaction Modal */}
+        <CashChequeTransactionModal
+          isOpen={isCashChequeModalOpen}
+          onClose={handleCloseCashChequeModal}
+        />
       </div>
     </div>
   );

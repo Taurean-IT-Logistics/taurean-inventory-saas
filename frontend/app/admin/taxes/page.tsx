@@ -58,10 +58,22 @@ const TaxManagement = () => {
     notificationTitle: "Tax Update",
   });
 
-  // Determine if user is super admin
-  const isSuperAdmin = user?.isSuperAdmin || user?.role === "super_admin";
+  // All users manage their own company's taxes - full data isolation
 
-  // Fetch combined taxes (global + company)
+  // Fetch taxes available for tax schedule creation
+  const {
+    data: scheduleTaxesData,
+    isLoading: isLoadingScheduleTaxes,
+    isError: isErrorScheduleTaxes,
+    error: scheduleTaxesError,
+    refetch: refetchScheduleTaxes,
+  } = useQuery({
+    queryKey: ["taxes-for-schedule-creation"],
+    queryFn: () => TaxesAPI.getTaxesForScheduleCreation(),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Fetch company taxes
   const {
     data: allTaxesData,
     isLoading: isLoadingTaxes,
@@ -69,23 +81,9 @@ const TaxManagement = () => {
     error: taxesError,
     refetch: refetchTaxes,
   } = useQuery({
-    queryKey: ["taxes-combined"],
-    queryFn: () => TaxesAPI.listCombined(),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-
-  // Fetch global taxes (for super admin only)
-  const {
-    data: globalTaxes,
-    isLoading: isLoadingGlobalTaxes,
-    isError: isErrorGlobalTaxes,
-    error: globalTaxesError,
-    refetch: refetchGlobalTaxes,
-  } = useQuery({
-    queryKey: ["taxes-global"],
+    queryKey: ["taxes-company"],
     queryFn: () => TaxesAPI.list(),
     staleTime: 1000 * 60 * 5, // 5 minutes
-    enabled: isSuperAdmin, // Only fetch for super admins
   });
 
   // Fetch company-specific taxes
@@ -96,7 +94,7 @@ const TaxManagement = () => {
     error: companyTaxesError,
     refetch: refetchCompanyTaxes,
   } = useQuery({
-    queryKey: ["taxes-company"],
+    queryKey: ["taxes-company-specific"],
     queryFn: () => TaxesAPI.listCompany(),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -130,23 +128,22 @@ const TaxManagement = () => {
     return [];
   };
 
-  // Use combined taxes data
+  // Use combined taxes data for general display
   const allTaxes = useMemo(() => {
     return extractTaxesArray(allTaxesData);
   }, [allTaxesData]);
+
+  // Use schedule-specific taxes for tax schedule creation
+  const scheduleTaxes = useMemo(() => {
+    return extractTaxesArray(scheduleTaxesData);
+  }, [scheduleTaxesData]);
   const isLoading = isLoadingTaxes;
   const isError = isErrorTaxes;
   const error = taxesError;
 
   // Create tax mutation
   const createTaxMutation = useMutation({
-    mutationFn: (taxData: any) => {
-      if (isSuperAdmin && taxData.isSuperAdminTax) {
-        return TaxesAPI.createGlobal(taxData);
-      } else {
-        return TaxesAPI.createCompany(taxData);
-      }
-    },
+    mutationFn: (taxData: any) => TaxesAPI.createCompany(taxData),
     onSuccess: () => {
       toast({
         title: "Success",
@@ -154,7 +151,7 @@ const TaxManagement = () => {
         variant: "default",
       });
       queryClient.invalidateQueries({
-        queryKey: ["taxes-combined", "taxes-global", "taxes-company"],
+        queryKey: ["taxes-company", "taxes-company-specific", "taxes-for-schedule-creation"],
       });
     },
     onError: (error: Error) => {
@@ -198,7 +195,7 @@ const TaxManagement = () => {
         variant: "default",
       });
       queryClient.invalidateQueries({
-        queryKey: ["taxes-combined", "taxes-global", "taxes-company"],
+        queryKey: ["taxes-company", "taxes-company-specific", "taxes-for-schedule-creation"],
       });
     },
     onError: (error: Error) => {
@@ -220,7 +217,7 @@ const TaxManagement = () => {
         variant: "default",
       });
       queryClient.invalidateQueries({
-        queryKey: ["taxes-combined", "taxes-global", "taxes-company"],
+        queryKey: ["taxes-company", "taxes-company-specific", "taxes-for-schedule-creation"],
       });
     },
     onError: (error: Error) => {
@@ -235,7 +232,7 @@ const TaxManagement = () => {
   // Toggle tax status mutation (now creates independent tax)
   const toggleStatusMutation = useMutation({
     mutationFn: (tax: Tax) =>
-      TaxesAPI.replace(tax._id, { ...tax, active: !tax.active }),
+      TaxesAPI.replace(tax._id, { ...tax, active: !(tax as any).active }),
     onSuccess: () => {
       toast({
         title: "Success",
@@ -243,36 +240,13 @@ const TaxManagement = () => {
         variant: "default",
       });
       queryClient.invalidateQueries({
-        queryKey: ["taxes-combined", "taxes-global", "taxes-company"],
+        queryKey: ["taxes-company", "taxes-company-specific", "taxes-for-schedule-creation"],
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to update tax status",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Copy super admin tax mutation
-  const copyTaxMutation = useMutation({
-    mutationFn: (taxId: string) => TaxesAPI.copy(taxId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["taxes-combined", "taxes-global", "taxes-company"],
-      });
-      toast({
-        title: "Tax copied successfully",
-        description:
-          "The super admin tax has been copied to your company taxes",
-        variant: "default",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to copy tax",
-        description: error.message || "Something went wrong",
         variant: "destructive",
       });
     },
@@ -300,7 +274,7 @@ const TaxManagement = () => {
 
     if (filters.status) {
       const isActive = filters.status === "active";
-      filtered = filtered.filter((tax) => tax.active === isActive);
+      filtered = filtered.filter((tax) => (tax as any).active === isActive);
     }
 
     if (filters.type) {
@@ -437,20 +411,6 @@ const TaxManagement = () => {
     }
   };
 
-  const handleCopyTax = async (tax: Tax) => {
-    if (
-      window.confirm(
-        `Are you sure you want to copy "${tax.name}" to your company taxes? This will create a new tax that you can customize independently.`
-      )
-    ) {
-      try {
-        await copyTaxMutation.mutateAsync(tax._id);
-      } catch (error) {
-        console.error("Error copying tax:", error);
-      }
-    }
-  };
-
   const handleClearFilters = () => {
     setFilters({
       search: "",
@@ -483,9 +443,7 @@ const TaxManagement = () => {
               Tax Management
             </h1>
             <p className="text-gray-600">
-              {isSuperAdmin
-                ? "Manage global taxes and tax schedules"
-                : "Manage your company's taxes and tax schedules"}
+              Manage your company&apos;s taxes and tax schedules
             </p>
           </div>
           <div className="flex gap-3">
@@ -545,9 +503,7 @@ const TaxManagement = () => {
               <CardHeader>
                 <CardTitle>Available Taxes ({filteredTaxes.length})</CardTitle>
                 <CardDescription>
-                  {isSuperAdmin
-                    ? "System-wide taxes available for companies to use in their schedules"
-                    : "Choose from system-wide taxes or create your own custom taxes"}
+                  Choose taxes to include in your tax schedules
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -571,7 +527,9 @@ const TaxManagement = () => {
                         <div className="flex items-center space-x-3">
                           <div
                             className={`w-3 h-3 rounded-full ${
-                              tax.active ? "bg-green-500" : "bg-gray-400"
+                              (tax as any).active
+                                ? "bg-green-500"
+                                : "bg-gray-400"
                             }`}
                           ></div>
                           <div>
@@ -581,14 +539,8 @@ const TaxManagement = () => {
                             <div className="flex items-center space-x-2 text-xs text-gray-500">
                               <span>({tax.rate}%)</span>
                               <span>•</span>
-                              <span
-                                className={`px-1.5 py-0.5 rounded text-xs ${
-                                  tax.isSuperAdminTax
-                                    ? "bg-blue-100 text-blue-800"
-                                    : "bg-green-100 text-green-800"
-                                }`}
-                              >
-                                {tax.isSuperAdminTax ? "System-wide" : "Custom"}
+                              <span className="px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                                Company Tax
                               </span>
                             </div>
                           </div>
@@ -604,18 +556,10 @@ const TaxManagement = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Taxes</CardTitle>
-                <CardDescription>
-                  {isSuperAdmin
-                    ? "Global taxes available to all companies"
-                    : "Your company's taxes and available global taxes"}
-                </CardDescription>
+                <CardDescription>Your company&apos;s taxes</CardDescription>
               </CardHeader>
               <CardContent>
-                <TaxFilters
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  isSuperAdmin={isSuperAdmin}
-                />
+                <TaxFilters filters={filters} onFiltersChange={setFilters} />
                 <TaxTable
                   taxes={filteredTaxes}
                   onEdit={handleEditTax}
@@ -628,76 +572,6 @@ const TaxManagement = () => {
 
           {/* Tax Schedules Tab */}
           <TabsContent value="schedules" className="space-y-6">
-            {/* Tax Configuration for Schedules */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Tax Calculation Settings</CardTitle>
-                <CardDescription>
-                  Configure how taxes are calculated and applied in schedules
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap items-center gap-6 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="taxInclusive"
-                      checked={false} // This would come from company settings
-                      onCheckedChange={(checked) => {
-                        console.log("Tax inclusive:", checked);
-                        // When inclusive is checked, uncheck exclusive
-                        if (checked) {
-                          console.log("Tax exclusive:", false);
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor="taxInclusive"
-                      className="text-sm font-medium"
-                    >
-                      Tax Inclusive
-                    </label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="taxExclusive"
-                      checked={true} // This would come from company settings
-                      onCheckedChange={(checked) => {
-                        console.log("Tax exclusive:", checked);
-                        // When exclusive is checked, uncheck inclusive
-                        if (checked) {
-                          console.log("Tax inclusive:", false);
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor="taxExclusive"
-                      className="text-sm font-medium"
-                    >
-                      Tax Exclusive
-                    </label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="taxOnTax"
-                      checked={false} // This would come from company settings
-                      onCheckedChange={(checked) => {
-                        console.log("Tax on tax:", checked);
-                      }}
-                    />
-                    <label htmlFor="taxOnTax" className="text-sm font-medium">
-                      Tax on Tax
-                    </label>
-                  </div>
-
-                  <div className="text-xs text-gray-500 ml-auto">
-                    Choose either inclusive OR exclusive (not both)
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle>Tax Schedules</CardTitle>
@@ -762,14 +636,16 @@ const TaxManagement = () => {
                                   <span>
                                     Effective:{" "}
                                     {new Date(
-                                      schedule.effectiveDate
+                                      (schedule as any).effectiveDate ||
+                                        schedule.startDate ||
+                                        new Date()
                                     ).toLocaleDateString()}
                                   </span>
-                                  {schedule.expiryDate && (
+                                  {(schedule as any).expiryDate && (
                                     <span>
                                       Expires:{" "}
                                       {new Date(
-                                        schedule.expiryDate
+                                        (schedule as any).expiryDate
                                       ).toLocaleDateString()}
                                     </span>
                                   )}
@@ -822,7 +698,7 @@ const TaxManagement = () => {
           schedule={selectedSchedule}
           isEdit={isEdit}
           isLoading={createScheduleMutation.isPending}
-          availableTaxes={allTaxes}
+          availableTaxes={scheduleTaxes}
         />
       </div>
     </div>

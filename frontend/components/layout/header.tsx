@@ -13,7 +13,6 @@ import {
   LockOpen,
   Building2,
   MessageSquare,
-  Package,
   Shield,
 } from "lucide-react";
 import Link from "next/link";
@@ -204,15 +203,6 @@ export function Header() {
                         >
                           <MessageSquare className="mr-2 h-4 w-4" />
                           <span>Support</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href="/user/returns"
-                          className="flex items-center"
-                        >
-                          <Package className="mr-2 h-4 w-4" />
-                          <span>Returns</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />

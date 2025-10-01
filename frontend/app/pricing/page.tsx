@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
   Star,
@@ -17,6 +18,7 @@ import {
   Settings,
   Award,
   GraduationCap,
+  ArrowRight,
 } from "lucide-react";
 import { SubscriptionsAPI } from "@/lib/api";
 import { SubscriptionPlan, SubscriptionStatus, UsageStats } from "@/types";
@@ -62,7 +64,6 @@ const analyticsDescriptions = {
 };
 
 export default function PricingPage() {
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentPlanIndex, setCurrentPlanIndex] = useState(0);
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<SubscriptionStatus | null>(null);
@@ -78,10 +79,7 @@ export default function PricingPage() {
     refetch: plansRefetch,
   } = useQuery({
     queryKey: ["plans"],
-    queryFn: async () => {
-      const plans = await SubscriptionsAPI.getPlans();
-      return plans as { plans: SubscriptionPlan[] };
-    },
+    queryFn: () => SubscriptionsAPI.getPlans(),
   });
 
   const loadSubscriptionStatus = useCallback(async () => {
@@ -196,27 +194,33 @@ export default function PricingPage() {
   };
 
   if (plansLoading) {
-    return <Loader text="Loading pricing plans..." />;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader text="Loading pricing plans..." />
+      </div>
+    );
   }
 
   if (isPlansError) {
     return (
-      <ErrorComponent
-        title="Error loading pricing plans"
-        message={plansError.message}
-        onRetry={plansRefetch}
-      />
+      <div className="min-h-screen flex items-center justify-center">
+        <ErrorComponent
+          title="Error loading pricing plans"
+          message={plansError.message}
+          onRetry={plansRefetch}
+        />
+      </div>
     );
   }
 
-  console.log("Plans", plansData);
+  const plansList = (plansData as any)?.plans || [];
 
   return (
-    <div className="min-h-screen mt-20 px-20">
-      <div className="container mx-auto px-4 py-16">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="container mx-auto px-4 py-12 mt-24">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Simple, Transparent Pricing
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -226,7 +230,7 @@ export default function PricingPage() {
 
           {/* Free Trial Banner */}
           {subscriptionStatus?.canStartTrial && (
-            <div className="mt-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-lg max-w-2xl mx-auto">
+            <div className="mt-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-xl max-w-2xl mx-auto shadow-lg">
               <div className="flex items-center justify-center gap-3 mb-3">
                 <Zap className="h-6 w-6" />
                 <h3 className="text-xl font-semibold">
@@ -239,370 +243,425 @@ export default function PricingPage() {
               </p>
               <Button
                 onClick={handleStartTrial}
-                className="bg-white text-green-600 hover:bg-green-50"
+                className="bg-white text-green-600 hover:bg-green-50 font-semibold px-6 py-2 rounded-lg"
               >
                 Start Free Trial
               </Button>
             </div>
           )}
         </div>
+      </div>
 
-        {/* Current Subscription Status */}
-        {subscriptionStatus?.hasSubscription && (
-          <div className="mb-12 bg-white rounded-lg p-6 shadow-sm border">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Current Subscription
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <p className="text-sm text-gray-600">Plan</p>
-                <p className="text-lg font-semibold">
-                  {subscriptionStatus.plan?.label}
-                </p>
-                {subscriptionStatus.isTrial && (
-                  <Badge className="bg-orange-100 text-orange-800 mt-1">
-                    Trial
-                  </Badge>
-                )}
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Status</p>
-                <p className="text-lg font-semibold">
-                  {subscriptionStatus.isActive ? "Active" : "Expired"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Days Remaining</p>
-                <p className="text-lg font-semibold">
-                  {subscriptionStatus.daysRemaining}
-                </p>
-              </div>
-            </div>
+      {/* Pricing Cards Carousel */}
+      <div className="container mx-auto px-4 py-16">
+        {/* Carousel Indicators */}
+        <div className="flex justify-center mb-8">
+          <div className="flex space-x-2">
+            {plansList.map((_: any, index: number) => (
+              <motion.button
+                key={index}
+                onClick={() => setCurrentPlanIndex(index)}
+                className={`w-3 h-3 rounded-full transition-colors ${
+                  index === currentPlanIndex ? "bg-blue-500" : "bg-gray-400"
+                }`}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+              />
+            ))}
           </div>
-        )}
+        </div>
 
-        {/* Pricing Carousel */}
-        <div className="mb-16">
-          <div className="flex justify-center mb-8">
-            <div className="flex space-x-2">
-              {(plansData?.plans || []).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentPlanIndex(index)}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    index === currentPlanIndex ? "bg-blue-600" : "bg-gray-300"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+        {/* Carousel Container */}
+        <div className="relative max-w-4xl mx-auto">
+          <motion.div
+            className="flex"
+            animate={{
+              x: `-${currentPlanIndex * 100}%`,
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+            }}
+          >
+            {plansList.map((plan: any, index: number) => (
+              <div key={plan.id} className="w-full flex-shrink-0 px-4">
+                <div className="max-w-md mx-auto">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <Card
+                      className={`relative bg-white border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg ${
+                        plan.popular
+                          ? "scale-105 shadow-lg border-blue-200"
+                          : ""
+                      }`}
+                    >
+                      {/* Most Popular Badge */}
+                      {plan.popular && (
+                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                          <Badge className="bg-gradient-to-r from-green-500 to-blue-500  px-4 py-1 rounded-full border-0 shadow-lg">
+                            <Star className="h-3 w-3 mr-1" />
+                            Most Popular
+                          </Badge>
+                        </div>
+                      )}
 
-          <div className="relative overflow-hidden">
-            <div
-              className="flex transition-transform duration-300 ease-in-out"
-              style={{ transform: `translateX(-${currentPlanIndex * 100}%)` }}
-            >
-              {(plansData?.plans || []).map((plan, index) => (
-                <div key={plan.id} className="w-full flex-shrink-0 px-4">
-                  <Card className="max-w-4xl mx-auto relative">
-                    {plan.popular && (
-                      <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-1">
-                        <Star className="h-3 w-3 mr-1" />
-                        Most Popular
-                      </Badge>
-                    )}
+                      <CardHeader className="text-center pb-6 pt-8">
+                        <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
+                          {plan.label}
+                        </CardTitle>
+                        <p className="text-gray-600 text-sm mb-6">
+                          {plan.description}
+                        </p>
 
-                    <CardHeader className="text-center pb-6">
-                      <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
-                        {plan.label}
-                      </CardTitle>
-                      <div className="mb-4">
-                        <span className="text-5xl font-bold text-gray-900">
-                          {plan.price === 0 ? "Free" : `₵${plan.price}`}
-                        </span>
-                        {plan.price > 0 && (
-                          <span className="text-gray-600 ml-2">
-                            per{" "}
-                            {plan.durationDays === 14
-                              ? "trial"
-                              : plan.durationDays === 30
-                              ? "month"
-                              : plan.durationDays === 182
-                              ? "6 months"
-                              : plan.durationDays === 365
-                              ? "year"
-                              : "3 years"}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-600 text-lg">
-                        {plan.description}
-                      </p>
-                    </CardHeader>
-
-                    <CardContent className="pt-0">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        {Object.entries(plan.features).map(([key, value]) => (
-                          <div key={key} className="flex items-start gap-3">
-                            <div
-                              className={`mt-1 ${
-                                isFeatureEnabled(key, value)
-                                  ? "text-green-500"
-                                  : "text-gray-400"
-                              }`}
-                            >
-                              {isFeatureEnabled(key, value) ? (
-                                <Check className="h-5 w-5" />
-                              ) : (
-                                <span className="text-lg">✗</span>
-                              )}
+                        {/* Price */}
+                        <div className="mb-6">
+                          {plan.price === 0 ? (
+                            <div className="text-4xl font-bold text-green-600">
+                              Free
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                {getFeatureIcon(key)}
-                                <span className="font-medium text-gray-900">
-                                  {key
-                                    .replace(/([A-Z])/g, " $1")
-                                    .replace(/^./, (str) => str.toUpperCase())}
-                                </span>
-                              </div>
-                              <p
-                                className={`text-sm ${
-                                  isFeatureEnabled(key, value)
-                                    ? "text-gray-700"
-                                    : "text-gray-500"
+                          ) : (
+                            <div className="flex items-baseline justify-center">
+                              <span
+                                className={`text-4xl font-bold ${
+                                  plan.popular
+                                    ? "bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent"
+                                    : "text-green-600"
                                 }`}
                               >
-                                {formatFeatureValue(key, value)}
-                              </p>
+                                ₵{plan.price}
+                              </span>
+                              <span className="text-gray-500 ml-2 text-sm">
+                                per{" "}
+                                {plan.durationDays === 14
+                                  ? "trial"
+                                  : plan.durationDays === 30
+                                  ? "month"
+                                  : plan.durationDays === 182
+                                  ? "6 months"
+                                  : plan.durationDays === 365
+                                  ? "year"
+                                  : "3 years"}
+                              </span>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          )}
+                        </div>
+                      </CardHeader>
 
-                      <div className="text-center">
-                        {plan.isTrial ? (
-                          <Button
-                            onClick={handleStartTrial}
-                            className="w-full bg-green-600 hover:bg-green-700 text-lg py-3"
-                            disabled={!subscriptionStatus?.canStartTrial}
-                          >
-                            {subscriptionStatus?.canStartTrial
-                              ? "Start Free Trial"
-                              : "Trial Already Used"}
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={() => handlePurchasePlan(plan.id)}
-                            className={`w-full text-lg py-3 ${
-                              plan.popular
-                                ? "bg-blue-600 hover:bg-blue-700"
-                                : "bg-gray-900 hover:bg-gray-800"
-                            }`}
-                          >
-                            {subscriptionStatus?.hasSubscription
-                              ? "Upgrade Plan"
-                              : "Get Started"}
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      <CardContent className="pt-0">
+                        {/* Features */}
+                        <div className="space-y-4 mb-8">
+                          {Object.entries(plan.features)
+                            .slice(0, 6)
+                            .map(([key, value]) => (
+                              <div key={key} className="flex items-start gap-3">
+                                <div className="mt-1">
+                                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
+                                    <Check className="h-3 w-3 text-green-600" />
+                                  </div>
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-gray-700 text-sm">
+                                    {key
+                                      .replace(/([A-Z])/g, " $1")
+                                      .replace(/^./, (str) =>
+                                        str.toUpperCase()
+                                      )}
+                                  </p>
+                                  <p className="text-gray-500 text-xs">
+                                    {formatFeatureValue(key, value)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* CTA Button */}
+                        <div className="text-center">
+                          {plan.isTrial ? (
+                            <Button
+                              onClick={handleStartTrial}
+                              className={`w-full font-semibold py-3 rounded-lg transition-all duration-300 ${
+                                subscriptionStatus?.canStartTrial
+                                  ? "bg-green-600 hover:bg-green-700 text-white"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              }`}
+                              disabled={!subscriptionStatus?.canStartTrial}
+                            >
+                              {subscriptionStatus?.canStartTrial
+                                ? "Get Started"
+                                : "Trial Already Used"}
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => handlePurchasePlan(plan.id)}
+                              className={`w-full font-semibold py-3 rounded-lg transition-all duration-300 ${
+                                plan.popular
+                                  ? "bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg"
+                                  : "bg-gray-700 hover:bg-gray-800 text-white"
+                              }`}
+                            >
+                              {subscriptionStatus?.hasSubscription
+                                ? "Upgrade Plan"
+                                : plan.popular
+                                ? "Get Started"
+                                : "Choose Plan"}
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </motion.div>
 
-            {/* Navigation Arrows */}
-            <button
-              onClick={() =>
-                setCurrentPlanIndex(Math.max(0, currentPlanIndex - 1))
-              }
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow"
-              disabled={currentPlanIndex === 0}
+          {/* Navigation Arrows */}
+          <motion.button
+            onClick={() =>
+              setCurrentPlanIndex(Math.max(0, currentPlanIndex - 1))
+            }
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-shadow border border-gray-200"
+            disabled={currentPlanIndex === 0}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <svg
+              className="w-6 h-6 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className="w-6 h-6 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-            <button
-              onClick={() =>
-                setCurrentPlanIndex(
-                  Math.min(
-                    (plansData?.plans || []).length - 1,
-                    currentPlanIndex + 1
-                  )
-                )
-              }
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow"
-              disabled={
-                currentPlanIndex === (plansData?.plans || []).length - 1
-              }
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </motion.button>
+          <motion.button
+            onClick={() =>
+              setCurrentPlanIndex(
+                Math.min(plansList.length - 1, currentPlanIndex + 1)
+              )
+            }
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-shadow border border-gray-200"
+            disabled={currentPlanIndex === plansList.length - 1}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <svg
+              className="w-6 h-6 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className="w-6 h-6 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Current Subscription Status */}
+      {subscriptionStatus?.hasSubscription && (
+        <div className="container mx-auto px-4 py-16">
+          <Card className="max-w-4xl mx-auto bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold ">
+                Current Subscription
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <p className="text-sm text-gray-400">Plan</p>
+                  <p className="text-lg font-semibold ">
+                    {subscriptionStatus.plan?.label}
+                  </p>
+                  {subscriptionStatus.isTrial && (
+                    <Badge className="bg-orange-500  mt-1">Trial</Badge>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Status</p>
+                  <p className="text-lg font-semibold ">
+                    {subscriptionStatus.isActive ? "Active" : "Expired"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Days Remaining</p>
+                  <p className="text-lg font-semibold ">
+                    {subscriptionStatus.daysRemaining}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Usage Statistics */}
+      {usageStats && (
+        <div className="container mx-auto px-4 py-16">
+          <h2 className="text-3xl font-bold  text-center mb-8">
+            Your Current Usage
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            {Object.entries(usageStats).map(([key, stats]) => (
+              <Card
+                key={key}
+                className="text-center bg-gray-800 border-gray-700"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-blue-400 mb-2">
+                    {stats.used.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-gray-400 mb-2">
+                    {key.charAt(0).toUpperCase() + key.slice(1)}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {stats.unlimited
+                      ? "Unlimited"
+                      : `of ${stats.limit.toLocaleString()}`}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
+      )}
 
-        {/* Usage Statistics */}
-        {usageStats && (
-          <div className="mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
-              Your Current Usage
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              {Object.entries(usageStats).map(([key, stats]) => (
-                <Card key={key} className="text-center">
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-blue-600 mb-2">
-                      {stats.used.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-gray-600 mb-2">
-                      {key.charAt(0).toUpperCase() + key.slice(1)}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {stats.unlimited
-                        ? "Unlimited"
-                        : `of ${stats.limit.toLocaleString()}`}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+      {/* All Plans Include */}
+      <div className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl font-bold  text-center mb-8">
+          All Plans Include
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-700">
+              <Check className="h-8 w-8 text-green-400" />
             </div>
+            <h3 className="text-xl font-semibold  mb-2">No Setup Fees</h3>
+            <p className="text-gray-400">
+              Get started immediately with zero upfront costs
+            </p>
           </div>
-        )}
-
-        {/* Additional Info */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            All Plans Include
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                No Setup Fees
-              </h3>
-              <p className="text-gray-600">
-                Get started immediately with zero upfront costs
-              </p>
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-700">
+              <Check className="h-8 w-8 text-green-400" />
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="h-8 w-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Cancel Anytime
-              </h3>
-              <p className="text-gray-600">
-                No long-term contracts, cancel whenever you want
-              </p>
+            <h3 className="text-xl font-semibold  mb-2">Cancel Anytime</h3>
+            <p className="text-gray-400">
+              No long-term contracts, cancel whenever you want
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-700">
+              <Check className="h-8 w-8 text-green-400" />
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="h-8 w-8 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Free Updates
-              </h3>
-              <p className="text-gray-600">
-                Always get the latest features and improvements
-              </p>
-            </div>
+            <h3 className="text-xl font-semibold  mb-2">Free Updates</h3>
+            <p className="text-gray-400">
+              Always get the latest features and improvements
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* FAQ Section */}
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
-            Frequently Asked Questions
-          </h2>
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+      {/* FAQ Section */}
+      <div className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl font-bold  text-center mb-8">
+          Frequently Asked Questions
+        </h2>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold  mb-2">
                 Can I change my plan later?
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-400">
                 Yes! You can upgrade or downgrade your plan at any time. Changes
                 take effect immediately and we&apos;ll prorate any differences.
               </p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold  mb-2">
                 Is there a free trial?
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-400">
                 We offer a 14-day free trial for all new companies. No credit
                 card required to start. You can upgrade to a paid plan anytime
                 during or after the trial.
               </p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold  mb-2">
                 What payment methods do you accept?
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-400">
                 We accept all major credit cards, mobile money, and bank
                 transfers. All payments are processed securely through Paystack.
               </p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold  mb-2">
                 What happens when I reach my limits?
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-400">
                 You&apos;ll receive notifications as you approach your limits.
                 You can upgrade your plan at any time to increase your limits or
                 get unlimited access.
               </p>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
+      </div>
 
-        {/* CTA Section */}
-        <div className="text-center mt-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Ready to Get Started?
-          </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Join thousands of businesses already using our platform
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              size="lg"
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={handleStartTrial}
-              disabled={!subscriptionStatus?.canStartTrial}
-            >
-              Start Free Trial
-            </Button>
-            <Button size="lg" variant="outline">
-              Contact Sales
-            </Button>
-          </div>
+      {/* CTA Section */}
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h2 className="text-3xl font-bold  mb-4">Ready to Get Started?</h2>
+        <p className="text-xl text-gray-400 mb-8">
+          Join thousands of businesses already using our platform
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button
+            size="lg"
+            className="bg-primary text-white hover:bg-primary/90 font-semibold px-8 py-3 rounded-lg"
+            onClick={handleStartTrial}
+            disabled={!subscriptionStatus?.canStartTrial}
+          >
+            Start Free Trial
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="border-gray-600 text-gray-300 hover:bg-primary hover:text-white px-8 py-3 rounded-lg"
+          >
+            Contact Sales
+          </Button>
         </div>
       </div>
     </div>

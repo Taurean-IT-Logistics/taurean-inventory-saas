@@ -1,6 +1,6 @@
 import { Schema, model, Model, Document, Types } from "mongoose";
 
-const MIN_TAX_COMPONENTS = 4; // Business rule: every schedule must include at least 4 tax components
+const MIN_TAX_COMPONENTS = 1; // Business rule: every schedule must include at least 1 tax component
 
 interface TaxScheduleDocument extends Document {
   name: string;
@@ -10,9 +10,8 @@ interface TaxScheduleDocument extends Document {
   taxOnTax: boolean;
   taxInclusive: boolean;
   taxExclusive: boolean;
-  company?: Types.ObjectId | null;
+  company: Types.ObjectId;
   createdBy: Types.ObjectId;
-  isSuperAdminSchedule: boolean;
   isActive: boolean;
   appliesTo: "facilities" | "inventoryItem" | "all";
   createdAt: Date;
@@ -39,9 +38,8 @@ const TaxScheduleSchema = new Schema<TaxScheduleDocument>(
     taxOnTax: { type: Boolean, default: false },
     taxInclusive: { type: Boolean, default: false },
     taxExclusive: { type: Boolean, default: false },
-    company: { type: Schema.Types.ObjectId, ref: "Company" },
+    company: { type: Schema.Types.ObjectId, ref: "Company", required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    isSuperAdminSchedule: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     appliesTo: {
       type: String,
@@ -54,23 +52,14 @@ const TaxScheduleSchema = new Schema<TaxScheduleDocument>(
 
 /**
  * Compound indexes:
- * - For tenant schedules (isSuperAdminSchedule = false):
- *   Ensures uniqueness of name + startDate within the same company.
- *
- * - For super admin schedules (isSuperAdminSchedule = true):
- *   Ensures global uniqueness of name + startDate across all companies.
+ * Ensures uniqueness of name + startDate within the same company.
  */
 TaxScheduleSchema.index(
   { company: 1, name: 1, startDate: -1 },
-  { unique: true, partialFilterExpression: { isSuperAdminSchedule: false } }
+  { unique: true }
 );
 
-TaxScheduleSchema.index(
-  { name: 1, startDate: -1 },
-  { unique: true, partialFilterExpression: { isSuperAdminSchedule: true } }
-);
-
-// Validation: taxInclusive and taxExclusive cannot both be true
+// Validation: taxInclusive and taxExclusive cannot both be true, and at least one must be true
 TaxScheduleSchema.pre("validate", function (next) {
   if (this.taxInclusive && this.taxExclusive) {
     return next(
@@ -78,9 +67,9 @@ TaxScheduleSchema.pre("validate", function (next) {
     );
   }
 
-  if (this.isSuperAdminSchedule && this.company) {
+  if (!this.taxInclusive && !this.taxExclusive) {
     return next(
-      new Error("Super admin schedules cannot be tied to a company.")
+      new Error("A schedule must be either tax-inclusive or tax-exclusive.")
     );
   }
 
@@ -94,14 +83,8 @@ TaxScheduleSchema.post("save", async function (doc, next) {
       _id: { $ne: doc._id },
       name: doc.name,
       isActive: true,
+      company: doc.company,
     };
-
-    if (doc.isSuperAdminSchedule) {
-      query.isSuperAdminSchedule = true;
-    } else {
-      query.company = doc.company;
-      query.isSuperAdminSchedule = false;
-    }
 
     // Use the model directly instead of doc.constructor to avoid type errors
     const TaxSchedule = doc.model("TaxSchedule");

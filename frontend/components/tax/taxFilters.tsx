@@ -20,14 +20,9 @@ interface TaxFiltersProps {
     type: string;
   };
   onFiltersChange: (filters: any) => void;
-  isSuperAdmin?: boolean;
 }
 
-const TaxFilters = ({
-  filters,
-  onFiltersChange,
-  isSuperAdmin = false,
-}: TaxFiltersProps) => {
+const TaxFilters = ({ filters, onFiltersChange }: TaxFiltersProps) => {
   const handleInputChange = (name: string, value: string) => {
     onFiltersChange({ ...filters, [name]: value });
   };

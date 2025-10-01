@@ -11,6 +11,8 @@ export interface PaymentScheduleDocument extends Document {
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
+  advanceAmount?: number; // For advance payments
+  balanceAmount?: number; // Remaining balance after advance
 
   // Schedule details
   paymentType: "advance" | "split" | "full";
@@ -22,11 +24,36 @@ export interface PaymentScheduleDocument extends Document {
     paidAt?: Date;
     transactionId?: string;
     notes?: string;
+    paymentReference?: string; // For tracking individual payments
+    isAdvance?: boolean; // Mark if this is an advance payment
   }>;
 
+  // Advance payment configuration
+  advanceConfig?: {
+    percentage?: number;
+    fixedAmount?: number;
+    inputMode: "percentage" | "amount";
+    dueDate?: Date;
+    isPaid?: boolean;
+    paidAt?: Date;
+    transactionId?: string;
+  };
+
+  // Split payment configuration
+  splitConfig?: {
+    numberOfParts: number;
+    intervalDays?: number; // Days between payments
+    customSchedule?: boolean; // If true, uses custom due dates
+  };
+
   // Status tracking
-  status: "active" | "completed" | "cancelled" | "overdue";
+  status: "active" | "completed" | "cancelled" | "overdue" | "partial";
   isActive: boolean;
+
+  // Payment tracking
+  lastPaymentDate?: Date;
+  nextPaymentDate?: Date;
+  overdueCount?: number;
 
   // Metadata
   createdAt: Date;
@@ -75,6 +102,14 @@ const PaymentScheduleSchema = new Schema<PaymentScheduleDocument>(
       required: true,
       min: 0,
     },
+    advanceAmount: {
+      type: Number,
+      min: 0,
+    },
+    balanceAmount: {
+      type: Number,
+      min: 0,
+    },
 
     // Schedule details
     paymentType: {
@@ -113,19 +148,49 @@ const PaymentScheduleSchema = new Schema<PaymentScheduleDocument>(
         notes: {
           type: String,
         },
+        paymentReference: {
+          type: String,
+        },
+        isAdvance: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
+
+    // Advance payment configuration
+    advanceConfig: {
+      percentage: { type: Number, min: 0, max: 100 },
+      fixedAmount: { type: Number, min: 0 },
+      inputMode: { type: String, enum: ["percentage", "amount"] },
+      dueDate: { type: Date },
+      isPaid: { type: Boolean, default: false },
+      paidAt: { type: Date },
+      transactionId: { type: String, ref: "Transaction" },
+    },
+
+    // Split payment configuration
+    splitConfig: {
+      numberOfParts: { type: Number, min: 2 },
+      intervalDays: { type: Number, min: 1 },
+      customSchedule: { type: Boolean, default: false },
+    },
 
     // Status tracking
     status: {
       type: String,
-      enum: ["active", "completed", "cancelled", "overdue"],
+      enum: ["active", "completed", "cancelled", "overdue", "partial"],
       default: "active",
     },
     isActive: {
       type: Boolean,
       default: true,
     },
+
+    // Payment tracking
+    lastPaymentDate: { type: Date },
+    nextPaymentDate: { type: Date },
+    overdueCount: { type: Number, default: 0 },
 
     // Metadata
     isDeleted: {
