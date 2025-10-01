@@ -129,7 +129,7 @@ export default function CompanyProfilePage() {
         location: company.location || "",
         website: company.website || "",
         phone: company.phone || "",
-        email: company.email || "",
+        email: company.contactEmail || "", // Use contactEmail instead of email
         currency: company.currency || "",
         feePercent: company.feePercent?.toString() || "",
         invoiceFormat: invoiceFormatDisplay,
@@ -227,9 +227,9 @@ export default function CompanyProfilePage() {
 
     const formData = new FormData();
 
-    // Add form fields (excluding invoice format fields)
+    // Add form fields (excluding invoice format fields and name)
     Object.entries(editForm).forEach(([key, value]) => {
-      if (value && !key.startsWith("invoiceFormat")) {
+      if (value && !key.startsWith("invoiceFormat") && key !== "name") {
         formData.append(key, value.toString());
       }
     });
@@ -517,11 +517,13 @@ export default function CompanyProfilePage() {
                         <Input
                           id="name"
                           value={editForm.name}
-                          onChange={(e) =>
-                            handleInputChange("name", e.target.value)
-                          }
-                          placeholder="Company name"
+                          disabled
+                          placeholder="Company name (cannot be changed)"
+                          className="bg-gray-100 cursor-not-allowed"
                         />
+                        <p className="text-sm text-gray-500 mt-1">
+                          Company name cannot be changed after registration
+                        </p>
                       </div>
                       <div>
                         <Label htmlFor="description">Description</Label>

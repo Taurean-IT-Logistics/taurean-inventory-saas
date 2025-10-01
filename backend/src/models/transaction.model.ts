@@ -120,6 +120,13 @@ const TransactionSchema = new Schema<TransactionDocument>(
     rejectionReason: { type: String },
     currency: { type: String, default: "GHS" },
     referenceId: { type: String }, // ID of the rental, booking, or purchase
+    metadata: {
+      type: { type: String },
+      companyId: { type: String },
+      planId: { type: String },
+      planName: { type: String },
+      durationDays: { type: Number },
+    },
   },
   { timestamps: true }
 );

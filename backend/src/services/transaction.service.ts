@@ -60,7 +60,8 @@ const createTransaction = async (
     } catch {}
     return saved;
   } catch (error) {
-    throw new Error("Error creating transaction");
+    console.error("Transaction creation error:", error);
+    throw new Error(`Error creating transaction: ${error.message}`);
   }
 };
 

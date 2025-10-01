@@ -330,7 +330,7 @@ const returnRental = async (
       const feeTransaction = new TransactionModel({
         user: rental.user,
         type: "income",
-        category: "rental_fees",
+        category: "inventory_item",
         amount: totalFees,
         method: "rental_fee",
         description: `Rental fees for ${rental.item} - Late: ${lateFee}, Damage: ${returnData.damageFee || 0}`,
