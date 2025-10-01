@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DatePicker } from "@/components/ui/date-picker";
 import type { TaxSchedule, Tax } from "@/types";
 
@@ -50,8 +51,11 @@ const TaxScheduleModal = ({
     effectiveDate: undefined as Date | undefined,
     expiryDate: undefined as Date | undefined,
     isActive: true,
-    appliesTo: "all" as "all" | "facilities" | "inventory" | "subscriptions",
+    appliesTo: "all" as "all" | "facilities" | "inventoryItem",
     selectedTaxes: [] as string[],
+    taxInclusive: true,
+    taxExclusive: false,
+    taxOnTax: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -83,17 +87,20 @@ const TaxScheduleModal = ({
       setFormData({
         name: schedule.name || "",
         description: schedule.description || "",
-        effectiveDate: schedule.effectiveDate
-          ? new Date(schedule.effectiveDate)
+        effectiveDate: schedule.startDate
+          ? new Date(schedule.startDate)
           : undefined,
-        expiryDate: schedule.expiryDate
-          ? new Date(schedule.expiryDate)
+        expiryDate: schedule.sunsetDate
+          ? new Date(schedule.sunsetDate)
           : undefined,
         isActive: schedule.isActive ?? true,
         appliesTo: schedule.appliesTo || "all",
         selectedTaxes: schedule.components
           ? schedule.components.map((tax) => tax._id)
           : [], // Extract tax IDs from components
+        taxInclusive: schedule.taxInclusive || false,
+        taxExclusive: schedule.taxExclusive || false,
+        taxOnTax: schedule.taxOnTax || false,
       });
     } else {
       setFormData({
@@ -104,6 +111,9 @@ const TaxScheduleModal = ({
         isActive: true,
         appliesTo: "all",
         selectedTaxes: [],
+        taxInclusive: false,
+        taxExclusive: false,
+        taxOnTax: false,
       });
     }
     setErrors({});
@@ -130,6 +140,15 @@ const TaxScheduleModal = ({
       newErrors.selectedTaxes = "At least one tax must be selected";
     }
 
+    if (formData.taxInclusive && formData.taxExclusive) {
+      newErrors.taxSettings = "Cannot be both tax-inclusive and tax-exclusive";
+    }
+
+    if (!formData.taxInclusive && !formData.taxExclusive) {
+      newErrors.taxSettings =
+        "Must select either tax-inclusive or tax-exclusive";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -144,8 +163,8 @@ const TaxScheduleModal = ({
     try {
       const scheduleData = {
         ...formData,
-        effectiveDate: formData.effectiveDate,
-        expiryDate: formData.expiryDate,
+        startDate: formData.effectiveDate,
+        sunsetDate: formData.expiryDate,
         components: formData.selectedTaxes
           .map((taxId) => availableTaxes.find((tax) => tax._id === taxId))
           .filter(Boolean) as Tax[], // Map tax IDs to Tax objects
@@ -216,10 +235,7 @@ const TaxScheduleModal = ({
                 <SelectContent>
                   <SelectItem value="all">All Items</SelectItem>
                   <SelectItem value="facilities">Facilities Only</SelectItem>
-                  <SelectItem value="inventory">Inventory Only</SelectItem>
-                  <SelectItem value="subscriptions">
-                    Subscriptions Only
-                  </SelectItem>
+                  <SelectItem value="inventoryItem">Inventory Only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -265,6 +281,75 @@ const TaxScheduleModal = ({
               )}
               <p className="text-xs text-gray-500">
                 Optional - leave blank for no expiry
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Tax Calculation Settings</Label>
+              {errors.taxSettings && (
+                <p className="text-sm text-red-500">{errors.taxSettings}</p>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base font-medium">
+                  Tax Calculation Method
+                </Label>
+                <RadioGroup
+                  value={
+                    formData.taxInclusive
+                      ? "inclusive"
+                      : formData.taxExclusive
+                      ? "exclusive"
+                      : ""
+                  }
+                  onValueChange={(value) => {
+                    if (value === "inclusive") {
+                      handleInputChange("taxInclusive", true);
+                      handleInputChange("taxExclusive", false);
+                    } else if (value === "exclusive") {
+                      handleInputChange("taxInclusive", false);
+                      handleInputChange("taxExclusive", true);
+                    }
+                  }}
+                  className="mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="inclusive" id="inclusive" />
+                    <Label htmlFor="inclusive">Tax Inclusive</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="exclusive" id="exclusive" />
+                    <Label htmlFor="exclusive">Tax Exclusive</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="taxOnTax"
+                  checked={formData.taxOnTax}
+                  onCheckedChange={(checked) =>
+                    handleInputChange("taxOnTax", checked)
+                  }
+                />
+                <Label htmlFor="taxOnTax">Tax on Tax</Label>
+              </div>
+            </div>
+
+            <div className="text-sm text-gray-600 space-y-1">
+              <p>
+                <strong>Tax Inclusive:</strong> Tax is already included in the
+                price
+              </p>
+              <p>
+                <strong>Tax Exclusive:</strong> Tax is added on top of the price
+              </p>
+              <p>
+                <strong>Tax on Tax:</strong> Apply tax on top of other taxes
               </p>
             </div>
           </div>
@@ -318,9 +403,7 @@ const TaxScheduleModal = ({
                         : `${tax.rate}%`}
                       )
                     </label>
-                    <span className="text-xs text-gray-500">
-                      {tax.isSuperAdminTax ? "Global" : "Company"}
-                    </span>
+                    <span className="text-xs text-gray-500">Company Tax</span>
                   </div>
                 ))
               )}

@@ -1,4 +1,7 @@
-import { DocumentFileModel, DocumentFileDocument } from "../models/document.model";
+import {
+  DocumentFileModel,
+  DocumentFileDocument,
+} from "../models/document.model";
 import { DocumentFile } from "../types";
 import multer from "multer";
 import path from "path";
@@ -25,7 +28,11 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (
+  req: any,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
   // Allow common document types
   const allowedTypes = [
     "application/pdf",
@@ -113,7 +120,12 @@ const getDocuments = async (
     page?: number;
     limit?: number;
   } = {}
-): Promise<{ documents: DocumentFileDocument[]; total: number; totalPages: number; currentPage: number }> => {
+): Promise<{
+  documents: DocumentFileDocument[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
   try {
     const query: any = { isDeleted: false };
 
@@ -151,12 +163,12 @@ const getDocuments = async (
 
     const [documents, total] = await Promise.all([
       DocumentFileModel.find(query)
-        .populate('uploadedBy', 'name email')
-        .populate('company', 'name')
+        .populate("uploadedBy", "name email")
+        .populate("company", "name")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      DocumentFileModel.countDocuments(query)
+      DocumentFileModel.countDocuments(query),
     ]);
 
     return {
@@ -177,11 +189,13 @@ const getDocuments = async (
 /**
  * Get document by ID
  */
-const getDocumentById = async (documentId: string): Promise<DocumentFileDocument | null> => {
+const getDocumentById = async (
+  documentId: string
+): Promise<DocumentFileDocument | null> => {
   try {
     return await DocumentFileModel.findById(documentId)
-      .populate('uploadedBy', 'name email')
-      .populate('company', 'name');
+      .populate("uploadedBy", "name email")
+      .populate("company", "name");
   } catch (error) {
     throw new Error(
       `Failed to fetch document: ${
@@ -205,13 +219,11 @@ const updateDocument = async (
   }
 ): Promise<DocumentFileDocument | null> => {
   try {
-    return await DocumentFileModel.findByIdAndUpdate(
-      documentId,
-      updateData,
-      { new: true }
-    )
-      .populate('uploadedBy', 'name email')
-      .populate('company', 'name');
+    return await DocumentFileModel.findByIdAndUpdate(documentId, updateData, {
+      new: true,
+    })
+      .populate("uploadedBy", "name email")
+      .populate("company", "name");
   } catch (error) {
     throw new Error(
       `Failed to update document: ${
@@ -252,7 +264,9 @@ const deleteDocument = async (documentId: string): Promise<boolean> => {
 /**
  * Get document statistics
  */
-const getDocumentStatistics = async (companyId?: string): Promise<{
+const getDocumentStatistics = async (
+  companyId?: string
+): Promise<{
   totalDocuments: number;
   totalSize: number;
   categoryBreakdown: { [key: string]: { count: number; size: number } };
@@ -275,18 +289,21 @@ const getDocumentStatistics = async (companyId?: string): Promise<{
     const totalSize = documents.reduce((sum, doc) => sum + doc.size, 0);
 
     // Category breakdown
-    const categoryBreakdown = documents.reduce((acc, doc) => {
-      if (!acc[doc.category]) {
-        acc[doc.category] = { count: 0, size: 0 };
-      }
-      acc[doc.category].count += 1;
-      acc[doc.category].size += doc.size;
-      return acc;
-    }, {} as { [key: string]: { count: number; size: number } });
+    const categoryBreakdown = documents.reduce(
+      (acc, doc) => {
+        if (!acc[doc.category]) {
+          acc[doc.category] = { count: 0, size: 0 };
+        }
+        acc[doc.category].count += 1;
+        acc[doc.category].size += doc.size;
+        return acc;
+      },
+      {} as { [key: string]: { count: number; size: number } }
+    );
 
     // Recent uploads
     const recentUploads = await DocumentFileModel.find(query)
-      .populate('uploadedBy', 'name email')
+      .populate("uploadedBy", "name email")
       .sort({ createdAt: -1 })
       .limit(5);
 
@@ -317,7 +334,9 @@ const getDocumentStatistics = async (companyId?: string): Promise<{
 /**
  * Generate document preview URL
  */
-const getDocumentPreviewUrl = async (documentId: string): Promise<string | null> => {
+const getDocumentPreviewUrl = async (
+  documentId: string
+): Promise<string | null> => {
   try {
     const document = await DocumentFileModel.findById(documentId);
     if (!document || !fs.existsSync(document.path)) {
@@ -339,7 +358,9 @@ const getDocumentPreviewUrl = async (documentId: string): Promise<string | null>
 /**
  * Download document
  */
-const downloadDocument = async (documentId: string): Promise<{ path: string; filename: string; mimetype: string } | null> => {
+const downloadDocument = async (
+  documentId: string
+): Promise<{ path: string; filename: string; mimetype: string } | null> => {
   try {
     const document = await DocumentFileModel.findById(documentId);
     if (!document || !fs.existsSync(document.path)) {
@@ -360,6 +381,183 @@ const downloadDocument = async (documentId: string): Promise<{ path: string; fil
   }
 };
 
+/**
+ * Get documents for super admin review
+ */
+const getDocumentsForReview = async (
+  filters: {
+    status?: "pending" | "approved" | "rejected";
+    category?: string;
+    companyId?: string;
+    uploadedBy?: string;
+    startDate?: Date;
+    endDate?: Date;
+  } = {},
+  pagination: {
+    page: number;
+    limit: number;
+  } = { page: 1, limit: 10 }
+) => {
+  try {
+    const query: any = {
+      isDeleted: false,
+      ...filters,
+    };
+
+    const skip = (pagination.page - 1) * pagination.limit;
+
+    const documents = await DocumentFileModel.find(query)
+      .populate("company", "name email contactPhone location")
+      .populate("uploadedBy", "name email phone")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pagination.limit);
+
+    const total = await DocumentFileModel.countDocuments(query);
+
+    return {
+      documents,
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: Math.ceil(total / pagination.limit),
+    };
+  } catch (error) {
+    throw new Error(
+      `Failed to get documents for review: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
+/**
+ * Review and verify a document
+ */
+const reviewDocument = async (
+  documentId: string,
+  reviewData: {
+    status: "approved" | "rejected";
+    reviewedBy: string;
+    reviewNotes?: string;
+    rejectionReason?: string;
+  }
+) => {
+  try {
+    const document = await DocumentFileModel.findById(documentId);
+    if (!document) {
+      throw new Error("Document not found");
+    }
+
+    document.status = reviewData.status;
+    document.reviewedBy = reviewData.reviewedBy;
+    document.reviewedAt = new Date();
+    document.reviewNotes = reviewData.reviewNotes;
+
+    if (reviewData.status === "rejected" && reviewData.rejectionReason) {
+      document.rejectionReason = reviewData.rejectionReason;
+    }
+
+    const updatedDocument = await document.save();
+    await updatedDocument.populate("company", "name email contactPhone");
+    await updatedDocument.populate("uploadedBy", "name email phone");
+    await updatedDocument.populate("reviewedBy", "name email");
+
+    return updatedDocument;
+  } catch (error) {
+    throw new Error(
+      `Failed to review document: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
+/**
+ * Get document review statistics
+ */
+const getDocumentReviewStatistics = async () => {
+  try {
+    const stats = await DocumentFileModel.aggregate([
+      {
+        $match: { isDeleted: false },
+      },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const totalDocuments = await DocumentFileModel.countDocuments({
+      isDeleted: false,
+    });
+    const pendingDocuments = await DocumentFileModel.countDocuments({
+      isDeleted: false,
+      status: "pending",
+    });
+    const approvedDocuments = await DocumentFileModel.countDocuments({
+      isDeleted: false,
+      status: "approved",
+    });
+    const rejectedDocuments = await DocumentFileModel.countDocuments({
+      isDeleted: false,
+      status: "rejected",
+    });
+
+    return {
+      totalDocuments,
+      pendingDocuments,
+      approvedDocuments,
+      rejectedDocuments,
+      approvalRate:
+        totalDocuments > 0 ? (approvedDocuments / totalDocuments) * 100 : 0,
+      rejectionRate:
+        totalDocuments > 0 ? (rejectedDocuments / totalDocuments) * 100 : 0,
+      breakdown: stats,
+    };
+  } catch (error) {
+    throw new Error(
+      `Failed to get document review statistics: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
+/**
+ * Get documents by company for super admin review
+ */
+const getCompanyDocuments = async (
+  companyId: string,
+  filters: {
+    status?: "pending" | "approved" | "rejected";
+    category?: string;
+  } = {}
+) => {
+  try {
+    const query: any = {
+      company: companyId,
+      isDeleted: false,
+      ...filters,
+    };
+
+    const documents = await DocumentFileModel.find(query)
+      .populate("uploadedBy", "name email phone")
+      .populate("reviewedBy", "name email")
+      .sort({ createdAt: -1 });
+
+    return documents;
+  } catch (error) {
+    throw new Error(
+      `Failed to get company documents: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
 export {
   uploadDocument,
   getDocuments,
@@ -369,4 +567,8 @@ export {
   getDocumentStatistics,
   getDocumentPreviewUrl,
   downloadDocument,
+  getDocumentsForReview,
+  reviewDocument,
+  getDocumentReviewStatistics,
+  getCompanyDocuments,
 };

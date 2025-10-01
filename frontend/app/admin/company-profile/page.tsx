@@ -32,6 +32,11 @@ import {
   Upload,
   X,
   Image as ImageIcon,
+  File,
+  Download,
+  Trash2,
+  Plus,
+  FileText,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -46,6 +51,19 @@ export default function CompanyProfilePage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // TanStack Query for company data with proper state management
+  const { data: companyData, refetch: refetchCompany } = useQuery({
+    queryKey: ["company-profile", (user?.company as any)?._id],
+    queryFn: async () => {
+      const companyId = (user?.company as any)?._id;
+      if (!companyId) return null;
+      return CompanyAPI.getById(companyId);
+    },
+    enabled: !!user?.company,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnWindowFocus: false,
+  });
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
@@ -63,8 +81,10 @@ export default function CompanyProfilePage() {
   });
   const [companyImage, setCompanyImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [registrationDocs, setRegistrationDocs] = useState<File[]>([]);
+  const [existingDocs, setExistingDocs] = useState<any[]>([]);
 
-  // Company update mutation
+  // Company update mutation with optimistic updates
   const updateCompanyMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       const companyId = (user?.company as any)?._id;
@@ -73,17 +93,62 @@ export default function CompanyProfilePage() {
       }
       return CompanyAPI.update(companyId, formData);
     },
-    onSuccess: () => {
+    onMutate: async (formData) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["company-profile"] });
+
+      // Snapshot the previous value
+      const previousCompany = queryClient.getQueryData([
+        "company-profile",
+        (user?.company as any)?._id,
+      ]);
+
+      // Optimistically update to the new value
+      if (previousCompany) {
+        const updatedCompany = { ...previousCompany } as any;
+        // Update fields from formData
+        if (formData.get("phone"))
+          (updatedCompany as any).contactPhone = formData.get("phone");
+        if (formData.get("email"))
+          (updatedCompany as any).contactEmail = formData.get("email");
+        if (formData.get("description"))
+          (updatedCompany as any).description = formData.get("description");
+        if (formData.get("location"))
+          (updatedCompany as any).location = formData.get("location");
+        if (formData.get("website"))
+          (updatedCompany as any).website = formData.get("website");
+        if (formData.get("currency"))
+          (updatedCompany as any).currency = formData.get("currency");
+
+        queryClient.setQueryData(
+          ["company-profile", (user?.company as any)?._id],
+          updatedCompany
+        );
+      }
+
+      return { previousCompany };
+    },
+    onSuccess: async (data) => {
       toast({
         title: "Success",
         description: "Company updated successfully!",
         variant: "default",
       });
       setIsEditMode(false);
-      // Refresh user data
-      queryClient.invalidateQueries({ queryKey: ["user"] });
+
+      // Invalidate and refetch to ensure we have the latest data
+      await queryClient.invalidateQueries({ queryKey: ["company-profile"] });
+      await refetchCompany();
     },
-    onError: (error: any) => {
+    onError: (error: any, formData, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousCompany) {
+        queryClient.setQueryData(
+          ["company-profile", (user?.company as any)?._id],
+          context.previousCompany
+        );
+      }
+
       toast({
         title: "Error",
         description: error.message || "Failed to update company",
@@ -92,11 +157,11 @@ export default function CompanyProfilePage() {
     },
   });
 
-  // Initialize edit form when user data changes
+  // Initialize edit form when company data changes
   React.useEffect(() => {
-    if (user?.company && !isEditMode) {
-      const company = user.company as any;
-
+    // Use TanStack Query data if available, otherwise fallback to user.company
+    const company = (companyData || user?.company) as any;
+    if (company && !isEditMode) {
       // Format invoice format object as a readable string
       let invoiceFormatDisplay = "";
       if (company.invoiceFormat) {
@@ -121,8 +186,8 @@ export default function CompanyProfilePage() {
         description: company.description || "",
         location: company.location || "",
         website: company.website || "",
-        phone: company.phone || "",
-        email: company.email || "",
+        phone: company.contactPhone || "",
+        email: company.contactEmail || "",
         currency: company.currency || "",
         feePercent: company.feePercent?.toString() || "",
         invoiceFormat: invoiceFormatDisplay,
@@ -131,8 +196,13 @@ export default function CompanyProfilePage() {
         invoiceFormatPadding: company.invoiceFormat?.padding || 4,
         invoiceFormatNextNumber: company.invoiceFormat?.nextNumber || 1,
       });
+
+      // Initialize existing registration documents
+      if (company.registrationDocs && Array.isArray(company.registrationDocs)) {
+        setExistingDocs(company.registrationDocs);
+      }
     }
-  }, [user?.company, isEditMode]);
+  }, [companyData, user?.company, isEditMode]);
 
   // Handle image upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,15 +225,69 @@ export default function CompanyProfilePage() {
     setPreviewImage(null);
   };
 
+  // Handle document upload
+  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate files
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "text/plain",
+    ];
+
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    files.forEach((file) => {
+      if (!allowedTypes.includes(file.type)) {
+        invalidFiles.push(file.name);
+      } else if (file.size > 10 * 1024 * 1024) {
+        invalidFiles.push(`${file.name} (too large)`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "Invalid Files",
+        description: `Some files were not uploaded: ${invalidFiles.join(", ")}`,
+        variant: "destructive",
+      });
+    }
+
+    if (validFiles.length > 0) {
+      setRegistrationDocs((prev) => [...prev, ...validFiles]);
+    }
+  };
+
+  // Remove document
+  const removeDocument = (index: number) => {
+    setRegistrationDocs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove existing document
+  const removeExistingDocument = (index: number) => {
+    setExistingDocs((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const formData = new FormData();
 
-    // Add form fields (excluding invoice format fields)
+    // Add form fields (excluding invoice format fields and name)
     Object.entries(editForm).forEach(([key, value]) => {
-      if (value && !key.startsWith("invoiceFormat")) {
+      if (value && !key.startsWith("invoiceFormat") && key !== "name") {
         formData.append(key, value.toString());
       }
     });
@@ -180,6 +304,16 @@ export default function CompanyProfilePage() {
     // Add image
     if (companyImage) {
       formData.append("file", companyImage);
+    }
+
+    // Add registration documents
+    registrationDocs.forEach((file) => {
+      formData.append("registrationDocs", file);
+    });
+
+    // Add remaining existing documents (so backend knows which ones to keep)
+    if (existingDocs.length > 0) {
+      formData.append("existingDocs", JSON.stringify(existingDocs));
     }
 
     updateCompanyMutation.mutate(formData);
@@ -218,6 +352,21 @@ export default function CompanyProfilePage() {
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  if (!user?.company) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            No Company Found
+          </h2>
+          <p className="text-gray-600">
+            You need to be associated with a company to view this page.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -287,6 +436,105 @@ export default function CompanyProfilePage() {
                       <p className="text-orange-700">
                         {(user.company as any)?.currency || "N/A"}
                       </p>
+                    </div>
+
+                    {/* Invoice Settings Card */}
+                    <div
+                      key={`invoice-settings-${
+                        (companyData || (user?.company as any))?._id
+                      }-${JSON.stringify(
+                        (companyData || (user?.company as any))?.invoiceFormat
+                      )}`}
+                      className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-200"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="h-5 w-5 text-indigo-600" />
+                        <h3 className="font-semibold text-indigo-900">
+                          Invoice Settings
+                        </h3>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-indigo-700 font-medium">
+                            Format:
+                          </span>
+                          <span className="text-sm font-semibold text-indigo-900">
+                            {(() => {
+                              const invoiceFormat = (
+                                companyData || (user?.company as any)
+                              )?.invoiceFormat;
+                              if (!invoiceFormat) return "Not configured";
+
+                              switch (invoiceFormat.type) {
+                                case "auto":
+                                  return "Auto Generated";
+                                case "prefix":
+                                  return "Custom Prefix";
+                                case "paystack":
+                                  return "Paystack Format";
+                                default:
+                                  return "Not configured";
+                              }
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-indigo-700 font-medium">
+                            Next Invoice:
+                          </span>
+                          <span className="text-sm font-semibold text-indigo-900 bg-indigo-100 px-2 py-1 rounded">
+                            {(() => {
+                              const invoiceFormat = (
+                                companyData || (user?.company as any)
+                              )?.invoiceFormat;
+                              if (!invoiceFormat) return "N/A";
+
+                              const { type, prefix, nextNumber, padding } =
+                                invoiceFormat;
+
+                              if (type === "prefix" && prefix) {
+                                return `${prefix}${String(
+                                  nextNumber || 1
+                                ).padStart(padding || 4, "0")}`;
+                              } else if (type === "paystack") {
+                                return `PAY-${String(nextNumber || 1).padStart(
+                                  padding || 4,
+                                  "0"
+                                )}`;
+                              } else {
+                                return `INV-${String(nextNumber || 1).padStart(
+                                  padding || 4,
+                                  "0"
+                                )}`;
+                              }
+                            })()}
+                          </span>
+                        </div>
+                        {(companyData || (user?.company as any))?.invoiceFormat
+                          ?.prefix && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-indigo-700 font-medium">
+                              Prefix:
+                            </span>
+                            <span className="text-sm font-semibold text-indigo-900">
+                              {
+                                (companyData || (user?.company as any))
+                                  ?.invoiceFormat?.prefix
+                              }
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-indigo-700 font-medium">
+                            Padding:
+                          </span>
+                          <span className="text-sm font-semibold text-indigo-900">
+                            {(companyData || (user?.company as any))
+                              ?.invoiceFormat?.padding || 4}{" "}
+                            digits
+                          </span>
+                        </div>
+                      </div>
                     </div>
                     {(user.company as any)?.website && (
                       <div className="bg-teal-50 p-4 rounded-lg">
@@ -370,6 +618,55 @@ export default function CompanyProfilePage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Display registration documents */}
+                    {existingDocs.length > 0 && (
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <h3 className="font-semibold text-blue-900 mb-3">
+                          Registration Documents ({existingDocs.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {existingDocs.map((doc, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between bg-white p-3 rounded-lg border"
+                            >
+                              <div className="flex items-center gap-3">
+                                <File className="w-5 h-5 text-blue-500" />
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {doc.originalName ||
+                                      doc.path?.split("/").pop() ||
+                                      `Document ${index + 1}`}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {doc.size
+                                      ? `${(doc.size / 1024 / 1024).toFixed(
+                                          2
+                                        )} MB`
+                                      : "Unknown size"}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const url = getResourceUrl(doc.path);
+                                    window.open(url, "_blank");
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -392,11 +689,13 @@ export default function CompanyProfilePage() {
                         <Input
                           id="name"
                           value={editForm.name}
-                          onChange={(e) =>
-                            handleInputChange("name", e.target.value)
-                          }
-                          placeholder="Company name"
+                          disabled
+                          placeholder="Company name (cannot be changed)"
+                          className="bg-gray-100 cursor-not-allowed"
                         />
+                        <p className="text-sm text-gray-500 mt-1">
+                          Company name cannot be changed after registration
+                        </p>
                       </div>
                       <div>
                         <Label htmlFor="description">Description</Label>
@@ -664,6 +963,138 @@ export default function CompanyProfilePage() {
                             >
                               <X className="h-3 w-3" />
                             </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Document Upload Section */}
+                    <div>
+                      <Label>Registration Documents</Label>
+                      <div className="mt-2 space-y-4">
+                        {/* File Upload Area */}
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                          <input
+                            type="file"
+                            id="documentUpload"
+                            multiple
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt"
+                            onChange={handleDocumentUpload}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="documentUpload"
+                            className="cursor-pointer flex flex-col items-center gap-2"
+                          >
+                            <Upload className="w-8 h-8 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                Click to upload documents
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, TXT
+                                (max 10MB each)
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Existing Documents */}
+                        {existingDocs.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-gray-900">
+                              Current Documents ({existingDocs.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {existingDocs.map((doc, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <File className="w-5 h-5 text-gray-400" />
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">
+                                        {doc.originalName ||
+                                          doc.path?.split("/").pop() ||
+                                          `Document ${index + 1}`}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {doc.size
+                                          ? `${(doc.size / 1024 / 1024).toFixed(
+                                              2
+                                            )} MB`
+                                          : "Unknown size"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const url = getResourceUrl(doc.path);
+                                        window.open(url, "_blank");
+                                      }}
+                                      className="text-blue-600 hover:text-blue-800"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        removeExistingDocument(index)
+                                      }
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* New Documents */}
+                        {registrationDocs.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-gray-900">
+                              New Documents ({registrationDocs.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {registrationDocs.map((file, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between bg-blue-50 p-3 rounded-lg"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <File className="w-5 h-5 text-blue-500" />
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">
+                                        {file.name}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {(file.size / 1024 / 1024).toFixed(2)}{" "}
+                                        MB
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeDocument(index)}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>

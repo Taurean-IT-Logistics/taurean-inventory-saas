@@ -224,7 +224,12 @@ const getSubaccountDetails = async (subaccountCode: string) => {
   }
 };
 
-import { TransactionModel, CashModel, SplitPaymentModel, TransactionSplitModel } from "../models";
+import {
+  TransactionModel,
+  CashModel,
+  SplitPaymentModel,
+  TransactionSplitModel,
+} from "../models";
 import { Transaction, Cash, SplitPayment, TransactionSplit } from "../types";
 import { Types } from "mongoose";
 
@@ -263,8 +268,8 @@ const processCashPayment = async (paymentData: {
             amount: paymentData.amount,
             denominations: paymentData.denominations,
             processedAt: new Date(),
-          }
-        }
+          },
+        },
       },
       { new: true }
     );
@@ -325,7 +330,7 @@ const processSplitPayment = async (paymentData: {
     }
 
     // Update split payment with transaction references
-    splitPayment.transactions = transactionSplits.map(ts => ts._id);
+    splitPayment.transactions = transactionSplits.map((ts) => ts._id);
     await splitPayment.save();
 
     return { splitPayment, transactionSplits };
@@ -355,7 +360,7 @@ const processAdvancePayment = async (paymentData: {
     const transaction = new TransactionModel({
       user: paymentData.userId,
       type: "income",
-      category: "advance_payment",
+      category: "other",
       amount: paymentData.amount,
       method: paymentData.paymentMethod,
       paymentDetails: paymentData.paymentDetails || {},
@@ -368,7 +373,7 @@ const processAdvancePayment = async (paymentData: {
     // Calculate user's advance balance
     const advanceTransactions = await TransactionModel.find({
       user: paymentData.userId,
-      category: "advance_payment",
+      category: "other",
       isDeleted: false,
     });
 
@@ -396,13 +401,18 @@ const applyAdvancePayment = async (paymentData: {
 }): Promise<{ transaction: any; remainingAdvance: number }> => {
   try {
     // Get transaction
-    const transaction = await TransactionModel.findById(paymentData.transactionId);
+    const transaction = await TransactionModel.findById(
+      paymentData.transactionId
+    );
     if (!transaction) {
       throw new Error("Transaction not found");
     }
 
     // Calculate remaining amount after advance payment
-    const remainingAmount = Math.max(0, transaction.amount - paymentData.advanceAmount);
+    const remainingAmount = Math.max(
+      0,
+      transaction.amount - paymentData.advanceAmount
+    );
 
     // Update transaction
     const updatedTransaction = await TransactionModel.findByIdAndUpdate(
@@ -413,7 +423,7 @@ const applyAdvancePayment = async (paymentData: {
           ...transaction.paymentDetails,
           advanceApplied: paymentData.advanceAmount,
           originalAmount: transaction.amount,
-        }
+        },
       },
       { new: true }
     );
@@ -422,7 +432,7 @@ const applyAdvancePayment = async (paymentData: {
     const advanceDeduction = new TransactionModel({
       user: paymentData.userId,
       type: "expense",
-      category: "advance_payment",
+      category: "other",
       amount: paymentData.advanceAmount,
       method: "advance_deduction",
       description: `Advance payment applied to transaction ${paymentData.transactionId}`,
@@ -433,7 +443,7 @@ const applyAdvancePayment = async (paymentData: {
     // Calculate remaining advance balance
     const advanceTransactions = await TransactionModel.find({
       user: paymentData.userId,
-      category: "advance_payment",
+      category: "other",
       isDeleted: false,
     });
 
@@ -458,7 +468,7 @@ const getAdvanceBalance = async (userId: string): Promise<number> => {
   try {
     const advanceTransactions = await TransactionModel.find({
       user: userId,
-      category: "advance_payment",
+      category: "other",
       isDeleted: false,
     });
 
@@ -480,7 +490,7 @@ const getAdvanceBalance = async (userId: string): Promise<number> => {
 const getSplitPaymentDetails = async (splitPaymentId: string): Promise<any> => {
   try {
     const splitPayment = await SplitPaymentModel.findById(splitPaymentId)
-      .populate('transactions')
+      .populate("transactions")
       .lean();
 
     if (!splitPayment) {
@@ -489,12 +499,12 @@ const getSplitPaymentDetails = async (splitPaymentId: string): Promise<any> => {
 
     // Get transaction splits
     const transactionSplits = await TransactionSplitModel.find({
-      transaction: { $in: splitPayment.transactions }
-    }).populate('transaction');
+      transaction: { $in: splitPayment.transactions },
+    }).populate("transaction");
 
     return {
       ...splitPayment,
-      splits: transactionSplits
+      splits: transactionSplits,
     };
   } catch (error) {
     throw new Error(
@@ -518,10 +528,10 @@ const completeSplitPayment = async (splitPaymentId: string): Promise<any> => {
     // Mark all related transactions as completed
     await TransactionModel.updateMany(
       { _id: { $in: splitPayment.transactions } },
-      { 
+      {
         paymentStatus: "completed",
         reconciled: true,
-        reconciledAt: new Date()
+        reconciledAt: new Date(),
       }
     );
 
@@ -538,7 +548,6 @@ const completeSplitPayment = async (splitPaymentId: string): Promise<any> => {
     );
   }
 };
-
 
 export {
   initializePayment,

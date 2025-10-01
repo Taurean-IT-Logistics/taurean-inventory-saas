@@ -29,7 +29,14 @@ const CompanySchema = new Schema<CompanyDocument>(
       mimetype: { type: String },
       size: { type: Number },
     },
-    registrationDocs: [{ type: String }],
+    registrationDocs: [
+      {
+        path: { type: String },
+        originalName: { type: String },
+        mimetype: { type: String },
+        size: { type: Number },
+      },
+    ],
     location: { type: String },
     contactEmail: { type: String },
     contactPhone: { type: String },
@@ -45,6 +52,7 @@ const CompanySchema = new Schema<CompanyDocument>(
     },
     currency: { type: String, default: "GHS" },
     isActive: { type: Boolean, default: true },
+    activeTaxSchedule: { type: Schema.Types.ObjectId, ref: "TaxSchedule" },
     subscription: {
       plan: {
         type: String,

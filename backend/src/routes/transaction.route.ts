@@ -45,6 +45,20 @@ router.post("/debug/fix-company-fields", AuthMiddleware, async (req, res) => {
 // All other payment routes require authentication
 router.use(AuthMiddleware);
 
+// Payment schedule routes
+router.get(
+  "/schedules/pending",
+  TransactionController.getPendingPaymentsController
+);
+router.post(
+  "/schedules/:scheduleId/authorize/:paymentIndex",
+  TransactionController.authorizeScheduledPaymentController
+);
+router.post(
+  "/schedules/:scheduleId/complete/:paymentIndex",
+  TransactionController.markPaymentCompletedController
+);
+
 // List all transactions (company scope) - finance permissions
 router.get(
   "/",
@@ -183,6 +197,21 @@ router.put(
 router.get(
   "/pending/user",
   TransactionController.getUserPendingTransactionsController
+);
+
+// Cash and Check payment processing routes
+router.post(
+  "/process-cash",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.processCashPaymentController
+);
+
+router.post(
+  "/process-check",
+  RequireCompanyContext(),
+  RequirePermissions(["manageTransactions"]),
+  TransactionController.processCheckPaymentController
 );
 
 export default router;

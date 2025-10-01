@@ -15,6 +15,7 @@ import { CalendarDays, Building2, Users, Package } from "lucide-react";
 import BookingCalendar from "@/components/booking/booking-calendar";
 import { Booking } from "@/types";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/components/AuthProvider";
 import { BookingsAPI } from "@/lib/api";
 
 export default function AdminPage() {

@@ -246,7 +246,7 @@ export interface Transaction {
   };
   splitConfig?: {
     numberOfParts: number;
-    parts: Array<{ amount: number; dueDate: Date }>;
+    intervalDays: number;
   };
   // Pending transaction fields
   status?: "pending" | "confirmed" | "rejected" | "cancelled";
@@ -439,12 +439,10 @@ export interface Tax {
   name: string;
   rate: number;
   type: string;
-  appliesTo: "inventory_item" | "facility" | "both";
   taxType?: "percentage" | "fixed_amount";
   fixedAmount?: number;
-  isSuperAdminTax?: boolean;
-  company?: Company;
-  active: boolean;
+  company: Company;
+  active?: boolean; // Whether the tax is active
   createdAt: Date;
   updatedAt: Date;
   // Independent tax fields
@@ -707,10 +705,12 @@ export interface TaxSchedule {
   name: string;
   description?: string;
   components: Tax[]; // Array of individual taxes
-  effectiveDate: Date;
-  expiryDate?: Date;
+  startDate: Date;
+  sunsetDate?: Date;
+  effectiveDate?: Date; // Alias for startDate
+  expiryDate?: Date; // Alias for sunsetDate
   isActive: boolean;
-  appliesTo: "all" | "facilities" | "inventory" | "subscriptions";
+  appliesTo: "all" | "facilities" | "inventoryItem";
   company: string;
   createdBy: User;
   createdAt: Date;

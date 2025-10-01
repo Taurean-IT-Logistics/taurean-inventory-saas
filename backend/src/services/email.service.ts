@@ -25,8 +25,6 @@ interface EmailConfig {
   pool?: boolean;
   maxConnections?: number;
   maxMessages?: number;
-  retryDelay?: number;
-  maxRetries?: number;
 }
 
 interface EmailContext {
@@ -50,67 +48,99 @@ interface EmailOptions {
     content: Buffer;
     contentType: string;
   }>;
-  companyId?: string; // For company-specific email configurations
+  companyId?: string;
 }
 
 class EmailService {
   private transporter: nodemailer.Transporter | null = null;
+  private isConfigured: boolean = false;
 
   constructor() {
     this.initializeTransporter();
   }
 
   private initializeTransporter() {
-    const config: EmailConfig = {
-      host: process.env.EMAIL_HOST || "smtp.gmail.com",
-      port: parseInt(process.env.EMAIL_PORT || "587"),
-      secure: process.env.EMAIL_SECURE === "true",
-      auth: {
-        user: process.env.EMAIL_USER || "",
-        pass: process.env.EMAIL_PASS || "",
-      },
-      // Add connection timeout and retry settings
-      connectionTimeout: 60000, // 60 seconds
-      greetingTimeout: 30000, // 30 seconds
-      socketTimeout: 60000, // 60 seconds
-      pool: true, // Use connection pooling
-      maxConnections: 5, // Maximum number of connections
-      maxMessages: 100, // Maximum number of messages per connection
-      // Add retry settings
-      retryDelay: 5000, // 5 seconds between retries
-      maxRetries: 3, // Maximum number of retries
-    };
+    try {
+      // Validate environment variables first
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.warn("⚠️ Email service not configured: Missing credentials");
+        console.warn("Required environment variables:");
+        console.warn("  - EMAIL_USER: Your email address");
+        console.warn("  - EMAIL_PASS: Your email password or app password");
+        console.warn("  - EMAIL_HOST: SMTP host (default: smtp.gmail.com)");
+        console.warn("  - EMAIL_PORT: SMTP port (default: 587)");
+        this.isConfigured = false;
+        return;
+      }
 
-    if (config.auth.user && config.auth.pass) {
+      const config: EmailConfig = {
+        host: process.env.EMAIL_HOST || "smtp.gmail.com",
+        port: parseInt(process.env.EMAIL_PORT || "587", 10),
+        secure: process.env.EMAIL_SECURE === "true", // true for 465, false for other ports
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+        connectionTimeout: 60000,
+        greetingTimeout: 30000,
+        socketTimeout: 60000,
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 100,
+      };
+
+      // Create transporter
       this.transporter = nodemailer.createTransport(config);
 
-      // Verify connection configuration with better error handling
-      this.transporter.verify((error, success) => {
-        if (error) {
-          console.error("Email service configuration error:", error.message);
-          console.error("SMTP Host:", config.host);
-          console.error("SMTP Port:", config.port);
-          console.error("SMTP User:", config.auth.user);
-          console.error("SMTP Secure:", config.secure);
+      // Verify connection (but don't block initialization)
+      this.transporter
+        .verify()
+        .then(() => {
+          console.log("✅ Email service is ready");
+          this.isConfigured = true;
+        })
+        .catch((error) => {
+          console.error("❌ Email service verification failed:", error.message);
 
-          // Don't fail the entire service, just log the error
-          console.warn(
-            "Email service will attempt to send emails but may fail"
-          );
-        } else {
-          console.log("Email service is ready to send messages");
-        }
-      });
-    } else {
-      console.warn(
-        "Email service not configured: Missing EMAIL_USER or EMAIL_PASS"
-      );
+          // Provide specific troubleshooting advice
+          if (error.message.includes("Invalid login")) {
+            console.error("\n📧 Gmail Authentication Failed:");
+            console.error(
+              "  1. Enable 2-Factor Authentication on your Gmail account"
+            );
+            console.error(
+              "  2. Generate an App Password: https://myaccount.google.com/apppasswords"
+            );
+            console.error(
+              "  3. Use the App Password (not your regular password) in EMAIL_PASS"
+            );
+          } else if (
+            error.message.includes("ECONNECTION") ||
+            error.message.includes("ETIMEDOUT")
+          ) {
+            console.error("\n🌐 Connection Failed:");
+            console.error("  1. Check your internet connection");
+            console.error(
+              "  2. Verify firewall isn't blocking port",
+              config.port
+            );
+            console.error("  3. Confirm SMTP host is correct:", config.host);
+          } else if (error.message.includes("self signed certificate")) {
+            console.error("\n🔒 SSL Certificate Error:");
+            console.error("  Try setting: EMAIL_SECURE=false");
+          }
+
+          this.isConfigured = false;
+        });
+    } catch (error) {
+      console.error("❌ Failed to initialize email service:", error);
+      this.isConfigured = false;
     }
   }
 
   public async sendEmail(options: EmailOptions): Promise<boolean> {
     if (!this.transporter) {
-      console.warn("Email transporter not configured. Email not sent.");
+      console.warn("⚠️ Email transporter not configured. Cannot send email.");
       return false;
     }
 
@@ -121,23 +151,22 @@ class EmailService {
         user: options.context.user,
         recipient: options.context.recipient,
         data: options.context.data,
-        baseUrl: CONFIG.FRONTEND_BASE_URL,
+        baseUrl: CONFIG.FRONTEND_BASE_URL || "http://localhost:3000",
         resetLink: options.context.resetLink,
         booking: options.context.booking,
       };
 
       // Render email using React Email
       let htmlContent: string;
-
       try {
         htmlContent = await ReactEmailRenderer.renderEmail(
           options.template,
           emailData
         );
-      } catch (error) {
+      } catch (renderError) {
         console.error(
-          `Failed to render React Email template '${options.template}':`,
-          error
+          `❌ Failed to render email template '${options.template}':`,
+          renderError
         );
         throw new Error(
           `Email template '${options.template}' not found or failed to render`
@@ -156,20 +185,18 @@ class EmailService {
           const company = await CompanyModel.findById(options.companyId)
             .select("emailSettings name")
             .lean();
+
           if (company && (company as any).emailSettings) {
             const emailSettings = (company as any).emailSettings;
-            if (emailSettings.customFromName) {
-              fromName = emailSettings.customFromName;
-            }
-            if (emailSettings.customFromEmail) {
-              fromEmail = emailSettings.customFromEmail;
-            }
+            fromName = emailSettings.customFromName || company.name || fromName;
+            fromEmail = emailSettings.customFromEmail || fromEmail;
           }
         } catch (error) {
-          console.warn("Failed to get company email settings:", error);
+          console.warn("⚠️ Failed to get company email settings:", error);
         }
       }
 
+      // Prepare mail options
       const mailOptions = {
         from: {
           name: fromName,
@@ -181,83 +208,90 @@ class EmailService {
         attachments: options.attachments || [],
       };
 
-      // Retry mechanism for sending email
-      let info;
-      let retryCount = 0;
+      // Retry mechanism with exponential backoff
+      let lastError: any;
       const maxRetries = 3;
 
-      while (retryCount < maxRetries) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          info = await this.transporter.sendMail(mailOptions);
-          break; // Success, exit retry loop
+          const info = await this.transporter.sendMail(mailOptions);
+
+          console.log(`✅ Email sent successfully: ${info.messageId}`);
+
+          // Emit success event
+          this.emitEmailEvent(options, "sent", info.messageId);
+
+          return true;
         } catch (sendError: any) {
-          retryCount++;
+          lastError = sendError;
           console.error(
-            `Email send attempt ${retryCount} failed:`,
+            `❌ Email send attempt ${attempt}/${maxRetries} failed:`,
             sendError.message
           );
 
-          if (retryCount >= maxRetries) {
-            throw sendError; // Re-throw the error if all retries failed
+          if (attempt < maxRetries) {
+            const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+            console.log(`⏳ Retrying in ${delay / 1000}s...`);
+            await this.sleep(delay);
           }
-
-          // Wait before retrying (exponential backoff)
-          const delay = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
-          console.log(`Retrying email send in ${delay}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
 
-      // Emit real-time email delivery success event
-      try {
-        const companyId =
-          options.context?.company?._id ||
-          options.context?.company?.id ||
-          undefined;
-        const userId =
-          options.context?.user?._id || options.context?.user?.id || undefined;
-        const payload = {
-          status: "sent",
-          messageId: info.messageId,
-          to: options.to,
-          subject: options.subject,
-          template: options.template,
-          timestamp: new Date().toISOString(),
-        };
-        if (companyId)
-          emitEvent(Events.EmailSent, payload, `company:${companyId}`);
-        if (userId) emitEvent(Events.EmailSent, payload, `user:${userId}`);
-      } catch (emitError) {
-        console.error("Failed to emit email success event:", emitError);
-      }
+      // All retries failed
+      throw lastError;
+    } catch (error: any) {
+      console.error("❌ Failed to send email:", error.message);
 
-      return true;
-    } catch (error) {
-      console.error("Failed to send email:", error);
-      // Emit real-time email delivery failure event
-      try {
-        const companyId =
-          options.context?.company?._id ||
-          options.context?.company?.id ||
-          undefined;
-        const userId =
-          options.context?.user?._id || options.context?.user?.id || undefined;
-        const payload = {
-          status: "failed",
-          error: (error as any)?.message || "unknown",
-          to: options.to,
-          subject: options.subject,
-          template: options.template,
-          timestamp: new Date().toISOString(),
-        };
-        if (companyId)
-          emitEvent(Events.EmailFailed, payload, `company:${companyId}`);
-        if (userId) emitEvent(Events.EmailFailed, payload, `user:${userId}`);
-      } catch (emitError) {
-        console.error("Failed to emit email failure event:", emitError);
-      }
+      // Emit failure event
+      this.emitEmailEvent(options, "failed", undefined, error.message);
+
       return false;
     }
+  }
+
+  private emitEmailEvent(
+    options: EmailOptions,
+    status: "sent" | "failed",
+    messageId?: string,
+    errorMessage?: string
+  ): void {
+    try {
+      const companyId =
+        options.context?.company?._id || options.context?.company?.id;
+      const userId = options.context?.user?._id || options.context?.user?.id;
+
+      const payload = {
+        status,
+        messageId,
+        error: errorMessage,
+        to: options.to,
+        subject: options.subject,
+        template: options.template,
+        timestamp: new Date().toISOString(),
+      };
+
+      if (companyId) {
+        emitEvent(
+          status === "sent" ? Events.EmailSent : Events.EmailFailed,
+          payload,
+          `company:${companyId}`
+        );
+      }
+
+      if (userId) {
+        emitEvent(
+          status === "sent" ? Events.EmailSent : Events.EmailFailed,
+          payload,
+          `user:${userId}`
+        );
+      }
+    } catch (error) {
+      console.error("⚠️ Failed to emit email event:", error);
+    }
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // Convenience methods for common email types
@@ -265,17 +299,26 @@ class EmailService {
     userId: string,
     companyId: string
   ): Promise<boolean> {
-    const user = await UserModel.findById(userId).lean();
-    const company = await CompanyModel.findById(companyId).lean();
+    try {
+      const user = await UserModel.findById(userId).lean();
+      const company = await CompanyModel.findById(companyId).lean();
 
-    if (!user || !company) return false;
+      if (!user || !company) {
+        console.warn("⚠️ User or company not found for welcome email");
+        return false;
+      }
 
-    return this.sendEmail({
-      to: user.email,
-      subject: `Welcome to ${company.name}!`,
-      template: "welcome",
-      context: { company, user },
-    });
+      return this.sendEmail({
+        to: user.email,
+        subject: `Welcome to ${company.name}!`,
+        template: "welcome",
+        context: { company, user },
+        companyId,
+      });
+    } catch (error) {
+      console.error("❌ Failed to send welcome email:", error);
+      return false;
+    }
   }
 
   public async sendBookingSubmitted(bookingId: string): Promise<boolean> {
@@ -286,11 +329,19 @@ class EmailService {
         .populate("company")
         .lean();
 
-      if (!booking) return false;
+      if (!booking) {
+        console.warn("⚠️ Booking not found");
+        return false;
+      }
 
       const user = booking.user as any;
       const facility = booking.facility as any;
       const company = (booking as any).company;
+
+      if (!user?.email) {
+        console.warn("⚠️ User email not found for booking");
+        return false;
+      }
 
       return this.sendEmail({
         to: user.email,
@@ -314,7 +365,7 @@ class EmailService {
         companyId: company?._id?.toString(),
       });
     } catch (error) {
-      console.error("Failed to send booking submitted email:", error);
+      console.error("❌ Failed to send booking submitted email:", error);
       return false;
     }
   }
@@ -327,11 +378,19 @@ class EmailService {
         .populate("company")
         .lean();
 
-      if (!booking) return false;
+      if (!booking) {
+        console.warn("⚠️ Booking not found");
+        return false;
+      }
 
       const user = booking.user as any;
       const facility = booking.facility as any;
       const company = (booking as any).company;
+
+      if (!user?.email) {
+        console.warn("⚠️ User email not found");
+        return false;
+      }
 
       return this.sendEmail({
         to: user.email,
@@ -355,7 +414,7 @@ class EmailService {
         companyId: company?._id?.toString(),
       });
     } catch (error) {
-      console.error("Failed to send booking confirmation email:", error);
+      console.error("❌ Failed to send booking confirmation email:", error);
       return false;
     }
   }
@@ -369,10 +428,14 @@ class EmailService {
       const user = await UserModel.findOne({ email: userEmail })
         .populate("company")
         .lean();
-      if (!user) return false;
+
+      if (!user) {
+        console.warn("⚠️ User not found for password reset");
+        return false;
+      }
 
       const company = user.company as any;
-      const resetLink = `${CONFIG.FRONTEND_BASE_URL}/reset-password?token=${resetToken}`;
+      const resetLink = `${CONFIG.FRONTEND_BASE_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
 
       return this.sendEmail({
         to: userEmail,
@@ -382,10 +445,11 @@ class EmailService {
           company: company || { name: "Taurean IT Logistics" },
           user,
           resetLink,
+          data: { ipAddress },
         },
       });
     } catch (error) {
-      console.error("Failed to send password reset email:", error);
+      console.error("❌ Failed to send password reset email:", error);
       return false;
     }
   }
@@ -398,10 +462,14 @@ class EmailService {
       const user = await UserModel.findOne({ email: userEmail })
         .populate("company")
         .lean();
-      if (!user) return false;
+
+      if (!user) {
+        console.warn("⚠️ User not found for account verification");
+        return false;
+      }
 
       const company = user.company as any;
-      const verificationLink = `${CONFIG.FRONTEND_BASE_URL}/verify-email?token=${verificationToken}`;
+      const verificationLink = `${CONFIG.FRONTEND_BASE_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`;
 
       return this.sendEmail({
         to: userEmail,
@@ -417,7 +485,7 @@ class EmailService {
         },
       });
     } catch (error) {
-      console.error("Failed to send account verification email:", error);
+      console.error("❌ Failed to send account verification email:", error);
       return false;
     }
   }
@@ -441,9 +509,10 @@ class EmailService {
           company: company || { name: "Taurean IT Logistics" },
           data: { message },
         },
+        companyId,
       });
     } catch (error) {
-      console.error("Failed to send custom email:", error);
+      console.error("❌ Failed to send custom email:", error);
       return false;
     }
   }
@@ -456,7 +525,10 @@ class EmailService {
         .populate("company")
         .lean();
 
-      if (!booking) return false;
+      if (!booking || !(booking.user as any)?.email) {
+        console.warn("⚠️ Booking or user not found for reminder");
+        return false;
+      }
 
       const user = booking.user as any;
       const facility = booking.facility as any;
@@ -480,9 +552,10 @@ class EmailService {
             ),
           },
         },
+        companyId: company?._id?.toString(),
       });
     } catch (error) {
-      console.error("Failed to send booking reminder email:", error);
+      console.error("❌ Failed to send booking reminder email:", error);
       return false;
     }
   }
@@ -496,7 +569,10 @@ class EmailService {
         .populate("company")
         .lean();
 
-      if (!transaction) return false;
+      if (!transaction || !(transaction.user as any)?.email) {
+        console.warn("⚠️ Transaction or user not found");
+        return false;
+      }
 
       const user = transaction.user as any;
       const company = (transaction as any).company;
@@ -510,14 +586,15 @@ class EmailService {
           user,
           data: {
             amount: transaction.amount,
-            currency: "GHS", // Default to GHS since transaction doesn't store currency
+            currency: (transaction as any).currency || "GHS",
             transactionId: transaction._id,
             date: new Date(transaction.createdAt).toLocaleDateString(),
           },
         },
+        companyId: company?._id?.toString(),
       });
     } catch (error) {
-      console.error("Failed to send payment success email:", error);
+      console.error("❌ Failed to send payment success email:", error);
       return false;
     }
   }
@@ -533,7 +610,10 @@ class EmailService {
         .populate("company")
         .lean();
 
-      if (!user) return false;
+      if (!user) {
+        console.warn("⚠️ User not found for payment failed email");
+        return false;
+      }
 
       const company = user.company as any;
 
@@ -553,7 +633,7 @@ class EmailService {
         },
       });
     } catch (error) {
-      console.error("Failed to send payment failed email:", error);
+      console.error("❌ Failed to send payment failed email:", error);
       return false;
     }
   }
@@ -566,8 +646,12 @@ class EmailService {
     userId: string
   ): Promise<boolean> {
     try {
-      const user = await UserModel.findById(userId).lean();
-      if (!user) return false;
+      const user = await UserModel.findById(userId).populate("company").lean();
+
+      if (!user) {
+        console.warn("⚠️ User not found for support ticket");
+        return false;
+      }
 
       return this.sendEmail({
         to: user.email,
@@ -590,7 +674,7 @@ class EmailService {
         },
       });
     } catch (error) {
-      console.error("Failed to send support ticket created email:", error);
+      console.error("❌ Failed to send support ticket created email:", error);
       return false;
     }
   }
@@ -600,7 +684,10 @@ class EmailService {
       const user = await UserModel.findById(invoice.user).lean();
       const company = await CompanyModel.findById(invoice.company).lean();
 
-      if (!user || !company) return false;
+      if (!user || !company) {
+        console.warn("⚠️ User or company not found for invoice");
+        return false;
+      }
 
       return this.sendEmail({
         to: user.email,
@@ -624,9 +711,89 @@ class EmailService {
         companyId: company._id.toString(),
       });
     } catch (error) {
-      console.error("Failed to send invoice email:", error);
+      console.error("❌ Failed to send invoice email:", error);
       return false;
     }
+  }
+
+  public async sendSubscriptionActivationEmail(
+    companyId: string,
+    subscriptionData: {
+      plan: string;
+      licenseKey: string;
+      expiresAt: Date;
+      amount: number;
+      currency: string;
+    }
+  ): Promise<boolean> {
+    try {
+      const company = await CompanyModel.findById(companyId)
+        .populate("owner")
+        .lean();
+
+      if (!company || !(company as any).owner) {
+        console.warn("⚠️ Company or owner not found");
+        return false;
+      }
+
+      const owner = (company as any).owner;
+
+      return this.sendEmail({
+        to: owner.email,
+        subject: `Subscription Activated - ${company.name}`,
+        template: "subscription-activation",
+        context: {
+          company,
+          user: owner,
+          data: {
+            plan: subscriptionData.plan,
+            licenseKey: subscriptionData.licenseKey,
+            expiresAt: subscriptionData.expiresAt.toLocaleDateString(),
+            amount: subscriptionData.amount,
+            currency: subscriptionData.currency,
+            features: this.getPlanFeatures(subscriptionData.plan),
+          },
+        },
+        companyId,
+      });
+    } catch (error) {
+      console.error("❌ Failed to send subscription activation email:", error);
+      return false;
+    }
+  }
+
+  private getPlanFeatures(plan: string): string[] {
+    const planFeatures = {
+      basic: [
+        "Up to 5 facilities",
+        "Basic inventory management",
+        "User management",
+        "Basic reporting",
+        "Email support",
+      ],
+      premium: [
+        "Up to 20 facilities",
+        "Advanced inventory management",
+        "Advanced user management",
+        "Advanced reporting & analytics",
+        "Priority support",
+        "API access",
+      ],
+      enterprise: [
+        "Unlimited facilities",
+        "Enterprise inventory management",
+        "Advanced user management & roles",
+        "Custom reporting & analytics",
+        "24/7 dedicated support",
+        "Full API access",
+        "Custom integrations",
+        "White-label options",
+      ],
+    };
+
+    return (
+      planFeatures[plan as keyof typeof planFeatures] || planFeatures.basic
+    );
   }
 
   public async sendSubscriptionExpiryEmail(
@@ -638,7 +805,10 @@ class EmailService {
         .populate("owner")
         .lean();
 
-      if (!company) return false;
+      if (!company || !(company as any).owner) {
+        console.warn("⚠️ Company or owner not found");
+        return false;
+      }
 
       const owner = (company as any).owner;
 
@@ -656,23 +826,26 @@ class EmailService {
             ).toLocaleDateString(),
           },
         },
+        companyId,
       });
     } catch (error) {
-      console.error("Failed to send subscription expiry email:", error);
+      console.error("❌ Failed to send subscription expiry email:", error);
       return false;
     }
   }
 
   public async testEmailConfiguration(): Promise<boolean> {
     if (!this.transporter) {
+      console.warn("⚠️ Email transporter not initialized");
       return false;
     }
 
     try {
       await this.transporter.verify();
+      console.log("✅ Email configuration test passed");
       return true;
-    } catch (error) {
-      console.error("Email configuration test failed:", error);
+    } catch (error: any) {
+      console.error("❌ Email configuration test failed:", error.message);
       return false;
     }
   }
@@ -729,19 +902,23 @@ class EmailService {
    */
   public getEmailDiagnostics(): {
     configured: boolean;
+    isConfigured: boolean;
     smtpHost: string;
     smtpPort: number;
     smtpUser: string;
     smtpSecure: boolean;
     hasCredentials: boolean;
+    hasTransporter: boolean;
   } {
     return {
-      configured: !!this.transporter,
+      configured: this.isConfigured,
+      isConfigured: this.isConfigured,
       smtpHost: process.env.EMAIL_HOST || "smtp.gmail.com",
-      smtpPort: parseInt(process.env.EMAIL_PORT || "587"),
+      smtpPort: parseInt(process.env.EMAIL_PORT || "587", 10),
       smtpUser: process.env.EMAIL_USER || "",
       smtpSecure: process.env.EMAIL_SECURE === "true",
       hasCredentials: !!(process.env.EMAIL_USER && process.env.EMAIL_PASS),
+      hasTransporter: !!this.transporter,
     };
   }
 }
@@ -753,6 +930,7 @@ export const emailService = new EmailService();
 export const {
   sendWelcomeEmail,
   sendBookingConfirmation,
+  sendBookingSubmitted,
   sendPasswordResetEmail,
   sendAccountVerificationEmail,
   sendCustomEmail,
@@ -762,6 +940,8 @@ export const {
   sendSupportTicketCreatedEmail,
   sendInvoiceEmail,
   sendSubscriptionExpiryEmail,
+  sendSubscriptionActivationEmail,
   testEmailConfiguration,
   testCompanyEmailConfiguration,
+  getEmailDiagnostics,
 } = emailService;

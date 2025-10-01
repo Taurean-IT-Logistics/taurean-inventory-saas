@@ -25,9 +25,7 @@ import {
 } from "@/lib/api";
 import { InventoryItem, TaxSchedule } from "@/types";
 import { currencyFormat } from "@/lib/utils";
-import {
-  calculateRentalTaxesFromSchedules,
-} from "@/lib/taxCalculator";
+import { calculateRentalTaxesFromSchedules } from "@/lib/taxCalculator";
 import {
   differenceInCalendarDays,
   format,
@@ -61,10 +59,10 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   const [paymentStep, setPaymentStep] = useState(1); // 1: Payment Method, 2: Payment Timing
   const [splitConfig, setSplitConfig] = useState<{
     numberOfParts: number;
-    parts: Array<{ amount: number; dueDate: Date }>;
+    intervalDays: number;
   }>({
     numberOfParts: 2,
-    parts: [],
+    intervalDays: 7,
   });
   const [advanceConfig, setAdvanceConfig] = useState<{
     percentage: number | string;
@@ -88,11 +86,31 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   });
 
   // Fetch tax schedules
-  const { data: taxSchedules = [] } = useQuery({
+  const { data: taxSchedulesData = { schedules: [] } } = useQuery({
     queryKey: ["tax-schedules"],
     queryFn: () => TaxScheduleAPI.getTaxSchedules(),
     enabled: !!user,
   });
+
+  // Extract tax schedules array from various API response formats
+  const extractTaxSchedulesArray = (data: any): TaxSchedule[] => {
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data && typeof data === "object") {
+      if (Array.isArray(data.data)) {
+        return data.data;
+      } else if (Array.isArray(data.taxSchedules)) {
+        return data.taxSchedules;
+      } else if (Array.isArray(data.schedules)) {
+        return data.schedules;
+      } else if (Array.isArray(data.items)) {
+        return data.items;
+      }
+    }
+    return [];
+  };
+
+  const taxSchedules = extractTaxSchedulesArray(taxSchedulesData);
 
   // Payment mutation
   const createPaymentMutation = useMutation({
@@ -194,7 +212,7 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
   // Use the new tax schedule calculator
   const taxResult = calculateRentalTaxesFromSchedules(
     subtotal,
-    taxSchedules as TaxSchedule[],
+    taxSchedules,
     (item as any).company,
     (item as InventoryItem).isTaxable
   );
@@ -210,12 +228,11 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
 
     // Handle different payment timings
     if (paymentTiming === "split" && splitConfig) {
-      amount =
-        splitConfig.parts?.[0]?.amount || total / splitConfig.numberOfParts;
+      amount = total / splitConfig.numberOfParts;
       paymentData = {
         splitConfig: {
           numberOfParts: splitConfig.numberOfParts,
-          parts: splitConfig.parts,
+          intervalDays: splitConfig.intervalDays,
         },
       };
     } else if (paymentTiming === "advance" && advanceConfig) {
@@ -253,10 +270,10 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
       try {
         // Create pending transaction
         const pendingTransactionData = {
-          type: "rental",
+          category: "inventory_item",
           referenceId: (item as InventoryItem)._id || "",
           amount: amount,
-          paymentMethod: paymentMethod,
+          method: paymentMethod,
           paymentTiming: paymentTiming,
           advanceConfig: paymentData.advanceConfig,
           splitConfig: paymentData.splitConfig,
@@ -702,18 +719,7 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                                   setPaymentTiming("split");
                                   setSplitConfig({
                                     numberOfParts: 2,
-                                    parts: [
-                                      {
-                                        amount: taxResult.total * 0.5,
-                                        dueDate: new Date(),
-                                      },
-                                      {
-                                        amount: taxResult.total * 0.5,
-                                        dueDate: new Date(
-                                          Date.now() + 7 * 24 * 60 * 60 * 1000
-                                        ),
-                                      },
-                                    ],
+                                    intervalDays: 7,
                                   });
                                 }}
                               >
@@ -795,22 +801,10 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                                       value={String(splitConfig.numberOfParts)}
                                       onValueChange={(value) => {
                                         const numberOfParts = parseInt(value);
-                                        const amountPerPart =
-                                          taxResult.total / numberOfParts;
-                                        const parts = Array.from(
-                                          { length: numberOfParts },
-                                          (_, index) => ({
-                                            amount: amountPerPart,
-                                            dueDate: new Date(
-                                              Date.now() +
-                                                index * 7 * 24 * 60 * 60 * 1000
-                                            ),
-                                          })
-                                        );
-
                                         setSplitConfig({
                                           numberOfParts,
-                                          parts,
+                                          intervalDays:
+                                            splitConfig.intervalDays,
                                         });
                                       }}
                                     >
@@ -828,23 +822,52 @@ const RentDetailPage = ({ params }: { params: { id: string } }) => {
                                     </Select>
                                   </div>
 
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Interval Between Payments (Days)
+                                    </label>
+                                    <Select
+                                      value={String(splitConfig.intervalDays)}
+                                      onValueChange={(value) => {
+                                        const intervalDays = parseInt(value);
+                                        setSplitConfig({
+                                          numberOfParts:
+                                            splitConfig.numberOfParts,
+                                          intervalDays,
+                                        });
+                                      }}
+                                    >
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select interval" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="7">
+                                          7 Days
+                                        </SelectItem>
+                                        <SelectItem value="14">
+                                          14 Days
+                                        </SelectItem>
+                                        <SelectItem value="30">
+                                          30 Days
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
                                   <div className="space-y-2">
                                     <label className="block text-sm font-medium text-gray-700">
                                       Payment Breakdown
                                     </label>
-                                    {splitConfig.parts.map((part, index) => (
-                                      <div
-                                        key={index}
-                                        className="flex items-center justify-between p-2 bg-white rounded border"
-                                      >
-                                        <span className="text-sm">
-                                          Part {index + 1}
-                                        </span>
-                                        <span className="font-medium">
-                                          {currencyFormat(part.amount)}
-                                        </span>
-                                      </div>
-                                    ))}
+                                    <div className="text-sm text-gray-600">
+                                      Split payment will be divided into{" "}
+                                      {splitConfig.numberOfParts} equal parts of{" "}
+                                      {currencyFormat(
+                                        taxResult.total /
+                                          splitConfig.numberOfParts
+                                      )}{" "}
+                                      each. Each part will be due{" "}
+                                      {splitConfig.intervalDays} days apart.
+                                    </div>
                                   </div>
                                 </div>
                               </div>

@@ -52,7 +52,10 @@ export function RentalCard({ rental }: RentalCardProps) {
           <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-100">
             <Image
               src={
-                imageError
+                imageError ||
+                !rental.images ||
+                rental.images.length === 0 ||
+                !rental.images[0]?.path
                   ? "/placeholder.svg?height=400&width=300&query=rental equipment"
                   : getResourceUrl(rental.images[0].path)
               }
