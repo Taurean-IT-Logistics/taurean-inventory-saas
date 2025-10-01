@@ -49,7 +49,7 @@ export async function processPayout(req: Request, res: Response) {
       {
         source: "balance",
         reason: (doc as any).reason || `Payout ${(doc as any)._id}`,
-        amount: Math.round(((doc as any).amount || 0) * 100),
+        amount: ((doc as any).amount || 0) * 100, // Convert to kobo without rounding
         recipient: (doc as any).recipientCode,
         currency: (doc as any).currency || "GHS",
       },

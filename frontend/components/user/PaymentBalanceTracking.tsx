@@ -28,6 +28,7 @@ interface PaymentBalanceTrackingProps {
   bookings: any;
   rentals: any;
   pendingTransactions: any;
+  pendingPaymentSchedules?: any;
   isLoading: boolean;
   error: any;
 }
@@ -37,6 +38,7 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
   bookings,
   rentals,
   pendingTransactions,
+  pendingPaymentSchedules,
   isLoading,
   error,
 }) => {
@@ -106,6 +108,29 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
       status: string;
     }> = [];
 
+    // Add pending payment schedules
+    if (pendingPaymentSchedules?.data) {
+      (pendingPaymentSchedules.data as any[]).forEach((schedule: any) => {
+        if (schedule.status === "active" && schedule.remainingAmount > 0) {
+          balances.push({
+            id: schedule._id,
+            type: schedule.bookingId ? "booking" : "rental",
+            description:
+              schedule.description ||
+              `Payment Schedule ${schedule.paymentType}`,
+            totalAmount: schedule.totalAmount,
+            paidAmount: schedule.paidAmount,
+            remainingAmount: schedule.remainingAmount,
+            paymentTiming: schedule.paymentType,
+            dueDate: schedule.nextPaymentDate
+              ? new Date(schedule.nextPaymentDate)
+              : undefined,
+            status: schedule.status,
+          });
+        }
+      });
+    }
+
     // Helper function to calculate verified paid amount from transactions
     const getVerifiedPaidAmount = (
       itemId: string,
@@ -125,7 +150,17 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
       bookings.forEach((booking: any) => {
         // Only process bookings that are confirmed and not completed/cancelled
         if (booking.status === "confirmed" || booking.status === "pending") {
-          if (booking.paymentTiming === "advance" && booking.advanceConfig) {
+          // Find the transaction for this booking to get payment timing info
+          const relatedTransaction = transactions.find(
+            (tx: any) =>
+              tx.booking &&
+              (tx.booking === booking._id || tx.booking._id === booking._id)
+          );
+
+          if (
+            relatedTransaction?.paymentTiming === "advance" &&
+            relatedTransaction?.advanceConfig
+          ) {
             const totalAmount = booking.totalPrice || 0;
             const verifiedPaidAmount = getVerifiedPaidAmount(
               booking._id,
@@ -149,7 +184,10 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
                 status: booking.status,
               });
             }
-          } else if (booking.paymentTiming === "split" && booking.splitConfig) {
+          } else if (
+            relatedTransaction?.paymentTiming === "split" &&
+            relatedTransaction?.splitConfig
+          ) {
             const totalAmount = booking.totalPrice || 0;
             const verifiedPaidAmount = getVerifiedPaidAmount(
               booking._id,
@@ -169,8 +207,11 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
                 paidAmount: verifiedPaidAmount,
                 remainingAmount,
                 paymentTiming: "split",
-                dueDate: booking.splitConfig.parts?.[1]?.dueDate
-                  ? new Date(booking.splitConfig.parts[1].dueDate)
+                dueDate: relatedTransaction.paymentSchedule
+                  ?.scheduledPayments?.[1]?.dueDate
+                  ? new Date(
+                      relatedTransaction.paymentSchedule.scheduledPayments[1].dueDate
+                    )
                   : undefined,
                 status: booking.status,
               });
@@ -185,7 +226,19 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
       rentals.forEach((rental: any) => {
         // Only process rentals that are active and not returned/cancelled
         if (rental.status === "active" || rental.status === "pending") {
-          if (rental.paymentTiming === "advance" && rental.advanceConfig) {
+          // Find the transaction for this rental to get payment timing info
+          const relatedTransaction = transactions.find(
+            (tx: any) =>
+              (tx.category === "inventory_item" || tx.category === "rental") &&
+              (tx.referenceId === rental._id ||
+                tx.rental === rental._id ||
+                tx.rental?._id === rental._id)
+          );
+
+          if (
+            relatedTransaction?.paymentTiming === "advance" &&
+            relatedTransaction?.advanceConfig
+          ) {
             const totalAmount = rental.totalPrice || rental.amount || 0;
             const verifiedPaidAmount = getVerifiedPaidAmount(
               rental._id,
@@ -207,7 +260,10 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
                 status: rental.status,
               });
             }
-          } else if (rental.paymentTiming === "split" && rental.splitConfig) {
+          } else if (
+            relatedTransaction?.paymentTiming === "split" &&
+            relatedTransaction?.splitConfig
+          ) {
             const totalAmount = rental.totalPrice || rental.amount || 0;
             const verifiedPaidAmount = getVerifiedPaidAmount(
               rental._id,
@@ -225,8 +281,11 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
                 paidAmount: verifiedPaidAmount,
                 remainingAmount,
                 paymentTiming: "split",
-                dueDate: rental.splitConfig.parts?.[1]?.dueDate
-                  ? new Date(rental.splitConfig.parts[1].dueDate)
+                dueDate: relatedTransaction.paymentSchedule
+                  ?.scheduledPayments?.[1]?.dueDate
+                  ? new Date(
+                      relatedTransaction.paymentSchedule.scheduledPayments[1].dueDate
+                    )
                   : undefined,
                 status: rental.status,
               });

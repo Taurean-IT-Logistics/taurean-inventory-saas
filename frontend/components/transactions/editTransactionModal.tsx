@@ -24,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   CalendarIcon,
   CreditCardIcon,
@@ -62,6 +63,28 @@ const EditTransactionModal = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData && transaction) {
+      // Validate cash denominations if it's a cash transaction
+      if (
+        formData.method === "cash" &&
+        (formData.paymentDetails as any)?.denominations
+      ) {
+        const denominationTotal = (
+          (formData.paymentDetails as any)?.denominations || []
+        ).reduce(
+          (sum: number, denom: any) =>
+            sum + denom.denomination * denom.quantity,
+          0
+        );
+
+        if (Math.abs(denominationTotal - (formData.amount || 0)) >= 0.01) {
+          // Show error message (you could use a toast here)
+          alert(
+            "Cash denominations must sum up to the transaction amount. Please adjust the denominations or transaction amount."
+          );
+          return;
+        }
+      }
+
       onSave({ ...transaction, ...formData } as Transaction);
       onHide();
     }
@@ -303,14 +326,54 @@ const EditTransactionModal = ({
                     {/* Cash Payment Details */}
                     {transaction.method === "cash" &&
                       (transaction.paymentDetails as any).denominations && (
-                        <div>
+                        <div className="md:col-span-2">
                           <Label className="text-sm font-medium text-gray-700">
                             Cash Denominations
                           </Label>
-                          <div className="text-sm text-gray-900">
-                            {JSON.stringify(
-                              (transaction.paymentDetails as any).denominations
-                            )}
+                          <div className="mt-2 space-y-2">
+                            {(
+                              (transaction.paymentDetails as any)
+                                .denominations || []
+                            ).map((denom: any, index: number) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-2 bg-gray-50 rounded border"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <span className="text-sm font-medium">
+                                    {currencyFormat(denom.denomination)}
+                                  </span>
+                                  <span className="text-sm text-gray-600">
+                                    × {denom.quantity} pieces
+                                  </span>
+                                </div>
+                                <span className="text-sm font-bold text-blue-600">
+                                  {currencyFormat(
+                                    denom.denomination * denom.quantity
+                                  )}
+                                </span>
+                              </div>
+                            ))}
+                            <div className="mt-3 p-2 bg-blue-50 rounded border">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium">
+                                  Total:
+                                </span>
+                                <span className="text-sm font-bold text-blue-600">
+                                  {currencyFormat(
+                                    (
+                                      (transaction.paymentDetails as any)
+                                        .denominations || []
+                                    ).reduce(
+                                      (sum: number, denom: any) =>
+                                        sum +
+                                        denom.denomination * denom.quantity,
+                                      0
+                                    )
+                                  )}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -413,17 +476,17 @@ const EditTransactionModal = ({
             )}
 
             {/* Split/Advance Payment Details */}
-            {(transaction.method === "split" ||
-              transaction.method === "advance") && (
+            {((transaction as any).paymentTiming === "split" ||
+              (transaction as any).paymentTiming === "advance") && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    {transaction.method === "split" ? (
+                    {(transaction as any).paymentTiming === "split" ? (
                       <SplitIcon className="w-5 h-5" />
                     ) : (
                       <TrendingUpIcon className="w-5 h-5" />
                     )}
-                    {transaction.method === "split"
+                    {(transaction as any).paymentTiming === "split"
                       ? "Split Payment"
                       : "Advance Payment"}{" "}
                     Details
@@ -432,8 +495,9 @@ const EditTransactionModal = ({
                 <CardContent>
                   <div className="space-y-4">
                     <div className="text-sm text-gray-600">
-                      This transaction is part of a {transaction.method} payment
-                      plan.
+                      This transaction is part of a{" "}
+                      {(transaction as any).paymentTiming} payment plan using{" "}
+                      {transaction.method} payment method.
                     </div>
 
                     {/* Show payment schedule if available */}
@@ -488,28 +552,108 @@ const EditTransactionModal = ({
                       </div>
                     )}
 
-                    {/* Show split configuration if available */}
-                    {(transaction as any).splitConfig && (
+                    {/* Show payment timing information */}
+                    {(transaction as any).paymentTiming && (
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h4 className="font-medium text-gray-900 mb-2">
-                          Split Configuration
+                          Payment Timing Configuration
                         </h4>
                         <div className="text-sm text-gray-600">
                           <div>
-                            Parts: {(transaction as any).splitConfig.parts}
+                            <span className="font-medium">Timing:</span>{" "}
+                            <Badge variant="outline" className="ml-1">
+                              {(transaction as any).paymentTiming}
+                            </Badge>
                           </div>
-                          <div>
-                            Percentages:{" "}
-                            {(transaction as any).splitConfig.percentages?.join(
-                              ", "
-                            )}
-                          </div>
-                          <div>
-                            Amounts:{" "}
-                            {(transaction as any).splitConfig.amounts
-                              ?.map((amt: number) => currencyFormat(amt))
-                              .join(", ")}
-                          </div>
+                          {(transaction as any).splitConfig && (
+                            <>
+                              <div>
+                                Number of Parts:{" "}
+                                {(transaction as any).splitConfig
+                                  .numberOfParts || "N/A"}
+                              </div>
+                              <div>
+                                Interval Days:{" "}
+                                {(transaction as any).splitConfig
+                                  .intervalDays || "N/A"}
+                              </div>
+                            </>
+                          )}
+                          {(transaction as any).advanceConfig && (
+                            <>
+                              <div>
+                                Input Mode:{" "}
+                                {(transaction as any).advanceConfig.inputMode ||
+                                  "N/A"}
+                              </div>
+                              {(transaction as any).advanceConfig.inputMode ===
+                                "percentage" && (
+                                <div>
+                                  Percentage:{" "}
+                                  {(transaction as any).advanceConfig
+                                    .percentage || "N/A"}
+                                  %
+                                </div>
+                              )}
+                              {(transaction as any).advanceConfig.inputMode ===
+                                "fixed" && (
+                                <div>
+                                  Fixed Amount:{" "}
+                                  {(transaction as any).advanceConfig
+                                    .fixedAmount || "N/A"}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show scheduled payments if available */}
+                    {(transaction as any).paymentSchedule
+                      ?.scheduledPayments && (
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          Scheduled Payments
+                        </h4>
+                        <div className="space-y-2">
+                          {(
+                            transaction as any
+                          ).paymentSchedule.scheduledPayments.map(
+                            (payment: any, index: number) => (
+                              <div
+                                key={index}
+                                className="flex justify-between items-center text-sm"
+                              >
+                                <span>Payment {index + 1}:</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">
+                                    {currencyFormat(payment.amount)}
+                                  </span>
+                                  <Badge
+                                    variant={
+                                      payment.status === "paid"
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                    className={
+                                      payment.status === "paid"
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-yellow-100 text-yellow-800"
+                                    }
+                                  >
+                                    {payment.status}
+                                  </Badge>
+                                  <span className="text-gray-500">
+                                    Due:{" "}
+                                    {new Date(
+                                      payment.dueDate
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            )
+                          )}
                         </div>
                       </div>
                     )}
@@ -666,25 +810,95 @@ const EditTransactionModal = ({
                           <SelectItem value="bank">Bank Transfer</SelectItem>
                           <SelectItem value="cash">Cash</SelectItem>
                           <SelectItem value="cheque">Cheque</SelectItem>
-                          <SelectItem value="split">Split Payment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentTiming">Payment Timing</Label>
+                      <Select
+                        value={(formData as any).paymentTiming || "full"}
+                        onValueChange={(value: "full" | "advance" | "split") =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            paymentTiming: value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select timing" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="full">Full Payment</SelectItem>
                           <SelectItem value="advance">
                             Advance Payment
                           </SelectItem>
+                          <SelectItem value="split">Split Payment</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="amount">Amount</Label>
-                      <Input
-                        id="amount"
-                        name="amount"
-                        type="number"
-                        step="0.01"
-                        value={formData.amount || ""}
-                        onChange={handleInputChange}
-                        placeholder="Enter amount"
-                      />
+                      {(transaction as any)?.paymentTiming === "split" ||
+                      (transaction as any)?.paymentTiming === "advance" ? (
+                        <div className="space-y-2">
+                          <Input
+                            id="amount"
+                            name="amount"
+                            type="number"
+                            step="0.01"
+                            value={formData.amount || ""}
+                            disabled={
+                              transaction?.method === "paystack" ||
+                              transaction?.method === "mobile_money" ||
+                              transaction?.method === "bank" ||
+                              transaction?.method === "bank_transfer"
+                            }
+                            className={
+                              transaction?.method === "paystack" ||
+                              transaction?.method === "mobile_money" ||
+                              transaction?.method === "bank" ||
+                              transaction?.method === "bank_transfer"
+                                ? "bg-gray-100 cursor-not-allowed"
+                                : ""
+                            }
+                            placeholder={
+                              transaction?.method === "paystack" ||
+                              transaction?.method === "mobile_money" ||
+                              transaction?.method === "bank" ||
+                              transaction?.method === "bank_transfer"
+                                ? "Amount cannot be changed for online payments"
+                                : "Enter amount"
+                            }
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                amount: parseFloat(e.target.value) || 0,
+                              })
+                            }
+                          />
+                          {(transaction?.method === "paystack" ||
+                            transaction?.method === "mobile_money" ||
+                            transaction?.method === "bank" ||
+                            transaction?.method === "bank_transfer") && (
+                            <div className="text-xs text-gray-500">
+                              ⚠️ Amount cannot be changed for online payments
+                              (third-party consistency)
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <Input
+                          id="amount"
+                          name="amount"
+                          type="number"
+                          step="0.01"
+                          value={formData.amount || ""}
+                          onChange={handleInputChange}
+                          placeholder="Enter amount"
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -702,52 +916,334 @@ const EditTransactionModal = ({
 
                   {/* Payment Method Specific Fields */}
                   {formData.method === "cash" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="denominations">Cash Denominations</Label>
-                      <Textarea
-                        id="denominations"
-                        name="denominations"
-                        value={JSON.stringify(
-                          (formData.paymentDetails as any)?.denominations || {}
-                        )}
-                        onChange={(e) => {
-                          try {
-                            const denominations = JSON.parse(e.target.value);
-                            setFormData((prev) => ({
-                              ...prev,
-                              paymentDetails: {
-                                ...prev.paymentDetails,
-                                denominations,
-                              },
-                            }));
-                          } catch (error) {
-                            // Invalid JSON, ignore
-                          }
-                        }}
-                        rows={2}
-                        placeholder='{"100": 5, "50": 10, "20": 20}'
-                      />
+                    <div className="space-y-4">
+                      <Label className="text-base font-medium">
+                        Cash Denominations
+                      </Label>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-600 mb-3">
+                          Edit cash denomination breakdown. Each denomination
+                          should be the bill/coin value (e.g., 100 for ₵100
+                          bill):
+                        </div>
+                        <div className="space-y-3">
+                          {(
+                            (formData.paymentDetails as any)?.denominations ||
+                            []
+                          ).map((denom: any, index: number) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-3 p-3 bg-white rounded border"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Label className="text-sm font-medium min-w-[80px]">
+                                  Denomination:
+                                </Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={denom.denomination}
+                                  onChange={(e) => {
+                                    const newDenominations = [
+                                      ...((formData.paymentDetails as any)
+                                        ?.denominations || []),
+                                    ];
+                                    newDenominations[index] = {
+                                      ...denom,
+                                      denomination:
+                                        parseFloat(e.target.value) || 0,
+                                    };
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      paymentDetails: {
+                                        ...prev.paymentDetails,
+                                        denominations: newDenominations,
+                                      },
+                                    }));
+                                  }}
+                                  placeholder="e.g., 100"
+                                  className="w-24"
+                                />
+                                <span className="text-sm text-gray-500">₵</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Label className="text-sm font-medium min-w-[60px]">
+                                  Count:
+                                </Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={denom.quantity}
+                                  onChange={(e) => {
+                                    const newDenominations = [
+                                      ...((formData.paymentDetails as any)
+                                        ?.denominations || []),
+                                    ];
+                                    newDenominations[index] = {
+                                      ...denom,
+                                      quantity: parseInt(e.target.value) || 0,
+                                    };
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      paymentDetails: {
+                                        ...prev.paymentDetails,
+                                        denominations: newDenominations,
+                                      },
+                                    }));
+                                  }}
+                                  placeholder="0"
+                                  className="w-20"
+                                />
+                                <span className="text-sm text-gray-500">
+                                  pieces
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Label className="text-sm font-medium min-w-[50px]">
+                                  Subtotal:
+                                </Label>
+                                <span className="text-sm font-bold text-blue-600 min-w-[80px]">
+                                  {currencyFormat(
+                                    denom.denomination * denom.quantity
+                                  )}
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const newDenominations = (
+                                    (formData.paymentDetails as any)
+                                      ?.denominations || []
+                                  ).filter((_: any, i: number) => i !== index);
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    paymentDetails: {
+                                      ...prev.paymentDetails,
+                                      denominations: newDenominations,
+                                    },
+                                  }));
+                                }}
+                                className="text-red-600 hover:text-red-800 ml-auto"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newDenominations = [
+                                ...((formData.paymentDetails as any)
+                                  ?.denominations || []),
+                                { denomination: 0, quantity: 0 },
+                              ];
+                              setFormData((prev) => ({
+                                ...prev,
+                                paymentDetails: {
+                                  ...prev.paymentDetails,
+                                  denominations: newDenominations,
+                                },
+                              }));
+                            }}
+                            className="w-full"
+                          >
+                            + Add Denomination
+                          </Button>
+                        </div>
+
+                        {/* Validation and Summary */}
+                        <div className="mt-4 p-3 bg-white rounded border">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium">
+                              Denomination Total:
+                            </span>
+                            <span className="text-sm font-bold">
+                              {currencyFormat(
+                                (
+                                  (formData.paymentDetails as any)
+                                    ?.denominations || []
+                                ).reduce(
+                                  (sum: number, denom: any) =>
+                                    sum + denom.denomination * denom.quantity,
+                                  0
+                                )
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium">
+                              Transaction Amount:
+                            </span>
+                            <span className="text-sm font-bold">
+                              {currencyFormat(formData.amount || 0)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">
+                              Difference:
+                            </span>
+                            <span
+                              className={`text-sm font-bold ${
+                                Math.abs(
+                                  (
+                                    (formData.paymentDetails as any)
+                                      ?.denominations || []
+                                  ).reduce(
+                                    (sum: number, denom: any) =>
+                                      sum + denom.denomination * denom.quantity,
+                                    0
+                                  ) - (formData.amount || 0)
+                                ) < 0.01
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {currencyFormat(
+                                (
+                                  (formData.paymentDetails as any)
+                                    ?.denominations || []
+                                ).reduce(
+                                  (sum: number, denom: any) =>
+                                    sum + denom.denomination * denom.quantity,
+                                  0
+                                ) - (formData.amount || 0)
+                              )}
+                            </span>
+                          </div>
+                          {Math.abs(
+                            (
+                              (formData.paymentDetails as any)?.denominations ||
+                              []
+                            ).reduce(
+                              (sum: number, denom: any) =>
+                                sum + denom.denomination * denom.quantity,
+                              0
+                            ) - (formData.amount || 0)
+                          ) >= 0.01 && (
+                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                              ⚠️ Denominations must sum up to the transaction
+                              amount. Please adjust the denominations or
+                              transaction amount.
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
 
                   {formData.method === "cheque" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="chequeNumber">Cheque Number</Label>
-                      <Input
-                        id="chequeNumber"
-                        name="chequeNumber"
-                        value={formData.paymentDetails?.chequeNumber || ""}
-                        onChange={(e) => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            paymentDetails: {
-                              ...prev.paymentDetails,
-                              chequeNumber: e.target.value,
-                            },
-                          }));
-                        }}
-                        placeholder="Enter cheque number"
-                      />
+                    <div className="space-y-4">
+                      <Label className="text-base font-medium">
+                        Cheque Details
+                      </Label>
+                      <div className="bg-orange-50 p-4 rounded-lg space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor="chequeNumber" className="text-sm">
+                              Cheque Number
+                            </Label>
+                            <Input
+                              id="chequeNumber"
+                              value={
+                                formData.paymentDetails?.chequeNumber || ""
+                              }
+                              onChange={(e) => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  paymentDetails: {
+                                    ...prev.paymentDetails,
+                                    chequeNumber: e.target.value,
+                                  },
+                                }));
+                              }}
+                              placeholder="Enter cheque number"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="bankName" className="text-sm">
+                              Bank Name
+                            </Label>
+                            <Input
+                              id="bankName"
+                              value={
+                                formData.paymentDetails?.bankDetails
+                                  ?.bankName || ""
+                              }
+                              onChange={(e) => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  paymentDetails: {
+                                    ...prev.paymentDetails,
+                                    bankDetails: {
+                                      bankName: e.target.value || "",
+                                      accountNumber:
+                                        prev.paymentDetails?.bankDetails
+                                          ?.accountNumber || "",
+                                      sortCode:
+                                        prev.paymentDetails?.bankDetails
+                                          ?.sortCode || "",
+                                    },
+                                  },
+                                }));
+                              }}
+                              placeholder="Enter bank name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="accountNumber" className="text-sm">
+                              Account Number
+                            </Label>
+                            <Input
+                              id="accountNumber"
+                              value={
+                                formData.paymentDetails?.bankDetails
+                                  ?.accountNumber || ""
+                              }
+                              onChange={(e) => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  paymentDetails: {
+                                    ...prev.paymentDetails,
+                                    bankDetails: {
+                                      bankName:
+                                        prev.paymentDetails?.bankDetails
+                                          ?.bankName || "",
+                                      accountNumber: e.target.value || "",
+                                      sortCode:
+                                        prev.paymentDetails?.bankDetails
+                                          ?.sortCode || "",
+                                    },
+                                  },
+                                }));
+                              }}
+                              placeholder="Enter account number"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="chequeDate" className="text-sm">
+                              Cheque Date
+                            </Label>
+                            <DatePicker
+                              date={formData.paymentDetails?.chequeDate}
+                              onDateChange={(date: Date | undefined) => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  paymentDetails: {
+                                    ...prev.paymentDetails,
+                                    chequeDate: date,
+                                  },
+                                }));
+                              }}
+                              placeholder="Select cheque date"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -849,32 +1345,545 @@ const EditTransactionModal = ({
                     </div>
                   )}
 
-                  {formData.method === "bank" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="bankDetails">Bank Details</Label>
-                      <Textarea
-                        id="bankDetails"
-                        name="bankDetails"
-                        value={JSON.stringify(
-                          formData.paymentDetails?.bankDetails || {}
-                        )}
-                        onChange={(e) => {
-                          try {
-                            const bankDetails = JSON.parse(e.target.value);
-                            setFormData((prev) => ({
-                              ...prev,
-                              paymentDetails: {
-                                ...prev.paymentDetails,
-                                bankDetails,
-                              },
-                            }));
-                          } catch (error) {
-                            // Invalid JSON, ignore
-                          }
-                        }}
-                        rows={2}
-                        placeholder='{"bankName": "Ghana Commercial Bank", "accountNumber": "..."}'
-                      />
+                  {/* Split Payment Configuration */}
+                  {(formData as any).paymentTiming === "split" && (
+                    <div className="space-y-4">
+                      <Label className="text-base font-medium">
+                        Split Payment Configuration
+                      </Label>
+                      <div className="bg-indigo-50 p-4 rounded-lg">
+                        <div className="space-y-3">
+                          <div>
+                            <Label
+                              htmlFor="splitNumberOfParts"
+                              className="text-sm font-medium"
+                            >
+                              Number of Parts
+                            </Label>
+                            {(transaction?.method === "paystack" ||
+                              transaction?.method === "mobile_money" ||
+                              transaction?.method === "bank" ||
+                              transaction?.method === "bank_transfer") && (
+                              <div className="text-xs text-gray-500 mb-2">
+                                ⚠️ Number of parts cannot be changed for online
+                                payments (third-party consistency)
+                              </div>
+                            )}
+                            <Select
+                              value={String(
+                                (transaction as any)?.splitConfig
+                                  ?.numberOfParts || 2
+                              )}
+                              disabled={
+                                transaction?.method === "paystack" ||
+                                transaction?.method === "mobile_money" ||
+                                transaction?.method === "bank" ||
+                                transaction?.method === "bank_transfer"
+                              }
+                              onValueChange={(value) => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  splitConfig: {
+                                    numberOfParts: parseInt(value),
+                                    intervalDays:
+                                      prev.splitConfig?.intervalDays || 7,
+                                  },
+                                }));
+                              }}
+                            >
+                              <SelectTrigger
+                                className={
+                                  transaction?.method === "paystack" ||
+                                  transaction?.method === "mobile_money" ||
+                                  transaction?.method === "bank" ||
+                                  transaction?.method === "bank_transfer"
+                                    ? "bg-gray-100 cursor-not-allowed"
+                                    : ""
+                                }
+                              >
+                                <SelectValue placeholder="Select number of parts" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem
+                                  value={String(
+                                    (transaction as any)?.splitConfig
+                                      ?.numberOfParts || 2
+                                  )}
+                                >
+                                  {(transaction as any)?.splitConfig
+                                    ?.numberOfParts || 2}{" "}
+                                  Parts (Locked)
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label
+                              htmlFor="splitIntervalDays"
+                              className="text-sm font-medium"
+                            >
+                              Interval Between Payments (Days)
+                            </Label>
+                            <Select
+                              value={String(
+                                (formData as any)?.splitConfig?.intervalDays ||
+                                  7
+                              )}
+                              disabled={
+                                transaction?.method === "paystack" ||
+                                transaction?.method === "mobile_money" ||
+                                transaction?.method === "bank" ||
+                                transaction?.method === "bank_transfer"
+                              }
+                              onValueChange={(value) => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  splitConfig: {
+                                    ...(prev as any).splitConfig,
+                                    numberOfParts:
+                                      (prev as any).splitConfig
+                                        ?.numberOfParts || 2,
+                                    intervalDays: parseInt(value),
+                                  },
+                                }));
+                              }}
+                            >
+                              <SelectTrigger
+                                className={
+                                  transaction?.method === "paystack" ||
+                                  transaction?.method === "mobile_money" ||
+                                  transaction?.method === "bank" ||
+                                  transaction?.method === "bank_transfer"
+                                    ? "bg-gray-100 cursor-not-allowed"
+                                    : ""
+                                }
+                              >
+                                <SelectValue placeholder="Select interval" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="7">7 Days</SelectItem>
+                                <SelectItem value="14">14 Days</SelectItem>
+                                <SelectItem value="30">30 Days</SelectItem>
+                                <SelectItem value="60">60 Days</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="bg-blue-50 p-3 rounded-lg">
+                            <div className="text-sm">
+                              <div className="font-medium mb-1">
+                                Payment Breakdown:
+                              </div>
+                              <div>
+                                Total Amount:{" "}
+                                {currencyFormat(
+                                  (transaction as any)?.paymentSchedule
+                                    ?.totalAmount ||
+                                    ((transaction as any)?.splitConfig
+                                      ?.numberOfParts || 1) *
+                                      (transaction?.amount || 0) ||
+                                    transaction?.amount ||
+                                    0
+                                )}
+                              </div>
+                              <div>
+                                Remaining Amount:{" "}
+                                {currencyFormat(
+                                  (transaction as any)?.paymentSchedule
+                                    ?.remainingAmount ||
+                                    transaction?.amount ||
+                                    0
+                                )}
+                              </div>
+                              <div>
+                                Per Part:{" "}
+                                {currencyFormat(
+                                  ((transaction as any)?.paymentSchedule
+                                    ?.totalAmount ||
+                                    ((transaction as any)?.splitConfig
+                                      ?.numberOfParts || 1) *
+                                      (transaction?.amount || 0) ||
+                                    transaction?.amount ||
+                                    0) /
+                                    ((transaction as any)?.splitConfig
+                                      ?.numberOfParts || 2)
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-100 rounded">
+                                <div className="font-medium">
+                                  Original Split:
+                                </div>
+                                <div>
+                                  {currencyFormat(
+                                    (transaction as any)?.paymentSchedule
+                                      ?.totalAmount ||
+                                      ((transaction as any)?.splitConfig
+                                        ?.numberOfParts || 1) *
+                                        (transaction?.amount || 0) ||
+                                      transaction?.amount ||
+                                      0
+                                  )}{" "}
+                                  ÷{" "}
+                                  {(transaction as any)?.splitConfig
+                                    ?.numberOfParts || 2}{" "}
+                                  ={" "}
+                                  {currencyFormat(
+                                    ((transaction as any)?.paymentSchedule
+                                      ?.totalAmount ||
+                                      ((transaction as any)?.splitConfig
+                                        ?.numberOfParts || 1) *
+                                        (transaction?.amount || 0) ||
+                                      transaction?.amount ||
+                                      0) /
+                                      ((transaction as any)?.splitConfig
+                                        ?.numberOfParts || 2)
+                                  )}{" "}
+                                  per part
+                                </div>
+                                <div className="font-medium mt-1">
+                                  Remaining Split:
+                                </div>
+                                <div>
+                                  {currencyFormat(
+                                    (transaction as any)?.paymentSchedule
+                                      ?.remainingAmount ||
+                                      ((transaction as any)?.paymentSchedule
+                                        ?.totalAmount ||
+                                        ((transaction as any)?.splitConfig
+                                          ?.numberOfParts || 1) *
+                                          (transaction?.amount || 0) ||
+                                        transaction?.amount ||
+                                        0) - (transaction?.amount || 0) ||
+                                      0
+                                  )}{" "}
+                                  ÷{" "}
+                                  {((transaction as any)?.splitConfig
+                                    ?.numberOfParts || 2) - 1}{" "}
+                                  ={" "}
+                                  {currencyFormat(
+                                    ((transaction as any)?.paymentSchedule
+                                      ?.remainingAmount ||
+                                      ((transaction as any)?.paymentSchedule
+                                        ?.totalAmount ||
+                                        ((transaction as any)?.splitConfig
+                                          ?.numberOfParts || 1) *
+                                          (transaction?.amount || 0) ||
+                                        transaction?.amount ||
+                                        0) - (transaction?.amount || 0) ||
+                                      0) /
+                                      (((transaction as any)?.splitConfig
+                                        ?.numberOfParts || 2) -
+                                        1)
+                                  )}{" "}
+                                  per part
+                                </div>
+                              </div>
+                              <div>
+                                Interval:{" "}
+                                {(formData as any)?.splitConfig?.intervalDays ||
+                                  7}{" "}
+                                days
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newParts = [
+                                ...((formData as any)?.splitConfig?.parts ||
+                                  []),
+                                { amount: 0, dueDate: new Date() },
+                              ];
+                              setFormData((prev) => ({
+                                ...prev,
+                                splitConfig: {
+                                  ...(prev as any).splitConfig,
+                                  parts: newParts,
+                                },
+                              }));
+                            }}
+                            className="w-full"
+                          >
+                            Save Changes
+                          </Button>
+                        </div>
+                        <div className="mt-3 text-sm text-gray-600">
+                          Total:{" "}
+                          {currencyFormat(
+                            (
+                              (formData as any)?.splitConfig?.parts || []
+                            ).reduce(
+                              (sum: number, part: any) =>
+                                sum + (part.amount || 0),
+                              0
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Advance Payment Configuration */}
+                  {(formData as any).paymentTiming === "advance" && (
+                    <div className="space-y-4">
+                      <Label className="text-base font-medium">
+                        Advance Payment Details
+                      </Label>
+                      <div className="bg-pink-50 p-4 rounded-lg">
+                        <div className="text-sm text-gray-600 mb-3">
+                          Edit advance payment configuration:
+                        </div>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-sm">Input Mode</Label>
+                              <Select
+                                value={
+                                  (formData as any)?.advanceConfig?.inputMode ||
+                                  "percentage"
+                                }
+                                onValueChange={(value) => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    advanceConfig: {
+                                      ...(prev as any).advanceConfig,
+                                      inputMode: value,
+                                    },
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="percentage">
+                                    Percentage
+                                  </SelectItem>
+                                  <SelectItem value="amount">
+                                    Fixed Amount
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {(formData as any)?.advanceConfig?.inputMode ===
+                            "percentage" ? (
+                              <div>
+                                <Label className="text-sm">
+                                  Advance Percentage (%)
+                                </Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  max="100"
+                                  value={
+                                    (formData as any)?.advanceConfig
+                                      ?.percentage || ""
+                                  }
+                                  disabled={
+                                    transaction?.method === "paystack" ||
+                                    transaction?.method === "mobile_money" ||
+                                    transaction?.method === "bank" ||
+                                    transaction?.method === "bank_transfer"
+                                  }
+                                  className={
+                                    transaction?.method === "paystack" ||
+                                    transaction?.method === "mobile_money" ||
+                                    transaction?.method === "bank" ||
+                                    transaction?.method === "bank_transfer"
+                                      ? "bg-gray-100 cursor-not-allowed"
+                                      : ""
+                                  }
+                                  onChange={(e) => {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      advanceConfig: {
+                                        ...(prev as any).advanceConfig,
+                                        percentage:
+                                          parseFloat(e.target.value) || 0,
+                                      },
+                                    }));
+                                  }}
+                                  placeholder={
+                                    transaction?.method === "paystack" ||
+                                    transaction?.method === "mobile_money" ||
+                                    transaction?.method === "bank" ||
+                                    transaction?.method === "bank_transfer"
+                                      ? "Cannot change for online payments"
+                                      : "e.g., 30"
+                                  }
+                                />
+                              </div>
+                            ) : (
+                              <div>
+                                <Label className="text-sm">
+                                  Advance Amount
+                                </Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={
+                                    (formData as any)?.advanceConfig?.amount ||
+                                    ""
+                                  }
+                                  disabled={
+                                    transaction?.method === "paystack" ||
+                                    transaction?.method === "mobile_money" ||
+                                    transaction?.method === "bank" ||
+                                    transaction?.method === "bank_transfer"
+                                  }
+                                  className={
+                                    transaction?.method === "paystack" ||
+                                    transaction?.method === "mobile_money" ||
+                                    transaction?.method === "bank" ||
+                                    transaction?.method === "bank_transfer"
+                                      ? "bg-gray-100 cursor-not-allowed"
+                                      : ""
+                                  }
+                                  onChange={(e) => {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      advanceConfig: {
+                                        ...(prev as any).advanceConfig,
+                                        amount: parseFloat(e.target.value) || 0,
+                                      },
+                                    }));
+                                  }}
+                                  placeholder={
+                                    transaction?.method === "paystack" ||
+                                    transaction?.method === "mobile_money" ||
+                                    transaction?.method === "bank" ||
+                                    transaction?.method === "bank_transfer"
+                                      ? "Cannot change for online payments"
+                                      : "0.00"
+                                  }
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3 bg-white rounded border">
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div>
+                                <strong>Total Amount:</strong>{" "}
+                                {currencyFormat(
+                                  (transaction as any)?.paymentSchedule
+                                    ?.totalAmount ||
+                                    ((transaction as any)?.advanceConfig
+                                      ?.inputMode === "percentage" &&
+                                      (transaction as any)?.advanceConfig
+                                        ?.percentage)
+                                    ? ((transaction?.amount || 0) /
+                                        ((transaction as any)?.advanceConfig
+                                          ?.percentage || 1)) *
+                                        100
+                                    : ((transaction as any)?.splitConfig
+                                        ?.numberOfParts || 1) *
+                                        (transaction?.amount || 0) ||
+                                        transaction?.amount ||
+                                        0
+                                )}
+                              </div>
+                              <div>
+                                <strong>Remaining Amount:</strong>{" "}
+                                {currencyFormat(
+                                  (transaction as any)?.paymentSchedule
+                                    ?.remainingAmount ||
+                                    ((transaction as any)?.paymentSchedule
+                                      ?.totalAmount ||
+                                    ((transaction as any)?.advanceConfig
+                                      ?.inputMode === "percentage" &&
+                                      (transaction as any)?.advanceConfig
+                                        ?.percentage)
+                                      ? ((transaction?.amount || 0) /
+                                          ((transaction as any)?.advanceConfig
+                                            ?.percentage || 1)) *
+                                        100
+                                      : ((transaction as any)?.splitConfig
+                                          ?.numberOfParts || 1) *
+                                          (transaction?.amount || 0) ||
+                                        transaction?.amount ||
+                                        0) - (transaction?.amount || 0) ||
+                                    0
+                                )}
+                              </div>
+                              <div>
+                                <strong>Advance:</strong>{" "}
+                                {currencyFormat(
+                                  (formData as any)?.advanceConfig
+                                    ?.inputMode === "percentage"
+                                    ? (((transaction as any)?.paymentSchedule
+                                        ?.totalAmount ||
+                                      ((transaction as any)?.advanceConfig
+                                        ?.inputMode === "percentage" &&
+                                        (transaction as any)?.advanceConfig
+                                          ?.percentage)
+                                        ? ((transaction?.amount || 0) /
+                                            ((transaction as any)?.advanceConfig
+                                              ?.percentage || 1)) *
+                                          100
+                                        : ((transaction as any)?.splitConfig
+                                            ?.numberOfParts || 1) *
+                                            (transaction?.amount || 0) ||
+                                          transaction?.amount ||
+                                          0) *
+                                        ((formData as any)?.advanceConfig
+                                          ?.percentage || 0)) /
+                                        100
+                                    : (formData as any)?.advanceConfig
+                                        ?.amount || 0
+                                )}
+                              </div>
+                              <div>
+                                <strong>Balance:</strong>{" "}
+                                {currencyFormat(
+                                  ((transaction as any)?.paymentSchedule
+                                    ?.totalAmount ||
+                                  ((transaction as any)?.advanceConfig
+                                    ?.inputMode === "percentage" &&
+                                    (transaction as any)?.advanceConfig
+                                      ?.percentage)
+                                    ? ((transaction?.amount || 0) /
+                                        ((transaction as any)?.advanceConfig
+                                          ?.percentage || 1)) *
+                                      100
+                                    : ((transaction as any)?.splitConfig
+                                        ?.numberOfParts || 1) *
+                                        (transaction?.amount || 0) ||
+                                      transaction?.amount ||
+                                      0) -
+                                    ((formData as any)?.advanceConfig
+                                      ?.inputMode === "percentage"
+                                      ? (((transaction as any)?.paymentSchedule
+                                          ?.totalAmount ||
+                                        ((transaction as any)?.advanceConfig
+                                          ?.inputMode === "percentage" &&
+                                          (transaction as any)?.advanceConfig
+                                            ?.percentage)
+                                          ? ((transaction?.amount || 0) /
+                                              ((transaction as any)
+                                                ?.advanceConfig?.percentage ||
+                                                1)) *
+                                            100
+                                          : ((transaction as any)?.splitConfig
+                                              ?.numberOfParts || 1) *
+                                              (transaction?.amount || 0) ||
+                                            transaction?.amount ||
+                                            0) *
+                                          ((formData as any)?.advanceConfig
+                                            ?.percentage || 0)) /
+                                        100
+                                      : (formData as any)?.advanceConfig
+                                          ?.amount || 0)
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 

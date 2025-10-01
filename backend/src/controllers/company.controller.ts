@@ -34,24 +34,17 @@ export async function activateSubscription(req: Request, res: Response) {
     }
 
     const { companyId, plan } = req.body;
-    const company = await CompanyModel.findById(companyId);
-    if (!company) {
-      sendError(res, "Company not found", null, 404);
-      return;
-    }
 
-    const p = plans.find((x) => x.id === plan);
-    if (!p) {
-      sendError(res, "Invalid plan", null, 400);
-      return;
-    }
-
-    const expiresAt = new Date(
-      Date.now() + p.durationDays * 24 * 60 * 60 * 1000
+    // Use the subscription service for proper activation
+    const { SubscriptionService } = await import(
+      "../services/subscription.service"
     );
-    const licenseKey = generateLicenseKey((company as any)._id.toString());
-    company.subscription = { plan: plan as any, expiresAt, licenseKey } as any;
-    await company.save();
+    const company = await SubscriptionService.activateSubscription(
+      companyId,
+      plan,
+      `admin-activated-${Date.now()}` // Generate a reference for admin activation
+    );
+
     sendSuccess(res, "Subscription activated", { company });
   } catch (e: any) {
     sendError(res, "Failed to activate subscription", e.message);
@@ -65,29 +58,18 @@ export async function renewSubscription(req: Request, res: Response) {
       return;
     }
 
-    const { companyId } = req.body;
-    const company = await CompanyModel.findById(companyId);
-    if (!company || !company.subscription) {
-      sendError(res, "Company or subscription not found", null, 404);
-      return;
-    }
+    const { companyId, plan } = req.body;
 
-    const p = plans.find((x) => x.id === (company.subscription as any).plan);
-    if (!p) {
-      sendError(res, "Invalid plan on company", null, 400);
-      return;
-    }
-
-    const expiresAt = new Date(
-      Date.now() + p.durationDays * 24 * 60 * 60 * 1000
+    // Use the subscription service for proper renewal
+    const { SubscriptionService } = await import(
+      "../services/subscription.service"
     );
-    const licenseKey = generateLicenseKey((company as any)._id.toString());
-    company.subscription = {
-      plan: (company.subscription as any).plan,
-      expiresAt,
-      licenseKey,
-    } as any;
-    await company.save();
+    const company = await SubscriptionService.renewSubscription(
+      companyId,
+      plan || "monthly", // Default to monthly if no plan specified
+      `admin-renewed-${Date.now()}` // Generate a reference for admin renewal
+    );
+
     sendSuccess(res, "Subscription renewed", { company });
   } catch (e: any) {
     sendError(res, "Failed to renew subscription", e.message);
@@ -204,11 +186,13 @@ export async function updateCompany(req: Request, res: Response) {
     }
 
     // Handle file uploads
-    const logoFile = (req as any).file;
+    const files = (req as any).files;
     let logoData = null;
+    let registrationDocsData = [];
 
-    if (logoFile) {
-      // Structure logo data according to company model
+    // Handle logo file
+    if (files && files.file && files.file[0]) {
+      const logoFile = files.file[0];
       logoData = {
         path: logoFile.path,
         originalName: logoFile.originalname,
@@ -217,22 +201,34 @@ export async function updateCompany(req: Request, res: Response) {
       };
     }
 
-    // Update company fields
-    const updateFields = [
-      "name",
-      "description",
-      "location",
-      "website",
-      "phone",
-      "email",
-      "currency",
-    ];
+    // Handle registration documents
+    if (files && files.registrationDocs) {
+      registrationDocsData = files.registrationDocs.map((file: any) => ({
+        path: file.path,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      }));
+    }
+
+    // Update company fields (excluding name - company name cannot be changed)
+    const updateFields = ["description", "location", "website", "currency"];
 
     updateFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         (company as any)[field] = req.body[field];
       }
     });
+
+    // Handle phone field mapping (frontend sends 'phone' but we need 'contactPhone')
+    if (req.body.phone !== undefined) {
+      (company as any).contactPhone = req.body.phone;
+    }
+
+    // Handle email field mapping (frontend sends 'email' but we need 'contactEmail')
+    if (req.body.email !== undefined) {
+      (company as any).contactEmail = req.body.email;
+    }
 
     // Handle fee percentage (only Taurean IT super admins can update)
     if (req.body.feePercent !== undefined && (req.user as any)?.isSuperAdmin) {
@@ -243,6 +239,7 @@ export async function updateCompany(req: Request, res: Response) {
     if (req.body.invoiceFormat) {
       try {
         const invoiceFormat = JSON.parse(req.body.invoiceFormat);
+
         if (
           invoiceFormat.type &&
           ["auto", "prefix", "paystack"].includes(invoiceFormat.type)
@@ -281,6 +278,83 @@ export async function updateCompany(req: Request, res: Response) {
           hasUsedTrial: false,
           isTrial: false,
         };
+      }
+    }
+
+    // Update logo if provided
+    if (logoData) {
+      (company as any).logo = logoData;
+    }
+
+    // Update registration documents if provided
+    if (registrationDocsData.length > 0 || req.body.existingDocs) {
+      let finalDocs = [];
+
+      // Add existing documents that should be kept
+      if (req.body.existingDocs) {
+        try {
+          const existingDocsToKeep = JSON.parse(req.body.existingDocs);
+          finalDocs = [...existingDocsToKeep];
+        } catch (e) {
+          console.warn("Failed to parse existingDocs:", e);
+          // If parsing fails, keep current existing docs
+          finalDocs = (company as any).registrationDocs || [];
+        }
+      } else {
+        // If no existingDocs provided, keep all current docs
+        finalDocs = (company as any).registrationDocs || [];
+      }
+
+      // Add new documents
+      finalDocs = [...finalDocs, ...registrationDocsData];
+
+      (company as any).registrationDocs = finalDocs;
+    }
+
+    // Update Paystack subaccount only if business-relevant fields changed
+    if ((company as any).paystackSubaccountCode) {
+      try {
+        const { updateSubAccount } = await import(
+          "../services/payment.service"
+        );
+
+        // Only update Paystack subaccount if business-relevant fields changed
+        const paystackRelevantFields = [
+          "phone", // Maps to contactPhone
+          "email", // Maps to contactEmail
+          "website",
+          "location",
+        ];
+        const paystackFieldsChanged = paystackRelevantFields.some(
+          (field) => req.body[field] !== undefined
+        );
+
+        if (paystackFieldsChanged) {
+          console.log(
+            "🔄 Updating Paystack subaccount with new business details..."
+          );
+
+          const subaccountData = {
+            business_name: company.name, // Keep original business name
+            settlement_bank: (company as any).settlementBank || "",
+            account_number: (company as any).accountNumber || "",
+            description: `Subaccount for ${company.name}`,
+            percentage_charge: (company as any).feePercent || 5,
+          };
+
+          await updateSubAccount(
+            (company as any).paystackSubaccountCode,
+            subaccountData
+          );
+          console.log("✅ Paystack subaccount updated successfully");
+        } else {
+          console.log(
+            "ℹ️ No Paystack-relevant fields changed, skipping subaccount update"
+          );
+        }
+      } catch (paystackError) {
+        console.warn("⚠️ Failed to update Paystack subaccount:", paystackError);
+        // Don't fail the entire update if Paystack sync fails
       }
     }
 
@@ -665,11 +739,13 @@ export async function onboardCompany(
     } = req.body;
 
     // Handle file uploads
-    const logoFile = (req as any).file;
+    const files = (req as any).files;
     let logoData = null;
+    let registrationDocsData = [];
 
-    if (logoFile) {
-      // Structure logo data according to company model
+    // Handle logo file
+    if (files && files.file && files.file[0]) {
+      const logoFile = files.file[0];
       logoData = {
         path: logoFile.path,
         originalName: logoFile.originalname,
@@ -678,14 +754,14 @@ export async function onboardCompany(
       };
     }
 
-    // Parse registration docs if provided
-    let parsedRegistrationDocs = [];
-    if (registrationDocs) {
-      try {
-        parsedRegistrationDocs = JSON.parse(registrationDocs);
-      } catch (parseError) {
-        console.warn("Failed to parse registration docs:", parseError);
-      }
+    // Handle registration documents
+    if (files && files.registrationDocs) {
+      registrationDocsData = files.registrationDocs.map((file: any) => ({
+        path: file.path,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      }));
     }
 
     // Validate required fields
@@ -765,13 +841,13 @@ export async function onboardCompany(
       paystackSubaccountCode: subaccountCode,
       feePercent: parseFloat(percentage_charge),
       logo: logoData,
-      registrationDocs: parsedRegistrationDocs,
+      registrationDocs: registrationDocsData,
       invoiceFormat: parsedInvoiceFormat,
       subscription: {
         plan: "free_trial",
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
+        expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 day trial
         status: "active",
-        hasUsedTrial: false,
+        hasUsedTrial: true, // Company gets trial automatically, so trial is considered used
         isTrial: true,
       },
     };

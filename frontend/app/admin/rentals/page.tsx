@@ -57,10 +57,19 @@ import {
   RefreshCw,
   Download,
   AlertCircle,
+  User,
+  Package,
+  CreditCard,
+  FileText,
+  Calendar as CalendarIcon,
+  MapPin,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RentalAPI } from "@/lib/api";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Rental {
   _id: string;
@@ -86,6 +95,12 @@ interface Rental {
   returnNotes?: string;
   lateFee?: number;
   damageFee?: number;
+  transaction?: {
+    _id: string;
+    amount: number;
+    method: string;
+  };
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -107,8 +122,9 @@ export default function RentalsPage() {
   const [page, setPage] = useState(1);
   const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [returnData, setReturnData] = useState({
-    returnDate: "",
+    returnDate: undefined as Date | undefined,
     returnCondition: "good" as "good" | "fair" | "damaged",
     returnNotes: "",
     lateFee: 0,
@@ -221,8 +237,8 @@ export default function RentalsPage() {
     },
   });
 
-  const rentals = (rentalsData as any)?.data?.rentals || [];
-  const pagination = (rentalsData as any)?.data || {};
+  const rentals = (rentalsData as any)?.rentals || [];
+  const pagination = (rentalsData as any) || {};
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -263,13 +279,34 @@ export default function RentalsPage() {
   const handleReturnRental = () => {
     if (!selectedRental) return;
 
+    // Validate required fields
+    if (!returnData.returnDate) {
+      toast({
+        title: "Error",
+        description: "Please select a return date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!returnData.returnCondition) {
+      toast({
+        title: "Error",
+        description: "Please select a return condition",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const returnPayload = {
-      returnDate: returnData.returnDate || new Date().toISOString(),
+      returnDate: returnData.returnDate,
       returnCondition: returnData.returnCondition,
       returnNotes: returnData.returnNotes,
       lateFee: returnData.lateFee,
       damageFee: returnData.damageFee,
     };
+
+    console.log("Returning rental:", selectedRental._id, returnPayload);
 
     returnRentalMutation.mutate({
       rentalId: selectedRental._id,
@@ -526,7 +563,10 @@ export default function RentalsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedRental(rental)}
+                          onClick={() => {
+                            setSelectedRental(rental);
+                            setIsViewDialogOpen(true);
+                          }}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -554,13 +594,12 @@ export default function RentalsPage() {
                                   <label className="text-sm font-medium">
                                     Return Date
                                   </label>
-                                  <Input
-                                    type="date"
-                                    value={returnData.returnDate}
-                                    onChange={(e) =>
+                                  <DatePicker
+                                    date={returnData.returnDate}
+                                    onDateChange={(date: Date | undefined) =>
                                       setReturnData({
                                         ...returnData,
-                                        returnDate: e.target.value,
+                                        returnDate: date,
                                       })
                                     }
                                   />
@@ -714,6 +753,293 @@ export default function RentalsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* View Rental Modal */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4 border-b">
+              <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                <Package className="h-6 w-6 text-blue-600" />
+                Rental Details
+              </DialogTitle>
+            </DialogHeader>
+            {selectedRental && (
+              <div className="space-y-8">
+                {/* Header with Status and Amount */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900 mb-1">
+                        {selectedRental.item.name}
+                      </h2>
+                      <p className="text-gray-600">
+                        Rental #{selectedRental._id.slice(-8)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-green-600 mb-1">
+                        ₵{selectedRental.amount.toLocaleString()}
+                      </div>
+                      {getStatusBadge(selectedRental.status)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    {/* Item Information Card */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <Package className="h-5 w-5 text-blue-600" />
+                          Item Information
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <Package className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">
+                              {selectedRental.item.name}
+                            </h3>
+                            {selectedRental.item.description && (
+                              <p className="text-sm text-gray-600">
+                                {selectedRental.item.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                              <Package2 className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Quantity</p>
+                              <p className="font-semibold">
+                                {selectedRental.quantity}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                              <DollarSign className="h-4 w-4 text-green-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Amount</p>
+                              <p className="font-semibold">
+                                ₵{selectedRental.amount.toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* User Information Card */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <User className="h-5 w-5 text-purple-600" />
+                          Customer Information
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                            <User className="h-6 w-6 text-purple-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">
+                              {selectedRental.user.name}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {selectedRental.user.email}
+                            </p>
+                          </div>
+                        </div>
+                        {selectedRental.user.phone && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-4 w-4 text-gray-500" />
+                            <span>{selectedRental.user.phone}</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-6">
+                    {/* Rental Period Card */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <CalendarIcon className="h-5 w-5 text-orange-600" />
+                          Rental Period
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center p-3 bg-orange-50 rounded-lg">
+                            <CalendarIcon className="h-5 w-5 text-orange-600 mx-auto mb-2" />
+                            <p className="text-sm text-gray-600">Start Date</p>
+                            <p className="font-semibold">
+                              {new Date(
+                                selectedRental.startDate
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="text-center p-3 bg-red-50 rounded-lg">
+                            <CalendarIcon className="h-5 w-5 text-red-600 mx-auto mb-2" />
+                            <p className="text-sm text-gray-600">End Date</p>
+                            <p className="font-semibold">
+                              {new Date(
+                                selectedRental.endDate
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="pt-2 border-t">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Created</span>
+                            <span className="font-medium">
+                              {new Date(
+                                selectedRental.createdAt
+                              ).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Transaction Information Card */}
+                    {selectedRental.transaction && (
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <CreditCard className="h-5 w-5 text-green-600" />
+                            Payment Details
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                              <CreditCard className="h-5 w-5 text-green-600" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold">
+                                ₵
+                                {selectedRental.transaction.amount.toLocaleString()}
+                              </p>
+                              <p className="text-sm text-gray-600 capitalize">
+                                {selectedRental.transaction.method}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="pt-2 border-t">
+                            <p className="text-xs text-gray-500">
+                              Transaction ID:{" "}
+                              {selectedRental.transaction._id.slice(-12)}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Notes Card */}
+                    {selectedRental.notes && (
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <FileText className="h-5 w-5 text-gray-600" />
+                            Notes
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
+                            {selectedRental.notes}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+
+                {/* Return Information */}
+                {selectedRental.status === "returned" && (
+                  <Card className="bg-green-50 border-green-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg text-green-800">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        Return Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {selectedRental.returnDate && (
+                          <div className="text-center p-3 bg-white rounded-lg">
+                            <CalendarIcon className="h-5 w-5 text-green-600 mx-auto mb-2" />
+                            <p className="text-sm text-gray-600">Return Date</p>
+                            <p className="font-semibold">
+                              {new Date(
+                                selectedRental.returnDate
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
+                        {selectedRental.returnCondition && (
+                          <div className="text-center p-3 bg-white rounded-lg">
+                            <CheckCircle className="h-5 w-5 text-green-600 mx-auto mb-2" />
+                            <p className="text-sm text-gray-600">Condition</p>
+                            <p className="font-semibold capitalize">
+                              {selectedRental.returnCondition}
+                            </p>
+                          </div>
+                        )}
+                        {selectedRental.lateFee &&
+                          selectedRental.lateFee > 0 && (
+                            <div className="text-center p-3 bg-white rounded-lg">
+                              <AlertTriangle className="h-5 w-5 text-yellow-600 mx-auto mb-2" />
+                              <p className="text-sm text-gray-600">Late Fee</p>
+                              <p className="font-semibold">
+                                ₵{selectedRental.lateFee.toLocaleString()}
+                              </p>
+                            </div>
+                          )}
+                        {selectedRental.damageFee &&
+                          selectedRental.damageFee > 0 && (
+                            <div className="text-center p-3 bg-white rounded-lg">
+                              <AlertTriangle className="h-5 w-5 text-red-600 mx-auto mb-2" />
+                              <p className="text-sm text-gray-600">
+                                Damage Fee
+                              </p>
+                              <p className="font-semibold">
+                                ₵{selectedRental.damageFee.toLocaleString()}
+                              </p>
+                            </div>
+                          )}
+                      </div>
+                      {selectedRental.returnNotes && (
+                        <div className="mt-4 pt-4 border-t border-green-200">
+                          <p className="text-sm text-gray-600 mb-2">
+                            Return Notes:
+                          </p>
+                          <p className="text-gray-700 bg-white p-3 rounded-lg">
+                            {selectedRental.returnNotes}
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

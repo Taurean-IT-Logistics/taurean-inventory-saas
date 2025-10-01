@@ -1029,28 +1029,37 @@ export const TaxSchedulesAPI = {
     }),
   remove: (id: string) =>
     apiFetch(`/tax-schedules/${id}`, { method: "DELETE" }),
+
+  // Get company tax schedules by company ID (for super admin)
+  getCompanyTaxSchedules: (companyId: string) =>
+    apiFetch(`/tax-schedules/company/${companyId}`, { method: "GET" }),
 };
 
 // Taxes
 export const TaxesAPI = {
-  // Global taxes (Super Admin only)
-  list: () => apiFetch(`/taxes/global`, { method: "GET" }),
-  createGlobal: (payload: any) =>
-    apiFetch(`/taxes/global`, {
+  // Company taxes (main endpoints)
+  list: () => apiFetch(`/taxes`, { method: "GET" }), // Main route for company taxes
+  listCompany: () => apiFetch(`/taxes/company`, { method: "GET" }),
+  create: (payload: any) => {
+    // All taxes are company-specific now
+    return apiFetch(`/taxes/company`, {
       method: "POST",
       body: JSON.stringify(payload),
-    }),
-
-  // Company taxes
-  listCompany: () => apiFetch(`/taxes/company`, { method: "GET" }),
+    });
+  },
   createCompany: (payload: any) =>
     apiFetch(`/taxes/company`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
 
-  // Combined taxes (global + company)
-  listCombined: () => apiFetch(`/taxes`, { method: "GET" }),
+  // Get taxes available for tax schedule creation
+  getTaxesForScheduleCreation: () =>
+    apiFetch("/taxes/for-schedule-creation", { method: "GET" }),
+
+  // Get company taxes by company ID (for super admin)
+  getCompanyTaxes: (companyId: string) =>
+    apiFetch(`/taxes/company/${companyId}`, { method: "GET" }),
 
   // Individual tax operations
   get: (id: string) => apiFetch(`/taxes/${id}`, { method: "GET" }),
@@ -1066,22 +1075,6 @@ export const TaxesAPI = {
     }),
   remove: (id: string) => apiFetch(`/taxes/${id}`, { method: "DELETE" }),
   copy: (taxId: string) => apiFetch(`/taxes/${taxId}/copy`, { method: "POST" }),
-
-  // Legacy methods for backward compatibility
-  create: (payload: any) => {
-    // Determine if this should be a global or company tax based on payload
-    if (payload.isSuperAdminTax) {
-      return apiFetch(`/taxes/global`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-    } else {
-      return apiFetch(`/taxes/company`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-    }
-  },
 };
 
 // Transactions
@@ -1134,12 +1127,36 @@ export const TransactionsAPI = {
     );
   },
 
-  // Enhanced Payment Methods
-  processCashPayment: (payload: any) =>
-    apiFetch(`/transaction/cash`, {
+  // Process cash payment
+  processCashPayment: (paymentData: {
+    amount: number;
+    denominations: Array<{ denomination: number; quantity: number }>;
+    description?: string;
+    category: string;
+    reference?: string;
+  }) =>
+    apiFetch("/transaction/process-cash", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(paymentData),
     }),
+
+  // Process check payment
+  processCheckPayment: (paymentData: {
+    amount: number;
+    checkNumber: string;
+    bankName: string;
+    accountNumber: string;
+    checkDate: string;
+    description?: string;
+    category: string;
+    reference?: string;
+  }) =>
+    apiFetch("/transaction/process-check", {
+      method: "POST",
+      body: JSON.stringify(paymentData),
+    }),
+
+  // Enhanced Payment Methods
   processSplitPayment: (payload: any) =>
     apiFetch(`/transaction/split`, {
       method: "POST",
@@ -1859,7 +1876,7 @@ export const RentalAPI = {
   // Return rental item
   returnRental: (rentalId: string, returnData: any) =>
     apiFetch(`/rentals/${rentalId}/return`, {
-      method: "POST",
+      method: "PUT",
       body: JSON.stringify(returnData),
     }),
 
@@ -1913,10 +1930,54 @@ export const DocumentAPI = {
 
   // Get document categories
   getCategories: () => apiFetch("/documents/categories", { method: "GET" }),
+
+  // Super Admin Document Review Methods
+  getDocumentsForReview: (filters?: Record<string, string>) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/documents/super-admin/review${qs}`, { method: "GET" });
+  },
+
+  getDocumentReviewStatistics: () =>
+    apiFetch("/documents/super-admin/statistics", { method: "GET" }),
+
+  getCompanyDocuments: (
+    companyId: string,
+    filters?: Record<string, string>
+  ) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/documents/super-admin/company/${companyId}${qs}`, {
+      method: "GET",
+    });
+  },
+
+  getDocumentForReview: (documentId: string) =>
+    apiFetch(`/documents/super-admin/${documentId}`, { method: "GET" }),
+
+  downloadDocumentForReview: (documentId: string) =>
+    apiFetch(
+      `/documents/super-admin/${documentId}/download`,
+      { method: "GET" },
+      true
+    ),
+
+  reviewDocument: (documentId: string, reviewData: any) =>
+    apiFetch(`/documents/super-admin/${documentId}/review`, {
+      method: "POST",
+      body: JSON.stringify(reviewData),
+    }),
+
+  bulkReviewDocuments: (documentIds: string[], reviewData: any) =>
+    apiFetch("/documents/super-admin/bulk-review", {
+      method: "POST",
+      body: JSON.stringify({ documentIds, ...reviewData }),
+    }),
 };
 
 // Financial Tracking API
 export const FinancialAPI = {
+  // Get financial summary/dashboard
+  getFinancialSummary: () => apiFetch("/financial/summary", { method: "GET" }),
+
   // Get expenses
   getExpenses: (params?: Record<string, string>) => {
     const qs = params ? `?${new URLSearchParams(params)}` : "";
@@ -1964,6 +2025,94 @@ export const FinancialAPI = {
   // Delete discount
   deleteDiscount: (discountId: string) =>
     apiFetch(`/financial/discounts/${discountId}`, { method: "DELETE" }),
+};
+
+// Payment Schedule API
+export const PaymentScheduleAPI = {
+  // Create payment schedule
+  createSchedule: (scheduleData: any) =>
+    apiFetch("/payment-schedules/create", {
+      method: "POST",
+      body: JSON.stringify(scheduleData),
+    }),
+
+  // Get user payment schedules
+  getUserSchedules: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/payment-schedules/user${qs}`, { method: "GET" });
+  },
+
+  // Get company payment schedules
+  getCompanyPaymentSchedules: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/payment-schedules/company${qs}`, { method: "GET" });
+  },
+
+  // Process payment
+  processPayment: (
+    scheduleId: string,
+    paymentReference: string,
+    transactionId: string,
+    notes?: string
+  ) =>
+    apiFetch("/payment-schedules/process", {
+      method: "POST",
+      body: JSON.stringify({
+        scheduleId,
+        paymentReference,
+        transactionId,
+        notes,
+      }),
+    }),
+
+  // Get pending advance payments
+  getPendingAdvancePayments: () =>
+    apiFetch("/schedules/pending", { method: "GET" }),
+
+  // Get pending split payments
+  getPendingSplitPayments: () =>
+    apiFetch("/schedules/pending", { method: "GET" }),
+
+  // Get all pending payments (unified endpoint)
+  getPendingPayments: () => apiFetch("/schedules/pending", { method: "GET" }),
+
+  // Initialize scheduled payment
+  initializeScheduledPayment: (scheduleId: string, paymentReference: string) =>
+    apiFetch("/payment-schedules/initialize-payment", {
+      method: "POST",
+      body: JSON.stringify({ scheduleId, paymentReference }),
+    }),
+
+  // Get payment schedule by ID
+  getScheduleById: (scheduleId: string) =>
+    apiFetch(`/payment-schedules/${scheduleId}`, { method: "GET" }),
+
+  // Cancel payment schedule
+  cancelSchedule: (scheduleId: string, reason?: string) =>
+    apiFetch(`/payment-schedules/${scheduleId}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+};
+
+export const FinancialTrackingAPI = {
+  // Create discount
+  createDiscount: (discountData: any) =>
+    apiFetch("/financial/discounts", {
+      method: "POST",
+      body: JSON.stringify(discountData),
+    }),
+
+  // Update discount
+  updateDiscount: (discountId: string, discountData: any) =>
+    apiFetch(`/financial/discounts/${discountId}`, {
+      method: "PUT",
+      body: JSON.stringify(discountData),
+    }),
+
+  // Delete discount
+  deleteDiscount: (discountId: string) =>
+    apiFetch(`/financial/discounts/${discountId}`, { method: "DELETE" }),
 
   // Get profit and loss
   getProfitAndLoss: (params?: Record<string, string>) => {
@@ -1973,6 +2122,85 @@ export const FinancialAPI = {
 
   // Get financial summary
   getFinancialSummary: () => apiFetch("/financial/summary", { method: "GET" }),
+};
+
+export const DocumentManagementAPI = {
+  // Upload document
+  uploadDocument: (formData: FormData) =>
+    apiFetch("/documents/upload", {
+      method: "POST",
+      body: formData,
+    }),
+
+  // Get documents
+  getDocuments: (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    return apiFetch(`/documents${qs}`, { method: "GET" });
+  },
+
+  // Get document by ID
+  getDocumentById: (documentId: string) =>
+    apiFetch(`/documents/${documentId}`, { method: "GET" }),
+
+  // Update document
+  updateDocument: (documentId: string, updateData: any) =>
+    apiFetch(`/documents/${documentId}`, {
+      method: "PUT",
+      body: JSON.stringify(updateData),
+    }),
+
+  // Delete document
+  deleteDocument: (documentId: string) =>
+    apiFetch(`/documents/${documentId}`, { method: "DELETE" }),
+
+  // Get document statistics
+  getDocumentStatistics: () =>
+    apiFetch("/documents/statistics", { method: "GET" }),
+
+  // Download document
+  downloadDocument: (documentId: string) =>
+    apiFetch(`/documents/${documentId}/download`, { method: "GET" }, true),
+
+  // Super Admin Document Review Methods
+  getDocumentsForReview: (filters?: Record<string, string>) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/documents/super-admin/review${qs}`, { method: "GET" });
+  },
+
+  getDocumentReviewStatistics: () =>
+    apiFetch("/documents/super-admin/statistics", { method: "GET" }),
+
+  getCompanyDocuments: (
+    companyId: string,
+    filters?: Record<string, string>
+  ) => {
+    const qs = filters ? `?${new URLSearchParams(filters)}` : "";
+    return apiFetch(`/documents/super-admin/company/${companyId}${qs}`, {
+      method: "GET",
+    });
+  },
+
+  getDocumentForReview: (documentId: string) =>
+    apiFetch(`/documents/super-admin/${documentId}`, { method: "GET" }),
+
+  downloadDocumentForReview: (documentId: string) =>
+    apiFetch(
+      `/documents/super-admin/${documentId}/download`,
+      { method: "GET" },
+      true
+    ),
+
+  reviewDocument: (documentId: string, reviewData: any) =>
+    apiFetch(`/documents/super-admin/${documentId}/review`, {
+      method: "POST",
+      body: JSON.stringify(reviewData),
+    }),
+
+  bulkReviewDocuments: (documentIds: string[], reviewData: any) =>
+    apiFetch("/documents/super-admin/bulk-review", {
+      method: "POST",
+      body: JSON.stringify({ documentIds, ...reviewData }),
+    }),
 };
 
 export const getResourceUrl = (path: string): string => {

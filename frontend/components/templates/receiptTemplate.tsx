@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import {
   Mail,
 } from "lucide-react";
 import { currencyFormat, formatDate, formatDateTime } from "@/lib/utils";
+import { TaxesAPI } from "@/lib/api";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Image from "next/image";
@@ -33,6 +35,13 @@ interface ReceiptTransaction {
   method: string;
   ref: string;
   reconciled: boolean;
+  category?: string;
+  metadata?: {
+    plan?: string;
+    duration?: number;
+    expiresAt?: string;
+    type?: string;
+  };
   facility?: {
     _id: string;
     name: string;
@@ -50,6 +59,33 @@ interface ReceiptTransaction {
     contactEmail: string;
     contactPhone: string;
     currency: string;
+    activeTaxSchedule?: {
+      _id: string;
+      name: string;
+      components: Array<{
+        name: string;
+        rate: number;
+        taxType: string;
+        description?: string;
+      }>;
+      taxInclusive: boolean;
+      taxExclusive: boolean;
+      taxOnTax: boolean;
+    };
+  };
+  taxScheduleSnapshot?: {
+    scheduleId: string;
+    name: string;
+    components: Array<{
+      name: string;
+      rate: number;
+      taxType: string;
+      description?: string;
+    }>;
+    taxInclusive: boolean;
+    taxExclusive: boolean;
+    taxOnTax: boolean;
+    appliedAt: string;
   };
   createdAt: string;
 }
@@ -61,6 +97,98 @@ interface ReceiptTemplateProps {
 export function ReceiptTemplate({ transaction }: ReceiptTemplateProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Use the tax schedule snapshot stored at transaction time for audit integrity
+  const taxSchedule = transaction.taxScheduleSnapshot;
+
+  // Calculate tax amounts based on TaxSchedule
+  const taxBreakdown = React.useMemo(() => {
+    if (
+      !taxSchedule ||
+      !taxSchedule.components ||
+      taxSchedule.components.length === 0
+    ) {
+      return {
+        subtotal: transaction.amount,
+        totalTax: 0,
+        total: transaction.amount,
+        taxBreakdown: [],
+      };
+    }
+
+    // Get tax components from the schedule
+    const taxComponents = taxSchedule.components;
+
+    if (taxSchedule.taxInclusive) {
+      // Tax is already included in the amount
+      // Calculate what the original amount was before taxes
+      const totalTaxRate = taxComponents.reduce(
+        (sum: number, tax: any) => sum + (tax.rate || 0),
+        0
+      );
+      const taxMultiplier = totalTaxRate / 100;
+
+      // Original amount before taxes: total / (1 + taxRate)
+      const subtotal = transaction.amount / (1 + taxMultiplier);
+      const totalTax = transaction.amount - subtotal;
+
+      // Calculate individual tax amounts for display
+      const individualTaxBreakdown = taxComponents.map((tax: any) => {
+        const taxAmount = (subtotal * (tax.rate || 0)) / 100;
+        return {
+          name: tax.name,
+          rate: tax.rate || 0,
+          amount: taxAmount, // Keep exact amount for audit purposes
+          type: tax.taxType || "percentage",
+          description: tax.description || "",
+        };
+      });
+
+      return {
+        subtotal: subtotal, // Keep exact amount for audit purposes
+        totalTax: totalTax, // Keep exact amount for audit purposes
+        total: transaction.amount,
+        taxBreakdown: individualTaxBreakdown,
+        scheduleSettings: {
+          taxInclusive: true,
+          taxExclusive: false,
+          taxOnTax: taxSchedule.taxOnTax || false,
+        },
+      };
+    } else {
+      // Tax exclusive - tax is added on top
+      const totalTaxRate = taxComponents.reduce(
+        (sum: number, tax: any) => sum + (tax.rate || 0),
+        0
+      );
+      const totalTax = (transaction.amount * totalTaxRate) / 100;
+      const subtotal = transaction.amount;
+
+      // Calculate individual tax amounts for display
+      const individualTaxBreakdown = taxComponents.map((tax: any) => {
+        const taxAmount = (transaction.amount * (tax.rate || 0)) / 100;
+        return {
+          name: tax.name,
+          rate: tax.rate || 0,
+          amount: taxAmount, // Keep exact amount for audit purposes
+          type: tax.taxType || "percentage",
+          description: tax.description || "",
+        };
+      });
+
+      return {
+        subtotal: subtotal,
+        totalTax: totalTax, // Keep exact amount for audit purposes
+        total: subtotal + totalTax, // Keep exact calculation for audit purposes
+        taxBreakdown: individualTaxBreakdown,
+        scheduleSettings: {
+          taxInclusive: false,
+          taxExclusive: true,
+          taxOnTax: taxSchedule.taxOnTax || false,
+        },
+      };
+    }
+  }, [taxSchedule, transaction.amount]);
 
   const printReceipt = () => {
     try {
@@ -319,38 +447,47 @@ export function ReceiptTemplate({ transaction }: ReceiptTemplateProps) {
                 </div>
               </div>
 
-              {transaction.facility && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Building2 className="h-5 w-5" />
-                      Facility Information
-                    </h3>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <span className="font-medium">Name:</span>
-                      <span className="ml-2">{transaction.facility.name}</span>
-                    </div>
-                    {transaction.facility.description && (
+              {/* Facility Details - Only show for non-subscription transactions */}
+              {transaction.facility &&
+                (!(transaction as any).category ||
+                  ![
+                    "subscription",
+                    "subscription_renewal",
+                    "subscription_upgrade",
+                  ].includes((transaction as any).category)) && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Facility Information
+                      </h3>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
                       <div>
-                        <span className="font-medium">Description:</span>
+                        <span className="font-medium">Name:</span>
                         <span className="ml-2">
-                          {transaction.facility.description}
+                          {transaction.facility.name}
                         </span>
                       </div>
-                    )}
-                    {transaction.facility.location?.address && (
-                      <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 mt-1 flex-shrink-0" />
-                        <span className="text-sm">
-                          {transaction.facility.location.address}
-                        </span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                      {transaction.facility.description && (
+                        <div>
+                          <span className="font-medium">Description:</span>
+                          <span className="ml-2">
+                            {transaction.facility.description}
+                          </span>
+                        </div>
+                      )}
+                      {transaction.facility.location?.address && (
+                        <div className="flex items-start gap-2">
+                          <MapPin className="h-4 w-4 mt-1 flex-shrink-0" />
+                          <span className="text-sm">
+                            {transaction.facility.location.address}
+                          </span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
             </div>
 
             <div className="space-y-6">
@@ -396,8 +533,116 @@ export function ReceiptTemplate({ transaction }: ReceiptTemplateProps) {
                     <span>Processed:</span>
                     <span>{formatDateTime(transaction.createdAt)}</span>
                   </div>
+                  {/* Subscription-specific information */}
+                  {(transaction as any).category &&
+                    [
+                      "subscription",
+                      "subscription_renewal",
+                      "subscription_upgrade",
+                    ].includes((transaction as any).category) && (
+                      <>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between">
+                          <span>Payment Type:</span>
+                          <Badge variant="secondary" className="capitalize">
+                            {(transaction as any).category.replace("_", " ")}
+                          </Badge>
+                        </div>
+                        {(transaction as any).metadata?.plan && (
+                          <div className="flex justify-between">
+                            <span>Plan:</span>
+                            <span className="font-medium">
+                              {(transaction as any).metadata.plan}
+                            </span>
+                          </div>
+                        )}
+                        {(transaction as any).metadata?.duration && (
+                          <div className="flex justify-between">
+                            <span>Duration:</span>
+                            <span>
+                              {(transaction as any).metadata.duration} days
+                            </span>
+                          </div>
+                        )}
+                        {(transaction as any).metadata?.expiresAt && (
+                          <div className="flex justify-between">
+                            <span>Expires:</span>
+                            <span>
+                              {formatDate(
+                                (transaction as any).metadata.expiresAt
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
                 </CardContent>
               </Card>
+
+              {/* Tax Breakdown */}
+              {taxSchedule && taxBreakdown.taxBreakdown.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <h3 className="font-semibold">Tax Breakdown</h3>
+                    <div className="text-sm text-gray-600">
+                      <p>
+                        <strong>Schedule:</strong> {taxSchedule.name}
+                      </p>
+                      <p>
+                        <strong>Method:</strong>{" "}
+                        {taxBreakdown.scheduleSettings?.taxInclusive
+                          ? "Tax Inclusive"
+                          : "Tax Exclusive"}
+                      </p>
+                      {taxBreakdown.scheduleSettings?.taxOnTax && (
+                        <p>
+                          <strong>Tax on Tax:</strong> Enabled
+                        </p>
+                      )}
+                      <p>
+                        <strong>Applied At:</strong>{" "}
+                        {new Date(taxSchedule.appliedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    {taxBreakdown.taxBreakdown.map((tax, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between items-center"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{tax.name}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {tax.rate}%
+                          </Badge>
+                          {tax.description && (
+                            <span className="text-gray-500 text-xs">
+                              - {tax.description}
+                            </span>
+                          )}
+                        </span>
+                        <span className="font-mono">
+                          {currencyFormat(tax.amount)}
+                        </span>
+                      </div>
+                    ))}
+                    <Separator className="my-2" />
+                    <div className="flex justify-between font-semibold">
+                      <span>Subtotal:</span>
+                      <span>{currencyFormat(taxBreakdown.subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                      <span>Total Tax:</span>
+                      <span>{currencyFormat(taxBreakdown.totalTax)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold border-t pt-2">
+                      <span>Total Amount:</span>
+                      <span>{currencyFormat(taxBreakdown.total)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
 

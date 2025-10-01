@@ -54,8 +54,8 @@ export default function BookingPage({ params }: { params: { id: string } }) {
       paymentTiming?: string;
       splitConfig?: {
         numberOfParts: number;
-        parts: Array<{ amount: number; dueDate: Date }>;
-      };
+        intervalDays: number;
+      }; // Updated to match backend structure
       advanceConfig?: {
         percentage: number | string;
         amount: number;
@@ -396,21 +396,35 @@ export default function BookingPage({ params }: { params: { id: string } }) {
     // Handle different payment methods and timing
     if (bookingData.paymentMethod === "online") {
       // Online payment - proceed with normal flow
+      // Calculate the correct amount based on payment timing
+      let paymentAmount = total;
+      let descriptionSuffix = "";
+
+      if (
+        bookingData.paymentTiming === "advance" &&
+        bookingData.advanceConfig
+      ) {
+        paymentAmount = bookingData.advanceConfig.amount;
+        descriptionSuffix = " (Advance Payment)";
+      } else if (
+        bookingData.paymentTiming === "split" &&
+        bookingData.splitConfig
+      ) {
+        // For split payments, charge the first part amount
+        paymentAmount = total / (bookingData.splitConfig?.numberOfParts || 2);
+        descriptionSuffix = " (Split Payment - Part 1)";
+      }
+
       const transactionData = {
         email: user?.email || "",
-        amount:
-          bookingData.paymentTiming === "advance" && bookingData.advanceConfig
-            ? bookingData.advanceConfig.amount
-            : total,
+        amount: paymentAmount,
         category: "facility",
         description: `Booking for ${
           (facilityData as Facility)?.name || "Facility"
         } - ${calculateDurationString(
           bookingData.startDate,
           bookingData.endDate
-        )}${
-          bookingData.paymentTiming === "advance" ? " (Advance Payment)" : ""
-        }`,
+        )}${descriptionSuffix}`,
         facility: (facilityData as Facility)?._id || "",
         currency: "GHS",
         paymentTiming: bookingData.paymentTiming,
@@ -418,7 +432,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
         splitConfig: bookingData.splitConfig,
       };
 
-      bookingsMutation.mutate(finalBookingData);
+      createTransaction.mutate(transactionData);
     } else if (
       bookingData.paymentMethod === "cash" ||
       bookingData.paymentMethod === "cheque"
@@ -443,17 +457,16 @@ export default function BookingPage({ params }: { params: { id: string } }) {
           ) {
             // For split payments, the first payment is the split amount
             paymentAmount =
-              bookingData.splitConfig.parts?.[0]?.amount ||
-              total / bookingData.splitConfig.numberOfParts;
+              total / (bookingData.splitConfig?.numberOfParts || 2);
           }
 
           // Create pending transaction
           const pendingTransactionData = {
-            type: "booking",
+            category: "booking",
             referenceId:
               (bookingResponse as any)._id || (bookingResponse as any).id,
             amount: paymentAmount,
-            paymentMethod: bookingData.paymentMethod,
+            method: bookingData.paymentMethod,
             paymentTiming: bookingData.paymentTiming,
             advanceConfig: bookingData.advanceConfig,
             splitConfig: bookingData.splitConfig,
@@ -488,7 +501,9 @@ export default function BookingPage({ params }: { params: { id: string } }) {
             bookingData.paymentTiming === "split" &&
             bookingData.splitConfig
           ) {
-            description += ` This is part 1 of ${bookingData.splitConfig.numberOfParts} payments.`;
+            description += ` This is part 1 of ${
+              bookingData.splitConfig?.numberOfParts || 2
+            } payments.`;
           }
 
           toast({
@@ -1067,15 +1082,7 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                               paymentTiming: "split",
                               splitConfig: {
                                 numberOfParts: 2,
-                                parts: [
-                                  { amount: total * 0.5, dueDate: new Date() },
-                                  {
-                                    amount: total * 0.5,
-                                    dueDate: new Date(
-                                      Date.now() + 7 * 24 * 60 * 60 * 1000
-                                    ),
-                                  },
-                                ],
+                                intervalDays: 7,
                               },
                             })
                           }
@@ -1163,23 +1170,14 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                                 )}
                                 onValueChange={(value) => {
                                   const numberOfParts = parseInt(value);
-                                  const amountPerPart = total / numberOfParts;
-                                  const parts = Array.from(
-                                    { length: numberOfParts },
-                                    (_, index) => ({
-                                      amount: amountPerPart,
-                                      dueDate: new Date(
-                                        Date.now() +
-                                          index * 7 * 24 * 60 * 60 * 1000
-                                      ),
-                                    })
-                                  );
+                                  const intervalDays =
+                                    bookingData.splitConfig?.intervalDays || 7;
 
                                   setBookingData({
                                     ...bookingData,
                                     splitConfig: {
                                       numberOfParts,
-                                      parts,
+                                      intervalDays,
                                     },
                                   });
                                 }}
@@ -1198,21 +1196,13 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                               <label className="block text-sm font-medium text-gray-700">
                                 Payment Breakdown
                               </label>
-                              {bookingData.splitConfig?.parts.map(
-                                (part, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex items-center justify-between p-2 bg-white rounded border"
-                                  >
-                                    <span className="text-sm">
-                                      Part {index + 1}
-                                    </span>
-                                    <span className="font-medium">
-                                      {currencyFormat(part.amount)}
-                                    </span>
-                                  </div>
-                                )
-                              )}
+                              <div className="text-sm text-gray-600">
+                                Split payment will be divided into{" "}
+                                {bookingData.splitConfig?.numberOfParts || 2}{" "}
+                                equal parts. Each part will be due{" "}
+                                {bookingData.splitConfig?.intervalDays || 7}{" "}
+                                days apart.
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1517,8 +1507,9 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                   <div className="flex items-start space-x-3">
                     <Image
                       src={
-                        getResourceUrl(facility.images[0].path) ||
-                        "/placeholder.svg"
+                        facility.images?.[0]?.path
+                          ? getResourceUrl(facility.images[0].path)
+                          : "/placeholder.svg"
                       }
                       alt={facility.name}
                       width={60}
@@ -1619,27 +1610,23 @@ export default function BookingPage({ params }: { params: { id: string } }) {
                             </span>
                           </div>
                           <div className="space-y-2">
-                            {bookingData.splitConfig.parts.map(
-                              (part, index) => (
-                                <div
-                                  key={index}
-                                  className="flex justify-between items-center"
-                                >
-                                  <span className="text-gray-600">
-                                    Part {index + 1}:
-                                  </span>
-                                  <span className="font-medium">
-                                    {currencyFormat(part.amount)}
-                                  </span>
-                                </div>
-                              )
-                            )}
+                            <div className="text-sm text-gray-600">
+                              Split payment will be divided into{" "}
+                              {bookingData.splitConfig?.numberOfParts || 2}{" "}
+                              equal parts of{" "}
+                              {currencyFormat(
+                                total /
+                                  (bookingData.splitConfig?.numberOfParts || 2)
+                              )}{" "}
+                              each.
+                            </div>
                           </div>
                           <div className="bg-blue-50 border border-blue-200 rounded p-3">
                             <div className="text-sm text-blue-800">
                               <strong>Due Today:</strong>{" "}
                               {currencyFormat(
-                                bookingData.splitConfig.parts[0].amount
+                                total /
+                                  (bookingData.splitConfig?.numberOfParts || 2)
                               )}
                             </div>
                             <div className="text-sm text-blue-600">
@@ -1733,7 +1720,9 @@ export default function BookingPage({ params }: { params: { id: string } }) {
             <div className="flex items-start space-x-4 mb-6">
               <Image
                 src={
-                  getResourceUrl(facility.images[0].path) || "/placeholder.svg"
+                  facility.images?.[0]?.path
+                    ? getResourceUrl(facility.images[0].path)
+                    : "/placeholder.svg"
                 }
                 alt={facility.name}
                 width={80}

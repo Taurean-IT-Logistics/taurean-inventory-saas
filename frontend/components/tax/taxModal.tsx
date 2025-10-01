@@ -45,9 +45,6 @@ const TaxModal = ({
     name: "",
     rate: 0,
     type: "",
-    appliesTo: "both",
-    isSuperAdminTax: false,
-    active: true,
     taxType: "percentage",
     fixedAmount: 0,
   });
@@ -61,8 +58,6 @@ const TaxModal = ({
         name: "",
         rate: 0,
         type: "",
-        appliesTo: "both",
-        active: true,
         taxType: "percentage",
         fixedAmount: 0,
       });
@@ -90,8 +85,6 @@ const TaxModal = ({
       name: formData.name || "",
       rate: formData.rate || 0,
       type: formData.type || "",
-      appliesTo: formData.appliesTo || "both",
-      active: formData.active !== undefined ? formData.active : true,
       createdAt: isEdit ? tax?.createdAt : new Date(),
       updatedAt: new Date(),
     };
@@ -188,31 +181,6 @@ const TaxModal = ({
                 />
               </div>
               <div>
-                <Label htmlFor="appliesTo">Applies To *</Label>
-                <Select
-                  value={formData.appliesTo || "both"}
-                  onValueChange={(value) =>
-                    handleInputChange("appliesTo", value)
-                  }
-                >
-                  <SelectTrigger className="border-gray-300">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="inventory_item">
-                      Inventory Items Only
-                    </SelectItem>
-                    <SelectItem value="facility">Facilities Only</SelectItem>
-                    <SelectItem value="both">
-                      Both Inventory & Facilities
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
                 <Label htmlFor="taxType">Tax Calculation Type *</Label>
                 <Select
                   value={formData.taxType || "percentage"}
@@ -229,7 +197,6 @@ const TaxModal = ({
                   </SelectContent>
                 </Select>
               </div>
-              <div>{/* Empty div for grid layout */}</div>
             </div>
 
             {isEdit && (
@@ -244,34 +211,6 @@ const TaxModal = ({
                   rows={3}
                   className="border-gray-300"
                 />
-              </div>
-            )}
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="active"
-                checked={formData.active || false}
-                onCheckedChange={(checked) =>
-                  handleInputChange("active", checked)
-                }
-              />
-              <Label htmlFor="active">
-                Active (Tax will be applied to applicable transactions)
-              </Label>
-            </div>
-            {user?.isSuperAdmin && (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isSuperAdminTax"
-                  checked={formData.isSuperAdminTax || false}
-                  onCheckedChange={(checked) =>
-                    handleInputChange("isSuperAdminTax", checked)
-                  }
-                />
-
-                <Label htmlFor="isSuperAdminTax">
-                  Super Admin Tax (Tax will be applied to all transactions)
-                </Label>
               </div>
             )}
           </div>

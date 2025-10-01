@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -101,9 +102,15 @@ export function ReturnRequestModal({
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-medium mb-2">Item Details</h3>
               <div className="space-y-1 text-sm">
-                <p><strong>Name:</strong> {item.name}</p>
-                <p><strong>SKU:</strong> {item.sku}</p>
-                <p><strong>Status:</strong> {item.status}</p>
+                <p>
+                  <strong>Name:</strong> {item.name}
+                </p>
+                <p>
+                  <strong>SKU:</strong> {item.sku}
+                </p>
+                <p>
+                  <strong>Status:</strong> {item.status}
+                </p>
               </div>
             </div>
 
@@ -121,7 +128,9 @@ export function ReturnRequestModal({
                   <SelectContent>
                     <SelectItem value="damaged">Item is damaged</SelectItem>
                     <SelectItem value="defective">Item is defective</SelectItem>
-                    <SelectItem value="wrong_item">Wrong item received</SelectItem>
+                    <SelectItem value="wrong_item">
+                      Wrong item received
+                    </SelectItem>
                     <SelectItem value="not_needed">No longer needed</SelectItem>
                     <SelectItem value="quality_issue">Quality issue</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
@@ -133,7 +142,9 @@ export function ReturnRequestModal({
                 <Label htmlFor="condition">Item Condition</Label>
                 <Select
                   value={formData.condition}
-                  onValueChange={(value) => handleInputChange("condition", value)}
+                  onValueChange={(value) =>
+                    handleInputChange("condition", value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -150,12 +161,19 @@ export function ReturnRequestModal({
 
               <div>
                 <Label htmlFor="returnDate">Preferred Return Date</Label>
-                <Input
-                  id="returnDate"
-                  type="date"
-                  value={formData.returnDate}
-                  onChange={(e) => handleInputChange("returnDate", e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                <DatePicker
+                  date={
+                    formData.returnDate
+                      ? new Date(formData.returnDate)
+                      : undefined
+                  }
+                  onDateChange={(date: Date | undefined) =>
+                    handleInputChange(
+                      "returnDate",
+                      date ? date.toISOString().split("T")[0] : ""
+                    )
+                  }
+                  placeholder="Select return date"
                 />
               </div>
 
@@ -164,7 +182,9 @@ export function ReturnRequestModal({
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("description", e.target.value)
+                  }
                   placeholder="Please provide any additional details about the return..."
                   rows={3}
                 />
@@ -177,7 +197,10 @@ export function ReturnRequestModal({
                 <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
                 <div className="text-sm text-yellow-800">
                   <p className="font-medium">Important:</p>
-                  <p>Please ensure the item is in the same condition as when received. Returns may be subject to inspection.</p>
+                  <p>
+                    Please ensure the item is in the same condition as when
+                    received. Returns may be subject to inspection.
+                  </p>
                 </div>
               </div>
             </div>

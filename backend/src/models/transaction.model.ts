@@ -6,6 +6,7 @@ interface TransactionDocument extends Document, Transaction {}
 const TransactionSchema = new Schema<TransactionDocument>(
   {
     booking: { type: Schema.Types.ObjectId, ref: "Booking" },
+    rental: { type: Schema.Types.ObjectId, ref: "Rental" },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     account: { type: Schema.Types.ObjectId, ref: "Account" },
     type: { type: String, enum: ["income", "expense"], required: true },
@@ -18,6 +19,11 @@ const TransactionSchema = new Schema<TransactionDocument>(
         "inventory_item",
         "company",
         "activation",
+        "subscription",
+        "subscription_renewal",
+        "subscription_upgrade",
+        "maintenance",
+        "payment",
         "other",
       ],
       required: true,
@@ -66,7 +72,23 @@ const TransactionSchema = new Schema<TransactionDocument>(
     splitPayment: { type: Schema.Types.ObjectId, ref: "SplitPayment" },
     isCash: { type: Boolean },
     cash: { type: Schema.Types.ObjectId, ref: "Cash" },
-    taxes: { type: Schema.Types.ObjectId, ref: "TaxSchedule" },
+    taxScheduleSnapshot: {
+      // Store the tax schedule that was active at the time of transaction
+      scheduleId: { type: Schema.Types.ObjectId, ref: "TaxSchedule" },
+      name: { type: String },
+      components: [
+        {
+          name: { type: String },
+          rate: { type: Number },
+          taxType: { type: String },
+          description: { type: String },
+        },
+      ],
+      taxInclusive: { type: Boolean },
+      taxExclusive: { type: Boolean },
+      taxOnTax: { type: Boolean },
+      appliedAt: { type: Date, default: Date.now },
+    },
     accessCode: { type: String },
     receiptUrl: { type: String },
     approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
@@ -104,6 +126,13 @@ const TransactionSchema = new Schema<TransactionDocument>(
     rejectionReason: { type: String },
     currency: { type: String, default: "GHS" },
     referenceId: { type: String }, // ID of the rental, booking, or purchase
+    metadata: {
+      type: { type: String },
+      companyId: { type: String },
+      planId: { type: String },
+      planName: { type: String },
+      durationDays: { type: Number },
+    },
   },
   { timestamps: true }
 );

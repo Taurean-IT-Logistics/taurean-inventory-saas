@@ -34,6 +34,7 @@ export class CronJobService {
     this.startOverdueNotifications();
     this.startRetryFailedNotifications();
     this.startPaymentScheduleNotifications();
+    this.startSubscriptionExpiryNotifications();
     console.log("All cron jobs started successfully");
   }
 
@@ -885,7 +886,7 @@ export class CronJobService {
       return;
     }
 
-    const notificationData = this.getPaymentNotificationData(type, data);
+    const notificationData = this.getRentalNotificationData(type, data);
 
     // Create in-app notification
     const notification = new NotificationModel({
@@ -949,25 +950,128 @@ export class CronJobService {
   }
 
   /**
-   * Get payment notification data templates
+   * Start subscription expiry notifications
+   * Runs every day at 10:00 AM
    */
-  private getPaymentNotificationData(type: string, data: any) {
-    const templates = {
-      payment_upcoming: {
-        title: "Upcoming Payment Due",
-        message: `You have a payment of ${data.amount} due on ${new Date(data.dueDate).toLocaleDateString()}. Please ensure payment is made on time.`,
-        notificationType: "info" as const,
-      },
-      payment_overdue: {
-        title: "Payment Overdue",
-        message: `Your payment of ${data.amount} was due on ${new Date(data.dueDate).toLocaleDateString()} and is now overdue. Please make payment immediately.`,
-        notificationType: "warning" as const,
-      },
-    };
+  private startSubscriptionExpiryNotifications(): void {
+    const job = cron.schedule("0 10 * * *", async () => {
+      try {
+        console.log("Running subscription expiry notifications...");
+        await this.checkSubscriptionExpiry();
+      } catch (error) {
+        console.error("Error in subscription expiry notifications:", error);
+      }
+    });
 
-    return (
-      templates[type as keyof typeof templates] || templates.payment_upcoming
-    );
+    this.jobs.set("subscriptionExpiryNotifications", job);
+    console.log("Subscription expiry notifications cron job started");
+  }
+
+  /**
+   * Check for subscriptions expiring soon and send notifications
+   */
+  private async checkSubscriptionExpiry(): Promise<void> {
+    try {
+      const { CompanyModel } = await import("../models/company.model");
+      const { notificationService } = await import("./notification.service");
+
+      const now = new Date();
+      const sevenDaysFromNow = new Date(
+        now.getTime() + 7 * 24 * 60 * 60 * 1000
+      );
+      const threeDaysFromNow = new Date(
+        now.getTime() + 3 * 24 * 60 * 60 * 1000
+      );
+      const oneDayFromNow = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
+
+      // Find companies with subscriptions expiring in the next 7 days
+      const expiringCompanies = await CompanyModel.find({
+        "subscription.status": "active",
+        "subscription.expiresAt": {
+          $gte: now,
+          $lte: sevenDaysFromNow,
+        },
+        isActive: true,
+      }).populate("owner", "email name");
+
+      for (const company of expiringCompanies) {
+        const expiresAt = new Date(company.subscription.expiresAt);
+        const daysRemaining = Math.ceil(
+          (expiresAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)
+        );
+
+        // Send email notification
+        try {
+          const emailService = EmailNotificationService.getInstance();
+          await emailService.sendEmailNotification(
+            (company as any).owner._id.toString(),
+            company._id.toString(),
+            "subscription_expiry",
+            "subscription",
+            {
+              daysRemaining,
+              companyName: company.name,
+              expiryDate: expiresAt.toLocaleDateString(),
+            },
+            company._id.toString()
+          );
+        } catch (emailError) {
+          console.warn(
+            `Failed to send subscription expiry email to ${company.name}:`,
+            emailError
+          );
+        }
+
+        // Send in-app notification
+        try {
+          await notificationService.createSubscriptionNotification(
+            company._id.toString(),
+            "expired"
+          );
+        } catch (notificationError) {
+          console.warn(
+            `Failed to send subscription expiry notification to ${company.name}:`,
+            notificationError
+          );
+        }
+
+        console.log(
+          `Sent subscription expiry notification to ${company.name} (${daysRemaining} days remaining)`
+        );
+      }
+
+      // Handle expired subscriptions
+      const expiredCompanies = await CompanyModel.find({
+        "subscription.status": "active",
+        "subscription.expiresAt": { $lt: now },
+        isActive: true,
+      });
+
+      for (const company of expiredCompanies) {
+        // Deactivate the subscription
+        await CompanyModel.findByIdAndUpdate(company._id, {
+          "subscription.status": "expired",
+          isActive: false,
+        });
+
+        // Send notification about expired subscription
+        try {
+          await notificationService.createSubscriptionNotification(
+            company._id.toString(),
+            "expired"
+          );
+        } catch (notificationError) {
+          console.warn(
+            `Failed to send subscription expired notification to ${company.name}:`,
+            notificationError
+          );
+        }
+
+        console.log(`Deactivated expired subscription for ${company.name}`);
+      }
+    } catch (error) {
+      console.error("Error checking subscription expiry:", error);
+    }
   }
 }
 

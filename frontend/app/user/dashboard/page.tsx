@@ -9,6 +9,8 @@ import {
   BookingsAPI,
   InventoryAPI,
   PendingTransactionsAPI,
+  PaymentScheduleAPI,
+  RentalAPI,
 } from "@/lib/api";
 import { Loader } from "@/components/ui/loader";
 import UserInvitationsSection from "@/components/user/UserInvitationsSection";
@@ -56,14 +58,14 @@ const UserDashboard = () => {
     enabled: !!user,
   });
 
-  // Fetch available rentals
+  // Fetch user's actual rentals
   const {
     data: rentals,
     isLoading: rentalsLoading,
     error: rentalsError,
   } = useQuery({
-    queryKey: ["rentals"],
-    queryFn: () => InventoryAPI.list({ status: "in_stock" }),
+    queryKey: ["user-rentals"],
+    queryFn: () => RentalAPI.getRentals({ userId: user?.id?.toString() || "" }),
     enabled: !!user,
   });
 
@@ -75,6 +77,17 @@ const UserDashboard = () => {
   } = useQuery({
     queryKey: ["user-pending-transactions"],
     queryFn: () => PendingTransactionsAPI.getUserPendingTransactions(),
+    enabled: !!user,
+  });
+
+  // Fetch pending payment schedules
+  const {
+    data: pendingPaymentSchedules,
+    isLoading: pendingSchedulesLoading,
+    error: pendingSchedulesError,
+  } = useQuery({
+    queryKey: ["user-pending-payment-schedules"],
+    queryFn: () => PaymentScheduleAPI.getPendingPayments(),
     enabled: !!user,
   });
 
@@ -124,7 +137,8 @@ const UserDashboard = () => {
     transactionsLoading ||
     bookingsLoading ||
     rentalsLoading ||
-    pendingLoading
+    pendingLoading ||
+    pendingSchedulesLoading
   ) {
     return <Loader text="Loading dashboard..." className="pt-20" />;
   }
@@ -237,14 +251,20 @@ const UserDashboard = () => {
             bookings={bookings}
             rentals={rentals}
             pendingTransactions={pendingTransactions}
+            pendingPaymentSchedules={pendingPaymentSchedules}
             isLoading={
               transactionsLoading ||
               bookingsLoading ||
               rentalsLoading ||
-              pendingLoading
+              pendingLoading ||
+              pendingSchedulesLoading
             }
             error={
-              transactionsError || bookingsError || rentalsError || pendingError
+              transactionsError ||
+              bookingsError ||
+              rentalsError ||
+              pendingError ||
+              pendingSchedulesError
             }
           />
         </TabsContent>
