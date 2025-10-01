@@ -27,6 +27,8 @@ import {
   CreditCard,
   DollarSign,
   Clock,
+  Crown,
+  Settings,
 } from "lucide-react";
 import Logo from "../logo/Logo";
 import type { Route } from "./NavMain";
@@ -144,16 +146,27 @@ const dashboardRoutes: Route[] = [
     link: "/admin/financial",
   },
   {
-    id: "company-profile",
-    title: "Company Profile",
+    id: "company",
+    title: "Company",
     icon: <Building2 className="size-4" />,
     link: "/admin/company-profile",
-  },
-  {
-    id: "subaccount",
-    title: "Subaccount",
-    icon: <CreditCard className="size-4" />,
-    link: "/admin/subaccount",
+    subs: [
+      {
+        title: "Company Profile",
+        link: "/admin/company-profile",
+        icon: <Building2 className="size-4" />,
+      },
+      {
+        title: "Subscription",
+        link: "/admin/subscription",
+        icon: <Crown className="size-4" />,
+      },
+      {
+        title: "Email Settings",
+        link: "/admin/email-settings",
+        icon: <Mail className="size-4" />,
+      },
+    ],
   },
   {
     id: "support",
@@ -166,12 +179,6 @@ const dashboardRoutes: Route[] = [
     title: "Reports",
     icon: <BarChart3 className="size-4" />,
     link: "/admin/reports",
-  },
-  {
-    id: "email-settings",
-    title: "Email Settings",
-    icon: <Mail className="size-4" />,
-    link: "/admin/email-settings",
   },
 ];
 

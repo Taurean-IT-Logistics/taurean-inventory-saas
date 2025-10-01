@@ -1029,6 +1029,10 @@ export const TaxSchedulesAPI = {
     }),
   remove: (id: string) =>
     apiFetch(`/tax-schedules/${id}`, { method: "DELETE" }),
+
+  // Get company tax schedules by company ID (for super admin)
+  getCompanyTaxSchedules: (companyId: string) =>
+    apiFetch(`/tax-schedules/company/${companyId}`, { method: "GET" }),
 };
 
 // Taxes
@@ -1053,6 +1057,10 @@ export const TaxesAPI = {
   getTaxesForScheduleCreation: () =>
     apiFetch("/taxes/for-schedule-creation", { method: "GET" }),
 
+  // Get company taxes by company ID (for super admin)
+  getCompanyTaxes: (companyId: string) =>
+    apiFetch(`/taxes/company/${companyId}`, { method: "GET" }),
+
   // Individual tax operations
   get: (id: string) => apiFetch(`/taxes/${id}`, { method: "GET" }),
   replace: (id: string, payload: any) =>
@@ -1067,15 +1075,6 @@ export const TaxesAPI = {
     }),
   remove: (id: string) => apiFetch(`/taxes/${id}`, { method: "DELETE" }),
   copy: (taxId: string) => apiFetch(`/taxes/${taxId}/copy`, { method: "POST" }),
-
-  // Legacy methods for backward compatibility
-  create: (payload: any) => {
-    // All taxes are company-specific now
-    return apiFetch(`/taxes/company`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-  },
 };
 
 // Transactions
@@ -1976,6 +1975,9 @@ export const DocumentAPI = {
 
 // Financial Tracking API
 export const FinancialAPI = {
+  // Get financial summary/dashboard
+  getFinancialSummary: () => apiFetch("/financial/summary", { method: "GET" }),
+
   // Get expenses
   getExpenses: (params?: Record<string, string>) => {
     const qs = params ? `?${new URLSearchParams(params)}` : "";
@@ -2005,6 +2007,24 @@ export const FinancialAPI = {
     const qs = params ? `?${new URLSearchParams(params)}` : "";
     return apiFetch(`/financial/discounts${qs}`, { method: "GET" });
   },
+
+  // Create discount
+  createDiscount: (discountData: any) =>
+    apiFetch("/financial/discounts", {
+      method: "POST",
+      body: JSON.stringify(discountData),
+    }),
+
+  // Update discount
+  updateDiscount: (discountId: string, discountData: any) =>
+    apiFetch(`/financial/discounts/${discountId}`, {
+      method: "PUT",
+      body: JSON.stringify(discountData),
+    }),
+
+  // Delete discount
+  deleteDiscount: (discountId: string) =>
+    apiFetch(`/financial/discounts/${discountId}`, { method: "DELETE" }),
 };
 
 // Payment Schedule API
