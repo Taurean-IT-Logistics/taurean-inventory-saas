@@ -18,6 +18,7 @@ import {
   FileText,
   Printer,
   X,
+  Edit,
 } from "lucide-react";
 import type { Transaction } from "@/types";
 import { currencyFormat } from "@/lib/utils";
@@ -223,12 +224,19 @@ const TransactionTable = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem onClick={() => onView(txn)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Transaction
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onView(txn)}>
+                <FileText className="w-4 h-4 mr-2" />
                 View Details
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowInvoice(txn._id)}>
+                <FileText className="w-4 h-4 mr-2" />
                 View Invoice
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowReceipt(txn._id)}>
+                <FileText className="w-4 h-4 mr-2" />
                 View Receipt
               </DropdownMenuItem>
             </DropdownMenuContent>

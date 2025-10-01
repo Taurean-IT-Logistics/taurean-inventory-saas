@@ -111,12 +111,21 @@ const PaymentCallbackPage = () => {
       if (!paymentRef) {
         throw new Error("Payment reference not found");
       }
-      const response = await TransactionsAPI.verifyByReference(paymentRef);
-      return response as PaymentResult;
+      console.log("🔍 Verifying payment with reference:", paymentRef);
+      try {
+        const response = await TransactionsAPI.verifyByReference(paymentRef);
+        console.log("✅ Payment verification successful:", response);
+        return response as PaymentResult;
+      } catch (error) {
+        console.error("❌ Payment verification failed:", error);
+        throw error;
+      }
     },
     enabled: !!paymentRef,
     retry: 1,
     retryDelay: 1000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // Set loading state based on query state
@@ -140,9 +149,11 @@ const PaymentCallbackPage = () => {
   // Handle payment verification errors
   useEffect(() => {
     if (error) {
+      console.error("Payment verification error details:", error);
+      const errorMessage = error.message || "Unable to verify payment status.";
       toast({
         title: "Payment Verification Failed",
-        description: error.message || "Unable to verify payment status.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

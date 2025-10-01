@@ -96,7 +96,7 @@ export async function initializeSubscriptionPayment(
       email,
       amount: plan.price,
       type: "income", // Required field
-      category: "activation",
+      category: "subscription",
       description: `Subscription payment for ${plan.label} plan`,
       currency: currency,
       method: "paystack",
@@ -123,7 +123,16 @@ export async function initializeSubscriptionPayment(
       isCheque: false, // Required field
       isSplitPayment: false, // Required field
       isPaystack: true, // Mark as Paystack transaction
+      isPlatformRevenue: false, // Subscription payments should show in company transactions
     };
+
+    // Get super admin company for subscription transactions
+    const superAdminCompany = await CompanyModel.findOne({
+      isSuperAdmin: true,
+    });
+
+    // Update transaction data to use super admin company
+    transactionData.company = superAdminCompany?._id.toString();
 
     const transaction = await createTransaction(transactionData);
 
@@ -328,10 +337,11 @@ export async function getCompanySubscriptionStatus(
   res: Response
 ) {
   try {
-    const { companyId } = req.params;
+    let { companyId } = req.params;
 
+    // Validate companyId
     if (!companyId) {
-      sendValidationError(res, "Company ID is required");
+      sendValidationError(res, "Valid company ID is required");
       return;
     }
 
@@ -343,6 +353,7 @@ export async function getCompanySubscriptionStatus(
       usageStats,
     });
   } catch (error: any) {
+    console.error(`❌ Error in getCompanySubscriptionStatus:`, error);
     sendError(res, "Failed to retrieve subscription status", error.message);
   }
 }
@@ -448,7 +459,7 @@ export async function renewSubscription(req: Request, res: Response) {
       email,
       amount: plan.price,
       type: "income", // Required field
-      category: "activation",
+      category: "subscription_renewal",
       description: `Subscription renewal for ${plan.label} plan`,
       currency: currency,
       method: "paystack",
@@ -475,7 +486,16 @@ export async function renewSubscription(req: Request, res: Response) {
       isCheque: false, // Required field
       isSplitPayment: false, // Required field
       isPaystack: true, // Mark as Paystack transaction
+      isPlatformRevenue: false, // Subscription payments should show in company transactions
     };
+
+    // Get super admin company for subscription transactions
+    const superAdminCompany = await CompanyModel.findOne({
+      isSuperAdmin: true,
+    });
+
+    // Update transaction data to use super admin company
+    transactionData.company = superAdminCompany?._id.toString();
 
     const transaction = await createTransaction(transactionData);
 
@@ -567,7 +587,7 @@ export async function upgradeSubscription(req: Request, res: Response) {
       email,
       amount: plan.price,
       type: "income", // Required field
-      category: "activation",
+      category: "subscription_upgrade",
       description: `Subscription upgrade to ${plan.label} plan`,
       currency: currency,
       method: "paystack",
@@ -594,7 +614,16 @@ export async function upgradeSubscription(req: Request, res: Response) {
       isCheque: false, // Required field
       isSplitPayment: false, // Required field
       isPaystack: true, // Mark as Paystack transaction
+      isPlatformRevenue: false, // Subscription payments should show in company transactions
     };
+
+    // Get super admin company for subscription transactions
+    const superAdminCompany = await CompanyModel.findOne({
+      isSuperAdmin: true,
+    });
+
+    // Update transaction data to use super admin company
+    transactionData.company = superAdminCompany?._id.toString();
 
     const transaction = await createTransaction(transactionData);
 

@@ -28,6 +28,7 @@ interface PaymentBalanceTrackingProps {
   bookings: any;
   rentals: any;
   pendingTransactions: any;
+  pendingPaymentSchedules?: any;
   isLoading: boolean;
   error: any;
 }
@@ -37,6 +38,7 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
   bookings,
   rentals,
   pendingTransactions,
+  pendingPaymentSchedules,
   isLoading,
   error,
 }) => {
@@ -105,6 +107,29 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
       dueDate?: Date;
       status: string;
     }> = [];
+
+    // Add pending payment schedules
+    if (pendingPaymentSchedules?.data) {
+      (pendingPaymentSchedules.data as any[]).forEach((schedule: any) => {
+        if (schedule.status === "active" && schedule.remainingAmount > 0) {
+          balances.push({
+            id: schedule._id,
+            type: schedule.bookingId ? "booking" : "rental",
+            description:
+              schedule.description ||
+              `Payment Schedule ${schedule.paymentType}`,
+            totalAmount: schedule.totalAmount,
+            paidAmount: schedule.paidAmount,
+            remainingAmount: schedule.remainingAmount,
+            paymentTiming: schedule.paymentType,
+            dueDate: schedule.nextPaymentDate
+              ? new Date(schedule.nextPaymentDate)
+              : undefined,
+            status: schedule.status,
+          });
+        }
+      });
+    }
 
     // Helper function to calculate verified paid amount from transactions
     const getVerifiedPaidAmount = (
@@ -182,8 +207,11 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
                 paidAmount: verifiedPaidAmount,
                 remainingAmount,
                 paymentTiming: "split",
-                dueDate: relatedTransaction.splitConfig.parts?.[1]?.dueDate
-                  ? new Date(relatedTransaction.splitConfig.parts[1].dueDate)
+                dueDate: relatedTransaction.paymentSchedule
+                  ?.scheduledPayments?.[1]?.dueDate
+                  ? new Date(
+                      relatedTransaction.paymentSchedule.scheduledPayments[1].dueDate
+                    )
                   : undefined,
                 status: booking.status,
               });
@@ -253,8 +281,11 @@ const PaymentBalanceTracking: React.FC<PaymentBalanceTrackingProps> = ({
                 paidAmount: verifiedPaidAmount,
                 remainingAmount,
                 paymentTiming: "split",
-                dueDate: relatedTransaction.splitConfig.parts?.[1]?.dueDate
-                  ? new Date(relatedTransaction.splitConfig.parts[1].dueDate)
+                dueDate: relatedTransaction.paymentSchedule
+                  ?.scheduledPayments?.[1]?.dueDate
+                  ? new Date(
+                      relatedTransaction.paymentSchedule.scheduledPayments[1].dueDate
+                    )
                   : undefined,
                 status: rental.status,
               });

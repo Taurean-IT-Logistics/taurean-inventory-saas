@@ -2067,11 +2067,14 @@ export const PaymentScheduleAPI = {
 
   // Get pending advance payments
   getPendingAdvancePayments: () =>
-    apiFetch("/payment-schedules/pending/advance", { method: "GET" }),
+    apiFetch("/schedules/pending", { method: "GET" }),
 
   // Get pending split payments
   getPendingSplitPayments: () =>
-    apiFetch("/payment-schedules/pending/split", { method: "GET" }),
+    apiFetch("/schedules/pending", { method: "GET" }),
+
+  // Get all pending payments (unified endpoint)
+  getPendingPayments: () => apiFetch("/schedules/pending", { method: "GET" }),
 
   // Initialize scheduled payment
   initializeScheduledPayment: (scheduleId: string, paymentReference: string) =>

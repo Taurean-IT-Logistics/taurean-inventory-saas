@@ -246,7 +246,7 @@ export interface Transaction {
   };
   splitConfig?: {
     numberOfParts: number;
-    parts: Array<{ amount: number; dueDate: Date }>;
+    intervalDays: number;
   };
   // Pending transaction fields
   status?: "pending" | "confirmed" | "rejected" | "cancelled";

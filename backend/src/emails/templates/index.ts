@@ -1,6 +1,7 @@
 export { WelcomeEmail } from "./WelcomeEmail";
 export { PasswordResetEmail } from "./PasswordResetEmail";
 export { BookingConfirmationEmail } from "./BookingConfirmationEmail";
+export { BookingSubmittedEmail } from "./BookingSubmittedEmail";
 export { CustomEmail } from "./CustomEmail";
 export { PaymentSuccessEmail } from "./PaymentSuccessEmail";
 export { SubscriptionActivationEmail } from "./SubscriptionActivationEmail";

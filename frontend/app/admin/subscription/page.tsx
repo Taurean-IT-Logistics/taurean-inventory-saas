@@ -45,19 +45,39 @@ import {
 } from "lucide-react";
 
 interface SubscriptionStatus {
-  status: string;
-  plan: string;
-  expiresAt: string;
-  licenseKey: string;
+  hasSubscription: boolean;
+  isActive: boolean;
+  expiresAt: string | null;
+  plan: any;
+  features: any;
+  daysRemaining: number;
+  canStartTrial: boolean;
   isTrial: boolean;
   hasUsedTrial: boolean;
+  licenseKey: string | null;
 }
 
 interface UsageStats {
-  facilities: number;
-  users: number;
-  bookings: number;
-  transactions: number;
+  facilities: {
+    used: number;
+    limit: number;
+    unlimited: boolean;
+  };
+  users: {
+    used: number;
+    limit: number;
+    unlimited: boolean;
+  };
+  inventory: {
+    used: number;
+    limit: number;
+    unlimited: boolean;
+  };
+  bookings: {
+    used: number;
+    limit: number;
+    unlimited: boolean;
+  };
 }
 
 interface Plan {
@@ -101,7 +121,13 @@ export default function SubscriptionManagementPage() {
     refetch: refetchStatus,
   } = useQuery({
     queryKey: ["subscription-status", user?.company],
-    queryFn: () => SubscriptionsAPI.getStatus(user?.company || ""),
+    queryFn: () => {
+      const companyId =
+        typeof user?.company === "string"
+          ? user.company
+          : (user?.company as any)?._id || (user?.company as any)?.id;
+      return SubscriptionsAPI.getStatus(companyId || "");
+    },
     enabled: !!user?.company,
   });
 
@@ -112,18 +138,29 @@ export default function SubscriptionManagementPage() {
     refetch: refetchUsage,
   } = useQuery({
     queryKey: ["subscription-usage", user?.company],
-    queryFn: () => SubscriptionsAPI.getUsageStats(user?.company || ""),
+    queryFn: () => {
+      const companyId =
+        typeof user?.company === "string"
+          ? user.company
+          : (user?.company as any)?._id || (user?.company as any)?.id;
+      return SubscriptionsAPI.getUsageStats(companyId || "");
+    },
     enabled: !!user?.company,
   });
 
   // Upgrade subscription mutation
   const upgradeMutation = useMutation({
-    mutationFn: (data: { newPlanId: string; email: string }) =>
-      SubscriptionsAPI.upgrade({
-        companyId: user?.company || "",
+    mutationFn: (data: { newPlanId: string; email: string }) => {
+      const companyId =
+        typeof user?.company === "string"
+          ? user.company
+          : (user?.company as any)?._id || (user?.company as any)?.id;
+      return SubscriptionsAPI.upgrade({
+        companyId: companyId || "",
         newPlanId: data.newPlanId,
         email: data.email,
-      }),
+      });
+    },
     onSuccess: (response) => {
       toast({
         title: "Upgrade Initiated",
@@ -145,12 +182,17 @@ export default function SubscriptionManagementPage() {
 
   // Renew subscription mutation
   const renewalMutation = useMutation({
-    mutationFn: (data: { planId: string; email: string }) =>
-      SubscriptionsAPI.renew({
-        companyId: user?.company || "",
+    mutationFn: (data: { planId: string; email: string }) => {
+      const companyId =
+        typeof user?.company === "string"
+          ? user.company
+          : (user?.company as any)?._id || (user?.company as any)?.id;
+      return SubscriptionsAPI.renew({
+        companyId: companyId || "",
         planId: data.planId,
         email: data.email,
-      }),
+      });
+    },
     onSuccess: (response) => {
       toast({
         title: "Renewal Initiated",
@@ -175,11 +217,13 @@ export default function SubscriptionManagementPage() {
       setSubscriptionStatus(statusData.status as any);
     }
     if (usageData) {
-      setUsageStats(usageData as any);
+      setUsageStats((usageData as any).usageStats as any);
     }
   }, [statusData, usageData]);
 
-  const plansList = (plansData as any)?.plans || [];
+  const plansList =
+    (plansData as any)?.plans.filter((plan: any) => plan.id !== "free_trial") ||
+    [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -255,10 +299,6 @@ export default function SubscriptionManagementPage() {
     });
   };
 
-  if (statusLoading || usageLoading) {
-    return <Loader />;
-  }
-
   if (isPlansError) {
     return (
       <ErrorComponent
@@ -288,21 +328,42 @@ export default function SubscriptionManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {subscriptionStatus ? (
+            {statusLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                <span className="ml-2 text-sm text-gray-600">
+                  Loading subscription status...
+                </span>
+              </div>
+            ) : subscriptionStatus && subscriptionStatus.hasSubscription ? (
               <>
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold capitalize">
-                      {subscriptionStatus.plan}
+                      {(subscriptionStatus.plan as any)?.label || "No Plan"}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {subscriptionStatus.isTrial ? "Free Trial" : "Paid Plan"}
+                      {(subscriptionStatus as any).isTrial
+                        ? "Free Trial"
+                        : "Paid Plan"}
                     </p>
                   </div>
-                  <Badge className={getStatusColor(subscriptionStatus.status)}>
+                  <Badge
+                    className={getStatusColor(
+                      (subscriptionStatus as any).isActive
+                        ? "active"
+                        : "expired"
+                    )}
+                  >
                     <span className="flex items-center gap-1">
-                      {getStatusIcon(subscriptionStatus.status)}
-                      {subscriptionStatus.status}
+                      {getStatusIcon(
+                        (subscriptionStatus as any).isActive
+                          ? "active"
+                          : "expired"
+                      )}
+                      {(subscriptionStatus as any).isActive
+                        ? "Active"
+                        : "Expired"}
                     </span>
                   </Badge>
                 </div>
@@ -311,16 +372,18 @@ export default function SubscriptionManagementPage() {
                   <div>
                     <p className="text-sm text-gray-600">License Key</p>
                     <p className="font-mono text-sm bg-gray-100 p-2 rounded">
-                      {subscriptionStatus.licenseKey}
+                      {(subscriptionStatus as any).licenseKey || "N/A"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Expires</p>
                     <p className="font-semibold">
-                      {formatDate(subscriptionStatus.expiresAt)}
+                      {(subscriptionStatus as any).expiresAt
+                        ? formatDate((subscriptionStatus as any).expiresAt)
+                        : "N/A"}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {getDaysUntilExpiry(subscriptionStatus.expiresAt)} days
+                      {(subscriptionStatus as any).daysRemaining || 0} days
                       remaining
                     </p>
                   </div>
@@ -447,24 +510,47 @@ export default function SubscriptionManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {usageStats ? (
+            {usageLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                <span className="ml-2 text-sm text-gray-600">
+                  Loading usage stats...
+                </span>
+              </div>
+            ) : usageStats && usageStats.facilities ? (
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Facilities</span>
-                  <span className="font-semibold">{usageStats.facilities}</span>
+                  <span className="font-semibold">
+                    {usageStats.facilities.used}/
+                    {usageStats.facilities.unlimited
+                      ? "∞"
+                      : usageStats.facilities.limit}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Users</span>
-                  <span className="font-semibold">{usageStats.users}</span>
+                  <span className="font-semibold">
+                    {usageStats.users.used}/
+                    {usageStats.users.unlimited ? "∞" : usageStats.users.limit}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Inventory Items</span>
+                  <span className="font-semibold">
+                    {usageStats.inventory.used}/
+                    {usageStats.inventory.unlimited
+                      ? "∞"
+                      : usageStats.inventory.limit}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Bookings</span>
-                  <span className="font-semibold">{usageStats.bookings}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Transactions</span>
                   <span className="font-semibold">
-                    {usageStats.transactions}
+                    {usageStats.bookings.used}/
+                    {usageStats.bookings.unlimited
+                      ? "∞"
+                      : usageStats.bookings.limit}
                   </span>
                 </div>
               </div>
@@ -485,48 +571,52 @@ export default function SubscriptionManagementPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {plansList.map((plan: Plan) => (
-              <Card
-                key={plan.id}
-                className={`${plan.popular ? "border-primary" : ""}`}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{plan.label}</CardTitle>
-                      <CardDescription>{plan.description}</CardDescription>
+            {plansList
+              .filter((plan: Plan) => plan.id !== subscriptionStatus?.plan?.id)
+              .map((plan: Plan) => (
+                <Card
+                  key={plan.id}
+                  className={`${plan.popular ? "border-primary" : ""}`}
+                >
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{plan.label}</CardTitle>
+                        <CardDescription>{plan.description}</CardDescription>
+                      </div>
+                      {plan.popular && (
+                        <Badge variant="secondary">Popular</Badge>
+                      )}
                     </div>
-                    {plan.popular && <Badge variant="secondary">Popular</Badge>}
-                  </div>
-                  <div className="text-2xl font-bold">${plan.price}</div>
-                  <div className="text-sm text-gray-600">
-                    {plan.durationDays} days
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {Object.entries(plan.features)
-                      .slice(0, 5)
-                      .map(([key, value]) => (
-                        <div
-                          key={key}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          <span>
-                            {key}:{" "}
-                            {typeof value === "boolean"
-                              ? value
-                                ? "Yes"
-                                : "No"
-                              : value}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="text-2xl font-bold">${plan.price}</div>
+                    <div className="text-sm text-gray-600">
+                      {plan.durationDays} days
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {Object.entries(plan.features)
+                        .slice(0, 5)
+                        .map(([key, value]) => (
+                          <div
+                            key={key}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>
+                              {key}:{" "}
+                              {typeof value === "boolean"
+                                ? value
+                                  ? "Yes"
+                                  : "No"
+                                : value}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
           </div>
         </CardContent>
       </Card>

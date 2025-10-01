@@ -258,6 +258,44 @@ export const getPendingSplitPaymentsController = async (
 };
 
 /**
+ * Get all pending payments (unified endpoint)
+ */
+export const getPendingPaymentsController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId;
+    const userId = req.user?.id;
+
+    if (!companyId || !userId) {
+      sendError(res, "User authentication required");
+      return;
+    }
+
+    // Get both advance and split pending payments
+    const [advancePayments, splitPayments] = await Promise.all([
+      PaymentScheduleService.getPendingAdvancePayments(companyId, userId),
+      PaymentScheduleService.getPendingSplitPayments(companyId, userId),
+    ]);
+
+    // Combine the results
+    const allPendingPayments = [
+      ...(advancePayments || []),
+      ...(splitPayments || []),
+    ];
+
+    sendSuccess(
+      res,
+      "All pending payments retrieved successfully",
+      allPendingPayments
+    );
+  } catch (error: any) {
+    sendError(res, error.message, error);
+  }
+};
+
+/**
  * Get payment schedule by ID
  */
 export const getPaymentScheduleByIdController = async (

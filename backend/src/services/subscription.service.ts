@@ -107,10 +107,10 @@ const plans = [
     durationDays: 365 * 3,
     price: 2399,
     features: {
-      maxFacilities: -1, // Unlimited
-      maxUsers: -1, // Unlimited
-      maxInventoryItems: -1, // Unlimited
-      maxBookings: -1, // Unlimited
+      maxFacilities: 999999, // Unlimited
+      maxUsers: 99999, // Unlimited
+      maxInventoryItems: 99999, // Unlimited
+      maxBookings: 99999, // Unlimited
       support: "24/7_dedicated",
       analytics: "enterprise_ai",
       apiAccess: true,
@@ -216,7 +216,7 @@ export class SubscriptionService {
         paymentReference,
         activatedAt: new Date(),
         status: "active",
-        hasUsedTrial: company.subscription?.hasUsedTrial || false,
+        hasUsedTrial: true, // Once a paid subscription is activated, trial is considered used
         isTrial: plan.isTrial,
       };
 
@@ -233,19 +233,23 @@ export class SubscriptionService {
           role: "admin",
         });
 
+        const superAdminCompany = await CompanyModel.findOne({
+          isSuperAdmin: true,
+        });
+
         if (owner) {
           await createTransaction({
             type: "income",
-            category: "company",
+            category: "subscription",
             amount: plan.price,
             method: "subscription",
             user: owner._id.toString(),
-            company: companyId,
+            company: superAdminCompany?._id.toString(),
             description: `Subscription payment for ${plan.label} plan`,
             paymentDetails: {
               paystackReference: paymentReference,
             },
-            isPlatformRevenue: true,
+            isPlatformRevenue: true, // Subscription payments should show in company transactions
           });
         }
       } catch (transactionError) {
@@ -281,6 +285,7 @@ export class SubscriptionService {
   static async getSubscriptionStatus(companyId: string) {
     try {
       const company = await CompanyModel.findById(companyId);
+
       if (!company || !company.subscription) {
         return {
           hasSubscription: false,
@@ -290,6 +295,7 @@ export class SubscriptionService {
           features: null,
           daysRemaining: 0,
           canStartTrial: true,
+          licenseKey: company?.subscription?.licenseKey || null,
         };
       }
 
@@ -320,8 +326,13 @@ export class SubscriptionService {
         canStartTrial: !company.subscription.hasUsedTrial,
         isTrial: company.subscription.isTrial,
         hasUsedTrial: company.subscription.hasUsedTrial,
+        licenseKey: company.subscription.licenseKey || null,
       };
     } catch (error) {
+      console.error(
+        `❌ Error getting subscription status for ${companyId}:`,
+        error
+      );
       return {
         hasSubscription: false,
         isActive: false,
@@ -330,6 +341,9 @@ export class SubscriptionService {
         features: null,
         daysRemaining: 0,
         canStartTrial: true,
+        isTrial: false,
+        hasUsedTrial: false,
+        licenseKey: null,
       };
     }
   }
@@ -349,15 +363,18 @@ export class SubscriptionService {
 
       switch (feature) {
         case "facilities":
-          return features.maxFacilities === -1 || features.maxFacilities > 0;
+          return (
+            features.maxFacilities === 999999 || features.maxFacilities > 0
+          );
         case "users":
-          return features.maxUsers === -1 || features.maxUsers > 0;
+          return features.maxUsers === 99999 || features.maxUsers > 0;
         case "inventory":
           return (
-            features.maxInventoryItems === -1 || features.maxInventoryItems > 0
+            features.maxInventoryItems === 99999 ||
+            features.maxInventoryItems > 0
           );
         case "bookings":
-          return features.maxBookings === -1 || features.maxBookings > 0;
+          return features.maxBookings === 99999 || features.maxBookings > 0;
         case "api":
           return features.apiAccess;
         case "customBranding":
@@ -394,22 +411,22 @@ export class SubscriptionService {
         facilities: {
           used: 0, // Would be actual count from database
           limit: status.features.maxFacilities,
-          unlimited: status.features.maxFacilities === -1,
+          unlimited: status.features.maxFacilities === 999999,
         },
         users: {
           used: 0, // Would be actual count from database
           limit: status.features.maxUsers,
-          unlimited: status.features.maxUsers === -1,
+          unlimited: status.features.maxUsers === 99999,
         },
         inventory: {
           used: 0, // Would be actual count from database
           limit: status.features.maxInventoryItems,
-          unlimited: status.features.maxInventoryItems === -1,
+          unlimited: status.features.maxInventoryItems === 99999,
         },
         bookings: {
           used: 0, // Would be actual count from database
           limit: status.features.maxBookings,
-          unlimited: status.features.maxBookings === -1,
+          unlimited: status.features.maxBookings === 99999,
         },
       };
     } catch (error) {

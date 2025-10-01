@@ -45,6 +45,12 @@ interface PaymentTransaction {
   ref: string;
   accessCode?: string;
   reconciled: boolean;
+  metadata?: {
+    plan?: string;
+    duration?: number;
+    expiresAt?: string;
+    type?: string;
+  };
   facility: {
     _id: string;
     name: string;
@@ -185,15 +191,15 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
         return {
           name: tax.name,
           rate: tax.rate || 0,
-          amount: Math.round(taxAmount * 100) / 100,
+          amount: taxAmount, // Keep exact amount for audit purposes
           type: tax.taxType || "percentage",
           description: tax.description || "",
         };
       });
 
       return {
-        subtotal: Math.round(subtotal * 100) / 100,
-        totalTax: Math.round(totalTax * 100) / 100,
+        subtotal: subtotal, // Keep exact amount for audit purposes
+        totalTax: totalTax, // Keep exact amount for audit purposes
         total: transaction.amount,
         taxBreakdown: individualTaxBreakdown,
         scheduleSettings: {
@@ -217,7 +223,7 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
         return {
           name: tax.name,
           rate: tax.rate || 0,
-          amount: Math.round(taxAmount * 100) / 100,
+          amount: taxAmount, // Keep exact amount for audit purposes
           type: tax.taxType || "percentage",
           description: tax.description || "",
         };
@@ -225,8 +231,8 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
 
       return {
         subtotal: subtotal,
-        totalTax: Math.round(totalTax * 100) / 100,
-        total: Math.round((subtotal + totalTax) * 100) / 100,
+        totalTax: totalTax, // Keep exact amount for audit purposes
+        total: subtotal + totalTax, // Keep exact calculation for audit purposes
         taxBreakdown: individualTaxBreakdown,
         scheduleSettings: {
           taxInclusive: false,
@@ -600,35 +606,43 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
                 </CardContent>
               </Card>
 
-              {/* Facility Details */}
-              {transaction.facility && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Building2 className="h-5 w-5" />
-                      Facility Information
-                    </h3>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <span className="font-medium">Name:</span>
-                      <span className="ml-2">{transaction.facility.name}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium">Description:</span>
-                      <span className="ml-2">
-                        {transaction.facility.description}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 mt-1 flex-shrink-0" />
-                      <span className="text-sm">
-                        {transaction.facility.location.address}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Facility Details - Only show for non-subscription transactions */}
+              {transaction.facility &&
+                (!transaction.category ||
+                  ![
+                    "subscription",
+                    "subscription_renewal",
+                    "subscription_upgrade",
+                  ].includes(transaction.category)) && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Facility Information
+                      </h3>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <span className="font-medium">Name:</span>
+                        <span className="ml-2">
+                          {transaction.facility.name}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Description:</span>
+                        <span className="ml-2">
+                          {transaction.facility.description}
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-4 w-4 mt-1 flex-shrink-0" />
+                        <span className="text-sm">
+                          {transaction.facility.location.address}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
             </div>
 
             {/* Right Column */}
@@ -771,6 +785,49 @@ export function InvoiceTemplate({ transaction }: InvoiceTemplateProps) {
                       </span>
                     </div>
                   )}
+                  {/* Subscription-specific information */}
+                  {transaction.category &&
+                    [
+                      "subscription",
+                      "subscription_renewal",
+                      "subscription_upgrade",
+                    ].includes(transaction.category) && (
+                      <>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between">
+                          <span>Payment Type:</span>
+                          <Badge variant="secondary" className="capitalize">
+                            {transaction.category.replace("_", " ")}
+                          </Badge>
+                        </div>
+                        {(transaction as any).metadata?.plan && (
+                          <div className="flex justify-between">
+                            <span>Plan:</span>
+                            <span className="font-medium">
+                              {(transaction as any).metadata.plan}
+                            </span>
+                          </div>
+                        )}
+                        {(transaction as any).metadata?.duration && (
+                          <div className="flex justify-between">
+                            <span>Duration:</span>
+                            <span>
+                              {(transaction as any).metadata.duration} days
+                            </span>
+                          </div>
+                        )}
+                        {(transaction as any).metadata?.expiresAt && (
+                          <div className="flex justify-between">
+                            <span>Expires:</span>
+                            <span>
+                              {formatDate(
+                                (transaction as any).metadata.expiresAt
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
                 </CardContent>
               </Card>
             </div>
