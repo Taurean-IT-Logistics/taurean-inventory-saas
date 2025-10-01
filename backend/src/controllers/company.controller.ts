@@ -230,20 +230,18 @@ export async function updateCompany(req: Request, res: Response) {
     }
 
     // Update company fields (excluding name - company name cannot be changed)
-    const updateFields = [
-      "description",
-      "location",
-      "website",
-      "phone",
-      "contactEmail", // Use contactEmail instead of email
-      "currency",
-    ];
+    const updateFields = ["description", "location", "website", "currency"];
 
     updateFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         (company as any)[field] = req.body[field];
       }
     });
+
+    // Handle phone field mapping (frontend sends 'phone' but we need 'contactPhone')
+    if (req.body.phone !== undefined) {
+      (company as any).contactPhone = req.body.phone;
+    }
 
     // Handle email field mapping (frontend sends 'email' but we need 'contactEmail')
     if (req.body.email !== undefined) {
@@ -259,6 +257,7 @@ export async function updateCompany(req: Request, res: Response) {
     if (req.body.invoiceFormat) {
       try {
         const invoiceFormat = JSON.parse(req.body.invoiceFormat);
+
         if (
           invoiceFormat.type &&
           ["auto", "prefix", "paystack"].includes(invoiceFormat.type)
@@ -330,30 +329,34 @@ export async function updateCompany(req: Request, res: Response) {
       (company as any).registrationDocs = finalDocs;
     }
 
-    // Update Paystack subaccount if company has one and contact details changed
+    // Update Paystack subaccount only if business-relevant fields changed
     if ((company as any).paystackSubaccountCode) {
       try {
         const { updateSubAccount } = await import(
           "../services/payment.service"
         );
 
-        // Check if any Paystack-relevant fields changed
-        const paystackFieldsChanged =
-          req.body.phone !== undefined ||
-          req.body.email !== undefined ||
-          req.body.contactEmail !== undefined;
+        // Only update Paystack subaccount if business-relevant fields changed
+        const paystackRelevantFields = [
+          "phone", // Maps to contactPhone
+          "email", // Maps to contactEmail
+          "website",
+          "location",
+        ];
+        const paystackFieldsChanged = paystackRelevantFields.some(
+          (field) => req.body[field] !== undefined
+        );
 
         if (paystackFieldsChanged) {
           console.log(
-            "🔄 Updating Paystack subaccount with new contact details..."
+            "🔄 Updating Paystack subaccount with new business details..."
           );
 
           const subaccountData = {
             business_name: company.name, // Keep original business name
             settlement_bank: (company as any).settlementBank || "",
             account_number: (company as any).accountNumber || "",
-            description:
-              company.description || `Subaccount for ${company.name}`,
+            description: `Subaccount for ${company.name}`,
             percentage_charge: (company as any).feePercent || 5,
           };
 
@@ -362,6 +365,10 @@ export async function updateCompany(req: Request, res: Response) {
             subaccountData
           );
           console.log("✅ Paystack subaccount updated successfully");
+        } else {
+          console.log(
+            "ℹ️ No Paystack-relevant fields changed, skipping subaccount update"
+          );
         }
       } catch (paystackError) {
         console.warn("⚠️ Failed to update Paystack subaccount:", paystackError);

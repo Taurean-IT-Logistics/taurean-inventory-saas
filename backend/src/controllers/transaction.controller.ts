@@ -872,27 +872,62 @@ const processCashPaymentController = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { amount, denominations, transactionId } = req.body;
+    const { amount, denominations, description, category, reference } =
+      req.body;
     const userId = req.user?.id!;
     const companyId = req.user?.companyId!;
 
-    if (!amount || !denominations || !transactionId) {
+    if (!amount || !denominations) {
       sendValidationError(
         res,
-        "Missing required fields: amount, denominations, and transactionId are required"
+        "Missing required fields: amount and denominations are required"
       );
       return;
     }
 
-    const result = await PaymentService.processCashPayment({
+    if (!category) {
+      sendValidationError(res, "Category is required");
+      return;
+    }
+
+    // Create cash record
+    const cash = new CashModel({
       amount,
       denominations,
-      transactionId,
-      userId,
-      companyId,
+    });
+    await cash.save();
+
+    // Create transaction record
+    const transaction = new TransactionModel({
+      user: userId,
+      company: companyId,
+      type: "income",
+      category,
+      amount,
+      method: "cash",
+      isCash: true,
+      cash: cash._id,
+      description: description || "Cash payment",
+      ref: reference,
+      paymentDetails: {
+        cashDetails: {
+          amount,
+          denominations,
+          processedAt: new Date(),
+        },
+      },
+      reconciled: false,
+      attachments: [],
+      tags: ["cash", "admin-input"],
+      isDeleted: false,
     });
 
-    sendSuccess(res, "Cash payment processed successfully", result);
+    const savedTransaction = await transaction.save();
+
+    // Populate the transaction with cash details
+    await savedTransaction.populate("cash");
+
+    sendSuccess(res, "Cash payment processed successfully", savedTransaction);
   } catch (error) {
     sendError(res, "Failed to process cash payment", error);
   }

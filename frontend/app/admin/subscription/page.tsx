@@ -3,17 +3,46 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { SubscriptionsAPI } from "@/lib/api/subscriptions";
+import { SubscriptionsAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader, ErrorComponent } from "@/components/ui/loader";
-import { Calendar, CreditCard, RefreshCw, TrendingUp, Shield, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
+import { ErrorComponent } from "@/components/ui/error";
+import {
+  Calendar,
+  CreditCard,
+  RefreshCw,
+  TrendingUp,
+  Shield,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 
 interface SubscriptionStatus {
   status: string;
@@ -46,8 +75,9 @@ export default function SubscriptionManagementPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+
+  const [subscriptionStatus, setSubscriptionStatus] =
+    useState<SubscriptionStatus | null>(null);
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isRenewalModalOpen, setIsRenewalModalOpen] = useState(false);
@@ -82,14 +112,14 @@ export default function SubscriptionManagementPage() {
     refetch: refetchUsage,
   } = useQuery({
     queryKey: ["subscription-usage", user?.company],
-    queryFn: () => SubscriptionsAPI.getUsageStatistics(user?.company || ""),
+    queryFn: () => SubscriptionsAPI.getUsageStats(user?.company || ""),
     enabled: !!user?.company,
   });
 
   // Upgrade subscription mutation
   const upgradeMutation = useMutation({
     mutationFn: (data: { newPlanId: string; email: string }) =>
-      SubscriptionsAPI.upgradeSubscription({
+      SubscriptionsAPI.upgrade({
         companyId: user?.company || "",
         newPlanId: data.newPlanId,
         email: data.email,
@@ -116,7 +146,7 @@ export default function SubscriptionManagementPage() {
   // Renew subscription mutation
   const renewalMutation = useMutation({
     mutationFn: (data: { planId: string; email: string }) =>
-      SubscriptionsAPI.renewSubscription({
+      SubscriptionsAPI.renew({
         companyId: user?.company || "",
         planId: data.planId,
         email: data.email,
@@ -142,10 +172,10 @@ export default function SubscriptionManagementPage() {
 
   useEffect(() => {
     if (statusData) {
-      setSubscriptionStatus(statusData.status);
+      setSubscriptionStatus(statusData.status as any);
     }
     if (usageData) {
-      setUsageStats(usageData.usageStats);
+      setUsageStats(usageData as any);
     }
   }, [statusData, usageData]);
 
@@ -230,14 +260,22 @@ export default function SubscriptionManagementPage() {
   }
 
   if (isPlansError) {
-    return <ErrorComponent error={plansError} />;
+    return (
+      <ErrorComponent
+        message={plansError?.message || "Failed to load subscription plans"}
+      />
+    );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Subscription Management</h1>
-        <p className="text-gray-600">Manage your company's subscription and billing</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Subscription Management
+        </h1>
+        <p className="text-gray-600">
+          Manage your company&apos;s subscription and billing
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -254,7 +292,9 @@ export default function SubscriptionManagementPage() {
               <>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold capitalize">{subscriptionStatus.plan}</h3>
+                    <h3 className="text-lg font-semibold capitalize">
+                      {subscriptionStatus.plan}
+                    </h3>
                     <p className="text-sm text-gray-600">
                       {subscriptionStatus.isTrial ? "Free Trial" : "Paid Plan"}
                     </p>
@@ -280,15 +320,22 @@ export default function SubscriptionManagementPage() {
                       {formatDate(subscriptionStatus.expiresAt)}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {getDaysUntilExpiry(subscriptionStatus.expiresAt)} days remaining
+                      {getDaysUntilExpiry(subscriptionStatus.expiresAt)} days
+                      remaining
                     </p>
                   </div>
                 </div>
 
                 <div className="flex gap-2 pt-4">
-                  <Dialog open={isUpgradeModalOpen} onOpenChange={setIsUpgradeModalOpen}>
+                  <Dialog
+                    open={isUpgradeModalOpen}
+                    onOpenChange={setIsUpgradeModalOpen}
+                  >
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
                         <TrendingUp className="h-4 w-4" />
                         Upgrade Plan
                       </Button>
@@ -303,7 +350,10 @@ export default function SubscriptionManagementPage() {
                       <div className="space-y-4">
                         <div>
                           <Label>Select Plan</Label>
-                          <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+                          <Select
+                            value={selectedPlan}
+                            onValueChange={setSelectedPlan}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Choose a plan" />
                             </SelectTrigger>
@@ -316,20 +366,28 @@ export default function SubscriptionManagementPage() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <Button 
-                          onClick={handleUpgrade} 
+                        <Button
+                          onClick={handleUpgrade}
                           disabled={upgradeMutation.isPending || !selectedPlan}
                           className="w-full"
                         >
-                          {upgradeMutation.isPending ? "Processing..." : "Upgrade Now"}
+                          {upgradeMutation.isPending
+                            ? "Processing..."
+                            : "Upgrade Now"}
                         </Button>
                       </div>
                     </DialogContent>
                   </Dialog>
 
-                  <Dialog open={isRenewalModalOpen} onOpenChange={setIsRenewalModalOpen}>
+                  <Dialog
+                    open={isRenewalModalOpen}
+                    onOpenChange={setIsRenewalModalOpen}
+                  >
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
                         <RefreshCw className="h-4 w-4" />
                         Renew Plan
                       </Button>
@@ -344,7 +402,10 @@ export default function SubscriptionManagementPage() {
                       <div className="space-y-4">
                         <div>
                           <Label>Select Plan</Label>
-                          <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+                          <Select
+                            value={selectedPlan}
+                            onValueChange={setSelectedPlan}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Choose a plan" />
                             </SelectTrigger>
@@ -357,12 +418,14 @@ export default function SubscriptionManagementPage() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <Button 
-                          onClick={handleRenewal} 
+                        <Button
+                          onClick={handleRenewal}
                           disabled={renewalMutation.isPending || !selectedPlan}
                           className="w-full"
                         >
-                          {renewalMutation.isPending ? "Processing..." : "Renew Now"}
+                          {renewalMutation.isPending
+                            ? "Processing..."
+                            : "Renew Now"}
                         </Button>
                       </div>
                     </DialogContent>
@@ -400,7 +463,9 @@ export default function SubscriptionManagementPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Transactions</span>
-                  <span className="font-semibold">{usageStats.transactions}</span>
+                  <span className="font-semibold">
+                    {usageStats.transactions}
+                  </span>
                 </div>
               </div>
             ) : (
@@ -421,16 +486,17 @@ export default function SubscriptionManagementPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {plansList.map((plan: Plan) => (
-              <Card key={plan.id} className={`${plan.popular ? "border-primary" : ""}`}>
+              <Card
+                key={plan.id}
+                className={`${plan.popular ? "border-primary" : ""}`}
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-lg">{plan.label}</CardTitle>
                       <CardDescription>{plan.description}</CardDescription>
                     </div>
-                    {plan.popular && (
-                      <Badge variant="secondary">Popular</Badge>
-                    )}
+                    {plan.popular && <Badge variant="secondary">Popular</Badge>}
                   </div>
                   <div className="text-2xl font-bold">${plan.price}</div>
                   <div className="text-sm text-gray-600">
@@ -439,12 +505,24 @@ export default function SubscriptionManagementPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {Object.entries(plan.features).slice(0, 5).map(([key, value]) => (
-                      <div key={key} className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span>{key}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}</span>
-                      </div>
-                    ))}
+                    {Object.entries(plan.features)
+                      .slice(0, 5)
+                      .map(([key, value]) => (
+                        <div
+                          key={key}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>
+                            {key}:{" "}
+                            {typeof value === "boolean"
+                              ? value
+                                ? "Yes"
+                                : "No"
+                              : value}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </CardContent>
               </Card>
