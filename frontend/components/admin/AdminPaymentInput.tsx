@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -557,7 +558,17 @@ export function AdminPaymentInput() {
                         <FormItem>
                           <FormLabel>Check Date</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <DatePicker
+                              date={
+                                field.value ? new Date(field.value) : undefined
+                              }
+                              onDateChange={(date: Date | undefined) => {
+                                field.onChange(
+                                  date ? date.toISOString().split("T")[0] : ""
+                                );
+                              }}
+                              placeholder="Select check date"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Plus,
   Minus,
@@ -741,11 +742,13 @@ export default function CashChequeTransactionModal({
                   </div>
                   <div>
                     <Label htmlFor="chequeDate">Cheque Date *</Label>
-                    <Input
-                      id="chequeDate"
-                      type="date"
-                      value={chequeDate}
-                      onChange={(e) => setChequeDate(e.target.value)}
+                    <DatePicker
+                      date={chequeDate ? new Date(chequeDate) : undefined}
+                      onDateChange={(date: Date | undefined) =>
+                        setChequeDate(
+                          date ? date.toISOString().split("T")[0] : ""
+                        )
+                      }
                     />
                   </div>
                 </div>
@@ -793,13 +796,18 @@ export default function CashChequeTransactionModal({
                       </div>
                       <div className="flex-1">
                         <Label htmlFor={`split-date-${index}`}>Due Date</Label>
-                        <Input
-                          id={`split-date-${index}`}
-                          type="date"
-                          value={part.dueDate}
-                          onChange={(e) =>
-                            updateSplitPart(index, "dueDate", e.target.value)
+                        <DatePicker
+                          date={
+                            part.dueDate ? new Date(part.dueDate) : undefined
                           }
+                          onDateChange={(date: Date | undefined) =>
+                            updateSplitPart(
+                              index,
+                              "dueDate",
+                              date ? date.toISOString().split("T")[0] : ""
+                            )
+                          }
+                          placeholder="Select due date"
                         />
                       </div>
                       <Button
