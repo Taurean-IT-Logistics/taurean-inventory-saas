@@ -280,8 +280,8 @@ export default function FinancialPage() {
     );
   }
 
-  const expenses = (expensesData as any)?.data || [];
-  const discounts = (discountsData as any)?.data || [];
+  const expenses = (expensesData as any).expenses || [];
+  const discounts = (discountsData as any).discounts || [];
 
   return (
     <div className="min-h-screen">
