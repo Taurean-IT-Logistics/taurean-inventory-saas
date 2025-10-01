@@ -84,6 +84,14 @@ router.get(
   getFinancialDashboardController
 );
 
+// Add summary route that maps to the same dashboard functionality
+router.get(
+  "/summary",
+  staffAndAbove,
+  RequireActiveCompany(),
+  getFinancialDashboardController
+);
+
 // Enhanced financial tracking routes
 router.get(
   "/performance",
