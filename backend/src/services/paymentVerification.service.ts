@@ -393,6 +393,22 @@ export class PaymentVerificationService {
         return; // Only handle successful payments
       }
 
+      // Handle subscription transactions (now using "activation" category)
+      if (
+        transaction.category === "activation" &&
+        transaction.metadata?.type &&
+        (transaction.metadata.type === "subscription" ||
+          transaction.metadata.type === "subscription_renewal" ||
+          transaction.metadata.type === "subscription_upgrade")
+      ) {
+        // Subscription transactions are handled by the subscription controller
+        // No additional actions needed here as subscription activation is handled separately
+        console.log(
+          `Subscription transaction ${transaction.metadata.type} verified successfully`
+        );
+        return;
+      }
+
       // Update booking status if applicable
       if (transaction.category === "booking" && transaction.booking) {
         const booking = await BookingModel.findById(transaction.booking);

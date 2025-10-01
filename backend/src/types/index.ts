@@ -222,7 +222,7 @@ export interface Transaction {
   isSplitPayment?: boolean;
   splitPayment?: SplitPayment;
   isCash?: boolean;
-  cash: Cash;
+  cash?: Cash;
   taxScheduleSnapshot?: {
     scheduleId: mongoose.Types.ObjectId | string;
     name: string;
@@ -270,6 +270,14 @@ export interface Transaction {
   rejectionReason?: string;
   currency?: string;
   referenceId?: string; // ID of the rental, booking, or purchase
+  metadata?: {
+    type?: string;
+    companyId?: string;
+    planId?: string;
+    planName?: string;
+    durationDays?: number;
+    [key: string]: any;
+  };
 }
 
 export interface InventoryItem {

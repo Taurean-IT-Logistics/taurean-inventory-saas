@@ -229,14 +229,13 @@ export async function updateCompany(req: Request, res: Response) {
       }));
     }
 
-    // Update company fields
+    // Update company fields (excluding name - company name cannot be changed)
     const updateFields = [
-      "name",
       "description",
       "location",
       "website",
       "phone",
-      "email",
+      "contactEmail", // Use contactEmail instead of email
       "currency",
     ];
 
@@ -245,6 +244,11 @@ export async function updateCompany(req: Request, res: Response) {
         (company as any)[field] = req.body[field];
       }
     });
+
+    // Handle email field mapping (frontend sends 'email' but we need 'contactEmail')
+    if (req.body.email !== undefined) {
+      (company as any).contactEmail = req.body.email;
+    }
 
     // Handle fee percentage (only Taurean IT super admins can update)
     if (req.body.feePercent !== undefined && (req.user as any)?.isSuperAdmin) {
@@ -324,6 +328,45 @@ export async function updateCompany(req: Request, res: Response) {
       finalDocs = [...finalDocs, ...registrationDocsData];
 
       (company as any).registrationDocs = finalDocs;
+    }
+
+    // Update Paystack subaccount if company has one and contact details changed
+    if ((company as any).paystackSubaccountCode) {
+      try {
+        const { updateSubAccount } = await import(
+          "../services/payment.service"
+        );
+
+        // Check if any Paystack-relevant fields changed
+        const paystackFieldsChanged =
+          req.body.phone !== undefined ||
+          req.body.email !== undefined ||
+          req.body.contactEmail !== undefined;
+
+        if (paystackFieldsChanged) {
+          console.log(
+            "🔄 Updating Paystack subaccount with new contact details..."
+          );
+
+          const subaccountData = {
+            business_name: company.name, // Keep original business name
+            settlement_bank: (company as any).settlementBank || "",
+            account_number: (company as any).accountNumber || "",
+            description:
+              company.description || `Subaccount for ${company.name}`,
+            percentage_charge: (company as any).feePercent || 5,
+          };
+
+          await updateSubAccount(
+            (company as any).paystackSubaccountCode,
+            subaccountData
+          );
+          console.log("✅ Paystack subaccount updated successfully");
+        }
+      } catch (paystackError) {
+        console.warn("⚠️ Failed to update Paystack subaccount:", paystackError);
+        // Don't fail the entire update if Paystack sync fails
+      }
     }
 
     await company.save();
