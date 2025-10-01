@@ -55,8 +55,6 @@ export function calculateTaxesFromSchedules(
   }
 
   // Filter applicable tax schedules based on appliesTo and company
-  console.log("=== SCHEDULE FILTERING DEBUG ===");
-  console.log("Total schedules:", taxSchedules.length);
 
   const applicableSchedules = taxSchedules.filter((schedule) => {
     if (!schedule.isActive) return false;
@@ -83,23 +81,10 @@ export function calculateTaxesFromSchedules(
     // Only include schedules that belong to the specific company
     // Both super admin and regular company schedules are company-specific
     if (companyId && scheduleCompanyId !== companyId) {
-      console.log(
-        "Filtering out schedule from different company:",
-        schedule.name,
-        "Company:",
-        scheduleCompanyId,
-        "Expected:",
-        companyId
-      );
       return false;
     }
     return true;
   });
-
-  console.log(
-    "Applicable schedules after filtering:",
-    applicableSchedules.length
-  );
 
   // Get the single active tax schedule for the company
   // Business rule: A company can only have one active schedule at a time
@@ -137,7 +122,6 @@ export function calculateTaxesFromSchedules(
     // If component is just an ID string, we can't filter it properly
     // This should be handled by the backend population
     if (typeof component === "string") {
-      console.warn("Tax schedule component is not populated:", component);
       return false;
     }
 

@@ -41,8 +41,6 @@ export function RentalCard({ rental }: RentalCardProps) {
     }
   };
 
-  console.log(rental)
-
   return (
     <Link href={`/rental/${rental._id}`}>
       <motion.div

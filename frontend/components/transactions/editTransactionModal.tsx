@@ -24,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   CalendarIcon,
   CreditCardIcon,
@@ -1227,25 +1228,18 @@ const EditTransactionModal = ({
                             <Label htmlFor="chequeDate" className="text-sm">
                               Cheque Date
                             </Label>
-                            <Input
-                              id="chequeDate"
-                              type="date"
-                              value={
-                                formData.paymentDetails?.chequeDate
-                                  ? new Date(formData.paymentDetails.chequeDate)
-                                      .toISOString()
-                                      .split("T")[0]
-                                  : ""
-                              }
-                              onChange={(e) => {
+                            <DatePicker
+                              date={formData.paymentDetails?.chequeDate}
+                              onDateChange={(date: Date | undefined) => {
                                 setFormData((prev) => ({
                                   ...prev,
                                   paymentDetails: {
                                     ...prev.paymentDetails,
-                                    chequeDate: new Date(e.target.value),
+                                    chequeDate: date,
                                   },
                                 }));
                               }}
+                              placeholder="Select cheque date"
                             />
                           </div>
                         </div>

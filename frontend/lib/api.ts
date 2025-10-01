@@ -1876,7 +1876,7 @@ export const RentalAPI = {
   // Return rental item
   returnRental: (rentalId: string, returnData: any) =>
     apiFetch(`/rentals/${rentalId}/return`, {
-      method: "POST",
+      method: "PUT",
       body: JSON.stringify(returnData),
     }),
 
